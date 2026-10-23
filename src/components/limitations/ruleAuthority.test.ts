@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
-import { NOT_RECORDED, ruleAuthorityFacts, sectionLabel } from "./ruleAuthority";
+import {
+  describeServices,
+  NOT_RECORDED,
+  ruleAuthorityFacts,
+  sectionLabel,
+  sourceCurrencyFacts,
+} from "./ruleAuthority";
 
 const snapshot = {
   sources: [
@@ -211,14 +217,52 @@ describe("rule authority facts", () => {
       ],
     } as unknown as LimitationsSnapshot;
     const facts = ruleAuthorityFacts(proxied, base);
-    expect(facts.sources[0]?.route).toContain("firecrawl proxy");
+    expect(facts.sources[0]?.route).toBe(
+      "Fetched through an external page-fetching service because the host blocks direct requests",
+    );
     expect(ruleAuthorityFacts(snapshot, base).sources[0]?.route).toBe("Not recorded");
     const freeText = {
       sources: [{ ...proxied.sources[0], fetchRoute: undefined, method: "Tavily advanced HTML extraction" }],
     } as unknown as LimitationsSnapshot;
+    // the recorded words are shown, the service is described rather than named
     expect(ruleAuthorityFacts(freeText, base).sources[0]?.route).toBe(
-      "Capture method as recorded: Tavily advanced HTML extraction",
+      "Capture method: advanced HTML extraction, through an external page-fetching service",
     );
+    const plain = {
+      sources: [
+        {
+          ...proxied.sources[0],
+          fetchRoute: undefined,
+          method: "Direct HTTP GET of the official page",
+        },
+      ],
+    } as unknown as LimitationsSnapshot;
+    expect(ruleAuthorityFacts(plain, base).sources[0]?.route).toBe(
+      "Capture method as recorded: Direct HTTP GET of the official page",
+    );
+  });
+
+  it("describes, never names, a page-fetching service in displayed capture notes", () => {
+    const vendor = /firecrawl|tavily|browser[ _-]?use|\bmcp\b/i;
+    for (const text of [
+      "Read through Firecrawl MCP firecrawl_scrape on 2026-10-06",
+      "22 quoted passages present in the tavily proxy's extracted text; fetched through the firecrawl proxy",
+      "Tavily tavily_extract (advanced) and Browser Use rendering",
+    ]) {
+      expect(describeServices(text)).not.toMatch(vendor);
+    }
+    expect(describeServices("Read through Firecrawl on 2026-10-06")).toBe(
+      "Read through an external page-fetching service on 2026-10-06",
+    );
+    const untouched = "Official page unchanged; 3 quoted passages found.";
+    expect(describeServices(untouched)).toBe(untouched);
+    const currency = {
+      status: "confirmed_evidence_intact",
+      route: "proxied",
+      checkedAt: "2026-10-06T00:00:00.000Z",
+      detail: "Passages present in the text the firecrawl proxy returned.",
+    } as unknown as Parameters<typeof sourceCurrencyFacts>[0];
+    expect(sourceCurrencyFacts(currency).detail).not.toMatch(vendor);
   });
 
   it("shows the verification grade and its basis beside the citation", () => {

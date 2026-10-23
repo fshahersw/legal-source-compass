@@ -10,7 +10,7 @@ import type {
   LimitationRule,
   LimitationsSnapshot,
 } from "@/lib/limitations/types";
-import { NOT_RECORDED } from "./ruleAuthority";
+import { describeServices, NOT_RECORDED } from "./ruleAuthority";
 import { citedStatutes, claimMatrix, statuteSummary, type CitedStatute } from "./stateStatutes";
 
 const toneClass: Record<"ok" | "partial" | "lost" | "unknown", string> = {
@@ -175,7 +175,7 @@ function StatuteCard({
           <dt>Retrieved</dt>
           <dd>{source.capturedAt}</dd>
           <dt>Method</dt>
-          <dd>{source.method}</dd>
+          <dd>{describeServices(source.method)}</dd>
           <dt>SHA-256</dt>
           <dd className="break-all">
             {source.sha256} · {source.byteLength.toLocaleString()} bytes · schema{" "}

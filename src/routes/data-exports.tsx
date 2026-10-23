@@ -462,7 +462,10 @@ function DataExportsView() {
             Imported authority, currentness, verification and promotion labels are imported historical
             metadata copied verbatim — not new validation.
           </li>
-          <li>Server-side harvesting (Tavily) is explicitly out of scope for this first version.</li>
+          <li>
+            Server-side harvesting through an external search service is explicitly out of scope for
+            this first version.
+          </li>
         </ul>
       </section>
     </AppShell>

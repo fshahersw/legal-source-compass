@@ -165,13 +165,48 @@ export function ruleHistoryLines(rule: LimitationRule, snapshot: LimitationsSnap
 
 const day = (value: string | undefined | null) => (value ? value.slice(0, 10) : NOT_RECORDED);
 
+/**
+ * The interface names no third-party tool or vendor (owner rule): capture notes recorded in a release may name the
+ * page-fetching or extraction service a capture went through, so the display describes the service instead. The release
+ * data itself is unchanged.
+ */
+const SERVICE_NAMES: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bthe (?:firecrawl|tavily) (?:fetch )?proxy\b/gi, "an external page-fetching service"],
+  [
+    /\b(?:firecrawl|tavily)(?:\s+mcp)?(?:\s+(?:firecrawl_scrape|tavily_extract))?\b/gi,
+    "an external page-fetching service",
+  ],
+  [/\b(?:firecrawl_scrape|tavily_extract)\b/gi, "an external page-fetching service"],
+  [/\bbrowser[ _-]?use\b/gi, "a remote browser service"],
+];
+const NAMES_A_SERVICE =
+  /\b(?:firecrawl|tavily|firecrawl_scrape|tavily_extract|browser[ _-]?use)\b/i;
+
+export function describeServices(text: string): string {
+  return SERVICE_NAMES.reduce((out, [pattern, words]) => out.replace(pattern, words), text);
+}
+
 export function fetchRouteLabel(route: FetchRoute | undefined, method?: string): string {
-  // Older captures record the route only as free text ("Tavily advanced HTML extraction"); show those words.
-  if (!route) return method?.trim() ? `Capture method as recorded: ${method.trim()}` : NOT_RECORDED;
+  // Older captures record the route only as free text; show those words, describing (not naming) any service in them.
+  if (!route) {
+    const recorded = method?.trim();
+    if (!recorded) return NOT_RECORDED;
+    if (!NAMES_A_SERVICE.test(recorded)) return `Capture method as recorded: ${recorded}`;
+    const rest = recorded
+      .replace(
+        /\b(?:firecrawl|tavily)(?:\s+mcp)?\b|\b(?:firecrawl_scrape|tavily_extract)\b|\bbrowser[ _-]?use\b/gi,
+        "",
+      )
+      .replace(/\s+/g, " ")
+      .trim();
+    return rest
+      ? `Capture method: ${rest}, through an external page-fetching service`
+      : "Captured through an external page-fetching service";
+  }
   if (route.kind === "direct") return "Direct fetch from the publisher";
   if (route.kind === "extraction") return "Extraction from the captured publisher file";
   if (route.kind === "proxied" && route.proxy)
-    return `Fetched through the ${route.proxy} proxy because the host blocks direct requests`;
+    return "Fetched through an external page-fetching service because the host blocks direct requests";
   return NOT_RECORDED;
 }
 
@@ -190,7 +225,7 @@ export function sourceCurrencyFacts(currency: SourceCurrency | undefined): Sourc
   const pr = currency.passageRecheck;
   const base = {
     checked,
-    detail: pr ? `${currency.detail} ${pr.detail}` : currency.detail,
+    detail: describeServices(pr ? `${currency.detail} ${pr.detail}` : currency.detail),
     freshTextPath: currency.freshTextPath ?? pr?.freshTextPath ?? null,
     codeSections: currency.codeCapture?.sectionNativeIds ?? [],
   };
@@ -225,7 +260,12 @@ export function ruleCurrencyFacts(currency: RuleCurrency | undefined): RuleCurre
     not_rechecked: ["Official text could not be re-read; original capture stands", "unknown"],
   };
   const [label, tone] = labels[currency.status];
-  return { label: `${label} · ${checked}`, tone, checked, detail: currency.detail };
+  return {
+    label: `${label} · ${checked}`,
+    tone,
+    checked,
+    detail: describeServices(currency.detail),
+  };
 }
 
 /** Facts shown beside every result: nothing is inferred, absent values read "Not recorded". */

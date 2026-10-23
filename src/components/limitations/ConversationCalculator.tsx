@@ -568,7 +568,8 @@ export function ConversationCalculator({
             <div className="mt-3 flex flex-wrap items-start justify-between gap-3 border-t border-border pt-3">
               <p className="min-w-0 flex-1 basis-64 text-xs leading-5 text-muted-foreground">
                 {capability.data?.configured
-                  ? `Your text conversation is sent to ${capability.data.providerName} to extract facts. This app keeps the draft in this tab’s memory; the provider’s processing and retention policies apply. Refreshing or leaving loses this draft unless you download it.`
+                  ? // the interface names no AI vendor (owner rule); the configured provider is still disclosed as a third party
+                    "Your text conversation is sent to an external AI language-model service to extract facts. This app keeps the draft in this tab’s memory; the provider’s processing and retention policies apply. Refreshing or leaving loses this draft unless you download it."
                   : capability.isPending
                     ? "Checking conversation availability…"
                     : "Natural-language interpretation is not configured or is unavailable. The structured calculator remains available below."}

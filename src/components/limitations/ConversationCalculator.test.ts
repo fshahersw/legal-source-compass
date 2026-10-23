@@ -233,6 +233,9 @@ describe("conversational calculator component", () => {
       expect(html).toContain("Send reply");
       expect(html).toContain('aria-relevant="additions text"');
       expect(html).toContain("provider’s processing and retention policies apply");
+      // the disclosure says the text leaves the app for an AI service without naming the vendor
+      expect(html).toContain("sent to an external AI language-model service");
+      expect(html).not.toContain("Test provider");
       expect(html).not.toContain('type="date"');
       expect((harness.states[0] as ConversationSession).facts).toEqual({});
       expect(harness.extract).not.toHaveBeenCalled();
