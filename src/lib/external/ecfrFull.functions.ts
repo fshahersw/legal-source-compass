@@ -22,6 +22,7 @@ import {
   parseVersionsRow,
   partRecordId,
   recordId,
+  scopedPartNotes,
   str,
   validAsOfDate,
   type CfrBlock,
@@ -78,23 +79,6 @@ const sectionInput = z.object({
   identifier: z.string().regex(CFR_IDENTIFIER),
   part: z.string().regex(CFR_PART).nullable().default(null),
 });
-
-/** Notes printed for the part apply to every section; notes printed for a subpart only to that subpart's sections. */
-export function scopedPartNotes(notes: CfrNote[], subpart: string | null): CfrNote[] {
-  return notes.filter((n) => {
-    const scope = (n.scope ?? "").trim();
-    if (/^parts?\b/i.test(scope)) return true;
-    if (
-      subpart &&
-      new RegExp(
-        `^subpart\\s+${subpart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w.])`,
-        "i",
-      ).test(scope)
-    )
-      return true;
-    return false;
-  });
-}
 
 async function fallbackText(title: string, identifier: string): Promise<CfrFallback | null> {
   const old = await restGet<{ title: unknown; text: unknown; detail: unknown }[]>(

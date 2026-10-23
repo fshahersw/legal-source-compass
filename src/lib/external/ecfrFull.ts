@@ -192,6 +192,23 @@ export function parseNotes(raw: unknown): CfrNote[] {
   return out;
 }
 
+/** Notes printed for the part apply to every section; notes printed for a subpart only to that subpart's sections. */
+export function scopedPartNotes(notes: CfrNote[], subpart: string | null): CfrNote[] {
+  return notes.filter((n) => {
+    const scope = (n.scope ?? "").trim();
+    if (/^parts?\b/i.test(scope)) return true;
+    if (
+      subpart &&
+      new RegExp(
+        `^subpart\\s+${subpart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w.])`,
+        "i",
+      ).test(scope)
+    )
+      return true;
+    return false;
+  });
+}
+
 export function parsePath(raw: unknown): CfrPathNode[] {
   return arr(raw).flatMap((p) => {
     const a = arr(p);
