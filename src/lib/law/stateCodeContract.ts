@@ -551,7 +551,17 @@ export function chooseStateListings(
   return projections.length ? projections : others;
 }
 
-export type HierarchyStep = { level: string; number: string | null; node_id?: string };
+/**
+ * One outline position. `node_id` is the identity the outline read returned (a publisher node id, or a release node
+ * id); `heading` is the recorded heading, carried for display and for matching a release level, never sent as a
+ * number.
+ */
+export type HierarchyStep = {
+  level: string;
+  number: string | null;
+  node_id?: string;
+  heading?: string | null;
+};
 export type SectionHierarchyStep = HierarchyStep & { heading: string | null };
 
 /**
@@ -609,13 +619,23 @@ export function parseHierarchyPath(value: unknown): HierarchyStep[] {
     const level = (item as { level?: unknown }).level;
     const number = (item as { number?: unknown }).number;
     const nodeId = (item as { node_id?: unknown }).node_id;
+    const heading = (item as { heading?: unknown }).heading;
     if (typeof level !== "string" || !/^[a-z][a-z_]{1,40}$/.test(level)) return [];
     if (
       nodeId !== undefined &&
       (typeof nodeId !== "string" || !nodeId.length || nodeId.length > 256)
     )
       return [];
-    const identity = typeof nodeId === "string" ? { node_id: nodeId } : {};
+    if (
+      heading !== undefined &&
+      heading !== null &&
+      (typeof heading !== "string" || heading.length > 1000)
+    )
+      return [];
+    const identity = {
+      ...(typeof nodeId === "string" ? { node_id: nodeId } : {}),
+      ...(heading !== undefined ? { heading: heading as string | null } : {}),
+    };
     if (number == null) steps.push({ level, number: null, ...identity });
     else if (typeof number === "string" || (typeof number === "number" && Number.isFinite(number)))
       steps.push({ level, number: String(number), ...identity });
@@ -636,8 +656,9 @@ export type ProjectedOutline =
   | {
       available: true;
       kind: "groups";
-      /** Which outline read answered: projection/3 follows skipped levels, projection/2 does not. */
-      read: "v2" | "v3" | "v4";
+      /** Which outline read answered: projection/3 follows skipped levels, projection/2 does not; "release" is a
+       * state-code outline release (stateCodeOutline.ts). */
+      read: "v2" | "v3" | "v4" | "release";
       level: string;
       total: number;
       truncated: boolean;
@@ -648,6 +669,8 @@ export type ProjectedOutline =
         heading: string | null;
         node_id?: string;
         count: number;
+        /** Other printed forms of the same heading, when the outline merged copies of one unit. */
+        variants?: string[];
       }[];
       /** Sections whose next hierarchy step is already a section, beside deeper groups. */
       directSections: {
@@ -662,7 +685,7 @@ export type ProjectedOutline =
   | {
       available: true;
       kind: "sections";
-      read: "v2" | "v3" | "v4";
+      read: "v2" | "v3" | "v4" | "release";
       level: "section";
       total: number;
       truncated: boolean;

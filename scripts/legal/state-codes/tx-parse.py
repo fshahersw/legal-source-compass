@@ -14,7 +14,7 @@ import zipfile
 from urllib.parse import urlsplit
 from lxml import html
 
-PARSER = 'texas-publisher-html/6'
+PARSER = 'texas-publisher-html/7'
 # Reviewed compound statutes only. A changed publisher file requires a fresh
 # review; centered ARTICLE text alone never proves section membership.
 REVIEWED_SUBDIVISIONS = json.loads(pathlib.Path(__file__).with_name('tx-reviewed-subdivisions.json').read_bytes())
@@ -84,6 +84,13 @@ def parse_chapter(raw, code, member):
         kind = 'section_heading' if heads else 'paragraph'
         if node.get('class') == 'center' and re.match(r'^(TITLE|SUBTITLE|CHAPTER|SUBCHAPTER|ARTICLE)\s', text):
             kind = 'hierarchy'
+        # A long heading wraps: the publisher prints its second line as the next centered, unbolded paragraph
+        # ("CHAPTER 305.  TELEPHONIC COMMUNICATIONS MADE FOR" / "PURPOSE OF SOLICITATION"). Only a capitals-only
+        # line directly after a heading line continues it.
+        elif (node.get('class') == 'center' and not heads and blocks
+              and blocks[-1]['kind'] in ('hierarchy', 'hierarchy_continuation')
+              and not re.search(r'[a-z]', text) and 'bold' not in (node.get('style') or '')):
+            kind = 'hierarchy_continuation'
         if publisher_note(text):
             kind = 'publisher_note'
         block = {'source_element_ordinal': ordinal, 'start': offset, 'end': offset + len(text),
@@ -120,6 +127,7 @@ def parse_chapter(raw, code, member):
     sections, occurrence = [], collections.Counter()
     hierarchy = {}
     levels = ['TITLE', 'SUBTITLE', 'CHAPTER', 'SUBCHAPTER', 'ARTICLE']
+    current_level = None
     for ix, block in enumerate(blocks):
         if block['kind'] == 'hierarchy':
             label = full_text[block['start']:block['end']]
@@ -127,6 +135,11 @@ def parse_chapter(raw, code, member):
             for child in levels[levels.index(level) + 1:]:
                 hierarchy.pop(child, None)
             hierarchy[level] = label
+            current_level = level
+        elif block['kind'] == 'hierarchy_continuation' and current_level:
+            hierarchy[current_level] += ' ' + full_text[block['start']:block['end']]
+        elif block['kind'] != 'hierarchy_continuation':
+            current_level = None
         if block['kind'] != 'section_heading':
             continue
         head = block['heading']

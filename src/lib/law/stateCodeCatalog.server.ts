@@ -9,6 +9,18 @@ import {
   tokenEqualsStoredSection,
 } from "./exactCitationPath";
 import {
+  locateInNode,
+  mergeSameIdentityGroups,
+  orderGroupsByNumber,
+  parseOutlineRoot,
+  parseOutlineShard,
+  releaseOutline,
+  topCandidates,
+  type OutlineRoot,
+  type ReleaseNode,
+  type ReleaseTop,
+} from "./stateCodeOutline";
+import {
   chooseStateListings,
   classifyDataset,
   coverageStatus,
@@ -419,7 +431,12 @@ export async function stateCodeSection(
   state: string,
   id: string,
 ): Promise<
-  | (SectionFields & { id: string; datasetId: string | null; hierarchy?: SectionHierarchyStep[] })
+  | (SectionFields & {
+      id: string;
+      datasetId: string | null;
+      hierarchy?: SectionHierarchyStep[];
+      outlinePath?: HierarchyStep[];
+    })
   | null
 > {
   const listing = await listingFor(state);
@@ -617,21 +634,26 @@ function parseOutline(value: unknown, read: "v2" | "v3" | "v4"): ProjectedOutlin
       level: row["level"],
       total: typeof row["total"] === "number" ? row["total"] : row["groups"].length,
       truncated: row["truncated"] === true,
-      groups: row["groups"].flatMap((item) => {
-        const group = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
-        if (!group || typeof group["count"] !== "number") return [];
-        const level = asText(group["level"]);
-        const nodeId = asText(group["node_id"]);
-        return [
-          {
-            ...(level ? { level } : {}),
-            ...(nodeId ? { node_id: nodeId } : {}),
-            number: asText(group["number"]),
-            heading: asText(group["heading"]),
-            count: group["count"],
-          },
-        ];
-      }),
+      groups: orderGroupsByNumber(
+        mergeSameIdentityGroups(
+          row["groups"].flatMap((item) => {
+            const group =
+              item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+            if (!group || typeof group["count"] !== "number") return [];
+            const level = asText(group["level"]);
+            const nodeId = asText(group["node_id"]);
+            return [
+              {
+                ...(level ? { level } : {}),
+                ...(nodeId ? { node_id: nodeId } : {}),
+                number: asText(group["number"]),
+                heading: asText(group["heading"]),
+                count: group["count"],
+              },
+            ];
+          }),
+        ),
+      ),
       directSections,
       directTotal:
         typeof row["direct_total"] === "number" ? row["direct_total"] : directSections.length,
@@ -639,6 +661,85 @@ function parseOutline(value: unknown, read: "v2" | "v3" | "v4"): ProjectedOutlin
     };
   }
   return { available: false };
+}
+
+const RELEASE_TTL = 10 * 60_000;
+const releaseRoots = new Map<string, { at: number; root: OutlineRoot | null }>();
+const releaseShards = new Map<string, Map<string, ReleaseNode>>();
+const MAX_PARSED_SHARDS = 8;
+
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  const digest = await crypto.subtle.digest("SHA-256", copy.buffer);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * The state's outline release (stateCodeOutline.ts), or null when none is in the snapshot manifest or it no longer
+ * describes the live projection (different section count): the projection's own outline is used then.
+ * A malformed release is an error, never silently replaced.
+ */
+async function outlineRelease(state: string): Promise<OutlineRoot | null> {
+  const cached = releaseRoots.get(state);
+  if (cached && Date.now() - cached.at < RELEASE_TTL) return cached.root;
+  const name = `state-codes/${state.toLowerCase()}/outline-v1/root.json`;
+  let root: OutlineRoot | null = null;
+  if (listSnapshotNames().includes(name)) {
+    const parsed = parseOutlineRoot(await readSnapshotJson(name), state);
+    if (!parsed)
+      throw new Error(`State code outline release for ${state} has an unsupported format.`);
+    const names = new Set(listSnapshotNames());
+    if (Object.keys(parsed.shards).some((shard) => !names.has(shard)))
+      throw new Error(
+        `State code outline release for ${state} names a file that is not published.`,
+      );
+    const live = (await projectedListings()).find((row) => row.state === state);
+    root = live && live.sectionCount === parsed.projectionSections ? parsed : null;
+  }
+  releaseRoots.set(state, { at: Date.now(), root });
+  return root;
+}
+
+async function releaseTopNode(root: OutlineRoot, top: ReleaseTop): Promise<ReleaseNode | null> {
+  const expected = root.shards[top.shard];
+  if (!expected) return null;
+  let nodes = releaseShards.get(expected.sha256);
+  if (!nodes) {
+    const bytes = await readPrivateSnapshot(top.shard);
+    if (bytes.length !== expected.bytes || (await sha256Hex(bytes)) !== expected.sha256)
+      throw new Error(`State code outline file ${top.shard} does not match its release.`);
+    const parsed = parseOutlineShard(
+      JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as unknown,
+      root.jurisdiction,
+    );
+    if (!parsed) throw new Error(`State code outline file ${top.shard} has an unsupported format.`);
+    while (releaseShards.size >= MAX_PARSED_SHARDS) {
+      const oldest = releaseShards.keys().next().value;
+      if (oldest === undefined) break;
+      releaseShards.delete(oldest);
+    }
+    releaseShards.set(expected.sha256, parsed);
+    nodes = parsed;
+  }
+  return nodes.get(top.id) ?? null;
+}
+
+/** The release path to a section, for "Show in outline" and its position line; null without a release. */
+async function releasePathFor(
+  state: string,
+  nativeId: string,
+  citation: string | null,
+  hierarchy: SectionHierarchyStep[],
+): Promise<HierarchyStep[] | null> {
+  const root = await outlineRelease(state);
+  if (!root) return null;
+  for (const top of topCandidates(root, citation, hierarchy)) {
+    const node = await releaseTopNode(root, top);
+    const found = node ? locateInNode(node, nativeId) : null;
+    if (found) return found;
+  }
+  return null;
 }
 
 let outlineV3Missing = false;
@@ -652,6 +753,8 @@ export async function projectedOutline(
   state: string,
   path: HierarchyStep[],
 ): Promise<ProjectedOutline> {
+  const release = await outlineRelease(state);
+  if (release) return releaseOutline(release, path, (top) => releaseTopNode(release, top));
   const p_path = path.map((step) => ({
     level: step.level,
     number: step.number,
@@ -691,7 +794,14 @@ export async function projectedOutline(
 export async function projectedSection(
   state: string,
   id: string,
-): Promise<(SectionFields & { id: string; hierarchy: SectionHierarchyStep[] }) | null> {
+): Promise<
+  | (SectionFields & {
+      id: string;
+      hierarchy: SectionHierarchyStep[];
+      outlinePath?: HierarchyStep[];
+    })
+  | null
+> {
   const row = await rpcPostOptional<Record<string, unknown> | null>(
     "corpus_publisher_code_projected_section_v2",
     { p_jurisdiction: state, p_native_id: id },
@@ -709,7 +819,9 @@ export async function projectedSection(
       currency: row["currency"],
     },
   });
-  return { id: row["native_id"], hierarchy: sectionHierarchy(row["hierarchy"]), ...fields };
+  const hierarchy = sectionHierarchy(row["hierarchy"]);
+  const outlinePath = await releasePathFor(state, row["native_id"], fields.citation, hierarchy);
+  return { id: row["native_id"], hierarchy, ...(outlinePath ? { outlinePath } : {}), ...fields };
 }
 
 export type PublicStatuteSection = {

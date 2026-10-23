@@ -1,18 +1,24 @@
 import { publishedSectionBody, type SectionFields } from "@/lib/law/stateCodeContract";
+import { cleanHeading, sectionHeadingLabel } from "@/lib/law/stateCodeHeading";
 import { safeResourceHref } from "@/lib/corpus/resourcePresentation";
 
 /** Read the provision first. Source history is retained below it, never rewritten or inferred. */
 export function SectionReadout({ fields, text }: { fields: SectionFields; text?: string | null }) {
   const body = text !== undefined ? text : publishedSectionBody(fields);
   const href = safeResourceHref(fields.sourceUrl);
+  // The heading without a copy of the citation's own number ("Sec. 1.001. PURPOSE OF CODE." under "AG:1.001");
+  // when the citation already carries the whole heading, the citation is the title.
+  const heading = fields.citation
+    ? sectionHeadingLabel(fields.citation, fields.heading)
+    : cleanHeading(fields.heading);
   return (
     <article className="space-y-3" data-testid="statute-readout">
       <header className="border-b border-border pb-3">
-        {fields.citation ? (
+        {fields.citation && heading ? (
           <p className="mb-1 text-xs font-semibold text-primary">{fields.citation}</p>
         ) : null}
         <h3 className="font-display text-xl font-medium leading-snug">
-          {fields.heading ?? fields.citation ?? "Statutory provision"}
+          {heading ?? fields.citation ?? "Statutory provision"}
         </h3>
         {fields.status ? (
           <p

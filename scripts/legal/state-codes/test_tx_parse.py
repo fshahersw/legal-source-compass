@@ -56,6 +56,24 @@ class TexasParserTest(unittest.TestCase):
         self.assertIn('SUBCHAPTER', rows[0]['hierarchy'])
         self.assertNotIn('SUBCHAPTER', rows[1]['hierarchy'])
 
+    def test_wrapped_heading_lines_join_their_heading(self):
+        # As the publisher prints BC.305: the second line of a long heading is the next centered, unbolded paragraph.
+        bold = 'style="font-weight:bold;"'
+        raw = chapter(f'<p class="center" {bold}>CHAPTER 305.  TELEPHONIC COMMUNICATIONS MADE FOR</p><br />'
+                      '<p class="center">PURPOSE OF SOLICITATION</p><br />'
+                      f'<p class="center" {bold}>SUBCHAPTER A.  PROHIBITED COMMUNICATIONS MADE FOR</p><br />'
+                      '<p class="center">PURPOSE OF SOLICITATION</p>' + heading('305.001', 'PROHIBITED TELEPHONE CALLS.', code='BC', member='BC.305.htm')
+                      + f'<p class="center" {bold}>SUBCHAPTER B.  OTHER</p><p class="center">Text centered but not a heading line</p>'
+                      + heading('305.051', 'OTHER.', code='BC', member='BC.305.htm'))
+        text, blocks, rows = parser.parse_chapter(raw, 'BC', 'BC.305.htm')
+        self.assertEqual(rows[0]['hierarchy']['CHAPTER'], 'CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR PURPOSE OF SOLICITATION')
+        self.assertEqual(rows[0]['hierarchy']['SUBCHAPTER'], 'SUBCHAPTER A. PROHIBITED COMMUNICATIONS MADE FOR PURPOSE OF SOLICITATION')
+        # A centered line with lower-case letters is not part of the heading.
+        self.assertEqual(rows[1]['hierarchy']['SUBCHAPTER'], 'SUBCHAPTER B. OTHER')
+        # Section text spans are unchanged by the join.
+        self.assertTrue(text[rows[0]['text_start']:rows[0]['text_end']].startswith('Sec. 305.001.'))
+        self.assertNotIn('SUBCHAPTER B', text[rows[0]['text_start']:rows[0]['text_end']])
+
     def test_toc_and_cross_references_do_not_create_sections(self):
         raw = chapter('<p>16.003 Two years.</p><p>See <a href="https://statutes.capitol.texas.gov/Docs/CP/htm/CP.16.htm#16.003">Sec. 16.003.</a></p>' + heading('16.003', 'TWO YEARS.'))
         _, _, rows = parser.parse_chapter(raw, 'CP', 'cp.16.htm')

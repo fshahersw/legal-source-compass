@@ -16,6 +16,7 @@ import {
   type SectionHierarchyStep,
   type StateCodeListing,
 } from "@/lib/law/stateCodeContract";
+import { levelLabel, sectionHeadingLabel, type LevelLabel } from "@/lib/law/stateCodeHeading";
 
 type OutlineSection = {
   native_id: string;
@@ -28,12 +29,37 @@ function levelName(level: string): string {
   return level.replace(/_/g, " ");
 }
 
+/** Publisher groupings that are headings by nature and never numbered (Nevada, California "heading" levels). */
+const UNNUMBERED_LEVELS = new Set(["heading", "subheading"]);
+
+/** A code is known by its name ("Agriculture Code"); other levels by kind and number ("Title 1-A"). */
+function primaryLabel(label: LevelLabel, level: string): string {
+  if (level === "code" || !label.number) return label.name ?? label.designation;
+  return label.designation;
+}
+
+/** Short position label for breadcrumbs and "Up to …". */
 function stepLabel(step: HierarchyStep): string {
-  return `${levelName(step.level)} ${step.number ?? "Not recorded"}`;
+  return primaryLabel(levelLabel(step.level, step.number, step.heading), step.level);
 }
 
 function sectionLabel(item: OutlineSection): string {
   return item.citation ?? item.heading ?? item.native_id;
+}
+
+/** The section heading under its citation, without a copy of the citation's own number. */
+function sectionNote(item: OutlineSection): string | null {
+  if (!item.citation) return null;
+  const note = sectionHeadingLabel(item.citation, item.heading);
+  return note && note !== item.citation ? note : null;
+}
+
+function StatusTag({ status }: { status: string | null }) {
+  return status ? (
+    <span className="ml-1.5 rounded border border-border px-1 py-px align-middle text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      {status}
+    </span>
+  ) : null;
 }
 
 export function ProjectionCodeBrowser({
@@ -88,17 +114,18 @@ export function ProjectionCodeBrowser({
       )
     : sections;
   const sectionSteps: SectionHierarchyStep[] = useMemo(() => {
+    const release = detail.data?.outlinePath;
+    if (release?.length) return release.map((step) => ({ ...step, heading: step.heading ?? null }));
     const steps = detail.data?.hierarchy ?? [];
     const declared = listing.levels;
     return declared ? steps.filter((step) => declared.includes(step.level)) : steps;
   }, [detail.data, listing.levels]);
   const samePath =
     sectionSteps.length === path.length &&
-    sectionSteps.every(
-      (step, i) =>
-        path[i]?.level === step.level &&
-        path[i]?.number === step.number &&
-        path[i]?.node_id === step.node_id,
+    sectionSteps.every((step, i) =>
+      step.node_id && path[i]?.node_id
+        ? path[i]?.node_id === step.node_id
+        : path[i]?.level === step.level && path[i]?.number === step.number,
     );
   const index = section ? sections.findIndex((s) => s.native_id === section) : -1;
   const previous = index > 0 ? sections[index - 1] : null;
@@ -126,7 +153,8 @@ export function ProjectionCodeBrowser({
           <ChevronRight className="size-3 text-muted-foreground" aria-hidden />
           <button
             type="button"
-            className={`rounded px-1.5 py-0.5 capitalize ${
+            title={step.heading ?? undefined}
+            className={`max-w-[16rem] truncate rounded px-1.5 py-0.5 ${
               i === path.length - 1
                 ? "font-semibold"
                 : "text-primary underline-offset-4 hover:underline"
@@ -247,9 +275,11 @@ export function ProjectionCodeBrowser({
                     onClick={() => onNavigate({ path, section: hit.id })}
                   >
                     <span className="font-medium">{hit.citation ?? hit.heading}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">
-                      {hit.heading}
-                    </span>
+                    {hit.citation && sectionHeadingLabel(hit.citation, hit.heading) ? (
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {sectionHeadingLabel(hit.citation, hit.heading)}
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               ))}
@@ -320,48 +350,70 @@ export function ProjectionCodeBrowser({
                     : ` · ${groups.length.toLocaleString()}`}
                 </p>
                 <ul className="space-y-0.5" aria-label={`${levelName(level ?? "")} list`}>
-                  {shownGroups.map((group, i) => (
-                    <li key={`${group.number ?? ""}-${group.heading ?? ""}-${i}`}>
-                      <button
-                        type="button"
-                        className="flex w-full items-start justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
-                        onClick={() => {
-                          const groupLevel = group.level ?? level;
-                          if (!groupLevel) return;
-                          onNavigate({
-                            path: [
-                              ...path,
-                              {
-                                level: groupLevel,
-                                number: group.number,
-                                ...(group.node_id ? { node_id: group.node_id } : {}),
-                              },
-                            ],
-                            section: undefined,
-                          });
-                        }}
+                  {shownGroups.map((group, i) => {
+                    const groupLevel = group.level ?? level ?? "";
+                    const label = levelLabel(groupLevel, group.number, group.heading);
+                    const primary = primaryLabel(label, groupLevel);
+                    const secondary =
+                      groupLevel === "code"
+                        ? label.name
+                          ? label.number
+                          : null
+                        : label.number
+                          ? label.name
+                          : label.name && !UNNUMBERED_LEVELS.has(groupLevel)
+                            ? `${label.kind} · number not recorded`
+                            : null;
+                    return (
+                      <li
+                        key={`${group.node_id ?? group.number ?? ""}-${group.heading ?? ""}-${i}`}
                       >
-                        <span className="min-w-0">
-                          <span className="font-medium">
-                            {mixedLevels && group.level ? (
-                              <span className="mr-1 capitalize text-muted-foreground">
-                                {levelName(group.level)}
+                        <button
+                          type="button"
+                          title={
+                            group.variants?.length
+                              ? `Also printed as: ${group.variants.join(" | ")}`
+                              : undefined
+                          }
+                          className="flex w-full items-start justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                          onClick={() => {
+                            if (!groupLevel) return;
+                            onNavigate({
+                              path: [
+                                ...path,
+                                {
+                                  level: groupLevel,
+                                  number: group.number,
+                                  ...(group.node_id ? { node_id: group.node_id } : {}),
+                                  heading: group.heading,
+                                },
+                              ],
+                              section: undefined,
+                            });
+                          }}
+                        >
+                          <span className="min-w-0">
+                            <span
+                              className={
+                                label.status ? "font-medium text-muted-foreground" : "font-medium"
+                              }
+                            >
+                              {primary}
+                            </span>
+                            <StatusTag status={label.status} />
+                            {secondary ? (
+                              <span className="block text-xs text-muted-foreground">
+                                {secondary}
                               </span>
                             ) : null}
-                            {group.number ?? "Not recorded"}
                           </span>
-                          {group.heading ? (
-                            <span className="block text-xs text-muted-foreground">
-                              {group.heading}
-                            </span>
-                          ) : null}
-                        </span>
-                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
-                          {group.count.toLocaleString()}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
+                          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
+                            {group.count.toLocaleString()}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
                   {needle && !shownGroups.length ? (
                     <li className="px-2 py-1.5 text-xs text-muted-foreground">
                       No {levelName(level ?? "")} matches the filter.
@@ -394,9 +446,9 @@ export function ProjectionCodeBrowser({
                           onClick={() => onNavigate({ path, section: item.native_id })}
                         >
                           <span>{sectionLabel(item)}</span>
-                          {item.heading && item.citation ? (
+                          {sectionNote(item) ? (
                             <span className="block text-xs text-muted-foreground">
-                              {item.heading}
+                              {sectionNote(item)}
                             </span>
                           ) : null}
                           {item.status_note ? (
@@ -491,16 +543,22 @@ export function ProjectionCodeBrowser({
                   className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
                   data-testid="section-position"
                 >
-                  {sectionSteps.map((step, i) => (
-                    <span
-                      key={`${step.level}-${step.number ?? ""}-${i}`}
-                      className="flex items-center gap-1"
-                    >
-                      {i > 0 ? <ChevronRight className="size-3" aria-hidden /> : null}
-                      <span className="capitalize">{stepLabel(step)}</span>
-                      {step.heading ? <span className="normal-case">· {step.heading}</span> : null}
-                    </span>
-                  ))}
+                  {sectionSteps.map((step, i) => {
+                    const label = levelLabel(step.level, step.number, step.heading);
+                    const primary = primaryLabel(label, step.level);
+                    const rest = primary === label.designation ? label.name : null;
+                    return (
+                      <span
+                        key={`${step.node_id ?? step.level}-${step.number ?? ""}-${i}`}
+                        className="flex items-center gap-1"
+                      >
+                        {i > 0 ? <ChevronRight className="size-3" aria-hidden /> : null}
+                        <span>{primary}</span>
+                        {rest ? <span>· {rest}</span> : null}
+                        <StatusTag status={label.status} />
+                      </span>
+                    );
+                  })}
                   {!samePath ? (
                     <button
                       type="button"
@@ -511,6 +569,7 @@ export function ProjectionCodeBrowser({
                             level: step.level,
                             number: step.number,
                             ...(step.node_id ? { node_id: step.node_id } : {}),
+                            heading: step.heading,
                           })),
                           section,
                         })

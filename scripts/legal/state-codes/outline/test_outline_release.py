@@ -1,0 +1,178 @@
+"""Offline tests for the state-code outline release builder (synthetic exports, no network).
+
+    cd scripts/legal/state-codes/outline && python3 -B -m unittest -v test_outline_release
+"""
+import gzip
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import build_outline_release as b  # noqa: E402
+import dc_toc_names  # noqa: E402
+
+
+def export(jurisdiction, rows):
+    """rows: [(native_id, citation, heading, [(level, number, heading), ...])]"""
+    paths, index, out = [], {}, []
+    for native_id, citation, heading, steps in rows:
+        key = json.dumps(steps)
+        if key not in index:
+            index[key] = len(paths)
+            paths.append([[lvl, num, head, None] for lvl, num, head in steps])
+        out.append([native_id, citation, heading, None, index[key]])
+    return {"jurisdiction": jurisdiction, "source_system": f"{jurisdiction.lower()}-test-code",
+            "exported_at": "2026-10-23T00:00:00Z", "sections": len(out), "paths": paths, "rows": out}
+
+
+def flatten(nodes, depth=0):
+    for n in nodes:
+        yield depth, n
+        yield from flatten(n.get("k", []), depth + 1)
+
+
+class Headings(unittest.TestCase):
+    def test_clean_matches_the_site(self):
+        # Same vectors as src/lib/law/stateCodeHeading.test.ts cleanHeading().
+        self.assertEqual(b.clean_heading("TITLE 12       \tCOMMERCE"), "TITLE 12 COMMERCE")
+        self.assertEqual(b.clean_heading("1 Definitions. &#150;"), "1 Definitions. –")
+        self.assertEqual(b.clean_heading("One-Cent (1&cent;) Tax"), "One-Cent (1¢) Tax")
+        self.assertEqual(b.clean_heading("JURISDICTION%2C CIVIL DIVISIONS"), "JURISDICTION, CIVIL DIVISIONS")
+        self.assertEqual(b.clean_heading("SCHEDULE<br/>To insure"), "SCHEDULE To insure")
+        self.assertEqual(b.clean_heading("Children (2432KB)"), "Children")
+        self.assertIsNone(b.clean_heading("   "))
+        self.assertEqual(b.norm_heading("TITLE 2.  Department’s  Code."), "title 2. department's code")
+
+    def test_citation_order(self):
+        cites = ["1.002", "1.0015", "1.001", "11.001", "2.001", "10A.1", "10.1"]
+        self.assertEqual(sorted(cites, key=b.sort_key), ["1.001", "1.0015", "1.002", "2.001", "10.1", "10A.1", "11.001"])
+        self.assertEqual(sorted(["CN:1.10", "CN:1.2", "CN:1.9", "CN:1.1"], key=b.sort_key), ["CN:1.1", "CN:1.2", "CN:1.9", "CN:1.10"])
+        self.assertEqual(sorted(["101.10", "101.011", "101.09", "101.01"], key=b.sort_key), ["101.01", "101.011", "101.09", "101.10"])
+
+
+class Restorations(unittest.TestCase):
+    def test_dc_paths(self):
+        self.assertEqual(b.dc_steps("titles-1-chapters-2-subchapters-IV-parts-E-subparts-2"),
+                         [("title", "1"), ("chapter", "2"), ("subchapter", "IV"), ("part", "E"), ("subpart", "2")])
+        self.assertEqual(b.dc_steps("titles-1-chapters-11-subchapters-I-parts-F-i")[-1], ("part", "F-i"))
+        self.assertEqual(b.dc_steps("titles-99"), [("title", "99")])
+        self.assertIsNone(b.dc_steps("chapter-1"))
+        self.assertIsNone(b.dc_steps(None))
+
+    def test_texas_code_from_citation(self):
+        extras = {"tx_codes": {"AG": "Agriculture Code"}, "names": {}}
+        steps = b.restore_steps("TX", "AG:1.001", [["title", None, "TITLE 1. GENERAL PROVISIONS", None]], extras)
+        self.assertEqual(steps[0], ("code", "AG", "Agriculture Code", None))
+        with self.assertRaises(ValueError):
+            b.restore_steps("TX", "ZZ:1.001", [], extras)
+        with self.assertRaises(ValueError):
+            b.restore_steps("TX", "1.001", [], extras)
+
+    def test_texas_wrapped_heading_completed_and_recorded_line_kept(self):
+        extras = {"tx_codes": {"BC": "Business & Commerce Code"}, "names": {},
+                  "tx_wrapped": {"BC\x1fCHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR":
+                                 "CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR PURPOSE OF SOLICITATION"}}
+        steps = b.restore_steps("TX", "BC:305.001", [["chapter", None, "CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR", None],
+                                                     ["subchapter", None, "SUBCHAPTER B. OTHER", None]], extras)
+        self.assertEqual(steps[1], ("chapter", None, "CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR PURPOSE OF SOLICITATION",
+                                    None, "CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR"))
+        self.assertEqual(steps[2], ("subchapter", None, "SUBCHAPTER B. OTHER", None))
+        data = export("TX", [("TX:BC:305.001", "BC:305.001", "s", [("chapter", None, "CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR")])])
+        top, _, _ = b.build(data, {**extras, "tx_order": {"BC": 0}}, "x")
+        self.assertEqual(top[0]["k"][0]["h"], "CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR PURPOSE OF SOLICITATION")
+        self.assertEqual(top[0]["k"][0]["hr"], ["CHAPTER 305. TELEPHONIC COMMUNICATIONS MADE FOR"])
+
+    def test_dc_names_only_from_capture(self):
+        extras = {"names": {"title:1": "Title 1. Government Organization."}}
+        steps = b.restore_steps("DC", "§ 1–204.73.", [["chapter", "titles-1-chapters-2", "§ 1–204.73. Notes.", None]], extras)
+        self.assertEqual(steps, [("title", "1", "Title 1. Government Organization.", None), ("chapter", "2", None, None)])
+        with self.assertRaises(ValueError):
+            b.restore_steps("DC", "x", [["chapter", "not-a-path", "x", None]], extras)
+
+
+class Build(unittest.TestCase):
+    def test_texas_codes_keep_their_titles_apart(self):
+        data = export("TX", [
+            ("TX:AG:1.001", "AG:1.001", "Sec. 1.001.", [("title", None, "TITLE 1. GENERAL PROVISIONS"),
+                                                        ("chapter", None, "CHAPTER 1. GENERAL PROVISIONS")]),
+            ("TX:ED:1.001", "ED:1.001", "Sec. 1.001.", [("title", None, "TITLE 1. GENERAL PROVISIONS"),
+                                                        ("chapter", None, "CHAPTER 1. GENERAL PROVISIONS")]),
+            ("TX:AG:11.001", "AG:11.001", "Sec. 11.001.", [("title", None, "TITLE 2. DEPARTMENT OF AGRICULTURE"),
+                                                           ("chapter", None, "CHAPTER 11. ADMINISTRATION")]),
+        ])
+        extras = {"names": {}, "tx_codes": {"ED": "Education Code", "AG": "Agriculture Code"},
+                  "tx_order": {"AG": 0, "ED": 1}}
+        top, direct, report = b.build(data, extras, "2026-10-23T00:00:00Z")
+        self.assertEqual([(n["n"], n["h"], n["c"]) for n in top], [("AG", "Agriculture Code", 2), ("ED", "Education Code", 1)])
+        self.assertEqual([k["h"] for k in top[0]["k"]], ["TITLE 1. GENERAL PROVISIONS", "TITLE 2. DEPARTMENT OF AGRICULTURE"])
+        self.assertEqual(direct, [])
+
+    def test_unnumbered_siblings_stay_apart_and_copies_merge(self):
+        data = export("OH", [
+            ("OH:101.01", "101.01", "a", [("title", None, "Title 1 State Government")]),
+            ("OH:301.01", "301.01", "b", [("title", None, "Title 3 Counties")]),
+            ("OH:101.02", "101.02", "c", [("title", None, "Title 1  State Government")]),
+        ])
+        top, _, report = b.build(data, {"names": {}}, "x")
+        self.assertEqual([(n["h"], n["c"]) for n in top], [("Title 1 State Government", 2), ("Title 3 Counties", 1)])
+        self.assertEqual(report["merged_variants"], 0)  # whitespace-only variants share one key from the start
+
+    def test_numbered_variants(self):
+        data = export("WI", [
+            ("WI:1", "1", "a", [("chapter", "1", None), ("subchapter", "I", "DAMAGES, RECOVERY, AND MISCELLANEOUS")]),
+            ("WI:2", "2", "b", [("chapter", "1", None), ("subchapter", "I", "DAMAGES, RECOVERY, AND MISCELLANEOUS PROVISIONS")]),
+            ("WI:3", "3", "c", [("chapter", "1", None), ("subchapter", "I", "DAMAGES, RECOVERY, AND MISCELLANEOUS PROVISIONS")]),
+            ("AL:1", "4", "d", [("chapter", "2", None)]),
+            ("AL:2", "5", "e", [("chapter", "2", "Local Laws.")]),
+            ("ME:1", "6", "f", [("chapter", "3", "ADMINISTRATION")]),
+            ("ME:2", "7", "g", [("chapter", "3", "CHILDREN")]),
+            ("ME:3", "8", "h", [("chapter", "3", None)]),
+        ])
+        top, _, report = b.build(data, {"names": {}}, "x")
+        ch1 = next(n for n in top if n["n"] == "1")
+        self.assertEqual([(k["h"], k["c"], k.get("hv")) for k in ch1["k"]],
+                         [("DAMAGES, RECOVERY, AND MISCELLANEOUS PROVISIONS", 3, ["DAMAGES, RECOVERY, AND MISCELLANEOUS"])])
+        ch2 = [n for n in top if n["n"] == "2"]
+        self.assertEqual([(n["h"], n["c"]) for n in ch2], [("Local Laws.", 2)])
+        # Two different named units with one number stay apart; the unnamed rows are not assigned to either.
+        ch3 = sorted((n["h"] or "", n["c"]) for n in top if n["n"] == "3")
+        self.assertEqual(ch3, [("", 1), ("ADMINISTRATION", 1), ("CHILDREN", 1)])
+        self.assertEqual(report["merged_variants"], 2)
+
+    def test_every_section_once(self):
+        data = export("OH", [("OH:1", "1", "a", [("title", None, "Title 1 State Government")])])
+        data["sections"] = 2
+        with self.assertRaises(ValueError):
+            b.build(data, {"names": {}}, "x")
+
+    def test_files_and_root(self):
+        data = export("OH", [("OH:101.01", "101.01", "a", [("title", None, "Title 1 State Government"),
+                                                           ("chapter", None, "Chapter 101 General Assembly")])])
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "OH.json.gz"
+            src.write_bytes(gzip.compress(json.dumps(data).encode()))
+            summary = b.main(["--export", str(src), "--out", tmp])
+            root = json.loads((Path(tmp) / "state-codes/oh/outline-v1/root.json").read_text())
+            self.assertEqual(root["schema_version"], b.SCHEMA)
+            self.assertEqual(root["projection_sections"], 1)
+            self.assertEqual(root["top"][0]["n"], None)
+            shard = json.loads((Path(tmp) / root["top"][0]["shard"]).read_text())
+            self.assertEqual(shard["nodes"][0]["k"][0]["s"][0][0], "OH:101.01")
+            self.assertEqual(summary["sections"], 1)
+
+
+class DcToc(unittest.TestCase):
+    def test_title_names(self):
+        page = ('<a class="x" href="/us/dc/council/code/titles/1">Title 1. Government Organization.</a>'
+                '<a href="/us/dc/council/code/titles/29A"><span>Title 29A.</span> Business Organizations.</a>')
+        self.assertEqual(dc_toc_names.title_names(page), {"title:1": "Title 1. Government Organization.",
+                                                          "title:29A": "Title 29A. Business Organizations."})
+        with self.assertRaises(ValueError):
+            dc_toc_names.title_names('<a href="/us/dc/council/code/titles/2">Title 3. Wrong.</a>')
+
+
+if __name__ == "__main__":
+    unittest.main()
