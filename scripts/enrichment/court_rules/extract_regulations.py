@@ -47,19 +47,35 @@ def entry(st: str, level: str, citation: str, heading: str | None, url: str, row
             "listed_on": row["url"], "retrieved_at": row["retrieved_at"], "page_sha256": row["sha256"]}
 
 
+# A row of the Secretary of State's agency list: the CCR number links to the rule set, the next cell is its title.
+CO_ROW = re.compile(r'<TD[^>]*>\s*<a href="([^"]*DisplayRule\.do\?[^"]*ruleinfo[^"]*)"[^>]*>(.*?)</a>\s*</TD>\s*<TD[^>]*>(.*?)</TD>',
+                    re.S | re.I)
+
+
+def co_titles(html: str) -> dict[str, str]:
+    """{rule-set link as printed: the title in the same table row}; a row without a title cell is left out."""
+    return {htmlmod.unescape(link): clean(title) for link, _, title in CO_ROW.findall(html) if clean(title)}
+
+
 def parse_co(m):
     out = []
     for p, r in files(m, "CO", "agency_"):
         q = parse_qs(urlparse(r["url"]).query)
         dept = (q.get("deptName") or [""])[0]
         agency = (q.get("agencyName") or [""])[0]
-        for link, text in page_links(text_of(r), r["url"]):
+        html = text_of(r)
+        titles = {urljoin(r["url"], link): title for link, title in co_titles(html).items()}
+        for link, text in page_links(html, r["url"]):
             if "DisplayRule.do" not in link or "ruleinfo" not in link:
                 continue
             series = (parse_qs(urlparse(link).query).get("seriesNum") or [""])[0].strip()
             if not series:
                 continue
-            out.append(entry("CO", "rule set", series, clean(text), link, r, agency=re.sub(r"^\d+\s+", "", agency),
+            # The link text repeats the CCR number; the heading is the row's Title cell (none when the row has none).
+            heading = titles.get(link)
+            if heading is None and clean(text) != series:
+                heading = clean(text)
+            out.append(entry("CO", "rule set", series, heading, link, r, agency=re.sub(r"^\d+\s+", "", agency),
                              parent=re.sub(r"^[\d,]+\s+", "", dept)))
     return out
 
@@ -223,22 +239,36 @@ def parse_wa(m):
     return out
 
 
+# After a chapter link the Legislature's table of contents prints "(PDF: <icon link>)" and then " - <heading>".
+WI_TAIL = re.compile(r'\s*(?:<span class="pdfLink">.*?</span>\s*)?(?:</span>\s*)?[-\u2013\u2014]\s*([^<]{2,300})', re.S)
+
+
+def wi_entries(html: str) -> list[tuple[str, str, str | None]]:
+    """[(link path, chapter label, heading)] from one agency page; the "Using the code" help page lists none."""
+    node = re.search(r'<span id="nodePath">([^<]*)</span>', html)
+    if node and node.group(1).rstrip("/").endswith("/using"):
+        return []
+    out = []
+    for mm in re.finditer(r'href="(/document/administrativecode/ch\.%20([^"]+?))"[^>]*>([^<]*)</a>', html):
+        if mm.group(1).endswith(".pdf"):
+            continue
+        tail = WI_TAIL.match(html, mm.end())
+        heading = clean(tail.group(1)) if tail else None
+        out.append((mm.group(1), unquote(mm.group(2)), heading or None))
+    return out
+
+
 def parse_wi(m):
     out = []
     seen = set()
     for p, r in files(m, "WI", "agency_"):
-        html = text_of(r)
         agency = unquote(r["url"].rsplit("/", 1)[-1])
-        for mm in re.finditer(r'href="(/document/administrativecode/ch\.%20([^"]+?))"[^>]*>([^<]*)</a>', html):
-            if mm.group(1).endswith(".pdf") or mm.group(1) in seen:
+        for path, label, heading in wi_entries(text_of(r)):
+            if path in seen:
                 continue
-            seen.add(mm.group(1))
-            label = unquote(mm.group(2))
-            rest = html[mm.end(): mm.end() + 400]
-            title = re.search(r"^\s*(?:</[^>]+>\s*)*(?:<[^>]+>\s*)*([^<]{3,160})", rest)
-            heading = clean(title.group(1)) if title else None
-            out.append(entry("WI", "chapter", f"Wis. Admin. Code ch. {label}", heading if heading and not heading.startswith("ch.") else None,
-                             urljoin(r["url"], mm.group(1)), r, agency=agency))
+            seen.add(path)
+            out.append(entry("WI", "chapter", f"Wis. Admin. Code ch. {label}", heading,
+                             urljoin(r["url"], path), r, agency=agency))
     return out
 
 

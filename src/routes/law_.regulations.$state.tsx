@@ -8,6 +8,13 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { getRegulationIndex, listRegulationCodes } from "@/lib/external/courtRulesLaw.functions";
+import { cleanHeading, headingStatus } from "@/lib/law/stateCodeHeading";
+
+/** The printed heading, unless it only repeats the citation (then the publisher printed no heading). */
+function entryHeading(citation: string, heading: string | null): string | null {
+  const clean = cleanHeading(heading);
+  return clean && clean !== cleanHeading(citation) ? clean : null;
+}
 
 export const Route = createFileRoute("/law_/regulations/$state")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -194,14 +201,20 @@ function StateRegulationsPage() {
                         </a>
                       </td>
                       <td className="px-3 py-1.5">
-                        {e.heading ?? <span className="text-muted-foreground">Not recorded</span>}
+                        {entryHeading(e.citation, e.heading) ?? (
+                          <span className="text-muted-foreground">Not recorded</span>
+                        )}
                       </td>
                       <td className="px-3 py-1.5 text-muted-foreground">
                         {e.agency ?? e.parent ?? "Not recorded"}
                       </td>
                       <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">
                         {e.level}
-                        {e.status ? ` · ${e.status}` : ""}
+                        {e.status
+                          ? ` · ${e.status}`
+                          : headingStatus(entryHeading(e.citation, e.heading))
+                            ? ` · ${headingStatus(entryHeading(e.citation, e.heading))}`
+                            : ""}
                       </td>
                     </tr>
                   ))}

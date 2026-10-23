@@ -9,6 +9,7 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import constitution_parse as CP  # noqa: E402
+import extract_regulations as REG  # noqa: E402
 import insights as INS  # noqa: E402
 import sections as S  # noqa: E402
 import textlib  # noqa: E402
@@ -324,6 +325,50 @@ class ConstitutionTests(unittest.TestCase):
     def test_roman(self):
         self.assertEqual(CP.roman_to_int("XIV"), 14)
         self.assertIsNone(CP.roman_to_int("ABC"))
+
+
+class RegulationTocTests(unittest.TestCase):
+    """Administrative-code tables of contents: the heading is the publisher's title, never the number repeated."""
+
+    def test_colorado_title_cell(self):
+        page = ('<TR class="rowEven"><TD style="text-align: left;"> <a href="/CCR/DisplayRule.do?action=ruleinfo&ruleId=1918'
+                '&seriesNum=1 CCR 101-1">1 CCR 101-1 </a></TD>\n\t<TD>STATE OF COLORADO FISCAL RULES</TD></TR>'
+                '<TR><TD> <a href="/CCR/DisplayRule.do?action=ruleinfo&amp;ruleId=3093&amp;seriesNum=1 CCR 101-2">1 CCR 101-2 </a></TD>'
+                '<TD>RECOVERY AUDITS [Repealed eff. 10/01/2011]</TD></TR>'
+                '<TR><TD> <a href="/CCR/DisplayRule.do?action=ruleinfo&ruleId=9&seriesNum=1 CCR 101-3">1 CCR 101-3 </a></TD><TD> </TD></TR>')
+        self.assertEqual(REG.co_titles(page), {
+            "/CCR/DisplayRule.do?action=ruleinfo&ruleId=1918&seriesNum=1 CCR 101-1": "STATE OF COLORADO FISCAL RULES",
+            "/CCR/DisplayRule.do?action=ruleinfo&ruleId=3093&seriesNum=1 CCR 101-2": "RECOVERY AUDITS [Repealed eff. 10/01/2011]",
+        })
+
+    def test_wisconsin_heading_after_pdf_icon(self):
+        page = ('<span id="nodePath">/code/admin_code/accy</span><li><p><span class="hasPdfLink" data-pdf-link="&lt;a href=&quot;'
+                '/document/administrativecode/ch.%20Accy%201.pdf&quot;>Chapter Accy 1&lt;/a>">'
+                '<a href="/document/administrativecode/ch.%20Accy%201">Chapter Accy 1</a> <span class="pdfLink">(PDF: '
+                '<a href="/document/administrativecode/ch.%20Accy%201.pdf" title="Chapter Accy 1 - PDF"><img alt="PDF" /></a>)</span>'
+                '</span> - Rules Of Conduct\n</p></li>'
+                '<li><p><a href="/document/administrativecode/ch.%20Accy%202">Chapter Accy 2</a></p></li>')
+        self.assertEqual(REG.wi_entries(page), [("/document/administrativecode/ch.%20Accy%201", "Accy 1", "Rules Of Conduct"),
+                                                ("/document/administrativecode/ch.%20Accy%202", "Accy 2", None)])
+
+    def test_wisconsin_help_page_is_not_a_table_of_contents(self):
+        page = ('<span class="qstr">Clicking on a chapter number (ex. Chapter <a href="/document/administrativecode/ch.%20NR%2010">'
+                'NR 10</a>) takes the user to the beginning</span><span id="nodePath">/code/admin_code/using</span>')
+        self.assertEqual(REG.wi_entries(page), [])
+
+
+class ConstitutionTitleTests(unittest.TestCase):
+    def test_capitals_catchline_keeps_its_semicolon_part(self):
+        self.assertEqual(CP._title("FREEDOM OF SPEECH AND PRESS; LIBEL.  Every person shall be at liberty"),
+                         "FREEDOM OF SPEECH AND PRESS; LIBEL")
+        self.assertEqual(CP._title("U.S. SENATORS. The senators"), "U.S. SENATORS")
+
+    def test_combined_heading_line_is_whole(self):
+        self.assertEqual(CP._heading_line(" Bearing arms; standing armies; military power "),
+                         "Bearing arms; standing armies; military power")
+
+    def test_overlong_text_is_not_a_heading(self):
+        self.assertEqual(CP._title("x" * 200 + ". Next"), "")
 
 
 if __name__ == "__main__":

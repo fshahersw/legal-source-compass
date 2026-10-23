@@ -29,8 +29,21 @@ def _title(rest: str, max_len: int = 160) -> str:
     m = re.match(r"^\[([^\]]{2,150})\]\.?\s*", rest)  # "[Equality of men.]" style catchlines
     if m:
         return m.group(1).strip()
+    # A capitals catchline runs to its first period, semicolons included: "FREEDOM OF SPEECH AND PRESS; LIBEL.  Every
+    # person shall ..." is "FREEDOM OF SPEECH AND PRESS; LIBEL", not "FREEDOM OF SPEECH AND PRESS;".
+    caps = re.match(r"^([^a-z]*?[A-Z]{3}[^a-z]*?)\.(?:\s|$)", rest)
+    if caps and len(caps.group(1)) <= max_len:
+        return caps.group(1).strip(" .")
     head = re.split(r"(?<=[.;:])\s", rest, maxsplit=1)[0]
-    return head[:max_len].strip(" .")
+    # Longer than a catchline: body text, not a heading; never cut a heading mid-word.
+    return head.strip(" .") if len(head) <= max_len else ""
+
+
+def _heading_line(rest: str, max_len: int = 220) -> str:
+    """The rest of a combined "Article I, Section 4 | Bearing arms; standing armies; military power" line: the
+    publisher's whole heading (the line holds nothing else)."""
+    rest = rest.strip().strip(" .")
+    return rest if len(rest) <= max_len else ""
 
 
 def _shape(line: str) -> str:
@@ -116,7 +129,8 @@ def split_constitution(text: str) -> list[dict]:
             if current is not None:
                 units.append(current)
             current = {"article": article, "article_title": article_title if article == (current or {}).get("article") else None,
-                       "section": cm.group(2), "section_title": _title(cm.group(3)) or None, "start": start, "lines": [line]}
+                       "section": cm.group(2), "section_title": (_heading_line(cm.group(3)) if "|" in s else _title(cm.group(3))) or None,
+                       "start": start, "lines": [line]}
             continue
         am = ARTICLE.match(s)
         if am and len(s) < 200 and not TOC.search(s):
