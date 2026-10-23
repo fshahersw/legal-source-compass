@@ -11,6 +11,7 @@ import { OFFICIAL_EXECUTORS, OFFICIAL_TOOL_DEFINITIONS } from "./officialTools.s
 import { REGULATION_EXECUTORS, REGULATION_TOOL_DEFINITIONS } from "./regulationTools.server";
 import { AUTHORITY_EXECUTORS, AUTHORITY_TOOL_DEFINITIONS } from "./authorityTools.server";
 import { STATUTE_EXECUTORS, STATUTE_TOOL_DEFINITIONS } from "./statuteTools.server";
+import { GOV_DOMAIN_EXECUTORS, GOV_DOMAIN_TOOL_DEFINITIONS } from "./govDomainTools.server";
 import { LEGISLATION_EXECUTORS, LEGISLATION_TOOL_DEFINITIONS } from "./legislationTools.server";
 import { FTC_DATA_EXECUTORS, FTC_DATA_TOOL_DEFINITIONS } from "./ftcDataTools.server";
 import {
@@ -158,6 +159,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   ...REGULATION_TOOL_DEFINITIONS,
   ...AUTHORITY_TOOL_DEFINITIONS,
   ...CITATION_TOOL_DEFINITIONS,
+  ...GOV_DOMAIN_TOOL_DEFINITIONS,
 ];
 
 function env(name: string): string | null {
@@ -504,6 +506,7 @@ const EXECUTORS: Record<
   ...REGULATION_EXECUTORS,
   ...AUTHORITY_EXECUTORS,
   ...CITATION_EXECUTORS,
+  ...GOV_DOMAIN_EXECUTORS,
 };
 
 /** Tools whose service keys are present; the model is only offered these. */

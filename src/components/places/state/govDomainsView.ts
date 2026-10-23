@@ -29,9 +29,13 @@ export function snapshotText(s: GovSnapshot | null): string {
   return parts.length ? parts.join("; ") : "Registry snapshot date not recorded";
 }
 
-/** The line under a domain: organization, city and the type exactly as published. */
+/**
+ * The line under a domain: organization, city and the type exactly as published. GSA gives no organization field, so an
+ * entry without one shows GSA's own note, labelled as such.
+ */
 export function rowDetail(r: GovRow): string {
-  return [r.organization, r.city, typeLine(r)].filter(Boolean).join(" · ");
+  const lead = r.organization ?? (r.note ? `GSA note: ${r.note}` : null);
+  return [lead, r.city, typeLine(r)].filter(Boolean).join(" · ");
 }
 
 /** Short flags a row carries beyond its fields; empty for an ordinary entry. */
@@ -49,15 +53,14 @@ export function rowName(r: GovRow): string {
 }
 
 export const METHOD_TEXT: Record<CountyMatchMethod, string> = {
-  organization_name: "the registry's organization name equals the Census name",
-  organization_name_form_of:
-    "the registry's organization name is the Census name in its “… of …” form",
-  gsa_note: "GSA's note equals the Census name and state",
+  organization_name: "the Census name",
+  organization_name_form_of: "the Census name in its “… of …” form",
+  gsa_note: "the Census name and state",
 };
 
 /** One sentence per match saying exactly how it was made. */
 export function matchLine(m: CountyMatch): string {
-  return `${m.detail}; ${METHOD_TEXT[m.method]}`;
+  return `${m.detail} (${METHOD_TEXT[m.method]})`;
 }
 
 /** The group-chip label with its count. */

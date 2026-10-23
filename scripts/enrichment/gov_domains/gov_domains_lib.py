@@ -51,7 +51,7 @@ LIST_LABELS = {
 
 # group id -> label shown in the app. A group is derived only from the published type string (tables below).
 GROUPS = {
-    "state": "State government",
+    "state": "State or territory",
     "county": "County",
     "city": "City or local",
     "special_district": "Special district",

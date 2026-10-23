@@ -138,13 +138,16 @@ function StatePage() {
     queryKey: ["gov-registry-hosts", usps, otherStateHosts.join("|")],
     enabled: loadSources && otherStateHosts.length > 0,
     staleTime: 10 * 60_000,
+    // a plain object, so the cached result serialises
     queryFn: async () =>
-      registryStateByHost((await lookupHosts({ data: { inputs: otherStateHosts } })).results),
+      Object.fromEntries(
+        registryStateByHost((await lookupHosts({ data: { inputs: otherStateHosts } })).results),
+      ),
   });
-  const { shown: sources, hidden: hiddenSources } = useMemo(
-    () => (govEvidence.data?.size ? partitionStateSources(merged, usps, govEvidence.data) : base),
-    [merged, usps, govEvidence.data, base],
-  );
+  const { shown: sources, hidden: hiddenSources } = useMemo(() => {
+    const registered = new Map(Object.entries(govEvidence.data ?? {}));
+    return registered.size ? partitionStateSources(merged, usps, registered) : base;
+  }, [merged, usps, govEvidence.data, base]);
   const county = useStateCounty(tab === "counties" ? state?.name : undefined);
   const countyValues = useMemo(
     () => new Map(Object.entries(county.data?.counts ?? {})),

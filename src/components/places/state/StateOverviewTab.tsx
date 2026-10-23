@@ -19,7 +19,7 @@ export const OVERVIEW_SECTIONS = [
   { id: "litigation", label: "Litigation and enforcement" },
   { id: "demographics", label: "Demographics and economy" },
   { id: "resources", label: "Research resources" },
-  { id: "government-sites", label: "Government websites" },
+  { id: "government-sites", label: "Government sites" },
 ] as const;
 
 function Section({

@@ -61,6 +61,12 @@ describe("govDomainsView", () => {
   it("describes a row from its own fields and omits what is not recorded", () => {
     expect(rowDetail(row())).toBe("City of A · A-ville · City");
     expect(rowDetail(row({ organization: null, city: null, types: [] }))).toBe("Type not recorded");
+    // GSA has no organization field: its note stands in, labelled as the note it is
+    expect(
+      rowDetail(
+        row({ organization: null, city: null, note: "Laramie County, WY", registries: ["gsa"] }),
+      ),
+    ).toBe("GSA note: Laramie County, WY · City");
   });
 
   it("flags page-only entries, disagreements, out-of-use names and multi-state entries", () => {
@@ -82,9 +88,7 @@ describe("govDomainsView", () => {
       method: "organization_name",
       detail: "organization name is exactly “Laramie County”",
     };
-    expect(matchLine(m)).toBe(
-      "organization name is exactly “Laramie County”; the registry's organization name equals the Census name",
-    );
+    expect(matchLine(m)).toBe("organization name is exactly “Laramie County” (the Census name)");
   });
 
   it("labels chips and empty states", () => {

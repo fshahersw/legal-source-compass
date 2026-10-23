@@ -40,7 +40,7 @@ export const GOV_GROUPS = [
 ] as const;
 export type GovGroup = (typeof GOV_GROUPS)[number];
 export const GOV_GROUP_LABEL: Record<GovGroup, string> = {
-  state: "State government",
+  state: "State or territory",
   county: "County",
   city: "City or local",
   special_district: "Special district",

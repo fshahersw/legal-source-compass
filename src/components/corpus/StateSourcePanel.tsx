@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { ArrowUpRight, BookOpen, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { GovEvidenceTag } from "./govEvidence";
+import { useGovEvidence } from "./useGovEvidence";
 import { hiddenCounts, type Hidden } from "@/components/places/state/resourceFilter";
 import type { MergedStateSource } from "@/lib/atlas/stateSources";
 import { filterResources, safeResourceHref } from "@/lib/corpus/resourcePresentation";
@@ -41,6 +43,11 @@ export function StateSourcePanel({
         (row) => !category || resourceGroup(row) === category,
       ),
     [rows, q, category],
+  );
+  // Which of the listed hosts the government domain registries list (a quiet tag; a host that is not listed gets none).
+  const evidence = useGovEvidence(
+    shown.slice(0, limit).map((row) => row.url),
+    !loading,
   );
   function reset() {
     setQ("");
@@ -135,8 +142,9 @@ export function StateSourcePanel({
                   <span className="block truncate text-[13px] font-medium leading-5">
                     {row.title || row.domain || "Research resource"}
                   </span>
-                  <span className="block truncate text-[11px] text-muted-foreground">
-                    {row.domain}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-[11px] text-muted-foreground">{row.domain}</span>
+                    <GovEvidenceTag result={evidence.get(row.url)} />
                   </span>
                 </span>
                 {resourceGroup(row) !== "Other resources" ? (

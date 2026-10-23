@@ -182,7 +182,7 @@ export function GovDomainsPanel({
         <div className="research-band">
           <h3 className="flex items-center gap-2 font-sans text-sm font-semibold">
             <Globe2 className="size-4" aria-hidden />
-            Official government websites
+            Registered government domains
           </h3>
           <span className="text-xs tabular-nums text-[var(--navy-muted)]" role="status">
             {q.isPending && (seen || embedded)

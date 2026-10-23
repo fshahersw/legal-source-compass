@@ -3,6 +3,7 @@ import { BarChart3, Gavel } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { CrossStateLegalView } from "@/components/places/CrossStateLegalView";
+import { GovDomainsAnalytics } from "@/components/places/GovDomainsAnalytics";
 import {
   StateMetricsDashboard,
   stateMetricsQuery,
@@ -96,6 +97,7 @@ function Page() {
         <>
           <DailyInsightCard section="state" className="mb-3" />
           <StateMetricsDashboard search={search} onSearch={(patch) => set(patch)} />
+          <GovDomainsAnalytics className="mt-3" />
         </>
       )}
     </AppShell>

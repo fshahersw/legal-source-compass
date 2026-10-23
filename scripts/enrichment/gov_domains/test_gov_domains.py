@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gov_domains_lib as lib  # noqa: E402
 import gov_domains_rows as rows  # noqa: E402
+import court_domains_lib as courts  # noqa: E402
 
 CISA_HEADER = "Domain name,Domain type,Organization name,Suborganization name,City,State,Security contact email\n"
 GSA_FULL_HEADER = "Domain name,Agency,Maintaining office,Use case,Type of government,Federal branch,State,Comments,Link,Date Added\n"
@@ -318,6 +319,76 @@ class RowTests(unittest.TestCase):
         self.assertEqual(names, ["q", "registry", "group", "state"])
         state_filter = next(f for f in block["filters"] if f["name"] == "state")
         self.assertEqual([o["value"] for o in state_filter["options"]], ["CA", "WA"])  # by state name
+
+
+SPINE = [
+    {"id": "ariz", "title": "Arizona Supreme Court", "state": "AZ", "short_name": "Arizona Supreme Court"},
+    {"id": "scotus", "title": "Supreme Court of the United States", "state": "", "short_name": "Supreme Court"},
+    {"id": "ohprobctmontgom", "title": "Montgomery County Probate Court", "state": "OH", "short_name": None},
+    {"id": "txmunic1", "title": "Municipal Court", "state": "TX", "short_name": None},
+    {"id": "txmunic2", "title": "Municipal Court", "state": "TX", "short_name": None},
+    {"id": "ohmunictlakewoo", "title": "Lakewood Municipal Court", "state": "OH", "short_name": "Lakewood Court"},
+]
+
+
+def gov_of(host, org=None, states=(), gsa_rows=None):
+    return {
+        "host": host,
+        "states": list(states),
+        "cisa": {"organization": org, "suborganization": None} if org else None,
+        "gsa": {"rows": gsa_rows or [], "views": {}} if gsa_rows is not None else None,
+    }
+
+
+class CourtDomainTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.titles, cls.shorts = courts.directory_index(SPINE)
+
+    def match(self, gov):
+        return courts.match_court(gov, self.titles, self.shorts)
+
+    def test_candidates_need_a_court_word_in_a_publisher_name_or_the_domain(self):
+        self.assertTrue(courts.is_candidate(gov_of("azcourts.gov", "Arizona Supreme Court"))[0])
+        self.assertTrue(courts.is_candidate(gov_of("x.gov", "Kansas Judicial Branch"))[0])
+        rows = [{"agency": None, "maintaining_office": None, "note": "Sherman County Circuit Court"}]
+        self.assertTrue(courts.is_candidate(gov_of("x.gov", None, gsa_rows=rows))[0])
+        # Courthouse and Courtland are other words; the domain text alone still makes a candidate, flagged as such
+        self.assertFalse(courts.is_candidate(gov_of("beckhamcountyok.gov", "Beckham County Courthouse"))[0])
+        ok, why = courts.is_candidate(gov_of("courtlandtwpmi.gov", "Courtland Township"))
+        self.assertTrue(ok)
+        self.assertIn("only the domain text", why)
+        self.assertEqual(courts.classify_name(gov_of("courtlandtwpmi.gov", "Courtland Township")), "domain text only")
+        self.assertEqual(courts.classify_name(gov_of("a.gov", "Broward County Clerk of Courts")), "office or body around a court")
+        self.assertEqual(courts.classify_name(gov_of("a.gov", "Euclid Municipal Court")), "names a court")
+
+    def test_exact_title_match_is_case_and_spacing_only(self):
+        m = self.match(gov_of("azcourts.gov", "  arizona   SUPREME court ", ["AZ"]))
+        self.assertEqual((m["status"], m["court"]["id"]), ("matched", "ariz"))
+        # the directory entry gives no state, so nothing contradicts the publisher's
+        self.assertEqual(self.match(gov_of("x.gov", "Supreme Court of the United States", ["DC"]))["court"]["id"], "scotus")
+        # a similar name, a part of a name and the directory's short name are not matches
+        for org in ("Arizona Supreme Court Administrative Office", "Supreme Court of Arizona", "Arizona Court"):
+            self.assertEqual(self.match(gov_of("x.gov", org, ["AZ"]))["status"], "unmatched", org)
+        self.assertEqual(self.match(gov_of("x.gov", "Lakewood Court", ["OH"]))["status"], "short_name_only")
+
+    def test_same_name_in_another_state_is_never_matched(self):
+        m = self.match(gov_of("montgomeryprobatecourtal.gov", "Montgomery County Probate Court", ["AL"]))
+        self.assertEqual(m["status"], "state_differs")
+        self.assertIn("ohprobctmontgom", m["detail"])
+        # without a publisher state nothing contradicts the directory, so the unique exact title matches
+        self.assertEqual(self.match(gov_of("x.gov", "Montgomery County Probate Court", []))["status"], "matched")
+
+    def test_shared_titles_are_ambiguous_not_guessed(self):
+        m = self.match(gov_of("x.gov", "Municipal Court", ["TX"]))
+        self.assertEqual(m["status"], "ambiguous")
+        self.assertNotIn("court", m)
+
+    def test_gsa_names_are_tried_too(self):
+        rows = [{"agency": "Arizona Supreme Court", "maintaining_office": None, "note": None}]
+        gov = gov_of("y.gov", None, ["AZ"], gsa_rows=rows)
+        self.assertEqual(self.match(gov)["court"]["id"], "ariz")
+        self.assertEqual(self.match(gov)["field"], "GSA agency")
 
 
 if __name__ == "__main__":
