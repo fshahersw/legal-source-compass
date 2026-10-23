@@ -220,13 +220,19 @@ def xml_text(body: bytes | str) -> str:
     return norm_lines(_html.unescape("".join(out)).replace(BR, "\n"))
 
 
-def pdf_text(body: bytes) -> str:
-    """pdftotext (poppler) rendering in reading order; raises if the tool is missing."""
+def pdf_layout_lines(body: bytes) -> list[str]:
+    """pdftotext -layout lines (indentation kept, form feeds dropped): the reading order that keeps a hanging-indent
+    subsection label on the same line as its text."""
     with tempfile.NamedTemporaryFile(suffix=".pdf") as handle:
         handle.write(body)
         handle.flush()
-        done = subprocess.run(["pdftotext", "-enc", "UTF-8", handle.name, "-"], capture_output=True, check=True)
-    return norm_lines(done.stdout.decode("utf-8", errors="replace"))
+        done = subprocess.run(["pdftotext", "-layout", "-enc", "UTF-8", handle.name, "-"], capture_output=True, check=True)
+    return [line.rstrip() for line in done.stdout.decode("utf-8", errors="replace").replace("\f", "\n").split("\n")]
+
+
+def pdf_text(body: bytes) -> str:
+    """Canonical PDF rendering: pdftotext -layout, each line whitespace-normalised."""
+    return norm_lines("\n".join(pdf_layout_lines(body)))
 
 
 def json_text(body: bytes | str) -> str:
@@ -1066,10 +1072,11 @@ class RunContext:
         self._record_source(fetched)
         return fetched
 
-    def get(self, url: str, **kwargs: Any) -> Fetched:
+    def get(self, url: str, fallback_fresh: bool = False, **kwargs: Any) -> Fetched:
         """fetch() from the publisher, or the retained original of the same URL when the run uses a RetainedStore
-        (run.py --retained-index FILE or --option source=retained)."""
-        if self.retained is None:
+        (run.py --retained-index FILE or --option source=retained). fallback_fresh fetches from the publisher when
+        no retained copy of that URL exists (for pages the earlier capture did not keep)."""
+        if self.retained is None or (fallback_fresh and url not in self.retained.by_url):
             return self.fetch(url, **kwargs)
         host = urllib.parse.urlsplit(url).netloc.lower()
         if self.meta.hosts and host not in self.meta.hosts:

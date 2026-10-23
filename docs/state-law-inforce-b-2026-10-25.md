@@ -4,7 +4,7 @@ Worker STAT-B, branch `wave1025/stat-b`. Scope: current, in-force official statu
 MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY — from the official
 government publisher only (AGENTS.md owner instruction 2026-10-19). Model: `scripts/state_law/MODEL.md`
 (state-law/1, owned by STAT-A); shared code `scripts/state_law/{lib,run,verify,load}.py` is STAT-A's, copied
-unchanged (byte-identical, checked with `cmp` against STAT-A's commit `c6ea31f`).
+unchanged (byte-identical, checked with `cmp` against STAT-A's HEAD `de65163`; lib.py as of `9f1d882`).
 
 Everything below was observed on 2026-10-23. Unknown values are written "Not recorded".
 
@@ -281,9 +281,11 @@ each LRB certificate date; NH, NM, OH, OK when the live source is reachable/deci
    contracts", a heading "Repealed" over a repealer text). STAT-B modules pass status explicitly
    (`_statb.status_kwargs`); consider the same strict rule in lib.
 2. `lib.render_text` / `xml_text`: render the publisher's escaped markup inside XML (MI `BodyText`), CSV fields
-   (VA), BOM-less UTF-16 and concatenated `<html>` documents (SD), `pdftotext -layout` (ND/WY/NM keep U+2011), RTF
-   (OK), and UT subsection labels. Until then `python3 scripts/state_law/states/_statb.py verify` is the exact-text
-   check for those states (writes the same `verify.json`, plus an `adapter` note).
+   (VA), BOM-less UTF-16 and concatenated `<html>` documents (SD), RTF (OK), and UT subsection labels. (PDFs are
+   settled: STAT-A's `9f1d882` made `pdftotext -layout` the canonical PDF rendering; the shared `verify.py` now passes
+   the ND/WY/NM/WI samples unchanged.) Until then `python3 scripts/state_law/states/_statb.py verify` is the exact-text
+   check for MI, VA, SD, UT and OK (writes the same `verify.json`, plus an `adapter` note); the shared `verify.py`
+   passes the other 21 samples as they are.
 3. robots.txt parsing should strip a UTF-8 BOM (NC's `Crawl-delay: 2` is invisible otherwise).
 4. Sources: a field for the POST body (WV uses one URL for every request) and `display_url` / `page_revised` /
    `pdf_created` extras (STAT-B adds them to the source dict).
