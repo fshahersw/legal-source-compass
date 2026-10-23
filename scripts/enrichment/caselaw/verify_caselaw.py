@@ -99,6 +99,8 @@ class Verifier:
         if not ok:
             self.counts[f"{what}_failed"] += 1
             self.fail.append({"cluster_id": cid, "check": what, "detail": detail})
+            # printed as found, so a run that is stopped early still says what failed
+            print(f"[verify] FAIL cluster {cid} {what}: {json.dumps(detail, default=str)[:400]}", flush=True)
 
     # ------------------------------------------------------------------------------------------------ helpers
     def stage1_record(self, key: str, oid: int) -> dict | None:
@@ -106,7 +108,7 @@ class Verifier:
             e = self.manifest[key]
             data = rs._download(self.st, key, e["sha256"], e["bytes"])
             self.shards[key] = {r["opinion_id"]: r for r in rs.iter_jsonl(data)}
-            if len(self.shards) > 40:
+            if len(self.shards) > SHARD_CACHE:
                 self.shards.pop(next(iter(self.shards)))
         return self.shards[key].get(oid)
 
@@ -351,6 +353,9 @@ def fulltext_extra(v: "Verifier", items: list[dict]) -> None:
             continue
         v.check(cid, "fulltext_extra", verdict == "found", None if verdict == "found" else f"phrase {phrase!r} misses opinion {it['opinion_id']}")
 
+
+# decompressed stage-1 shards kept in memory (each can be hundreds of MB as dicts); lower it on a busy machine
+SHARD_CACHE = int(os.environ.get("CASELAW_VERIFY_SHARD_CACHE", "40"))
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
