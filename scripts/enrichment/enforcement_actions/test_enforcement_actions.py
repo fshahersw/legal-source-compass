@@ -55,6 +55,12 @@ class AmountTests(unittest.TestCase):
         self.assertNotIn("value_usd", amounts[0])
         self.assertEqual(amounts[1]["value_usd"], 3000000.0)
 
+    def test_ambiguous_multiplier_has_no_value(self):
+        amounts = ex.extract_amounts("The SEC filed a partially-settled action for raising nearly $6,705,000 million.")
+        self.assertTrue(amounts[0]["ambiguous_as_written"])
+        self.assertNotIn("value_usd", amounts[0])
+        self.assertNotEqual(amounts[0].get("keyword"), "settlement")
+
     def test_no_amounts(self):
         self.assertEqual(ex.extract_amounts("No money was mentioned."), [])
 

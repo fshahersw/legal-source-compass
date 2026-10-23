@@ -93,7 +93,7 @@ _AMOUNT = re.compile(
 _RANGE_AFTER = re.compile(r"^\s?(?:to|-|–|—|and|or)\s?\$\s?[\d.,]+\s?(?:thousand|million|billion|trillion)\b", re.I)
 KIND_KEYWORDS = [
     ("statutory maximum", re.compile(r"\bmaximum|\bpunishable|\bfaces? up to|\bcarr(?:y|ies) (?:a|up)|\bup to \$", re.I)),
-    ("settlement", re.compile(r"\bsettle|\bresolv|\bagree[sd]? to pay", re.I)),
+    ("settlement", re.compile(r"\bsettlements?\b|\bto settle\b|\bsettles\b|\bresolv|\bagree[sd]? to pay", re.I)),
     ("penalty or fine", re.compile(r"\bpenalt|\bfine[ds]?\b", re.I)),
     ("restitution", re.compile(r"\brestitution", re.I)),
     ("forfeiture", re.compile(r"\bforfeit", re.I)),
@@ -122,6 +122,8 @@ def extract_amounts(text, spans=None, limit=None):
         as_written = m.group(0)
         value = amount_value(m.group("num"), m.group("mult"))
         ranged = not m.group("mult") and _RANGE_AFTER.match(text[m.end():m.end() + 40]) is not None
+        # "$6,705,000 million": a multiplier on a number of 1,000 or more is ambiguous as written; no value is computed
+        ambiguous = bool(m.group("mult")) and float(m.group("num").replace(",", "")) >= 1000
         sentence = sentence_at(text, m.start(), spans)
         kind = None
         if sentence:
@@ -132,8 +134,9 @@ def extract_amounts(text, spans=None, limit=None):
         out.append({
             "as_written": as_written,
             "offset": m.start(),
-            "value_usd": None if ranged else value,
+            "value_usd": None if ranged or ambiguous else value,
             "range_start": ranged or None,
+            "ambiguous_as_written": ambiguous or None,
             "sentence": sentence,
             "keyword": kind,
         })

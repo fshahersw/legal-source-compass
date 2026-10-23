@@ -19,6 +19,7 @@ court names (court id only on an exact map), and parties named in the title (exa
 body). Companies link only on a unique exact normalised name; courts only to ids in the saved court_spine lookup.
 """
 import gzip
+import hashlib
 import html
 import json
 import os
@@ -75,7 +76,19 @@ def usao_state(components):
     return None
 
 
-def build_release(r, companies, courts, checks):
+BOILERPLATE_MIN = 25  # a figure sentence repeated verbatim in this many releases is a stock paragraph
+
+
+def sentence_key(sentence):
+    return hashlib.sha1(re.sub(r"\s+", " ", sentence or "").strip().lower().encode("utf-8")).hexdigest()[:16]
+
+
+def amount_sentence_keys(r):
+    text = ex.html_to_text(r.get("body") or "")
+    return {sentence_key(a.get("sentence")) for a in ex.extract_amounts(text) if a.get("sentence")}
+
+
+def build_release(r, companies, courts, checks, boilerplate=frozenset()):
     body_html = r.get("body") or ""
     text = ex.html_to_text(body_html)
     title = html.unescape(re.sub(r"\s+", " ", r.get("title") or "")).strip()
@@ -100,8 +113,13 @@ def build_release(r, companies, courts, checks):
         m = companies.match(p["as_written"])
         if m:
             company_links.append({**m, "as_written": p["as_written"]})
+    for a in amounts:
+        if a.get("sentence") and sentence_key(a["sentence"]) in boilerplate:
+            a["boilerplate"] = True
+            checks["boilerplate_figures"] += 1
     valued = [a for a in amounts if a.get("value_usd") is not None]
-    resolution = [a["value_usd"] for a in valued if a.get("keyword") in ex.RESOLUTION_KINDS]
+    # the largest resolution figure ignores stock paragraphs repeated across many releases (program totals)
+    resolution = [a["value_usd"] for a in valued if a.get("keyword") in ex.RESOLUTION_KINDS and not a.get("boilerplate")]
     max_res = max(resolution) if resolution else None
     max_any = max((a["value_usd"] for a in valued), default=None)
     # the excerpt is a contiguous span of the body text; leading press-contact lines (CONTACT/PHONE/FAX...) are skipped
@@ -120,7 +138,7 @@ def build_release(r, companies, courts, checks):
         "uuid": uuid, "date": date, "created": time_attr(r.get("created")), "changed": time_attr(r.get("changed")),
         "number": (r.get("number") or "").strip() or None, "components": components, "topics": topics, "url": url,
         "teaser": bc.clip(ex.html_to_text(r.get("teaser") or ""), 400)[0],
-        "amounts": [{k: a[k] for k in ("as_written", "value_usd", "keyword", "sentence", "range_start") if k in a}
+        "amounts": [{k: a[k] for k in ("as_written", "value_usd", "keyword", "sentence", "range_start", "ambiguous_as_written", "boilerplate") if k in a}
                     | {"sentence": bc.clip(a.get("sentence"), 220)[0]} for a in amounts[:5]],
         "amounts_total": len(amounts), "max_amount_usd": max_any, "max_resolution_amount_usd": max_res,
         "statutes": [{"cite": s["cite"], "as_written": s["as_written"]} for s in statutes[:12]], "statutes_total": len(statutes),
@@ -206,6 +224,17 @@ def main():
     keep = defaultdict(set)
     for uuid, (_, fname, i) in winner.items():
         keep[fname].add(i)
+    # pass 1b: sentences around dollar figures that recur verbatim across many releases (stock program paragraphs)
+    sentence_counts = Counter()
+    for fname in page_files:
+        if fname not in keep:
+            continue
+        data = json.loads(gzip.open(os.path.join(PAGES, fname)).read())
+        for i, r in enumerate(data.get("results") or []):
+            if i in keep[fname]:
+                sentence_counts.update(amount_sentence_keys(r))
+    boilerplate = frozenset(k for k, n in sentence_counts.items() if n >= BOILERPLATE_MIN)
+    checks["boilerplate_sentences"] = len(boilerplate)
     # pass 2: build each kept release once, streamed into per-year temporary files
     year_pages = defaultdict(set)
     for fname in page_files:
@@ -215,7 +244,7 @@ def main():
         for i, r in enumerate(data.get("results") or []):
             if i not in keep[fname]:
                 continue
-            year, row = build_release(r, companies, courts, checks)
+            year, row = build_release(r, companies, courts, checks, boilerplate)
             year_pages[year].add(fname)
             if year not in handles:
                 handles[year] = gzip.open(os.path.join(TMP, f"{year}.jsonl.gz"), "wt", encoding="utf-8")
@@ -260,7 +289,7 @@ def main():
             "partition_of": "doj_press_releases", "year": year, "records": len(ordered),
             "body_storage": "Full release bodies stay gzip-compressed in the raw API pages (private/acq/enforcement_actions/doj/pages); records hold at most a 1,500-character excerpt",
             "extraction": "extract.py: dollar figures (value in USD, sentence, first keyword in the sentence), U.S.C./C.F.R./named-act citations, docket numbers, federal court names (court id only on an exact map) and parties named in the title (verbatim, corroborated in the body); every value is a verbatim span of the release text",
-            "amount_note": "max_resolution_amount_usd is the largest figure whose sentence contains a settlement, penalty/fine, restitution, forfeiture, disgorgement or judgment keyword; statutory maximums and alleged losses are excluded. It is a stated figure, not a verified payment.",
+            "amount_note": "max_resolution_amount_usd is the largest figure whose sentence contains a settlement, penalty/fine, restitution, forfeiture, disgorgement or judgment keyword; statutory maximums, alleged losses, figures in a sentence repeated verbatim in 25 or more releases (stock program paragraphs) and figures ambiguous as written (a multiplier on a number of 1,000 or more) are excluded. It is a stated figure, not a verified payment.",
         }
         bc.write_build(dataset, f"DOJ press releases, {year}", ordered,
                        bc.listing([("date", "Date"), ("title", "Title"), ("component", "Component"), ("amount", "Largest resolution figure stated")],

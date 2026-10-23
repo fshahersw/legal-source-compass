@@ -82,6 +82,10 @@ export type StatedAmount = {
   valueUsd: number | null;
   keyword: string | null;
   sentence: string | null;
+  /** The sentence recurs verbatim in many releases (a stock program paragraph). */
+  boilerplate: boolean;
+  /** A multiplier on a number of 1,000 or more ("$6,705,000 million"): no value is computed. */
+  ambiguous: boolean;
 };
 function parseAmounts(v: unknown): StatedAmount[] {
   return arr(v).flatMap((x) => {
@@ -94,6 +98,8 @@ function parseAmounts(v: unknown): StatedAmount[] {
         valueUsd: num(o?.["value_usd"]),
         keyword: str(o?.["keyword"], 60),
         sentence: str(o?.["sentence"], 400),
+        boilerplate: o?.["boilerplate"] === true,
+        ambiguous: o?.["ambiguous_as_written"] === true,
       },
     ];
   });

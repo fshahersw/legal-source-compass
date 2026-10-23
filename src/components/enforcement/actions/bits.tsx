@@ -209,7 +209,11 @@ export function AmountList({ amounts }: { amounts: StatedAmount[] }) {
       {amounts.map((a, i) => (
         <li key={`${a.asWritten}-${i}`} className="min-w-0">
           <span className="font-mono font-medium">{a.asWritten}</span>{" "}
-          <span className="text-[11px] text-muted-foreground">({keywordLabel(a.keyword)})</span>
+          <span className="text-[11px] text-muted-foreground">
+            ({keywordLabel(a.keyword)}
+            {a.boilerplate ? "; stock paragraph repeated across releases, not counted" : ""}
+            {a.ambiguous ? "; ambiguous as written, no value computed" : ""})
+          </span>
           {a.sentence ? (
             <span className="block break-words text-[11px] text-muted-foreground">
               “{a.sentence}”

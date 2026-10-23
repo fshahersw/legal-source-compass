@@ -191,7 +191,7 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
                   <td className="whitespace-nowrap px-2 py-1 font-mono">
                     {r.date ?? NOT_RECORDED}
                   </td>
-                  <td className="min-w-[12rem] px-2 py-1">
+                  <td className="min-w-[12rem] max-w-[26rem] break-words px-2 py-1">
                     {r.url ? <SourceLink href={r.url}>{r.respondents}</SourceLink> : r.respondents}
                     <span className="mt-0.5 flex flex-wrap gap-1">
                       <Chip tone="muted">{r.type}</Chip>
@@ -213,7 +213,7 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
                       fmtUsd(r.maxResolutionUsd)
                     ) : (
                       <span className="font-sans text-muted-foreground">
-                        {r.type === "Litigation release" ? "None stated" : "Not read"}
+                        {r.type === "Litigation release" ? "None stated" : "Not in the list"}
                       </span>
                     )}
                   </td>
