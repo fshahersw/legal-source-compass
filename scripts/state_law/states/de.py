@@ -44,7 +44,13 @@ META = lib.StateMeta(
     update_cadence="Updated as acts are enacted (home page names the last act included); re-check monthly.",
 )
 
-HEAD_RE = re.compile(r"^§+\s*([0-9][0-9A-Za-z.\-]*?)\.\s*(.*)$")
+NUM = r"[0-9][0-9A-Za-z.\-]*?"
+# "§ 8101. Catchline." — the number ends at the first period followed by a space (so "§ 2-101.1. Title" is 2-101.1)
+HEAD_RE = re.compile(rf"^§\s*({NUM})\.(?:\s+(.*))?$")
+# "§§ 164,165. [Reserved.]" lists numbers; "§§ 166-169. [Reserved.]" is a range (ledgered, never expanded: section
+# numbers carry hyphens themselves, as in the UCC title's "§ 2-101")
+MULTI_RE = re.compile(rf"^§§\s*({NUM}(?:\s*(?:,|and|&)\s*{NUM})+)\.(?:\s+(.*))?$")
+RANGE_RE = re.compile(rf"^§§\s*{NUM}\s*(?:-|\u2013|\u2014|to|through)\s*{NUM}\.(?:\s+(.*))?$")
 
 
 def _t(el) -> str:
@@ -79,9 +85,15 @@ def parse_chapter(page: lib.Fetched) -> tuple[list[dict], list[dict]]:
         sh = next((d for d in div if "SectionHead" in (d.get("class") or "")), None)
         if sh is None:
             continue
-        m = HEAD_RE.match(_t(sh))
-        if not m:
-            raise RuntimeError(f"unparsed section head {_t(sh)!r} in {page.url}")
+        head = _t(sh)
+        m = HEAD_RE.match(head)
+        multi = None if m else MULTI_RE.match(head)
+        if not m and not multi:
+            reason = "range entry" if RANGE_RE.match(head) else "unparsed section head"
+            sections.append({"reject": f"{reason}: {head[:200]}"})
+            continue
+        numbers = [m.group(1)] if m else re.split(r"\s*(?:,|and|&)\s*", multi.group(1))
+        heading = (m or multi).group(2) or None
         paras, history = [], []
         seen_p = False
         for child in div:
@@ -99,8 +111,9 @@ def parse_chapter(page: lib.Fetched) -> tuple[list[dict], list[dict]]:
                     history.append(child.tail)
         if not seen_p:  # a status-only entry: everything after the head is its history line
             history = [sh.tail or ""] + [lxml_html.tostring(c, encoding="unicode", method="text") for c in div if c is not sh]
-        sections.append({"number": m.group(1), "heading": m.group(2) or None, "text": "\n".join(p for p in paras if p),
-                         "history": lib.norm_ws("".join(history)) or None})
+        for number in numbers:
+            sections.append({"number": number, "heading": heading, "text": "\n".join(p for p in paras if p),
+                             "history": lib.norm_ws("".join(history)) or None})
     return path, sections
 
 
@@ -150,5 +163,12 @@ def acquire(ctx: lib.RunContext) -> None:
             for item in sections:
                 if not ctx.want_more():
                     break
+                if "reject" in item:
+                    if ctx.sample is not None and not item["reject"].startswith("range entry"):
+                        raise RuntimeError(f"{item['reject']} in {page.url}")
+                    # a head the parser cannot read is ledgered, never guessed (the loader bounds the share)
+                    ctx._rejects.write({"state": "DE", "code": "DELC", "number": None, "reason": item["reject"],
+                                        "source_url": page.url, "source_sha256": page.sha256})
+                    continue
                 ctx.section(code="DELC", number=f"{title_no}:{item['number']}", heading=item["heading"], text=item["text"],
                             history=item["history"], source=page, path=path)

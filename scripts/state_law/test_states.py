@@ -260,6 +260,38 @@ class HawaiiAndIdahoTests(unittest.TestCase):
                          [("title", "5", "PROCEEDINGS IN CIVIL ACTIONS"), ("chapter", "2", "LIMITATION OF ACTIONS")])
 
 
+class DelawareTests(unittest.TestCase):
+    PAGE = ('<html><head><meta charset="utf-8"></head><body><div id="TitleHead"><h1>TITLE 2</h1><h4>Transportation</h4><h2>Aeronautics</h2>'
+            '<h3>CHAPTER 1. Regulation</h3><h4>Subchapter III. Licensing</h4></div><div id="CodeBody">'
+            '<div class="Section"><div class="SectionHead" id="163">\u00a7 163. Licenses.</div>'
+            '<p class="subsection">(a) No airport shall be operated without a license.</p>'
+            '<a href="https://legis.delaware.gov/SessionLaws?volume=70">70 Del. Laws, c. 575, \u00a7 8</a>; </div>'
+            '<div class="Section"><div class="SectionHead" id="164,165">\u00a7\u00a7 164,165. [Reserved.]</div></div>'
+            '<div class="Section"><div class="SectionHead" id="166-169">\u00a7\u00a7 166-169. [Reserved.]</div></div>'
+            '<div class="Section"><div class="SectionHead" id="2-101.1">\u00a7 2-101.1. Short title.</div>'
+            '<p>This Article may be cited as Uniform Commercial Code \u2014 Sales.</p></div>'
+            '</div></body></html>')
+
+    def test_listed_ranged_and_decimal_heads(self):
+        de = load("de")
+        page = fetched("https://delcode.delaware.gov/title2/c001/sc03/index.html", self.PAGE.encode())
+        path, sections = de.parse_chapter(page)
+        self.assertEqual([s["number"] for s in path], ["2", None, "1", "III"])
+        self.assertEqual([s.get("number") for s in sections], ["163", "164", "165", None, "2-101.1"])
+        self.assertEqual(sections[0]["heading"], "Licenses.")
+        self.assertEqual(sections[0]["history"], "70 Del. Laws, c. 575, \u00a7 8;")
+        self.assertEqual(sections[1]["heading"], "[Reserved.]")
+        self.assertEqual(sections[3]["reject"], "range entry: \u00a7\u00a7 166-169. [Reserved.]")
+        self.assertEqual(sections[4]["heading"], "Short title.")
+
+    def test_entity_wrapped_links(self):
+        de = load("de")
+        home = '<a href="&#xA;   title1/index.html&#xA; ">1</a><a href="title10/index.html">10</a><a href="title1/index.html">x</a>'
+        self.assertEqual(de.links(home, r"(?:\.\./)?(title\d+[a-z]?/index\.html)"), ["title1/index.html", "title10/index.html"])
+        chap = '<a href="../title10/c001/index.html">1</a><a href="&#xA; ../title10/c081/sc01/index.html&#xA;">s</a>'
+        self.assertEqual(de.links(chap, r"(?:\.\./title\d+[a-z]?/)?(c\d+[a-z]?/index\.html)"), ["c001/index.html"])
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):
