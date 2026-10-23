@@ -1361,10 +1361,12 @@ class RunContext:
             ordinal = self.section_count
         if ordinal in self._ordinals:
             raise ModelError(f"duplicate ordinal {ordinal}")
-        self._ordinals.add(ordinal)
         sid = section_id(self.state, code, number, version_index)
         if sid in self._section_ids:
             raise ModelError(f"duplicate section id {sid} (pass version/version_index for multiple versions)")
+        # both checks pass before either is recorded: a rejected section must not keep its ordinal (it would refuse
+        # every later section as a duplicate ordinal)
+        self._ordinals.add(ordinal)
         self._section_ids.add(sid)
         record = {
             "schema": SECTION_SCHEMA, "section_id": sid, "edition_id": self.edition_id, "state": self.state,

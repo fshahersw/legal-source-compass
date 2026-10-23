@@ -29,6 +29,9 @@ sys.path.insert(0, str(HERE.parent))
 from state_law import lib  # noqa: E402
 
 MAX_BATCH_BYTES = 7 * 1024 * 1024
+# A run that rejected more than this share of what it parsed is not the publisher's code (MO 2026-10-23: an ordinal
+# counter stopped after one duplicate id and 25,424 of 29,112 sections were rejected, yet verify passed on the rest).
+MAX_REJECT_SHARE = 0.05
 
 
 def rpc(name: str, payload: dict, *, attempts: int = 5):
@@ -83,6 +86,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="validate files and print the plan; no network")
     parser.add_argument("--activate", action="store_true", help="activate after a complete load")
     parser.add_argument("--note", default=None)
+    parser.add_argument("--accept-rejects", default="",
+                        help="the reason rejects above the share bound are deliberate exclusions (recorded in the note)")
     args = parser.parse_args(argv)
     edition = json.loads((args.edition_dir / "edition.json").read_text())
     if edition.get("sample") is not None:
@@ -92,6 +97,14 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("verify.json reports failures; fix or re-run verify before loading")
     check_files(args.edition_dir, edition)
     counts = edition["counts"]
+    rejected = counts.get("rejected", 0)
+    share = rejected / max(1, counts["sections"] + rejected)
+    if share > MAX_REJECT_SHARE:
+        if not args.accept_rejects.strip():
+            raise SystemExit(f"{rejected} rejected rows are {share:.1%} of what the run parsed (bound "
+                             f"{MAX_REJECT_SHARE:.0%}); read rejects.jsonl.gz and fix the module, or pass "
+                             "--accept-rejects '<reason>' when they are deliberate exclusions")
+        args.note = ((args.note + "; ") if args.note else "") + f"rejects accepted: {args.accept_rejects.strip()}"
     print(json.dumps({"edition_id": edition["edition_id"], "state": edition["state"], "sections": counts["sections"],
                       "nodes": counts["nodes"], "rejected": counts.get("rejected", 0),
                       "currency_statement": edition.get("currency_statement")}, ensure_ascii=False))

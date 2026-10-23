@@ -146,9 +146,14 @@ class RunContextTests(unittest.TestCase):
                 ctx.section(code="TS", number="1.03", heading="X", text="<p>markup</p>", source=fetched, path=path)
             with self.assertRaises(lib.ModelError):
                 ctx.section(code="TS", number="1.01", heading="Dup", text="dup", source=fetched, path=path)
+            # a rejected duplicate keeps no ordinal: the next section is still written
+            sid3 = ctx.section(code="TS", number="1.02", heading="Repealed.", text="", source=fetched, path=path,
+                               version="b", version_index=2)
             edition = ctx.finish()
             self.assertEqual(sid, "ZZ:TS:1.01")
-            self.assertEqual(edition["counts"]["by_status"], {"in_force": 1, "repealed": 1})
+            self.assertEqual(sid3, "ZZ:TS:1.02@2")
+            self.assertEqual(edition["counts"]["by_status"], {"in_force": 1, "repealed": 2})
+            self.assertEqual([r["ordinal"] for r in lib.read_jsonl(ctx.dir / "sections.jsonl.gz")], [0, 1, 2])
             rows = list(lib.read_jsonl(ctx.dir / "sections.jsonl.gz"))
             self.assertEqual(rows[0]["citation"], "Test Stat. § 1.01")
             self.assertEqual(rows[0]["status_basis"], "current_compilation")
@@ -158,7 +163,7 @@ class RunContextTests(unittest.TestCase):
             self.assertEqual([n["node_id"] for n in nodes], ["ZZ:TS", "ZZ:TS/chapter:1"])
             result = verify_mod.verify(ctx.dir, raw)
             self.assertTrue(result["ok"], result["failures"])
-            self.assertEqual(result["counts"]["checked_against_raw"], 2)
+            self.assertEqual(result["counts"]["checked_against_raw"], 3)
 
     def test_verify_catches_fabricated_text(self):
         page = b"<p>2.01 Scope.</p><p>Real words only.</p>"
