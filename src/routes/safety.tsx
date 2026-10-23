@@ -104,9 +104,25 @@ function SafetyPage() {
   }
 
   let body: React.ReactNode;
-  if (datasets.error) body = <ExternalError error={datasets.error} />;
-  else if (datasets.isLoading)
-    body = <p className="text-[13px] text-muted-foreground">Loading safety records…</p>;
+  const overview = !s.ds && !agency;
+  const loadingCollections = (
+    <p className="text-[13px] text-muted-foreground">Loading safety records…</p>
+  );
+  if (overview && (datasets.error || datasets.isLoading))
+    // The landing's counts, links and panels have their own queries; only the agency cards wait for the catalog.
+    body = (
+      <SectionHub section="safety">
+        <div className="space-y-6">
+          <DailyInsightCard section="safety" />
+          <SafetyIntelligence />
+          <SafetyRecallTrends />
+          <FsisRecallsTable />
+          {datasets.error ? <ExternalError error={datasets.error} /> : loadingCollections}
+        </div>
+      </SectionHub>
+    );
+  else if (datasets.error) body = <ExternalError error={datasets.error} />;
+  else if (datasets.isLoading) body = loadingCollections;
   else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
   else if (!agency) {
     const agencyCards = AGENCIES.map((a) => {
