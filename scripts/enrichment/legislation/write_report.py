@@ -26,7 +26,8 @@ def main() -> None:
     crs_summary = crs.get("summary", {})
     v = {name: load(V / f"{name}.json") for name in ("federal_counts", "federal_sample", "federal_links", "state_counts",
                                                      "state_sample", "crs")}
-    receipts = {name: load(B / f"{name}.publish_receipt.json") for name in ("congress_bills", "state_bills")}
+    receipts = {name: load(B / f"{name}.publish_receipt.json") for name in ("congress_bills", "state_bills", "crs_reports")}
+    used = load(cm.ACQ / "congress" / "_request_count.json")
     fs = fed.get("summary", {}).get("stats", {})
     ss = st.get("summary", {}).get("stats", {})
     lines = [
@@ -48,7 +49,7 @@ def main() -> None:
         f"  CRS summary present for {fs.get('summary_present')}; Congress.gov URL constructed from the published pattern for "
         f"{fs.get('congress_gov_url_constructed')} files without legislationUrl (0 differences from the pattern where published).",
         f"  Laws: resolved to public_laws_enacted {fs.get('law_resolved')}, not found {fs.get('law_not_found')}, not checked "
-        f"(private laws) {fs.get('law_not_checked')}.",
+        f"(private laws) {fs.get('law_not_checked')}, another Congress's number (shown, not linked) {fs.get('law_inconsistent')}.",
         f"- crs_reports: {crs_summary.get('records')} records; detail fetched {crs_summary.get('stats', {}).get('detail_fetched')}, "
         f"not fetched {crs_summary.get('stats', {}).get('detail_not_fetched')} (request budget).",
         f"- state_bills: {st.get('rows')} records, {len(st.get('summary', {}).get('sessions', {}))} jurisdictions, two regular sessions each. "
@@ -66,7 +67,10 @@ def main() -> None:
     lines += ["", "## Publish receipts"]
     for name, r in receipts.items():
         lines.append(f"- {name}: {json.dumps(r) if r else 'not published'}")
-    lines += ["", "## Rules", ""]
+    lines += ["", "## Budgets",
+              f"- Congress.gov API requests: {used.get('requests')} of 8,000 (paced at one request per 1.25 s, under 3,000 per hour).",
+              "- GovInfo API requests: 0 (bulk files and the Link Service only). CourtListener requests: 0.",
+              "", "## Rules", ""]
     for k in ("milestone_rules", "vitiation_rule", "action_rule", "summary_rule", "law_link_rule", "report_link_rule"):
         lines.append(f"- federal {k}: {json.dumps(fed.get('summary', {}).get(k))}")
     for k in ("session_rule", "milestone_rules", "outcome_rule", "source_url_rule", "actions_rule"):
