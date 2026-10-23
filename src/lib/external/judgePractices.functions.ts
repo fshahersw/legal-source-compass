@@ -303,12 +303,18 @@ export function documentSearchPath(pageIds: string[], q: string): string | null 
   if (!fts || !pageIds.length) return null;
   const or = pageIds.map((p) => `filters.cs.${cs({ judge_page: [p] })}`).join(",");
   return `corpus_records?${[
-    "select=id,title,text,d:item->practice_document",
+    "select=id,title,text,sub:detail->>subtitle,d:item->practice_document",
     "dataset=eq.judge_practice_documents",
     `or=(${or})`,
     `search_vector=fts(simple).${enc(fts)}`,
     "order=ordinal.asc",
   ].join("&")}`;
+}
+
+/** The stored row text starts with the record's id, title and subtitle (the corpus writer adds them for search); the document's own text follows. */
+export function bodyOf(text: string, id: string, title: string, subtitle: string | null): string {
+  const head = [id, title, subtitle].filter(Boolean).join(" ");
+  return text.startsWith(head) ? text.slice(head.length).trim() : text;
 }
 
 /** A short passage around the first word of the query (or the start), on one line. */
@@ -347,7 +353,7 @@ export function parseHit(row: unknown, q: string): DocumentHit | null {
     title,
     url,
     fileType: str(d["file_type"], 8),
-    snippet: snippet(text, q),
+    snippet: snippet(bodyOf(text, id, title, str(r["sub"], 400)), q),
     judgePageIds: judges,
     dateText: dated ?? null,
   };

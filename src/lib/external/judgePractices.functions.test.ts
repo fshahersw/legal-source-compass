@@ -10,6 +10,7 @@ vi.mock("@tanstack/react-start", () => ({
 
 import { restGet } from "./rest.server";
 import {
+  bodyOf,
   courtUrl,
   coveragePath,
   documentSearchPath,
@@ -216,6 +217,19 @@ describe("queries", () => {
       },
     };
     const h = parseHit(row, "reply pages")!;
+    // the stored text starts with the record's id, title and subtitle: the snippet is taken from the document's own text
+    const stored = parseHit(
+      {
+        ...row,
+        sub: "Individual practices · PDF · nysd",
+        text: `${DOC.id} ${DOC.title} Individual practices · PDF · nysd Reply memoranda shall not exceed ten pages.`,
+      },
+      "reply",
+    )!;
+    expect(stored.snippet).toBe("Reply memoranda shall not exceed ten pages.");
+    expect(bodyOf("abc def", "abc", "def", null)).toBe("");
+    expect(bodyOf("other text", "abc", "def", null)).toBe("other text");
+    expect(bodyOf("abc def ghi", "abc", "def", null)).toBe("ghi");
     expect(h.judgePageIds).toEqual([PAGE.id]);
     expect(h.dateText).toBe("April 7th, 2025");
     expect(parseHit({ ...row, text: null }, "x")).toBeNull();
