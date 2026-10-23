@@ -9,12 +9,16 @@ import type { Citation, PatternTable } from "./types";
  * checks the Python engine against the same file. When this suite fails, the two engines disagree: fix the engine that
  * changed (or regenerate with make_golden.py after reviewing the Python output).
  */
-const golden = JSON.parse(readFileSync(new URL("./fixtures/golden.json", import.meta.url), "utf8")) as {
+const golden = JSON.parse(
+  readFileSync(new URL("./fixtures/golden.json", import.meta.url), "utf8"),
+) as {
   pattern_version: string;
   texts: { id: string; text: string; expected: Citation[] }[];
   documents: { id: string; pages: string[]; expected: Citation[][] }[];
 };
-const table = JSON.parse(readFileSync(new URL("./patterns.json", import.meta.url), "utf8")) as PatternTable;
+const table = JSON.parse(
+  readFileSync(new URL("./patterns.json", import.meta.url), "utf8"),
+) as PatternTable;
 
 const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 
@@ -27,13 +31,29 @@ describe("pattern table", () => {
     const c = compileTable(PATTERNS);
     expect(c.rules.length).toBe(PATTERNS.rules.length);
     const kinds = new Set(PATTERNS.rules.map((r) => r.kind));
-    for (const k of ["case", "usc", "cfr", "federal_register", "statutes_at_large", "public_law", "constitution_us",
-      "constitution_state", "federal_rule", "local_rule", "state_statute", "state_regulation", "mdl", "docket", "short"])
+    for (const k of [
+      "case",
+      "usc",
+      "cfr",
+      "federal_register",
+      "statutes_at_large",
+      "public_law",
+      "constitution_us",
+      "constitution_state",
+      "federal_rule",
+      "local_rule",
+      "state_statute",
+      "state_regulation",
+      "mdl",
+      "docket",
+      "short",
+    ])
       expect(kinds.has(k)).toBe(true);
   });
 
   it("covers the 50 states and D.C. for statutes and regulations", () => {
-    const states = (kind: string) => new Set(PATTERNS.rules.filter((r) => r.kind === kind).map((r) => r.state));
+    const states = (kind: string) =>
+      new Set(PATTERNS.rules.filter((r) => r.kind === kind).map((r) => r.state));
     expect(states("state_statute").size).toBe(51);
     expect(states("state_regulation").size).toBe(51);
   });
@@ -56,13 +76,16 @@ describe("golden fixture (identical to the Python engine)", () => {
   it("offsets are code points: matched is the code-point slice of the input", () => {
     const astral = golden.texts.find((t) => t.id === "astral")!;
     const cps = [...astral.text];
-    for (const c of extractCitations(astral.text)) expect(cps.slice(c.start, c.end).join("")).toBe(c.matched);
+    for (const c of extractCitations(astral.text))
+      expect(cps.slice(c.start, c.end).join("")).toBe(c.matched);
   });
 });
 
 describe("behaviour", () => {
   it("never reads short forms as full citations and links them to the antecedent", () => {
-    const list = extractCitations("Bell Atl. Corp. v. Twombly, 550 U.S. 544 (2007). Id. at 555. 550 U.S. at 570.");
+    const list = extractCitations(
+      "Bell Atl. Corp. v. Twombly, 550 U.S. 544 (2007). Id. at 555. 550 U.S. at 570.",
+    );
     expect(list.map((c) => [c.form, c.key])).toEqual([
       ["full", "case:550:U.S.:544"],
       ["short", "case:550:U.S.:544"],
@@ -71,7 +94,11 @@ describe("behaviour", () => {
   });
 
   it("does not take numbers around ordinary words as reporters", () => {
-    expect(extractCitations("On 5 May 2020 the 3 Defendants paid 12 dollars; 100 NE 2nd Ave; 25 Black 3 sold.")).toEqual([]);
+    expect(
+      extractCitations(
+        "On 5 May 2020 the 3 Defendants paid 12 dollars; 100 NE 2nd Ave; 25 Black 3 sold.",
+      ),
+    ).toEqual([]);
   });
 
   it("keeps an MDL number a mention and a docket number distinct", () => {

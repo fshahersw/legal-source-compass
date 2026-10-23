@@ -8,15 +8,29 @@
  * UTF-16 indices and converts at the end when the text holds characters outside the Basic Multilingual Plane.
  */
 import { PATTERNS } from "./patterns.data.ts";
-import type { Antecedent, Citation, CitationKind, PatternRule, PatternTable, ShortForm } from "./types.ts";
+import type {
+  Antecedent,
+  Citation,
+  CitationKind,
+  PatternRule,
+  PatternTable,
+  ShortForm,
+} from "./types.ts";
 
 export const ENGINE = "citations-v2-ts";
 export const MAX_CHARS = 2_000_000;
 
 type Groups = Record<string, string>;
-type Match = RegExpExecArray & { indices: Array<[number, number] | undefined> & { groups?: Record<string, [number, number] | undefined> } };
+type Match = RegExpExecArray & {
+  indices: Array<[number, number] | undefined> & {
+    groups?: Record<string, [number, number] | undefined>;
+  };
+};
 
-type Raw = Omit<Citation, "matched" | "group" | "name" | "paren" | "antecedent" | "short_status"> & {
+type Raw = Omit<
+  Citation,
+  "matched" | "group" | "name" | "paren" | "antecedent" | "short_status"
+> & {
   group: number | null;
   name: Citation["name"];
   paren: Citation["paren"];
@@ -93,8 +107,10 @@ const nospace = (s: string) => s.replace(SPACE_RUN, "");
 const dash = (s: string) => s.replace(/[–—‑]/g, "-");
 const compact = (s: string) => nospace(s).replace(/’/g, "'");
 const isDigits = (s: string) => /^[0-9]+$/.test(s);
-const isUpperCh = (ch: string) => ch.length > 0 && ch === ch.toUpperCase() && ch !== ch.toLowerCase();
-const isLowerCh = (ch: string) => ch.length > 0 && ch === ch.toLowerCase() && ch !== ch.toUpperCase();
+const isUpperCh = (ch: string) =>
+  ch.length > 0 && ch === ch.toUpperCase() && ch !== ch.toLowerCase();
+const isLowerCh = (ch: string) =>
+  ch.length > 0 && ch === ch.toLowerCase() && ch !== ch.toUpperCase();
 const lettersLower = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 const alnumLower = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -114,7 +130,15 @@ function romanToInt(s: string): number | null {
 function intToRoman(n: number): string {
   const out: string[] = [];
   for (const [v, sym] of [
-    [100, "C"], [90, "XC"], [50, "L"], [40, "XL"], [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+    [100, "C"],
+    [90, "XC"],
+    [50, "L"],
+    [40, "XL"],
+    [10, "X"],
+    [9, "IX"],
+    [5, "V"],
+    [4, "IV"],
+    [1, "I"],
   ] as const) {
     while (n >= v) {
       out.push(sym);
@@ -150,7 +174,9 @@ function applyFilter(c: Compiled, name: string, v: string): string {
       return r !== null ? String(r) : s;
     }
     case "upper_roman":
-      return isDigits(v) && Number(v) > 0 && Number(v) < 400 ? intToRoman(Number(v)) : v.toUpperCase();
+      return isDigits(v) && Number(v) > 0 && Number(v) < 400
+        ? intToRoman(Number(v))
+        : v.toUpperCase();
     case "nocomma":
       return v.replace(/,/g, "");
     case "slug":
@@ -215,16 +241,36 @@ function cite(
   short: ShortForm | null = null,
 ): Raw {
   const f: Record<string, string> = {};
-  for (const [k, v] of Object.entries(fields)) if (v !== null && v !== undefined && v !== "") f[k] = v;
+  for (const [k, v] of Object.entries(fields))
+    if (v !== null && v !== undefined && v !== "") f[k] = v;
   return {
-    kind, form, short, rule: rule.id, start, end, span: [span[0], span[1]], key, normalized, pin, fields: f,
-    group: null, name: null, paren: null, antecedent: null, short_status: null, matched: "",
-    _match: match, _priority: rule.priority ?? 0, _order: rule.order, _tail: end,
+    kind,
+    form,
+    short,
+    rule: rule.id,
+    start,
+    end,
+    span: [span[0], span[1]],
+    key,
+    normalized,
+    pin,
+    fields: f,
+    group: null,
+    name: null,
+    paren: null,
+    antecedent: null,
+    short_status: null,
+    matched: "",
+    _match: match,
+    _priority: rule.priority ?? 0,
+    _order: rule.order,
+    _tail: end,
   };
 }
 
 // ------------------------------------------------------------------------------------------------ builders
-const reporterEditions = (c: Compiled, written: string) => c.table.reporters[compact(written)] ?? [];
+const reporterEditions = (c: Compiled, written: string) =>
+  c.table.reporters[compact(written)] ?? [];
 
 function buildCase(c: Compiled, rule: CompiledRule, m: Match, mid: number): Raw[] {
   const g = groupsOf(m);
@@ -235,14 +281,25 @@ function buildCase(c: Compiled, rule: CompiledRule, m: Match, mid: number): Raw[
   const page = isDigits(g["page"]!) ? String(parseInt(g["page"]!, 10)) : g["page"]!;
   let citeText: string;
   if (rule.id === "case_tc_memo") citeText = `${canonical} ${volume}-${page}`;
-  else if (rule.id === "case_neutral" && squash(m[0]).replace(/ -/g, "-").replace(/- /g, "-").includes("-"))
+  else if (
+    rule.id === "case_neutral" &&
+    squash(m[0]).replace(/ -/g, "-").replace(/- /g, "-").includes("-")
+  )
     citeText = `${volume}-${canonical}-${page}`;
   else citeText = `${volume} ${canonical} ${page}`;
-  const fields: Record<string, string> = { volume, reporter: canonical, reporter_as_written: written, page, cite: citeText };
+  const fields: Record<string, string> = {
+    volume,
+    reporter: canonical,
+    reporter_as_written: written,
+    page,
+    cite: citeText,
+  };
   if (eds.length > 1) fields["reporter_editions"] = eds.join("|");
   const s = m.index;
   const e = m.index + m[0].length;
-  return [cite(rule, "case", s, e, [s, e], mid, `case:${volume}:${canonical}:${page}`, citeText, fields)];
+  return [
+    cite(rule, "case", s, e, [s, e], mid, `case:${volume}:${canonical}:${page}`, citeText, fields),
+  ];
 }
 
 function buildCaseShort(c: Compiled, rule: CompiledRule, m: Match, mid: number): Raw[] {
@@ -251,10 +308,29 @@ function buildCaseShort(c: Compiled, rule: CompiledRule, m: Match, mid: number):
   const canonical = eds.length === 1 ? eds[0]! : compact(g["reporter"]!);
   const volume = String(parseInt(g["volume"]!, 10));
   const pin = squash(g["pin"]!);
-  const fields = { volume, reporter: canonical, reporter_as_written: squash(g["reporter"]!).replace(/’/g, "'") };
+  const fields = {
+    volume,
+    reporter: canonical,
+    reporter_as_written: squash(g["reporter"]!).replace(/’/g, "'"),
+  };
   const s = m.index;
   const e = m.index + m[0].length;
-  return [cite(rule, "case", s, e, [s, e], mid, null, `${volume} ${canonical} at ${pin}`, fields, pin, "short", "at")];
+  return [
+    cite(
+      rule,
+      "case",
+      s,
+      e,
+      [s, e],
+      mid,
+      null,
+      `${volume} ${canonical} at ${pin}`,
+      fields,
+      pin,
+      "short",
+      "at",
+    ),
+  ];
 }
 
 /** "76 FR at 48213", "124 Stat. at 242": linked later to the page of that volume cited before. */
@@ -265,7 +341,22 @@ function buildAtShort(c: Compiled, rule: CompiledRule, m: Match, mid: number): R
   const pin = g["pin"]!.replace(/,/g, "");
   const s = m.index;
   const e = m.index + m[0].length;
-  return [cite(rule, rule.kind, s, e, [s, e], mid, null, render(c, rule.normalized!, g), fields, pin, "short", "at")];
+  return [
+    cite(
+      rule,
+      rule.kind as CitationKind,
+      s,
+      e,
+      [s, e],
+      mid,
+      null,
+      render(c, rule.normalized!, g),
+      fields,
+      pin,
+      "short",
+      "at",
+    ),
+  ];
 }
 
 function buildStatuteList(c: Compiled, rule: CompiledRule, m: Match, mid: number): Raw[] {
@@ -306,8 +397,11 @@ function buildStatuteList(c: Compiled, rule: CompiledRule, m: Match, mid: number
       const fields: Record<string, string> = { title, section };
       const sep = sectionEnd ? body.slice(gEnd(it, "section"), gStart(it, "section_end")) : "";
       if (
-        sectionEnd && /^\d{1,6}[A-Za-z]{1,4}$/.test(section) && /^\d{1,4}[A-Za-z]{0,4}$/.test(sectionEnd) &&
-        /^[-–—]$/.test(sep) && leadNumber(sectionEnd) < leadNumber(section)
+        sectionEnd &&
+        /^\d{1,6}[A-Za-z]{1,4}$/.test(section) &&
+        /^\d{1,4}[A-Za-z]{0,4}$/.test(sectionEnd) &&
+        /^[-–—]$/.test(sep) &&
+        leadNumber(sectionEnd) < leadNumber(section)
       ) {
         section = `${section}-${sectionEnd}`;
         sectionEnd = null;
@@ -348,7 +442,9 @@ function buildStatuteList(c: Compiled, rule: CompiledRule, m: Match, mid: number
       const end = partEnd !== null && sectionEnd ? `${partEnd}.${sectionEnd}` : null;
       if (end) fields["section_end"] = end;
       const key = `cfr:${title}:${part}.${section}` + (end ? `:${end}` : "");
-      const norm = end ? `${title} C.F.R. §§ ${part}.${section}–${end}` : `${title} C.F.R. § ${part}.${section}`;
+      const norm = end
+        ? `${title} C.F.R. §§ ${part}.${section}–${end}`
+        : `${title} C.F.R. § ${part}.${section}`;
       out.push(cite(rule, "cfr", s, e, [ms, spanEnd], mid, key, norm, fields, pin));
       return;
     }
@@ -417,7 +513,8 @@ function buildStateStatute(c: Compiled, rule: CompiledRule, m: Match, mid: numbe
     normalized = `${code}/${sec}`;
     path = `${parseInt(title!, 10)}/${g["act"]}/${sec}`;
   } else {
-    if (st === "LA" && /Civ\.\s*Code/.test(code)) normalized = `${code} ${rawCode.includes("arts.") ? "arts." : "art."} ${sec}`;
+    if (st === "LA" && /Civ\.\s*Code/.test(code))
+      normalized = `${code} ${rawCode.includes("arts.") ? "arts." : "art."} ${sec}`;
     else if (rawCode.includes("§")) normalized = `${code} § ${sec}`;
     else normalized = `${code} ${sec}`;
     if (title) path = `${title}:${sec}`;
@@ -446,13 +543,17 @@ function buildStateRegulation(c: Compiled, rule: CompiledRule, m: Match, mid: nu
   const sub = /(?:\([0-9A-Za-z]{1,5}\))+$/.exec(section);
   const pin = sub && sub.index > 0 ? sub[0] : null;
   if (pin) section = section.slice(0, sub!.index); // "5 C.C.R. § 431(c)(2)": the key names § 431, the paragraphs are the pin
-  const parts = [...["title", "part", "agency"].filter((k) => g[k]).map((k) => nospace(g[k]!)), section];
+  const parts = [
+    ...["title", "part", "agency"].filter((k) => g[k]).map((k) => nospace(g[k]!)),
+    section,
+  ];
   const st = rule.state!;
   const fields: Record<string, string> = { state: st, code_id: rule.code!, section };
   for (const k of ["title", "part", "agency"]) if (g[k]) fields[k] = g[k]!;
   const key = `state-reg:${st}:${rule.code}:${parts.join(":")}`.slice(0, 200);
   let normalized = dash(squash(m[0]));
-  if (pin && nospace(normalized).endsWith(pin)) normalized = normalized.replace(/\s*(?:\(\s*[0-9A-Za-z]{1,5}\s*\)\s*)+$/, "");
+  if (pin && nospace(normalized).endsWith(pin))
+    normalized = normalized.replace(/\s*(?:\(\s*[0-9A-Za-z]{1,5}\s*\)\s*)+$/, "");
   const s = m.index;
   const e = m.index + m[0].length;
   return [cite(rule, "state_regulation", s, e, [s, e], mid, key, normalized, fields, pin)];
@@ -493,8 +594,20 @@ function buildSupra(c: Compiled, rule: CompiledRule, m: Match, mid: number): Raw
   if (!name) return [];
   const e = m.index + m[0].length;
   return [
-    cite(rule, "short", nameStart, e, [nameStart, e], mid, null, squash(m[0].slice(nameStart - m.index)), { name: squash(name) },
-      g["pin"] ? squash(g["pin"]) : null, "short", "supra"),
+    cite(
+      rule,
+      "short",
+      nameStart,
+      e,
+      [nameStart, e],
+      mid,
+      null,
+      squash(m[0].slice(nameStart - m.index)),
+      { name: squash(name) },
+      g["pin"] ? squash(g["pin"]) : null,
+      "short",
+      "supra",
+    ),
   ];
 }
 
@@ -512,8 +625,18 @@ function buildRuleList(c: Compiled, rule: CompiledRule, m: Match, mid: number): 
     const s = i === 0 ? ms : bodyStart + it.index;
     const e = i === items.length - 1 ? me : bodyStart + it.index + it[0].length;
     const r = it.groups!["rule"]!;
-    return cite(rule, "federal_rule", s, e, [ms, me], mid, `rule:${ruleSet}:${r}`, `${name} ${r}`, { set: ruleSet, rule: r },
-      nospace(it.groups!["subs"] ?? "") || null);
+    return cite(
+      rule,
+      "federal_rule",
+      s,
+      e,
+      [ms, me],
+      mid,
+      `rule:${ruleSet}:${r}`,
+      `${name} ${r}`,
+      { set: ruleSet, rule: r },
+      nospace(it.groups!["subs"] ?? "") || null,
+    );
   });
 }
 
@@ -522,8 +645,20 @@ function buildSectionShort(c: Compiled, rule: CompiledRule, m: Match, mid: numbe
   const s = m.index;
   const e = m.index + m[0].length;
   return [
-    cite(rule, "short", s, e, [s, e], mid, null, `§ ${dash(g["section"]!)}`, { section: dash(g["section"]!) },
-      nospace(g["subs"] ?? "") || null, "short", "section"),
+    cite(
+      rule,
+      "short",
+      s,
+      e,
+      [s, e],
+      mid,
+      null,
+      `§ ${dash(g["section"]!)}`,
+      { section: dash(g["section"]!) },
+      nospace(g["subs"] ?? "") || null,
+      "short",
+      "section",
+    ),
   ];
 }
 
@@ -532,25 +667,38 @@ function buildRuleShort(c: Compiled, rule: CompiledRule, m: Match, mid: number):
   const s = m.index;
   const e = m.index + m[0].length;
   return [
-    cite(rule, "short", s, e, [s, e], mid, null, `Rule ${g["rule"]}`, { rule: g["rule"]! }, nospace(g["subs"] ?? "") || null,
-      "short", "rule"),
+    cite(
+      rule,
+      "short",
+      s,
+      e,
+      [s, e],
+      mid,
+      null,
+      `Rule ${g["rule"]}`,
+      { rule: g["rule"]! },
+      nospace(g["subs"] ?? "") || null,
+      "short",
+      "rule",
+    ),
   ];
 }
 
-const BUILDERS: Record<string, (c: Compiled, rule: CompiledRule, m: Match, mid: number) => Raw[]> = {
-  case: buildCase,
-  case_short: buildCaseShort,
-  at_short: buildAtShort,
-  statute_list: buildStatuteList,
-  single: buildSingle,
-  state_statute: buildStateStatute,
-  state_regulation: buildStateRegulation,
-  id: buildId,
-  supra: buildSupra,
-  section_short: buildSectionShort,
-  rule_short: buildRuleShort,
-  rule_list: buildRuleList,
-};
+const BUILDERS: Record<string, (c: Compiled, rule: CompiledRule, m: Match, mid: number) => Raw[]> =
+  {
+    case: buildCase,
+    case_short: buildCaseShort,
+    at_short: buildAtShort,
+    statute_list: buildStatuteList,
+    single: buildSingle,
+    state_statute: buildStateStatute,
+    state_regulation: buildStateRegulation,
+    id: buildId,
+    supra: buildSupra,
+    section_short: buildSectionShort,
+    rule_short: buildRuleShort,
+    rule_list: buildRuleList,
+  };
 
 // ------------------------------------------------------------------------------------------------ page extraction
 function candidates(c: Compiled, text: string): { cands: Raw[]; furniture: [number, number][] } {
@@ -592,7 +740,10 @@ function cmp(a: (number | string)[], b: (number | string)[]): number {
 
 function resolveOverlaps(cands: Raw[]): Raw[] {
   cands.sort((a, b) =>
-    cmp([a.span[0], -a.span[1], -a._priority, a._order, a.start], [b.span[0], -b.span[1], -b._priority, b._order, b.start]),
+    cmp(
+      [a.span[0], -a.span[1], -a._priority, a._order, a.start],
+      [b.span[0], -b.span[1], -b._priority, b._order, b.start],
+    ),
   );
   const kept: Raw[] = [];
   let lastMatch: number | null = null;
@@ -620,7 +771,13 @@ function lastSentenceCut(c: Compiled, seg: string): number {
       if (w) {
         const tok = w[1]!;
         const low = tok.toLowerCase().replace(/\.+$/, "");
-        if (!isLowerCh(tok[0]!) || c.abbrev.has(low) || low.length < 2 || /^[a-z](?:\.[a-z])+$/.test(low)) continue;
+        if (
+          !isLowerCh(tok[0]!) ||
+          c.abbrev.has(low) ||
+          low.length < 2 ||
+          /^[a-z](?:\.[a-z])+$/.test(low)
+        )
+          continue;
       } else if (!/[0-9)"”’]$/.test(before)) continue;
     }
     cut = m.index + m[0].length;
@@ -629,10 +786,31 @@ function lastSentenceCut(c: Compiled, seg: string): number {
 }
 
 const CONNECTORS = new Set([
-  "of", "the", "and", "&", "for", "de", "del", "la", "le", "du", "des", "van", "von", "ex", "rel.", "et", "al.", "d/b/a",
-  "a/k/a", "n/k/a", "f/k/a", "y",
+  "of",
+  "the",
+  "and",
+  "&",
+  "for",
+  "de",
+  "del",
+  "la",
+  "le",
+  "du",
+  "des",
+  "van",
+  "von",
+  "ex",
+  "rel.",
+  "et",
+  "al.",
+  "d/b/a",
+  "a/k/a",
+  "n/k/a",
+  "f/k/a",
+  "y",
 ]);
-const CORP_SUFFIX = /^(?:Inc|Co|Corp|Ltd|LLC|L\.L\.C|LLP|L\.L\.P|L\.P|LP|P\.C|N\.A|S\.A|AG|PLC|plc|GmbH)\.?,?$/;
+const CORP_SUFFIX =
+  /^(?:Inc|Co|Corp|Ltd|LLC|L\.L\.C|LLP|L\.L\.P|L\.P|LP|P\.C|N\.A|S\.A|AG|PLC|plc|GmbH)\.?,?$/;
 
 function plaintiffTail(c: Compiled, before: string): number {
   const toks = [...before.matchAll(/\S+/g)];
@@ -643,7 +821,13 @@ function plaintiffTail(c: Compiled, before: string): number {
     if (c.signals.test(t + " ")) break;
     if (t.endsWith(",") && i < toks.length - 1 && !CORP_SUFFIX.test(toks[i + 1]![0])) break;
     const ch = bare.slice(0, 1);
-    if (isUpperCh(ch) || /^[0-9]$/.test(ch) || bare.startsWith("'") || bare.startsWith("’") || bare.startsWith("&")) {
+    if (
+      isUpperCh(ch) ||
+      /^[0-9]$/.test(ch) ||
+      bare.startsWith("'") ||
+      bare.startsWith("’") ||
+      bare.startsWith("&")
+    ) {
       start = toks[i]!.index;
     } else if (CONNECTORS.has(bare.toLowerCase())) {
       // a connector inside a name; the name starts at the next capitalised word to its left
@@ -655,7 +839,12 @@ function plaintiffTail(c: Compiled, before: string): number {
 const NAME_PREFIX =
   /^(?:In\s+re|IN\s+RE|Ex\s+parte|EX\s+PARTE|(?:In\s+the\s+)?Matter\s+of|Estate\s+of|Application\s+of|Petition\s+of)\s/;
 
-export function caseName(c: Compiled, text: string, start: number, floor: number): Citation["name"] {
+export function caseName(
+  c: Compiled,
+  text: string,
+  start: number,
+  floor: number,
+): Citation["name"] {
   const lo = Math.max(floor, start - 260, 0);
   let seg = text.slice(lo, start);
   const cut = lastSentenceCut(c, seg);
@@ -706,7 +895,9 @@ function insideCitingParen(text: string, start: number): boolean {
 }
 
 function postprocess(c: Compiled, text: string, keptIn: Raw[]): Raw[] {
-  const starts = [...new Set(keptIn.filter((x) => x.form === "full").map((x) => x.span[0]))].sort((a, b) => a - b);
+  const starts = [...new Set(keptIn.filter((x) => x.form === "full").map((x) => x.span[0]))].sort(
+    (a, b) => a - b,
+  );
   const covered: [number, number][] = [];
   const nextStart = (after: number) => starts.find((s) => s > after) ?? text.length;
   for (const x of keptIn) {
@@ -724,7 +915,9 @@ function postprocess(c: Compiled, text: string, keptIn: Raw[]): Raw[] {
     }
   }
   const kept = covered.length
-    ? keptIn.filter((x) => x.form === "full" || !covered.some(([a, b]) => a <= x.start && x.start < b))
+    ? keptIn.filter(
+        (x) => x.form === "full" || !covered.some(([a, b]) => a <= x.start && x.start < b),
+      )
     : keptIn;
   let group = 0;
   let prevTail = -1;
@@ -753,7 +946,9 @@ function postprocess(c: Compiled, text: string, keptIn: Raw[]): Raw[] {
       kept[i]!.name = name;
     }
   };
-  for (const x of kept) x._inParen = x.form === "full" && (insideCitingParen(text, x.start) || insideQuote(text, x.start));
+  for (const x of kept)
+    x._inParen =
+      x.form === "full" && (insideCitingParen(text, x.start) || insideQuote(text, x.start));
   kept.forEach((x, idx) => {
     if (x.kind !== "case" || x.form !== "full") {
       close(members);
@@ -779,7 +974,11 @@ function pageCitations(c: Compiled, text: string): Raw[] {
   const source = text.slice(0, MAX_CHARS);
   const { cands, furniture } = candidates(c, source);
   const filtered = furniture.length
-    ? cands.filter((x) => (x.kind !== "docket" && x.kind !== "mdl") || furniture.every(([a, b]) => x.end <= a || x.start >= b))
+    ? cands.filter(
+        (x) =>
+          (x.kind !== "docket" && x.kind !== "mdl") ||
+          furniture.every(([a, b]) => x.end <= a || x.start >= b),
+      )
     : cands;
   const kept = postprocess(c, source, resolveOverlaps(filtered));
   for (const x of kept) x.matched = source.slice(x.start, x.end);
@@ -861,8 +1060,13 @@ const RECORD_REF =
 
 /** Key and display form of a "§ N" that continues a statutory list ("§ 4-88-104, § 4-88-105"), else null. */
 function listContinuation(text: string, prev: Raw | null, x: Raw): [string, string] | null {
-  if (!prev || (prev.kind !== "usc" && prev.kind !== "state_statute") || prev.form !== "full") return null;
-  if (!LIST_GAP.test(text.slice(prev.end, x.start)) && !LIST_GAP.test(text.slice(prev.span[1], x.start))) return null;
+  if (!prev || (prev.kind !== "usc" && prev.kind !== "state_statute") || prev.form !== "full")
+    return null;
+  if (
+    !LIST_GAP.test(text.slice(prev.end, x.start)) &&
+    !LIST_GAP.test(text.slice(prev.span[1], x.start))
+  )
+    return null;
   const sec = x.fields["section"]!;
   const f = prev.fields;
   if (prev.kind === "usc") return [`usc:${f["title"]}:${sec}`, `${f["title"]} U.S.C. § ${sec}`];
@@ -874,10 +1078,14 @@ function listContinuation(text: string, prev: Raw | null, x: Raw): [string, stri
 /** The text between a case citation and a later Id. names that case again ("... in Cepiel, the court ... Id."). */
 function namedSince(text: string, px: Raw, until: number): boolean {
   if (px.kind !== "case" || !px.name) return false;
-  const words = (px.name.text.match(/[A-Za-z][A-Za-z'’]+/g) ?? []).filter((w) => w.length >= 4 && isUpperCh(w[0]!));
+  const words = (px.name.text.match(/[A-Za-z][A-Za-z'’]+/g) ?? []).filter(
+    (w) => w.length >= 4 && isUpperCh(w[0]!),
+  );
   if (!words.length) return false;
   const gap = text.slice(px.end, until);
-  return new RegExp(`(?<![A-Za-z])${words[0]!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z])`).test(gap);
+  return new RegExp(
+    `(?<![A-Za-z])${words[0]!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z])`,
+  ).test(gap);
 }
 
 /** The two citations sit in one citation sentence joined by a semicolon (a string cite). */
@@ -910,14 +1118,18 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
           if (eligible.length > 1 && pp === p) {
             const [qp, , qx] = eligible[eligible.length - 2]!;
             if (
-              qp === p && qx.key !== px.key && (qx.group === null || qx.group !== px.group) &&
-              betweenIsStringCite(c, text, qx.end, px.start) && !namedSince(text, px, x.start)
+              qp === p &&
+              qx.key !== px.key &&
+              (qx.group === null || qx.group !== px.group) &&
+              betweenIsStringCite(c, text, qx.end, px.start) &&
+              !namedSince(text, px, x.start)
             )
               status = "ambiguous";
           }
           // "Id. at 570" names a page; the preceding authority has none
           // a record document ("Opposition at 52", "Ex. 13") sits between them
-          if (status === "resolved" && pp === p && RECORD_REF.test(text.slice(px.end, x.start))) status = "ambiguous";
+          if (status === "resolved" && pp === p && RECORD_REF.test(text.slice(px.end, x.start)))
+            status = "ambiguous";
           if (x.fields["pin_kind"] === "page" && !PAGED_KINDS.has(px.kind)) status = "ambiguous";
           const sec = x.fields["section"];
           if (status === "resolved" && sec) {
@@ -928,11 +1140,16 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
             } else if (px.kind === "cfr" && sec.includes(".")) {
               x.key = `cfr:${f["title"]}:${sec}`;
               x.normalized = `${f["title"]} C.F.R. § ${sec}`;
-            } else if ((px.kind === "state_statute" || px.kind === "state_regulation") && px.key!.endsWith(f["section"] ?? "\0")) {
+            } else if (
+              (px.kind === "state_statute" || px.kind === "state_regulation") &&
+              px.key!.endsWith(f["section"] ?? "\0")
+            ) {
               // the same code (and title or chapter) as the antecedent, another section
               const old = f["section"]!;
               x.key = px.key!.slice(0, px.key!.length - old.length) + sec;
-              x.normalized = px.normalized.endsWith(old) ? px.normalized.slice(0, px.normalized.length - old.length) + sec : `§ ${sec}`;
+              x.normalized = px.normalized.endsWith(old)
+                ? px.normalized.slice(0, px.normalized.length - old.length) + sec
+                : `§ ${sec}`;
             } else status = "ambiguous";
             if (status === "resolved") {
               x.kind = px.kind !== "cfr_part" ? px.kind : "cfr";
@@ -951,9 +1168,12 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
         const pinPage = x.pin ? leadNumber(x.pin.replace(/^\*+/, "")) : -1;
         let cands = history.filter(
           ([, , h]) =>
-            h.kind === base && h.form === "full" && h.fields["volume"] === vol &&
+            h.kind === base &&
+            h.form === "full" &&
+            h.fields["volume"] === vol &&
             (base !== "case" || h.fields["reporter"] === rep) &&
-            isDigits(h.fields["page"] ?? "") && Number(h.fields["page"]) <= pinPage,
+            isDigits(h.fields["page"] ?? "") &&
+            Number(h.fields["page"]) <= pinPage,
         );
         if (base !== "case" && cands.length) {
           // the pages of a Federal Register or Statutes at Large volume are consecutive: the pin lies in the cited
@@ -963,10 +1183,18 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
         }
         let keys = new Set(cands.map(([, , h]) => h.key));
         if (keys.size > 1) {
-          const nm = /([A-Z][A-Za-z'’.&-]+)(?:\s+[A-Z][A-Za-z'’.&-]+)*,\s*$/.exec(text.slice(Math.max(0, x.start - 80), x.start));
+          const nm = /([A-Z][A-Za-z'’.&-]+)(?:\s+[A-Z][A-Za-z'’.&-]+)*,\s*$/.exec(
+            text.slice(Math.max(0, x.start - 80), x.start),
+          );
           if (nm) {
             const word = nm[1]!.replace(/\.+$/, "").toLowerCase();
-            const named = cands.filter(([, , h]) => h.name && (h.name.text.toLowerCase().match(/[a-z0-9'’]+/g) ?? []).includes(word));
+            const named = cands.filter(
+              ([, , h]) =>
+                h.name &&
+                (h.name.text.toLowerCase().match(/[a-z0-9'’]+/g) ?? ([] as string[])).includes(
+                  word,
+                ),
+            );
             if (new Set(named.map(([, , h]) => h.key)).size === 1) {
               cands = named;
               keys = new Set([named[0]![2].key]);
@@ -987,7 +1215,8 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
             if (h[2].kind === "case" && h[2].name) {
               const nw = h[2].name.text.toLowerCase().match(/[a-z0-9'’]+/g) ?? [];
               let hit = false;
-              for (let k = 0; k < nw.length && !hit; k += 1) hit = words.every((w, j) => nw[k + j] === w);
+              for (let k = 0; k < nw.length && !hit; k += 1)
+                hit = words.every((w, j) => nw[k + j] === w);
               if (hit) cands.push(h);
             }
           }
@@ -1005,7 +1234,10 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
         const prevCite = i > 0 ? kept[i - 1]! : null;
         const listed = listContinuation(text, prevCite, x);
         const cands = history.filter(
-          ([, , h]) => (h.kind === "usc" || h.kind === "state_statute") && h.form === "full" && h.fields["section"] === sec,
+          ([, , h]) =>
+            (h.kind === "usc" || h.kind === "state_statute") &&
+            h.form === "full" &&
+            h.fields["section"] === sec,
         );
         const keys = new Set(cands.map(([, , h]) => h.key));
         if (listed && prevCite) {
@@ -1036,7 +1268,8 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
         const own = x.fields;
         if (x.short === "id" && own["section"]) {
           const base: Record<string, string> = {};
-          for (const [k, v] of Object.entries(tx.fields)) if (!["section_end", "dash_joined", "et_seq"].includes(k)) base[k] = v;
+          for (const [k, v] of Object.entries(tx.fields))
+            if (!["section_end", "dash_joined", "et_seq"].includes(k)) base[k] = v;
           x.fields = { ...base, ...own };
         } else x.fields = { ...tx.fields, ...own };
         x.antecedent = single ? ti : { page: tp, index: ti };

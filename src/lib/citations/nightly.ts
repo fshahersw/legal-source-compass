@@ -46,8 +46,13 @@ export type LoadCitation = {
 export type LoadPage = { src: "pdf"; src_id: string; page: number; citations: LoadCitation[] };
 
 /** Engine output of one byte set (pages in order) as load rows: one row per page, a page without citations included. */
-export function toLoadPages(sha256: string, pages: { page: number; text: string }[], extracted: Citation[][]): LoadPage[] {
-  if (extracted.length !== pages.length) throw new Error("extracted pages do not match the input pages");
+export function toLoadPages(
+  sha256: string,
+  pages: { page: number; text: string }[],
+  extracted: Citation[][],
+): LoadPage[] {
+  if (extracted.length !== pages.length)
+    throw new Error("extracted pages do not match the input pages");
   return pages.map((p, i) => ({
     src: "pdf",
     src_id: sha256,
@@ -128,7 +133,10 @@ export type NightlySummary = {
   error?: string;
 };
 
-type Pending = { documents: { sha256: string; pages: { page: number; text: string }[] }[]; remaining: number };
+type Pending = {
+  documents: { sha256: string; pages: { page: number; text: string }[] }[];
+  remaining: number;
+};
 type LoadResult = { pages: number; accepted: number; rejected: Record<string, number> };
 type ResolveResult = { resolved_batch: number; pending: number };
 type LinkResult = { documents: number; edges: number };
@@ -146,11 +154,25 @@ export async function runNightly(opts: NightlyOptions): Promise<NightlySummary> 
   const wallBudget = opts.wallBudgetMs ?? 110_000;
   const started = now();
   const s: NightlySummary = {
-    run_id: null, status: "failed", extractor_version: version, byte_sets: 0, pages: 0, accepted: 0, rejected: {},
-    remaining: null, resolved: 0, pending_authorities: null, documents_linked: 0, edges: 0, extract_ms: 0, stopped_by: "done",
+    run_id: null,
+    status: "failed",
+    extractor_version: version,
+    byte_sets: 0,
+    pages: 0,
+    accepted: 0,
+    rejected: {},
+    remaining: null,
+    resolved: 0,
+    pending_authorities: null,
+    documents_linked: 0,
+    edges: 0,
+    extract_ms: 0,
+    stopped_by: "done",
   };
   const opened = await opts.client.rpc<{ run_id: string }>("citations_open_run_v2", {
-    p_kind: "nightly", p_trigger: opts.trigger, p_version: version,
+    p_kind: "nightly",
+    p_trigger: opts.trigger,
+    p_version: version,
   });
   s.run_id = opened.run_id;
   log({ step: "open", run_id: s.run_id, version });
@@ -158,15 +180,29 @@ export async function runNightly(opts: NightlyOptions): Promise<NightlySummary> 
   const loaded: string[] = [];
   try {
     for (;;) {
-      if (s.extract_ms >= extractBudget) { s.stopped_by = "extract_budget"; break; }
-      if (now() - started >= wallBudget * 0.6) { s.stopped_by = "wall_budget"; break; }
+      if (s.extract_ms >= extractBudget) {
+        s.stopped_by = "extract_budget";
+        break;
+      }
+      if (now() - started >= wallBudget * 0.6) {
+        s.stopped_by = "wall_budget";
+        break;
+      }
       const pending = await opts.client.rpc<Pending>("citations_pending_pages_v2", {
-        p_version: version, p_limit: opts.setsPerFetch ?? 8, p_max_pages: opts.pagesPerFetch ?? 200,
+        p_version: version,
+        p_limit: opts.setsPerFetch ?? 8,
+        p_max_pages: opts.pagesPerFetch ?? 200,
       });
       s.remaining = pending.remaining;
       const fresh = pending.documents.filter((d) => !seen.has(d.sha256));
-      if (!pending.documents.length) { s.stopped_by = "done"; break; }
-      if (!fresh.length) { s.stopped_by = "repeat"; break; } // a set the loader would not complete: report, do not spin
+      if (!pending.documents.length) {
+        s.stopped_by = "done";
+        break;
+      }
+      if (!fresh.length) {
+        s.stopped_by = "repeat";
+        break;
+      } // a set the loader would not complete: report, do not spin
       const rows: LoadPage[] = [];
       let done = 0;
       for (const d of fresh) {
@@ -180,32 +216,56 @@ export async function runNightly(opts: NightlyOptions): Promise<NightlySummary> 
         if (s.extract_ms >= extractBudget) break;
       }
       for (const batch of loadBatches(rows)) {
-        const r = await opts.client.rpc<LoadResult>("citations_load_v2", { p_run: s.run_id, p_version: version, p_pages: batch });
+        const r = await opts.client.rpc<LoadResult>("citations_load_v2", {
+          p_run: s.run_id,
+          p_version: version,
+          p_pages: batch,
+        });
         s.pages += r.pages;
         s.accepted += r.accepted;
-        for (const [k, v] of Object.entries(r.rejected ?? {})) s.rejected[k] = (s.rejected[k] ?? 0) + v;
+        for (const [k, v] of Object.entries(r.rejected ?? {}))
+          s.rejected[k] = (s.rejected[k] ?? 0) + v;
       }
       loaded.push(...new Set(rows.map((r) => r.src_id)));
       s.remaining = Math.max(0, pending.remaining - done);
-      log({ step: "load", byte_sets: s.byte_sets, pages: s.pages, accepted: s.accepted, extract_ms: Math.round(s.extract_ms) });
+      log({
+        step: "load",
+        byte_sets: s.byte_sets,
+        pages: s.pages,
+        accepted: s.accepted,
+        extract_ms: Math.round(s.extract_ms),
+      });
     }
     for (let i = 0; i < 20; i++) {
-      const r = await opts.client.rpc<ResolveResult>("citations_resolve_v2", { p_limit: opts.resolveLimit ?? 2000, p_run: s.run_id });
+      const r = await opts.client.rpc<ResolveResult>("citations_resolve_v2", {
+        p_limit: opts.resolveLimit ?? 2000,
+        p_run: s.run_id,
+      });
       s.resolved += r.resolved_batch;
       s.pending_authorities = r.pending;
       if (r.pending === 0 || r.resolved_batch === 0 || now() - started >= wallBudget * 0.85) break;
     }
     for (let i = 0; i < loaded.length; i += 500) {
       const r = await opts.client.rpc<LinkResult>("citations_link_v2", {
-        p_shas: loaded.slice(i, i + 500), p_after: "", p_limit: 500, p_run: s.run_id,
+        p_shas: loaded.slice(i, i + 500),
+        p_after: "",
+        p_limit: 500,
+        p_run: s.run_id,
       });
       s.documents_linked += r.documents;
       s.edges += r.edges;
     }
     s.status = s.stopped_by === "done" && s.pending_authorities === 0 ? "ok" : "partial";
     await opts.client.rpc("citations_finish_run_v2", {
-      p_run: s.run_id, p_status: s.status, p_error: null,
-      p_notes: { remaining: s.remaining, stopped_by: s.stopped_by, extract_ms: Math.round(s.extract_ms), byte_sets: s.byte_sets },
+      p_run: s.run_id,
+      p_status: s.status,
+      p_error: null,
+      p_notes: {
+        remaining: s.remaining,
+        stopped_by: s.stopped_by,
+        extract_ms: Math.round(s.extract_ms),
+        byte_sets: s.byte_sets,
+      },
     });
     log({ step: "finish", ...s });
     return s;
@@ -215,7 +275,12 @@ export async function runNightly(opts: NightlyOptions): Promise<NightlySummary> 
     s.error = clean(e);
     log({ step: "error", run_id: s.run_id, error: s.error });
     try {
-      await opts.client.rpc("citations_finish_run_v2", { p_run: s.run_id, p_status: "failed", p_notes: { stopped_by: "error" }, p_error: s.error });
+      await opts.client.rpc("citations_finish_run_v2", {
+        p_run: s.run_id,
+        p_status: "failed",
+        p_notes: { stopped_by: "error" },
+        p_error: s.error,
+      });
     } catch {
       /* the run stays 'running' until citations_open_run_v2 closes it as abandoned */
     }
@@ -232,7 +297,10 @@ export type ServeOptions = {
 };
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
 
 /**
  *   POST /functions/v1/ingest-citations   Authorization: Bearer <trigger secret>
@@ -245,7 +313,8 @@ export function serveCitations(opts: ServeOptions): (req: Request) => Promise<Re
     if (req.method !== "POST") return json(405, { error: "POST only" });
     const url = opts.env("SUPABASE_URL");
     const key = opts.env("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !key) return json(503, { error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not available" });
+    if (!url || !key)
+      return json(503, { error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not available" });
     const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
     if (token.length < 32) return json(401, { error: "unauthorized" });
     const client = corpusClient({ url, key, ...(opts.fetch ? { fetch: opts.fetch } : {}) });
@@ -264,14 +333,17 @@ export function serveCitations(opts: ServeOptions): (req: Request) => Promise<Re
       return json(400, { error: "body must be JSON" });
     }
     const trigger = body["trigger"] === "manual" ? "manual" : "schedule";
-    const run = runNightly({ ...opts.nightly, client, trigger, log: (line) => console.log(JSON.stringify(line)) }).catch(
-      (e: unknown) => {
-        // the run could not be opened (another nightly run is running, or the contract is not applied)
-        const error = clean(e);
-        console.error(JSON.stringify({ step: "run-error", error }));
-        return { status: "failed" as const, error };
-      },
-    );
+    const run = runNightly({
+      ...opts.nightly,
+      client,
+      trigger,
+      log: (line) => console.log(JSON.stringify(line)),
+    }).catch((e: unknown) => {
+      // the run could not be opened (another nightly run is running, or the contract is not applied)
+      const error = clean(e);
+      console.error(JSON.stringify({ step: "run-error", error }));
+      return { status: "failed" as const, error };
+    });
     if (body["wait"] === true || !opts.waitUntil) {
       const summary = await run;
       return json(summary.status === "failed" ? 500 : 200, summary);

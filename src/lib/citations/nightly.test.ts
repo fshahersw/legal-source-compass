@@ -1,17 +1,30 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { extractPages } from "./engine";
-import { EXTRACTOR_VERSION, loadBatches, runNightly, serveCitations, toLoadPages, type LoadPage, type RpcClient } from "./nightly";
+import {
+  EXTRACTOR_VERSION,
+  loadBatches,
+  runNightly,
+  serveCitations,
+  toLoadPages,
+  type LoadPage,
+  type RpcClient,
+} from "./nightly";
 import type { Citation } from "./types";
 
-const golden = JSON.parse(readFileSync(new URL("./fixtures/golden.json", import.meta.url), "utf8")) as {
+const golden = JSON.parse(
+  readFileSync(new URL("./fixtures/golden.json", import.meta.url), "utf8"),
+) as {
   texts: { id: string; text: string }[];
   documents: { id: string; pages: string[]; expected: Citation[][] }[];
 };
 const sha = (n: number) => n.toString(16).padStart(64, "0");
 
 /** In-memory stand-in for the citations/2 RPCs (database/contracts/citations-v2.sql), recording every call. */
-function fakeDb(sets: { sha256: string; pages: { page: number; text: string }[] }[], opts: { stuck?: boolean; failLoad?: boolean } = {}) {
+function fakeDb(
+  sets: { sha256: string; pages: { page: number; text: string }[] }[],
+  opts: { stuck?: boolean; failLoad?: boolean } = {},
+) {
   const calls: { name: string; args: Record<string, unknown> }[] = [];
   const done = new Set<string>();
   let running = false;
@@ -25,13 +38,21 @@ function fakeDb(sets: { sha256: string; pages: { page: number; text: string }[] 
           return { run_id: "run-1" } as T;
         case "citations_pending_pages_v2": {
           const todo = sets.filter((s) => !done.has(s.sha256));
-          return { documents: todo.slice(0, args["p_limit"] as number), remaining: todo.length } as T;
+          return {
+            documents: todo.slice(0, args["p_limit"] as number),
+            remaining: todo.length,
+          } as T;
         }
         case "citations_load_v2": {
-          if (opts.failLoad) throw new Error("corpus request failed: HTTP 500 Bearer eyJsecret.token");
+          if (opts.failLoad)
+            throw new Error("corpus request failed: HTTP 500 Bearer eyJsecret.token");
           const pages = args["p_pages"] as LoadPage[];
           if (!opts.stuck) for (const p of pages) done.add(p.src_id);
-          return { pages: pages.length, accepted: pages.reduce((n, p) => n + p.citations.length, 0), rejected: {} } as T;
+          return {
+            pages: pages.length,
+            accepted: pages.reduce((n, p) => n + p.citations.length, 0),
+            rejected: {},
+          } as T;
         }
         case "citations_resolve_v2":
           return { resolved_batch: 3, pending: 0 } as T;
@@ -49,13 +70,24 @@ function fakeDb(sets: { sha256: string; pages: { page: number; text: string }[] 
 }
 
 const doc = golden.documents.find((d) => d.id === "pages")!;
-const setOf = (n: number, texts: string[]) => ({ sha256: sha(n), pages: texts.map((text, i) => ({ page: i + 1, text })) });
+const setOf = (n: number, texts: string[]) => ({
+  sha256: sha(n),
+  pages: texts.map((text, i) => ({ page: i + 1, text })),
+});
 
 describe("load rows", () => {
   it("map short-form antecedents to page numbers and keep pages without citations", () => {
-    const pages = [{ page: 3, text: doc.pages[0]! }, { page: 4, text: doc.pages[1]! }, { page: 5, text: "No citations." }];
+    const pages = [
+      { page: 3, text: doc.pages[0]! },
+      { page: 4, text: doc.pages[1]! },
+      { page: 5, text: "No citations." },
+    ];
     const rows = toLoadPages(sha(1), pages, extractPages(pages.map((p) => p.text)));
-    expect(rows.map((r) => [r.page, r.citations.length])).toEqual([[3, 2], [4, 3], [5, 0]]);
+    expect(rows.map((r) => [r.page, r.citations.length])).toEqual([
+      [3, 2],
+      [4, 3],
+      [5, 0],
+    ]);
     const short = rows[1]!.citations.find((c) => c.matched === "550 U.S. at 556")!;
     expect(short.antecedent).toEqual({ page: 3, seq: 0 });
     expect(short.key).toBe("case:550:U.S.:544");
@@ -64,7 +96,12 @@ describe("load rows", () => {
   });
 
   it("split into loader-sized batches", () => {
-    const row = (n: number): LoadPage => ({ src: "pdf", src_id: sha(1), page: 1, citations: Array(n).fill(null) });
+    const row = (n: number): LoadPage => ({
+      src: "pdf",
+      src_id: sha(1),
+      page: 1,
+      citations: Array(n).fill(null),
+    });
     expect(loadBatches([row(1), row(1), row(1)], 2).map((b) => b.length)).toEqual([2, 1]);
     expect(loadBatches([row(9000), row(9000)]).map((b) => b.length)).toEqual([1, 1]);
     expect(loadBatches([])).toEqual([]);
@@ -78,7 +115,16 @@ describe("runNightly", () => {
     const sets = [setOf(1, texts.slice(0, 3)), setOf(2, doc.pages), setOf(3, texts.slice(3, 4))];
     const { client, calls } = fakeDb(sets);
     const s = await runNightly({ client, trigger: "schedule" });
-    expect(s).toMatchObject({ status: "ok", stopped_by: "done", byte_sets: 3, pages: 6, remaining: 0, resolved: 3, documents_linked: 3, edges: 7 });
+    expect(s).toMatchObject({
+      status: "ok",
+      stopped_by: "done",
+      byte_sets: 3,
+      pages: 6,
+      remaining: 0,
+      resolved: 3,
+      documents_linked: 3,
+      edges: 7,
+    });
     expect(s.extractor_version).toBe(EXTRACTOR_VERSION);
     const load = calls.find((c) => c.name === "citations_load_v2")!;
     expect(load.args["p_run"]).toBe("run-1");
@@ -94,7 +140,12 @@ describe("runNightly", () => {
     const sets = Array.from({ length: 6 }, (_, i) => setOf(i + 1, texts.slice(i, i + 2)));
     const { client, calls } = fakeDb(sets);
     let t = 0;
-    const s = await runNightly({ client, trigger: "schedule", extractBudgetMs: 25, now: () => (t += 10) });
+    const s = await runNightly({
+      client,
+      trigger: "schedule",
+      extractBudgetMs: 25,
+      now: () => (t += 10),
+    });
     expect(s.status).toBe("partial");
     expect(s.stopped_by).toBe("extract_budget");
     expect(s.byte_sets).toBeGreaterThan(0);
@@ -121,7 +172,10 @@ describe("runNightly", () => {
 });
 
 describe("serveCitations", () => {
-  const env = (name: string) => ({ SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-key" })[name];
+  const env = (name: string) =>
+    ({ SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-key" })[
+      name
+    ];
   const token = "a".repeat(64);
   const fetchWith = (check: boolean, seen: string[] = []) =>
     (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -129,16 +183,22 @@ describe("serveCitations", () => {
       seen.push(name);
       const args = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
       const body =
-        name === "ingest_check_trigger_v1" ? check && args["p_token"] === token
-        : name === "citations_open_run_v2" ? { run_id: "run-9" }
-        : name === "citations_pending_pages_v2" ? { documents: [], remaining: 0 }
-        : name === "citations_resolve_v2" ? { resolved_batch: 0, pending: 0 }
-        : { status: "ok" };
+        name === "ingest_check_trigger_v1"
+          ? check && args["p_token"] === token
+          : name === "citations_open_run_v2"
+            ? { run_id: "run-9" }
+            : name === "citations_pending_pages_v2"
+              ? { documents: [], remaining: 0 }
+              : name === "citations_resolve_v2"
+                ? { resolved_batch: 0, pending: 0 }
+                : { status: "ok" };
       return new Response(JSON.stringify(body), { status: 200 });
     }) as typeof fetch;
   const post = (auth: string | null, body = "{}") =>
     new Request("https://x/functions/v1/ingest-citations", {
-      method: "POST", body, headers: auth ? { authorization: `Bearer ${auth}` } : {},
+      method: "POST",
+      body,
+      headers: auth ? { authorization: `Bearer ${auth}` } : {},
     });
 
   it("answers POST only and checks the trigger secret in the database", async () => {
@@ -147,19 +207,30 @@ describe("serveCitations", () => {
     expect((await h(post(null))).status).toBe(401);
     expect((await h(post("short"))).status).toBe(401);
     expect((await serveCitations({ env, fetch: fetchWith(false) })(post(token))).status).toBe(401);
-    expect((await serveCitations({ env: () => undefined, fetch: fetchWith(true) })(post(token))).status).toBe(503);
+    expect(
+      (await serveCitations({ env: () => undefined, fetch: fetchWith(true) })(post(token))).status,
+    ).toBe(503);
     expect((await h(post(token, "not json"))).status).toBe(400);
   });
 
   it("runs in the background (202) or waits for the summary", async () => {
     const seen: string[] = [];
     let pending: Promise<unknown> | null = null;
-    const bg = serveCitations({ env, fetch: fetchWith(true, seen), waitUntil: (p) => (pending = p) });
+    const bg = serveCitations({
+      env,
+      fetch: fetchWith(true, seen),
+      waitUntil: (p) => (pending = p),
+    });
     const r = await bg(post(token, JSON.stringify({ trigger: "schedule" })));
     expect(r.status).toBe(202);
     await pending;
-    expect(seen).toEqual(["ingest_check_trigger_v1", "citations_open_run_v2", "citations_pending_pages_v2", "citations_resolve_v2",
-      "citations_finish_run_v2"]);
+    expect(seen).toEqual([
+      "ingest_check_trigger_v1",
+      "citations_open_run_v2",
+      "citations_pending_pages_v2",
+      "citations_resolve_v2",
+      "citations_finish_run_v2",
+    ]);
     const waited = await bg(post(token, JSON.stringify({ trigger: "manual", wait: true })));
     expect(waited.status).toBe(200);
     expect(await waited.json()).toMatchObject({ status: "ok", run_id: "run-9", byte_sets: 0 });
