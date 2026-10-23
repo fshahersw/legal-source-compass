@@ -131,6 +131,8 @@ const EXPLICIT: Readonly<Record<string, CategoryId>> = {
   state_codes: "law",
   limitation_periods: "law",
   statutory_limitations_review: "law",
+  econ_state_judgment_rates: "law",
+  census_acs_cvap_counties: "states",
   mass_tort_authority_evidence: "law",
   settlements: "enforcement",
   settlement_notices: "enforcement",
@@ -222,6 +224,7 @@ const PREFIXES: readonly [string, CategoryId][] = [
   ["cfpb_", "consumer"],
   ["ftc_", "consumer"],
   ["state_metrics_", "states"],
+  ["econ_", "states"],
   ["coverage_", "sources"],
 ];
 
@@ -266,6 +269,7 @@ export type AppPath =
   | "/places/analytics"
   | "/limitations"
   | "/limitations/statutory"
+  | "/law/calculators"
   | "/people"
   | "/insights/research"
   | "/search"
@@ -304,6 +308,7 @@ const P = {
   stateAnalytics: { to: "/places/analytics", label: "State analytics" },
   states: { to: "/", label: "State pages" },
   limitations: { to: "/limitations", label: "Time limits" },
+  calculators: { to: "/law/calculators", label: "Litigation calculators" },
   people: { to: "/people", label: "People" },
   insights: { to: "/insights/research", label: "Research" },
   library: { to: "/sources/library", label: "Source library" },
@@ -430,6 +435,9 @@ const USED_ON: Readonly<Record<string, readonly AppLink[]>> = {
   npdb_malpractice_states: [P.states],
   "ftc_*": [P.states],
   counties: [P.states],
+  "econ_*": [P.calculators],
+  company_federal_awards: [P.companies],
+  census_acs_cvap_counties: [P.insights],
   sources: [P.library],
 };
 

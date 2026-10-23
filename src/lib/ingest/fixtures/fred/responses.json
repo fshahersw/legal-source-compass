@@ -1,0 +1,940 @@
+{
+ "dates_10": {
+  "body": {
+   "count": 3,
+   "limit": 1000,
+   "offset": 0,
+   "order_by": "release_date",
+   "realtime_end": "9999-12-31",
+   "realtime_start": "2026-08-01",
+   "release_dates": [
+    {
+     "date": "2026-08-12",
+     "release_id": 10
+    },
+    {
+     "date": "2026-09-11",
+     "release_id": 10
+    },
+    {
+     "date": "2026-10-14",
+     "release_id": 10
+    }
+   ],
+   "sort_order": "asc"
+  },
+  "url": "https://api.stlouisfed.org/fred/release/dates?release_id=10&realtime_start=2026-08-01&include_release_dates_with_no_data=false&sort_order=asc&limit=1000&file_type=json"
+ },
+ "dates_18": {
+  "body": {
+   "count": 7,
+   "limit": 1000,
+   "offset": 0,
+   "order_by": "release_date",
+   "realtime_end": "9999-12-31",
+   "realtime_start": "2026-10-14",
+   "release_dates": [
+    {
+     "date": "2026-10-14",
+     "release_id": 18
+    },
+    {
+     "date": "2026-10-15",
+     "release_id": 18
+    },
+    {
+     "date": "2026-10-16",
+     "release_id": 18
+    },
+    {
+     "date": "2026-10-19",
+     "release_id": 18
+    },
+    {
+     "date": "2026-10-20",
+     "release_id": 18
+    },
+    {
+     "date": "2026-10-21",
+     "release_id": 18
+    },
+    {
+     "date": "2026-10-22",
+     "release_id": 18
+    }
+   ],
+   "sort_order": "asc"
+  },
+  "url": "https://api.stlouisfed.org/fred/release/dates?release_id=18&realtime_start=2026-10-14&include_release_dates_with_no_data=false&sort_order=asc&limit=1000&file_type=json"
+ },
+ "meta_CPIAUCSL": {
+  "body": {
+   "realtime_end": "2026-10-21",
+   "realtime_start": "2026-10-21",
+   "seriess": [
+    {
+     "frequency": "Monthly",
+     "frequency_short": "M",
+     "id": "CPIAUCSL",
+     "last_updated": "2026-10-14 08:08:29-05",
+     "notes": "The Consumer Price Index for All Urban Consumers: All Items (CPIAUCSL) is a price index of a basket of goods and services paid by urban consumers. Percent changes in the price index measure the inflation rate between any two time periods. The most common inflation metric is the percent change from one year ago. It can also represent the buying habits of urban consumers. This particular index includes roughly 88 percent of the total population, accounting for wage earners, clerical workers, technical workers, self-employed, short-term workers, unemployed, retirees, and those not in the labor force.\r\n\r\nThe CPIs are based on prices for food, clothing, shelter, and fuels; transportation fares; service fees (e.g., water and sewer service); and sales taxes. Prices are collected monthly from about 4,000 housing units and approximately 26,000 retail establishments across 87 urban areas. To calculate the index, price changes are averaged with weights representing their importance in the spending of the particular group. The index measures price changes (as a percent change) from a predetermined reference date. In addition to the original unadjusted index distributed, the Bureau of Labor Statistics also releases a seasonally adjusted index. The unadjusted series reflects all factors that may influence a change in prices. However, it can be very useful to look at the seasonally adjusted CPI, which removes the effects of seasonal changes, such as weather, school year, production cycles, and holidays.\r\n\r\nThe CPI can be used to recognize periods of inflation and deflation. Significant increases in the CPI within a short time frame might indicate a period of inflation, and significant decreases in CPI within a short time frame might indicate a period of deflation. However, because the CPI includes volatile food and oil prices, it might not be a reliable measure of inflationary and deflationary periods. For a more accurate detection, the core CPI (CPILFESL (https://fred.stlouisfed.org/series/CPILFESL)) is often used. When using the CPI, please note that it is not applicable to all consumers and should not be used to determine relative living costs. Additionally, the CPI is a statistical measure vulnerable to sampling error since it is based on a sample of prices and not the complete average.\r\n\r\nFor more information on the CPI, see the Handbook of Methods (https://www.bls.gov/opub/hom/cpi/), the release notes and announcements (https://www.bls.gov/cpi/), and the Frequently Asked Questions (https://www.bls.gov/cpi/questions-and-answers.htm) (FAQs).",
+     "observation_end": "2026-09-01",
+     "observation_start": "1947-01-01",
+     "popularity": 97,
+     "realtime_end": "2026-10-21",
+     "realtime_start": "2026-10-21",
+     "seasonal_adjustment": "Seasonally Adjusted",
+     "seasonal_adjustment_short": "SA",
+     "title": "Consumer Price Index for All Urban Consumers: All Items in U.S. City Average",
+     "units": "Index 1982-1984=100",
+     "units_short": "Index 1982-1984=100"
+    }
+   ]
+  },
+  "url": "https://api.stlouisfed.org/fred/series?series_id=CPIAUCSL&file_type=json"
+ },
+ "meta_WGS1YR": {
+  "body": {
+   "realtime_end": "2026-10-22",
+   "realtime_start": "2026-10-22",
+   "seriess": [
+    {
+     "frequency": "Weekly, Ending Friday",
+     "frequency_short": "W",
+     "id": "WGS1YR",
+     "last_updated": "2026-10-19 15:16:41-05",
+     "notes": "H.15 Statistical Release notes (https://www.federalreserve.gov/releases/h15/default.htm) and the Treasury Yield Curve Methodology (https://home.treasury.gov/policy-issues/financing-the-government/interest-rate-statistics/treasury-yield-curve-methodology).\n\nFor questions on the data, please contact the data source (https://www.federalreserve.gov/apps/ContactUs/feedback.aspx?refurl=/releases/h15/%). For questions on FRED functionality, please contact us here (https://fred.stlouisfed.org/contactus/).</p>",
+     "observation_end": "2026-10-16",
+     "observation_start": "1962-01-05",
+     "popularity": 58,
+     "realtime_end": "2026-10-22",
+     "realtime_start": "2026-10-22",
+     "seasonal_adjustment": "Not Seasonally Adjusted",
+     "seasonal_adjustment_short": "NSA",
+     "title": "Market Yield on U.S. Treasury Securities at 1-Year Constant Maturity, Quoted on an Investment Basis",
+     "units": "Percent",
+     "units_short": "%"
+    }
+   ]
+  },
+  "url": "https://api.stlouisfed.org/fred/series?series_id=WGS1YR&file_type=json"
+ },
+ "obs_CPIAUCNS_2016": {
+  "body": {
+   "count": 16,
+   "file_type": "json",
+   "limit": 100000,
+   "observation_end": "2016-12-31",
+   "observation_start": "2016-01-01",
+   "observations": [
+    {
+     "date": "2016-01-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-02-19",
+     "value": "236.916"
+    },
+    {
+     "date": "2016-02-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-03-16",
+     "value": "237.111"
+    },
+    {
+     "date": "2016-03-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-04-14",
+     "value": "238.132"
+    },
+    {
+     "date": "2016-04-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-05-17",
+     "value": "239.261"
+    },
+    {
+     "date": "2016-05-01",
+     "realtime_end": "2016-10-17",
+     "realtime_start": "2016-06-16",
+     "value": "240.236"
+    },
+    {
+     "date": "2016-05-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-10-18",
+     "value": "240.229"
+    },
+    {
+     "date": "2016-06-01",
+     "realtime_end": "2016-10-17",
+     "realtime_start": "2016-07-15",
+     "value": "241.038"
+    },
+    {
+     "date": "2016-06-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-10-18",
+     "value": "241.018"
+    },
+    {
+     "date": "2016-07-01",
+     "realtime_end": "2016-10-17",
+     "realtime_start": "2016-08-16",
+     "value": "240.647"
+    },
+    {
+     "date": "2016-07-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-10-18",
+     "value": "240.628"
+    },
+    {
+     "date": "2016-08-01",
+     "realtime_end": "2016-10-17",
+     "realtime_start": "2016-09-16",
+     "value": "240.853"
+    },
+    {
+     "date": "2016-08-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-10-18",
+     "value": "240.849"
+    },
+    {
+     "date": "2016-09-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-10-18",
+     "value": "241.428"
+    },
+    {
+     "date": "2016-10-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-11-17",
+     "value": "241.729"
+    },
+    {
+     "date": "2016-11-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2016-12-15",
+     "value": "241.353"
+    },
+    {
+     "date": "2016-12-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2017-01-18",
+     "value": "241.432"
+    }
+   ],
+   "offset": 0,
+   "order_by": "observation_date",
+   "output_type": 1,
+   "realtime_end": "9999-12-31",
+   "realtime_start": "2016-01-01",
+   "sort_order": "asc",
+   "units": "lin"
+  },
+  "url": "https://api.stlouisfed.org/fred/series/observations?series_id=CPIAUCNS&realtime_start=2016-01-01&realtime_end=9999-12-31&observation_start=2016-01-01&observation_end=2016-12-31&sort_order=asc&limit=100000&offset=0&file_type=json"
+ },
+ "obs_CPIAUCNS_2025": {
+  "body": {
+   "count": 12,
+   "file_type": "json",
+   "limit": 100000,
+   "observation_end": "2025-12-31",
+   "observation_start": "2025-01-01",
+   "observations": [
+    {
+     "date": "2025-01-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-02-12",
+     "value": "317.671"
+    },
+    {
+     "date": "2025-02-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-03-12",
+     "value": "319.082"
+    },
+    {
+     "date": "2025-03-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-04-10",
+     "value": "319.799"
+    },
+    {
+     "date": "2025-04-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-05-13",
+     "value": "320.795"
+    },
+    {
+     "date": "2025-05-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-06-11",
+     "value": "321.465"
+    },
+    {
+     "date": "2025-06-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-07-15",
+     "value": "322.561"
+    },
+    {
+     "date": "2025-07-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-08-12",
+     "value": "323.048"
+    },
+    {
+     "date": "2025-08-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-09-11",
+     "value": "323.976"
+    },
+    {
+     "date": "2025-09-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-10-24",
+     "value": "324.800"
+    },
+    {
+     "date": "2025-10-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-12-18",
+     "value": "."
+    },
+    {
+     "date": "2025-11-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2025-12-18",
+     "value": "324.122"
+    },
+    {
+     "date": "2025-12-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-01-13",
+     "value": "324.054"
+    }
+   ],
+   "offset": 0,
+   "order_by": "observation_date",
+   "output_type": 1,
+   "realtime_end": "9999-12-31",
+   "realtime_start": "2025-01-01",
+   "sort_order": "asc",
+   "units": "lin"
+  },
+  "url": "https://api.stlouisfed.org/fred/series/observations?series_id=CPIAUCNS&realtime_start=2025-01-01&realtime_end=9999-12-31&observation_start=2025-01-01&observation_end=2025-12-31&sort_order=asc&limit=100000&offset=0&file_type=json"
+ },
+ "obs_CPIAUCSL_2023": {
+  "body": {
+   "count": 48,
+   "file_type": "json",
+   "limit": 100000,
+   "observation_end": "2023-12-31",
+   "observation_start": "2023-01-01",
+   "observations": [
+    {
+     "date": "2023-01-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-02-14",
+     "value": "300.536"
+    },
+    {
+     "date": "2023-01-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "300.356"
+    },
+    {
+     "date": "2023-01-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "300.456"
+    },
+    {
+     "date": "2023-01-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "300.420"
+    },
+    {
+     "date": "2023-02-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-03-14",
+     "value": "301.648"
+    },
+    {
+     "date": "2023-02-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "301.509"
+    },
+    {
+     "date": "2023-02-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "301.476"
+    },
+    {
+     "date": "2023-02-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "301.450"
+    },
+    {
+     "date": "2023-03-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-04-12",
+     "value": "301.808"
+    },
+    {
+     "date": "2023-03-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "301.744"
+    },
+    {
+     "date": "2023-03-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "301.643"
+    },
+    {
+     "date": "2023-03-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "301.821"
+    },
+    {
+     "date": "2023-04-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-05-10",
+     "value": "302.918"
+    },
+    {
+     "date": "2023-04-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "303.032"
+    },
+    {
+     "date": "2023-04-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "302.858"
+    },
+    {
+     "date": "2023-04-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "302.845"
+    },
+    {
+     "date": "2023-05-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-06-13",
+     "value": "303.294"
+    },
+    {
+     "date": "2023-05-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "303.365"
+    },
+    {
+     "date": "2023-05-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "303.316"
+    },
+    {
+     "date": "2023-05-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "303.334"
+    },
+    {
+     "date": "2023-06-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-07-12",
+     "value": "303.841"
+    },
+    {
+     "date": "2023-06-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "304.003"
+    },
+    {
+     "date": "2023-06-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "304.099"
+    },
+    {
+     "date": "2023-06-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "304.014"
+    },
+    {
+     "date": "2023-07-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-08-10",
+     "value": "304.348"
+    },
+    {
+     "date": "2023-07-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "304.628"
+    },
+    {
+     "date": "2023-07-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "304.615"
+    },
+    {
+     "date": "2023-07-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "304.609"
+    },
+    {
+     "date": "2023-08-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-09-13",
+     "value": "306.269"
+    },
+    {
+     "date": "2023-08-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "306.187"
+    },
+    {
+     "date": "2023-08-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "306.138"
+    },
+    {
+     "date": "2023-08-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "306.082"
+    },
+    {
+     "date": "2023-09-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-10-12",
+     "value": "307.481"
+    },
+    {
+     "date": "2023-09-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "307.288"
+    },
+    {
+     "date": "2023-09-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "307.374"
+    },
+    {
+     "date": "2023-09-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "307.276"
+    },
+    {
+     "date": "2023-10-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-11-14",
+     "value": "307.619"
+    },
+    {
+     "date": "2023-10-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "307.531"
+    },
+    {
+     "date": "2023-10-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "307.653"
+    },
+    {
+     "date": "2023-10-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "307.696"
+    },
+    {
+     "date": "2023-11-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2023-12-12",
+     "value": "307.917"
+    },
+    {
+     "date": "2023-11-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "308.024"
+    },
+    {
+     "date": "2023-11-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "308.087"
+    },
+    {
+     "date": "2023-11-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "308.148"
+    },
+    {
+     "date": "2023-12-01",
+     "realtime_end": "2024-02-08",
+     "realtime_start": "2024-01-11",
+     "value": "308.850"
+    },
+    {
+     "date": "2023-12-01",
+     "realtime_end": "2025-02-11",
+     "realtime_start": "2024-02-09",
+     "value": "308.742"
+    },
+    {
+     "date": "2023-12-01",
+     "realtime_end": "2026-02-12",
+     "realtime_start": "2025-02-12",
+     "value": "308.735"
+    },
+    {
+     "date": "2023-12-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-13",
+     "value": "308.741"
+    }
+   ],
+   "offset": 0,
+   "order_by": "observation_date",
+   "output_type": 1,
+   "realtime_end": "9999-12-31",
+   "realtime_start": "2023-01-01",
+   "sort_order": "asc",
+   "units": "lin"
+  },
+  "url": "https://api.stlouisfed.org/fred/series/observations?series_id=CPIAUCSL&realtime_start=2023-01-01&realtime_end=9999-12-31&observation_start=2023-01-01&observation_end=2023-12-31&sort_order=asc&limit=100000&offset=0&file_type=json"
+ },
+ "obs_WGS1YR_2026": {
+  "body": {
+   "count": 42,
+   "file_type": "json",
+   "limit": 100000,
+   "observation_end": "9999-12-31",
+   "observation_start": "2026-01-01",
+   "observations": [
+    {
+     "date": "2026-01-02",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-01-05",
+     "value": "3.48"
+    },
+    {
+     "date": "2026-01-09",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-01-12",
+     "value": "3.49"
+    },
+    {
+     "date": "2026-01-16",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-01-20",
+     "value": "3.53"
+    },
+    {
+     "date": "2026-01-23",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-01-26",
+     "value": "3.53"
+    },
+    {
+     "date": "2026-01-30",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-02",
+     "value": "3.5"
+    },
+    {
+     "date": "2026-02-06",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-09",
+     "value": "3.47"
+    },
+    {
+     "date": "2026-02-13",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-17",
+     "value": "3.43"
+    },
+    {
+     "date": "2026-02-20",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-02-23",
+     "value": "3.5"
+    },
+    {
+     "date": "2026-02-27",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-03-02",
+     "value": "3.51"
+    },
+    {
+     "date": "2026-03-06",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-03-09",
+     "value": "3.56"
+    },
+    {
+     "date": "2026-03-13",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-03-16",
+     "value": "3.61"
+    },
+    {
+     "date": "2026-03-20",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-03-23",
+     "value": "3.7"
+    },
+    {
+     "date": "2026-03-27",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-03-30",
+     "value": "3.79"
+    },
+    {
+     "date": "2026-04-03",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-04-06",
+     "value": "3.69"
+    },
+    {
+     "date": "2026-04-10",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-04-13",
+     "value": "3.69"
+    },
+    {
+     "date": "2026-04-17",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-04-20",
+     "value": "3.69"
+    },
+    {
+     "date": "2026-04-24",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-04-27",
+     "value": "3.68"
+    },
+    {
+     "date": "2026-05-01",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-05-04",
+     "value": "3.72"
+    },
+    {
+     "date": "2026-05-08",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-05-11",
+     "value": "3.76"
+    },
+    {
+     "date": "2026-05-15",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-05-18",
+     "value": "3.8"
+    },
+    {
+     "date": "2026-05-22",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-05-26",
+     "value": "3.82"
+    },
+    {
+     "date": "2026-05-29",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-06-01",
+     "value": "3.8"
+    },
+    {
+     "date": "2026-06-05",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-06-08",
+     "value": "3.84"
+    },
+    {
+     "date": "2026-06-12",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-06-15",
+     "value": "3.87"
+    },
+    {
+     "date": "2026-06-19",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-06-22",
+     "value": "3.92"
+    },
+    {
+     "date": "2026-06-26",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-06-29",
+     "value": "3.99"
+    },
+    {
+     "date": "2026-07-03",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-07-06",
+     "value": "3.98"
+    },
+    {
+     "date": "2026-07-10",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-07-13",
+     "value": "4.03"
+    },
+    {
+     "date": "2026-07-17",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-07-20",
+     "value": "4.02"
+    },
+    {
+     "date": "2026-07-24",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-07-27",
+     "value": "4.1"
+    },
+    {
+     "date": "2026-07-31",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-08-03",
+     "value": "4.08"
+    },
+    {
+     "date": "2026-08-07",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-08-10",
+     "value": "4.04"
+    },
+    {
+     "date": "2026-08-14",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-08-17",
+     "value": "4"
+    },
+    {
+     "date": "2026-08-21",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-08-24",
+     "value": "4"
+    },
+    {
+     "date": "2026-08-28",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-08-31",
+     "value": "4.05"
+    },
+    {
+     "date": "2026-09-04",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-09-08",
+     "value": "4.15"
+    },
+    {
+     "date": "2026-09-11",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-09-14",
+     "value": "4.24"
+    },
+    {
+     "date": "2026-09-18",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-09-21",
+     "value": "4.41"
+    },
+    {
+     "date": "2026-09-25",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-09-28",
+     "value": "4.48"
+    },
+    {
+     "date": "2026-10-02",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-10-05",
+     "value": "4.52"
+    },
+    {
+     "date": "2026-10-09",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-10-13",
+     "value": "4.45"
+    },
+    {
+     "date": "2026-10-16",
+     "realtime_end": "9999-12-31",
+     "realtime_start": "2026-10-19",
+     "value": "4.49"
+    }
+   ],
+   "offset": 0,
+   "order_by": "observation_date",
+   "output_type": 1,
+   "realtime_end": "9999-12-31",
+   "realtime_start": "2026-01-01",
+   "sort_order": "asc",
+   "units": "lin"
+  },
+  "url": "https://api.stlouisfed.org/fred/series/observations?series_id=WGS1YR&realtime_start=2026-01-01&realtime_end=9999-12-31&observation_start=2026-01-01&sort_order=asc&limit=100000&offset=0&file_type=json"
+ },
+ "release_WGS1YR": {
+  "body": {
+   "realtime_end": "2026-10-23",
+   "realtime_start": "2026-10-23",
+   "releases": [
+    {
+     "id": 18,
+     "link": "http://www.federalreserve.gov/releases/h15/",
+     "name": "H.15 Selected Interest Rates",
+     "notes": "For questions on the data, please contact the data source: https://www.federalreserve.gov/apps/ContactUs/feedback.aspx?refurl=/releases/h15/%\r\nFor questions on FRED functionality, please contact: https://fred.stlouisfed.org/contactus/",
+     "press_release": true,
+     "realtime_end": "2026-10-23",
+     "realtime_start": "2026-10-23"
+    }
+   ]
+  },
+  "url": "https://api.stlouisfed.org/fred/series/release?series_id=WGS1YR&file_type=json"
+ },
+ "sources_18": {
+  "body": {
+   "realtime_end": "2026-10-23",
+   "realtime_start": "2026-10-23",
+   "sources": [
+    {
+     "id": 1,
+     "link": "https://www.federalreserve.gov",
+     "name": "Board of Governors of the Federal Reserve System (US)",
+     "realtime_end": "2026-10-23",
+     "realtime_start": "2026-10-23"
+    }
+   ]
+  },
+  "url": "https://api.stlouisfed.org/fred/release/sources?release_id=18&file_type=json"
+ }
+}
