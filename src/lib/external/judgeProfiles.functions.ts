@@ -1,4 +1,4 @@
-/** FJC-based profiles for the top 1,000 sitting federal judges (dataset judge_profiles_fjc). */
+/** FJC-based profiles for every judge in the FJC biographical directory (dataset judge_profiles_fjc). */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { restGet } from "./rest.server";

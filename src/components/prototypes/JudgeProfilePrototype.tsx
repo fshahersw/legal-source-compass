@@ -233,7 +233,7 @@ export function JudgeProfilePrototype({ profile, fjcUrl }: Props) {
           <Stat
             label="Appointing President"
             value={appointment ? text(appointment.president) : NR}
-            sub={appointment ? text(appointment.party) : undefined}
+            sub={appointment ? `President's party: ${text(appointment.party)}` : undefined}
           />
         </div>
       </header>
@@ -389,7 +389,7 @@ export function JudgeProfilePrototype({ profile, fjcUrl }: Props) {
                 </p>
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3">
                   <Field label="Nominated By" value={text(appointment.president)} />
-                  <Field label="Party" value={text(appointment.party)} />
+                  <Field label="Appointing president's party" value={text(appointment.party)} />
                   <Field label="ABA Rating" value={text(appointment.aba_rating)} />
                   <Field label="Nomination" value={fmtDate(appointment.nomination)} mono />
                   <Field label="Confirmation" value={fmtDate(appointment.confirmation)} mono />
