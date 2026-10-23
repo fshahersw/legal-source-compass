@@ -158,6 +158,7 @@ export function sectionOf(datasetId: string): SectionId {
   if (datasetId.startsWith("judge")) return "judges";
   if (datasetId.startsWith("mdl")) return "matters";
   if (datasetId.startsWith("court")) return "courts";
+  if (datasetId.startsWith("uscourts_tables_")) return "courts";
   return "other";
 }
 

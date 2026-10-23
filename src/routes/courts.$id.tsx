@@ -8,6 +8,7 @@ import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { CourtResources } from "@/components/corpus/CourtResources";
 import { CourtAnalyticsPanel } from "@/components/corpus/CourtAnalyticsPanel";
 import { CaseloadHistoryPanel } from "@/components/courts/CaseloadHistoryPanel";
+import { CourtStatsTrendsPanel } from "@/components/courts/stats/CourtStatsTrendsPanel";
 import { CourtLocationsPanel } from "@/components/courts/CourtLocationsPanel";
 import { CourtRulesPanel } from "@/components/courts/rules/CourtRulesPanel";
 import { CourtStructurePanel } from "@/components/courts/CourtStructurePanel";
@@ -83,6 +84,7 @@ function Page() {
           <CourtRulesPanel courtId={id} />
           <CourtAnalyticsPanel courtId={id} />
           <CaseloadHistoryPanel courtId={id} />
+          <CourtStatsTrendsPanel courtId={id} />
           <CourtJudgesPanel courtId={id} />
           <CourtVacanciesPanel courtId={id} />
           <AppealsOutcomesPanel courtId={id} />

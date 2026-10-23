@@ -77,6 +77,11 @@ for (const suite of [
   { directory: "scripts/enrichment/ecfr_authorities", modules: ["test_ecfr_authorities"] },
   { directory: "scripts/enrichment/state_statutes", modules: ["test_state_statutes"] },
   { directory: "scripts/enrichment/census", modules: ["test_census"] },
+  { directory: "scripts/enrichment/regfin", modules: ["test_regfin"] },
+  {
+    directory: "scripts/enrichment/uscourts_tables",
+    modules: ["test_uscourts_tables", "test_normalize", "test_build_tables", "test_pdf"],
+  },
   {
     directory: "scripts/limitations/backfill",
     modules: ["test_capture", "test_capture_browser_dom"],

@@ -172,6 +172,10 @@ describe("buildCharts for a district", () => {
     });
   });
 
+  it("names the court in lower case inside a sentence", () => {
+    expect(byId("civil").howToRead).toContain("Counts are totals for this court (NY,S) only;");
+  });
+
   it("never charts a percent-change column as the filed count", () => {
     const filed = byId("civil").series[0]!;
     expect(filed.points.map((p) => p.value)).toEqual([100, 110, 120]);

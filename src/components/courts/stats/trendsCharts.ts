@@ -228,7 +228,7 @@ function volumeCharts(
       decimals: 0,
       months: 12,
       series,
-      howToRead: `${ROLLING_NOTE} Counts are totals for ${courtName} only; pending is the number open at the end of the period.`,
+      howToRead: `${ROLLING_NOTE} Counts are totals for ${courtName.replace(/^This court\b/, "this court")} only; pending is the number open at the end of the period.`,
     },
     t,
     mode,
