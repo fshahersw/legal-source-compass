@@ -42,6 +42,7 @@ import glob
 import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 import time
@@ -92,7 +93,11 @@ def connect(memory: str = "4GB", threads: int = 2):
     tmp = os.path.join(OUT, "duck_tmp")
     os.makedirs(tmp, exist_ok=True)
     con.execute(f"SET temp_directory='{tmp}'")
-    con.execute("SET max_temp_directory_size='300MB'")
+    # spill cap: 300MB by default (disk-safe); CASELAW_DUCK_TEMP_MAX (e.g. "1500MB") raises it for a full-corpus run
+    cap = os.environ.get("CASELAW_DUCK_TEMP_MAX", "300MB")
+    if not re.fullmatch(r"\d{1,5}(MB|GB|MiB|GiB)", cap):
+        raise SystemExit(f"CASELAW_DUCK_TEMP_MAX must look like 1500MB or 2GB, not {cap!r}")
+    con.execute(f"SET max_temp_directory_size='{cap}'")
     for name in ("opinion", "cluster", "docket", "cmap", "citation", "small"):
         con.execute(f"ATTACH '{os.path.join(DB, name + '.duckdb')}' AS {name} (READ_ONLY)")
     return con
