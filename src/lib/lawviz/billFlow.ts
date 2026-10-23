@@ -9,7 +9,6 @@
 
 export type BillRow = {
   congress: number;
-  type: string;
   policy: string;
   introduced: boolean;
   reported: boolean;
@@ -18,10 +17,14 @@ export type BillRow = {
   n: number;
   withLawNumber: number;
 };
+/** Simple and concurrent resolutions (they do not go to the President), counted apart. */
+export type ResolutionCount = { congress: number; policy: string; n: number };
 export type BillFlowData =
   | {
       status: "ok";
+      /** Bills and joint resolutions (hr, s, hjres, sjres): the measures that can become law. */
       rows: BillRow[];
+      resolutions: ResolutionCount[];
       policies: string[];
       publicLaws: Record<number, number>;
       builtAt: string | null;
@@ -29,39 +32,41 @@ export type BillFlowData =
     }
   | { status: "unavailable" | "empty"; builtAt: string | null };
 
-export const LAW_TYPES = ["hr", "s", "hjres", "sjres"] as const;
-export const RESOLUTION_TYPES = ["hres", "sres", "hconres", "sconres"] as const;
-const TYPES = new Set<string>([...LAW_TYPES, ...RESOLUTION_TYPES]);
 export const FIRST_CONGRESS = 108;
 export const LAST_CONGRESS = 119;
 
 const obj = (v: unknown) =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 const nat = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null);
+const inRange = (c: number | null): c is number =>
+  c !== null && c >= FIRST_CONGRESS && c <= LAST_CONGRESS;
 
 export function parseBillFlow(raw: unknown, builtAt: string | null = null): BillFlowData {
   const r = obj(raw);
   if (!r) return { status: "unavailable", builtAt };
   if (r["status"] === "empty") return { status: "empty", builtAt };
-  if (r["status"] !== "ok" || !Array.isArray(r["rows"])) return { status: "unavailable", builtAt };
+  if (r["status"] !== "ok" || !Array.isArray(r["rows"]) || !Array.isArray(r["policy_areas"]))
+    return { status: "unavailable", builtAt };
+  const areas = (r["policy_areas"] as unknown[]).map((p) =>
+    typeof p === "string" ? p.trim() : null,
+  );
+  const area = (i: unknown) => {
+    const k = nat(i);
+    return k !== null && k < areas.length ? areas[k] : null;
+  };
   const rows: BillRow[] = [];
   let dropped = 0;
   for (const x of r["rows"] as unknown[]) {
-    if (!Array.isArray(x)) {
-      dropped++;
-      continue;
-    }
-    const [congress, type, policy, intro, rep, ch, law, n, wl] = x as unknown[];
+    const a = Array.isArray(x) ? (x as unknown[]) : [];
+    const [congress, pi, intro, rep, ch, law, n, wl] = a;
     const c = nat(congress);
+    const policy = area(pi);
     const cnt = nat(n);
     const chambers = nat(ch);
     if (
-      c === null ||
-      c < FIRST_CONGRESS ||
-      c > LAST_CONGRESS ||
-      typeof type !== "string" ||
-      !TYPES.has(type) ||
-      typeof policy !== "string" ||
+      !inRange(c) ||
+      policy === null ||
+      policy === undefined ||
       typeof intro !== "boolean" ||
       typeof rep !== "boolean" ||
       typeof law !== "boolean" ||
@@ -74,8 +79,7 @@ export function parseBillFlow(raw: unknown, builtAt: string | null = null): Bill
     }
     rows.push({
       congress: c,
-      type,
-      policy: policy.trim(),
+      policy,
       introduced: intro,
       reported: rep,
       chambers: chambers as 0 | 1 | 2,
@@ -84,22 +88,30 @@ export function parseBillFlow(raw: unknown, builtAt: string | null = null): Bill
       withLawNumber: Math.min(cnt, nat(wl) ?? 0),
     });
   }
+  const resolutions: ResolutionCount[] = [];
+  for (const x of Array.isArray(r["resolutions"]) ? (r["resolutions"] as unknown[]) : []) {
+    const a = Array.isArray(x) ? (x as unknown[]) : [];
+    const c = nat(a[0]);
+    const policy = area(a[1]);
+    const n = nat(a[2]);
+    if (inRange(c) && policy !== null && policy !== undefined && n)
+      resolutions.push({ congress: c, policy, n });
+    else dropped++;
+  }
   const publicLaws: Record<number, number> = {};
   for (const [k, v] of Object.entries(obj(r["public_laws"]) ?? {})) {
     const c = Number(k);
     const n = nat(v);
-    if (Number.isInteger(c) && c >= FIRST_CONGRESS && c <= LAST_CONGRESS && n !== null)
-      publicLaws[c] = n;
+    if (Number.isInteger(c) && inRange(c) && n !== null) publicLaws[c] = n;
   }
-  const policies = [...new Set(rows.map((x) => x.policy))].sort((a, b) =>
-    a === "" ? 1 : b === "" ? -1 : a.localeCompare(b),
-  );
-  return { status: "ok", rows, policies, publicLaws, builtAt, dropped };
+  const policies = [
+    ...new Set([...rows.map((x) => x.policy), ...resolutions.map((x) => x.policy)]),
+  ].sort((a, b) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b)));
+  return { status: "ok", rows, resolutions, policies, publicLaws, builtAt, dropped };
 }
 
 export type BillFilter = { congress: number | "all"; policy: string | "all" };
-export const matches = (row: BillRow, f: BillFilter, types: readonly string[] = LAW_TYPES) =>
-  types.includes(row.type) &&
+export const matches = (row: { congress: number; policy: string }, f: BillFilter) =>
   (f.congress === "all" || row.congress === f.congress) &&
   (f.policy === "all" || row.policy === f.policy);
 
@@ -327,7 +339,6 @@ export function congressTable(
       publicLaws: policy === "all" ? (publicLaws[c] ?? null) : null,
     });
   for (const r of rows) {
-    if (!(LAW_TYPES as readonly string[]).includes(r.type)) continue;
     if (policy !== "all" && r.policy !== policy) continue;
     const t = out.get(r.congress)!;
     t.total += r.n;

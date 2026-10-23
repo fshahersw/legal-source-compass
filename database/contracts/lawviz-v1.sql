@@ -875,18 +875,30 @@ begin
                             'empty', n_fr = 0 and n_sec = 0 and jsonb_array_length(v_statutes) = 0);
 end $$;
 
--- Bill-to-law flow: every precomputed path row (small by construction) plus the public-law cross-check.
+-- Bill-to-law flow: the path counts of bills and joint resolutions (the measures that can become law) by Congress and
+-- policy area (an index into `policy_areas`; '' = not recorded), the counts of simple and concurrent resolutions left out,
+-- and the public-law cross-check. About 75 KB.
 create or replace function public.lawviz_bill_flow_v1() returns jsonb
 language sql stable security definer set search_path = '' as $$
+  with pa as (
+    select policy_area, (row_number() over (order by policy_area) - 1)::integer as i
+    from (select distinct policy_area from lawviz.bill_paths) x
+  )
   select jsonb_build_object(
     'status', case when exists (select 1 from lawviz.bill_paths) then 'ok' else 'empty' end,
-    'policy_areas', (select coalesce(jsonb_agg(pa order by pa), '[]'::jsonb)
-                     from (select distinct policy_area as pa from lawviz.bill_paths) x),
-    'rows', (select coalesce(jsonb_agg(jsonb_build_array(congress, bill_type, policy_area, introduced, reported,
-                                                         chambers, became_law, n, with_law_number)
-                                       order by congress, bill_type, policy_area, introduced, reported, chambers,
-                                                became_law), '[]'::jsonb)
-             from lawviz.bill_paths),
+    'policy_areas', (select coalesce(jsonb_agg(policy_area order by i), '[]'::jsonb) from pa),
+    'rows', (select coalesce(jsonb_agg(jsonb_build_array(congress, i, introduced, reported, chambers, became_law, n, wl)
+                                       order by congress, i, introduced, reported, chambers, became_law), '[]'::jsonb)
+             from (select b.congress, pa.i, b.introduced, b.reported, b.chambers, b.became_law,
+                          sum(b.n)::integer as n, sum(b.with_law_number)::integer as wl
+                   from lawviz.bill_paths b join pa on pa.policy_area = b.policy_area
+                   where b.bill_type in ('hr', 's', 'hjres', 'sjres')
+                   group by 1, 2, 3, 4, 5, 6) r),
+    'resolutions', (select coalesce(jsonb_agg(jsonb_build_array(congress, i, n) order by congress, i), '[]'::jsonb)
+                    from (select b.congress, pa.i, sum(b.n)::integer as n
+                          from lawviz.bill_paths b join pa on pa.policy_area = b.policy_area
+                          where b.bill_type not in ('hr', 's', 'hjres', 'sjres')
+                          group by 1, 2) r),
     'public_laws', (select coalesce(jsonb_object_agg(congress::text, public_laws), '{}'::jsonb) from lawviz.bill_laws),
     'built', lawviz.built('bills'))
 $$;

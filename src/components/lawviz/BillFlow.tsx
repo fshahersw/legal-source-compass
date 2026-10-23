@@ -19,8 +19,6 @@ import { ribbonPath } from "@/components/charts/sankeyLayout";
 import {
   FIRST_CONGRESS,
   LAST_CONGRESS,
-  LAW_TYPES,
-  RESOLUTION_TYPES,
   STAGE_LABEL,
   congressTable,
   congressYears,
@@ -191,9 +189,7 @@ export function BillFlow() {
   const flow = useMemo(() => stageFlow(rows), [rows]);
   const resolutions = useMemo(
     () =>
-      data
-        ? data.rows.filter((r) => matches(r, filter, RESOLUTION_TYPES)).reduce((a, r) => a + r.n, 0)
-        : 0,
+      data ? data.resolutions.filter((r) => matches(r, filter)).reduce((a, r) => a + r.n, 0) : 0,
     [data, filter],
   );
   const congresses = Array.from(

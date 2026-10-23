@@ -320,7 +320,6 @@ describe("lineage payload", () => {
 
 const row = (p: Partial<BillRow>): BillRow => ({
   congress: 117,
-  type: "hr",
   policy: "Health",
   introduced: true,
   reported: false,
@@ -391,18 +390,21 @@ describe("bill flow", () => {
   it("parses rows and builds the per-Congress table", () => {
     const d = parseBillFlow({
       status: "ok",
+      policy_areas: ["", "Health"],
       rows: [
-        [117, "hr", "Health", true, true, 2, true, 3, 3],
-        [117, "hres", "Health", true, false, 1, false, 9, 0],
-        [107, "hr", "Health", true, false, 0, false, 9, 0],
-        [118, "s", "", true, false, 0, false, 4, 0],
+        [117, 1, true, true, 2, true, 3, 3],
+        [107, 1, true, false, 0, false, 9, 0],
+        [118, 0, true, false, 0, false, 4, 0],
+        [118, 7, true, false, 0, false, 4, 0],
       ],
+      resolutions: [[117, 1, 9]],
       public_laws: { "117": 362, "200": 1 },
     });
     if (d.status !== "ok") throw new Error(d.status);
-    expect(d.rows).toHaveLength(3);
-    expect(d.dropped).toBe(1);
+    expect(d.rows).toHaveLength(2);
+    expect(d.dropped).toBe(2);
     expect(d.policies).toEqual(["Health", ""]);
+    expect(d.resolutions).toEqual([{ congress: 117, policy: "Health", n: 9 }]);
     expect(d.publicLaws).toEqual({ 117: 362 });
     const tab = congressTable(d.rows, d.publicLaws, "all");
     expect(tab.find((x) => x.congress === 117)).toMatchObject({

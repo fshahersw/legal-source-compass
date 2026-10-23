@@ -267,6 +267,7 @@ async function seed(db) {
   );
   await bill("117-s-5", 117, "s", "Taxation", ["passed_senate"]); // introduction not recorded
   await bill("107-hr-6", 107, "hr", "Health", ["introduced"]); // outside 108–119
+  await bill("117-hres-7", 117, "hres", "Health", ["introduced", "passed_house"]); // a resolution
   await rec("public_laws_enacted", "stat-135-1", {
     detail: { law: { congress: 117, kind: "Public law", enacted: "2021-03-11" } },
   });
@@ -563,20 +564,25 @@ test("bill flow: recorded milestones only, 108th–119th Congress", async () => 
   await one(db, "select public.lawviz_refresh_v1('t1', 'bills')");
   const r = (await one(db, "select public.lawviz_bill_flow_v1() r")).r;
   assert.equal(r.status, "ok");
-  const total = r.rows.reduce((a, x) => a + x[7], 0);
+  assert.deepEqual(
+    r.policy_areas,
+    ["", "Health", "Taxation"],
+    "a missing policy area is kept as not recorded",
+  );
+  const total = r.rows.reduce((a, x) => a + x[6], 0);
   assert.equal(total, 5, "the 107th Congress bill is outside the range");
-  const law = r.rows.filter((x) => x[6]);
+  const law = r.rows.filter((x) => x[5]);
+  assert.equal(
+    law.reduce((a, x) => a + x[6], 0),
+    2,
+  );
   assert.equal(
     law.reduce((a, x) => a + x[7], 0),
     2,
   );
-  assert.equal(
-    law.reduce((a, x) => a + x[8], 0),
-    2,
-  );
-  const noIntro = r.rows.find((x) => x[3] === false);
-  assert.equal(noIntro[2], "Taxation");
-  assert.ok(r.policy_areas.includes(""), "a missing policy area is kept as not recorded");
+  const noIntro = r.rows.find((x) => x[2] === false);
+  assert.equal(r.policy_areas[noIntro[1]], "Taxation");
+  assert.deepEqual(r.resolutions, [[117, 1, 1]]);
   assert.deepEqual(r.public_laws, { 117: 2 });
   await db.close();
 });
