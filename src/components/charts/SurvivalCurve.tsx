@@ -189,12 +189,7 @@ export function SurvivalCurve({
             </text>
             {groups.map((g, gi) => (
               <g key={`risk-${g.id}`}>
-                <text
-                  x={4}
-                  y={plotBottom + 48 + gi * 14}
-                  fontSize={10}
-                  fill="var(--chart-axis)"
-                >
+                <text x={4} y={plotBottom + 48 + gi * 14} fontSize={10} fill="var(--chart-axis)">
                   {groups.length > 1 ? g.label : ""}
                 </text>
                 {times.map((t) =>

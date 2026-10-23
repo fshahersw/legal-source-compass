@@ -15,6 +15,7 @@ import {
   SlopeChart,
   metricFormatter,
   periodLabel,
+  periodTick,
   rankItems,
   type RankedItem,
 } from "@/components/charts";
@@ -389,8 +390,7 @@ export function RankingsView({
               rows={ranked.ranked.slice(0, 51).map((r) => ({ id: r.id, label: r.label }))}
               columns={span.map((p) => ({
                 id: p,
-                label:
-                  metric.periodType === "year" ? p : plabel(p).replace(/^12 months ending /, ""),
+                label: periodTick(p, metric.periodType),
               }))}
               value={historyValue}
               formatter={fmt}

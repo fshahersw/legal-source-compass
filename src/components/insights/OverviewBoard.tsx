@@ -253,9 +253,15 @@ export function OverviewBoard() {
   const metricDefs: MetricDef[] = useMemo(() => {
     const all = catalog.data?.metrics ?? [];
     const bridge = BRIDGE_KPI_METRICS.flatMap((id) => all.filter((m) => m.id === id));
-    const layer = all.filter(
-      (m) => catalog.data?.origin[m.id] !== "bridge" && m.entityTypes.includes("nation"),
-    );
+    // the data layer's national metrics, at most three per topic (catalog order), so the board stays a summary
+    const perTopic = new Map<string, number>();
+    const layer = all.filter((m) => {
+      if (catalog.data?.origin[m.id] === "bridge" || !m.entityTypes.includes("nation"))
+        return false;
+      const n = perTopic.get(m.topic) ?? 0;
+      perTopic.set(m.topic, n + 1);
+      return n < 3;
+    });
     return [...layer, ...bridge];
   }, [catalog.data]);
   const metricQs = useQueries({
