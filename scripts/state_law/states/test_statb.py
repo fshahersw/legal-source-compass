@@ -237,6 +237,16 @@ class EarlierModules(unittest.TestCase):
         self.assertEqual(text, "(a) The action shall be brought within three years.")
         self.assertEqual(history, "(1943, c. 543; 2021-91, s. 1.)")
 
+    def test_nc_three_part_numbers(self):
+        nc = load("nc")
+        for head, number, heading in (("§ 25-2-313.  Express warranties by affirmation.", "25-2-313", "Express warranties by affirmation."),
+                                      ("§ 36C-1-101.  Short title.", "36C-1-101", "Short title."),
+                                      ("§ 1C-1601.  What property exempt.", "1C-1601", "What property exempt."),
+                                      ("§ 14-113.20B.  Definitions.", "14-113.20B", "Definitions.")):
+            m = nc.SECTION_HEAD.match(head)
+            self.assertIsNotNone(m, head)
+            self.assertEqual((m.group(1), m.group(2)), (number, heading))
+
     def test_nj_section(self):
         nj = load("nj")
         got = nj.split_section("2A:14-1. Actions of trespass to real property.",

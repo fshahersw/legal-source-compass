@@ -36,7 +36,8 @@ TOC_URL = "https://www.ncleg.gov/Laws/GeneralStatutesTOC"
 CHAPTER_URL = "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/ByChapter/Chapter_{}.html"
 SECTION_PAGE = "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_{}/GS_{}.html"
 PARSER = "nc-chapter-html/1"
-SECTION_HEAD = re.compile(r"^§\s*([0-9]+[A-Z]*-[0-9A-Za-z.]+?)\.?\s{1,}(.*)$", re.S)
+# "§ 1C-1601." and the article-numbered chapters' "§ 25-2-313." / "§ 58-1-1." / "§ 36C-1-101." (chapter-article-section)
+SECTION_HEAD = re.compile(r"^§\s*([0-9]+[A-Z]*-[0-9A-Za-z.]+?(?:-[0-9A-Za-z.]+?)?)\.?\s{1,}(.*)$", re.S)
 RANGE_HEAD = re.compile(r"^§§\s*")
 HIER = re.compile(r"^(Article|Part|Subpart|SUBCHAPTER|Subchapter|SubChapter)\s+([0-9A-Z][0-9A-Za-z.\-]*?)\.?$")
 VERSION = re.compile(r"^\((Effective|Contingently effective|For contingent|Repealed effective|Expires|"
