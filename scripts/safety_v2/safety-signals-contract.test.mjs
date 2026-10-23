@@ -247,11 +247,18 @@ test("breakdowns: one row per (subject, dim, period), terms by label, serious ne
   const q = await one(db, "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', array['Alopecia']) r");
   assert.deepEqual(q.r.cells, [["2024-Q1", "Alopecia", 11, 4]]);
   assert.equal(q.r.periods[0].truncated, false);
+  // default rows: the terms most reported inside the requested periods, not the all-time leaders
+  await load(db, "breakdowns", [b("2025-Q1", ["Neutropenia", "Alopecia"], [9, 1], null), b("2025-Q2", ["Fatigue", "Neutropenia"], [8, 7], null)]);
+  const win = await one(db, "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', null, '2025-Q1', '2025-Q2', 2) r");
+  assert.deepEqual(win.r.terms, ["Neutropenia", "Fatigue"]);
+  assert.deepEqual(win.r.periods.map((x) => x.period), ["2025-Q1", "2025-Q2"]);
+  const none = await one(db, "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', null, '2030', null, 3) r");
+  assert.deepEqual([none.r.terms, none.r.periods, none.r.cells], [["Alopecia"], [], []]);
   const top = await one(db, "select public.safety_breakdown_v1('faers:docetaxel', 'meddra_pt', 'all', 10) r");
   assert.deepEqual(top.r.rows, [{ term: "Alopecia", value: 90, serious: 30 }]);
   const prof = await one(db, "select public.safety_subject_v1('faers:docetaxel') r");
   assert.equal(prof.r.breakdowns.meddra_pt.rows[0].term, "Alopecia");
-  assert.deepEqual(prof.r.periods, [{ dim: "meddra_pt", period: "2024-Q1" }]);
+  assert.deepEqual(prof.r.periods, ["2024-Q1", "2025-Q1", "2025-Q2"].map((period) => ({ dim: "meddra_pt", period })));
 });
 
 test("record tables: withheld fields are refused, NEISS stays held without the lead's confirmation", async () => {

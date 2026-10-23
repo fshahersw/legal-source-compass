@@ -1245,9 +1245,11 @@ begin
                from unnest(b.term_ids[1:p_limit], b.vals[1:p_limit]) with ordinality x(tid, v, i) join safety.terms t on t.id = x.tid));
 end $$;
 
--- Period-by-term matrix (reaction or problem heatmap): the given terms (or the subject's top all-time terms) for every
--- stored period (quarters, or calendar years for lower-ranked products). A term missing from a period whose breakdown
--- was truncated (truncated = true) is not recorded, not zero; missing from a complete period it is 0.
+-- Period-by-term matrix (reaction or problem heatmap): the given terms for every stored period in [p_from, p_to]
+-- (quarters, or calendar years for lower-ranked products). Without p_terms, the p_top terms with the most recorded
+-- reports in those periods (ties: label); with no period breakdown stored, the subject's top all-time terms. A term
+-- missing from a period whose breakdown was truncated (truncated = true) is not recorded, not zero; missing from a
+-- complete period it is 0.
 create or replace function public.safety_term_quarters_v1(p_id text, p_dim text, p_terms text[] default null,
   p_from text default null, p_to text default null, p_top integer default 12) returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
@@ -1260,9 +1262,20 @@ begin
   if p_top is null or p_top not between 1 and 50 or cardinality(coalesce(p_terms, '{}')) > 50 then
     raise exception 'Invalid term count' using errcode = '22023'; end if;
   v_terms := coalesce(p_terms, array(
-    select t.label from safety.breakdowns b cross join lateral unnest(b.term_ids[1:p_top]) with ordinality x(tid, i)
-      join safety.terms t on t.id = x.tid
-     where b.subject_id = p_id and b.dim = p_dim and b.period = 'all' order by x.i));
+    select t.label
+      from (select x.tid, sum(x.v) as n
+              from safety.breakdowns b cross join lateral unnest(b.term_ids, b.vals) x(tid, v)
+             where b.subject_id = p_id and b.dim = p_dim and b.period <> 'all'
+               and (p_from is null or b.period >= p_from) and (p_to is null or b.period <= p_to)
+             group by x.tid) r
+      join safety.terms t on t.id = r.tid
+     order by r.n desc, t.label limit p_top));
+  if p_terms is null and cardinality(v_terms) = 0 then
+    v_terms := array(
+      select t.label from safety.breakdowns b cross join lateral unnest(b.term_ids[1:p_top]) with ordinality x(tid, i)
+        join safety.terms t on t.id = x.tid
+       where b.subject_id = p_id and b.dim = p_dim and b.period = 'all' order by x.i);
+  end if;
   return jsonb_build_object(
     'terms', to_jsonb(v_terms),
     'periods', coalesce((select jsonb_agg(jsonb_build_object('period', b.period, 'limit_n', b.limit_n, 'returned', b.returned,

@@ -8,6 +8,10 @@ Source: https://static.nhtsa.gov/odi/ffdd/cmpl/COMPLAINTS_RECEIVED_<years>.zip (
 written to disk; lines are UTF-8 (a line that is not valid UTF-8 is read as cp1252 and counted in the manifest). A
 flat-file row is one (complaint, component, vehicle); rows are grouped by ODI number.
 
+Monthly series are written only from a complete read of contiguous files (the default 2020-2024,2025-2026 → 2020-01 ..
+the month before the last received date). A --limit sample is a partial read of a file that is not date-sorted, so it
+writes records and links only.
+
 Withheld (never stored): VIN, consumer city, dealer name/telephone/city/state/zip, vehicle operator's name (field 51),
 tire DOT code. Kept: dates, manufacturer, make/model/year/component per row, crash/fire/injured/deaths, consumer and
 incident state, mileage, speed, complaint type, police/medical/towed flags, product type, the complaint description.
@@ -189,6 +193,21 @@ def matches(rule, cpl):
     return False
 
 
+def series_window(spans, last_received, complete):
+    """(coverage_from, coverage_to) of the monthly complaint series, or None when the read cannot support complete
+    monthly counts: a partial read (--limit; the flat files are not date-sorted) or files that are not contiguous
+    (e.g. 2020-2024 and 2025-2026 → 2020-01 .. the month before the last received date, which may still be filling)."""
+    if not complete or not spans or not last_received:
+        return None
+    years = sorted(tuple(int(y) for y in s.split("-")) for s in spans)
+    for (a0, a1), (b0, b1) in zip(years, years[1:]):
+        if b0 != a1 + 1:
+            return None
+    through = c.month_add(last_received[:7], -1)
+    start = f"{years[0][0]:04d}-01"
+    return (start, through) if through >= start else None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--files", default="2020-2024,2025-2026")
@@ -219,9 +238,12 @@ def main():
     wc = c.ChunkWriter(out / "chunks", f"nhtsa_complaints-{tag}", max_rows=args.chunk_rows, source="nhtsa_complaints")
     for k in sorted(complaints):
         wc.add(complaints[k])
-    # vehicle MDL groups: record links and monthly complaint series 2020-01 .. last complete month of the files
+    # vehicle MDL groups: record links, and monthly complaint series only from complete reads of contiguous files
+    spans = args.files.split(",")
     last = max(cpl["received"] for cpl in complaints.values())
-    through = last[:7] if args.limit else c.month_add(last[:7], -1)
+    window_bounds = series_window(spans, last, not args.limit)
+    through = window_bounds[1] if window_bounds else None
+    files_read = ", ".join(f"COMPLAINTS_RECEIVED_{s}.zip" for s in spans)
     subjects, links, series = [], [], []
     for e in mdl_map.MDLS:
         if e["kind"] != "vehicle":
@@ -229,9 +251,8 @@ def main():
         sid = f"mdl:{e['mdl']}"
         hit = [cpl for cpl in complaints.values() if matches(e["nhtsa"], cpl)]
         links += [{"subject_id": sid, "source": "nhtsa", "record_id": str(cpl["odino"]), "rule": "subject search.nhtsa"} for cpl in hit]
-        months = defaultdict(int)
-        for cpl in hit:
-            months[cpl["received"][:7]] += 1
+        if not window_bounds:
+            continue
         for name, pred, unit in (("nhtsa_complaints", lambda x: True, "complaints received"),
                                  ("nhtsa_complaints_crash", lambda x: x.get("crash"), "complaints reporting a crash"),
                                  ("nhtsa_complaints_fire", lambda x: x.get("fire"), "complaints reporting a fire"),
@@ -241,12 +262,12 @@ def main():
             for cpl in hit:
                 if pred(cpl):
                     m2[cpl["received"][:7]] += 1
-            window = c.month_span("2020-01", through)
+            window = c.month_span(window_bounds[0], through)
             series.append({"subject_id": sid, "series": name, "unit": unit, "source_id": "nhtsa_complaints",
-                           "query_url": f"{BASE}COMPLAINTS_RECEIVED_2020-2024.zip",
-                           "method": ("NHTSA complaint flat files (2020-2024 and 2025-2026), complaints matched to the MDL's title rule "
+                           "query_url": f"{BASE}COMPLAINTS_RECEIVED_{sorted(spans)[0]}.zip",
+                           "method": (f"NHTSA complaint flat files ({files_read}), complaints matched to the MDL's title rule "
                                       f"{json.dumps(e['nhtsa'], sort_keys=True)}, counted by the month NHTSA received them"),
-                           "coverage_from": "2020-01", "coverage_to": through, "retrieved_at": c.utc_now(),
+                           "coverage_from": window_bounds[0], "coverage_to": through, "retrieved_at": c.utc_now(),
                            "vals": [m2.get(m, 0) for m in window]})
     wl = c.ChunkWriter(out / "chunks", f"record_subjects-{tag}", max_rows=args.chunk_rows, source="nhtsa_complaints")
     for i in range(0, len(links), args.chunk_rows):
@@ -265,6 +286,8 @@ def main():
                 f.write(json.dumps({**ch, "target": res["target"]}) + "\n")
     c.write_manifest(out, "nhtsa_complaints", outputs, inputs,
                      {"complaints": len(complaints), "through": through, "linked": len(links),
+                      "series": ("written" if window_bounds else
+                                 "not written: monthly series need complete reads of contiguous files (no --limit)"),
                       "withheld_fields": ["VIN", "CITY", "DEALER_NAME", "DEALER_TEL", "DEALER_CITY", "DEALER_STATE", "DEALER_ZIP",
                                           "VEHICLE_OPERATOR", "DOT"]})
     print(json.dumps({"complaints": len(complaints), "links": len(links), "through": through,

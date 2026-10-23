@@ -33,6 +33,7 @@ import json
 import re
 import sys
 import threading
+import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 from pathlib import Path
@@ -74,6 +75,29 @@ def last_complete_month(results):
     return c.month_add(f"{d.year:04d}-{d.month:02d}", -1)
 
 
+class FieldMissing(Exception):
+    """A search names a field the endpoint does not have. openFDA answers that with the same 404 "No matches found" as a
+    true zero, so the result is unusable: nothing is written (a series of zeros would be false)."""
+
+
+SEARCH_FIELD = re.compile(r"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)*):")
+
+
+def search_fields(search):
+    """The field names an openFDA search uses (quoted values ignored; _exists_/_missing_ are operators)."""
+    s = re.sub(r'"[^"]*"', '""', search or "")
+    return sorted({m.group(1) for m in SEARCH_FIELD.finditer(s)} - {"_exists_", "_missing_"})
+
+
+def split_query(url):
+    """(endpoint, search) of an openFDA query URL built by common.openfda_query (search None when absent)."""
+    m = re.match(re.escape(c.OPENFDA) + r"([a-z]+/[a-z]+\.json)\?(.*)$", url)
+    if not m:
+        return None, None
+    sm = re.search(r"(?:^|&)search=([^&]*)", m.group(2))
+    return m.group(1), (urllib.parse.unquote(sm.group(1)) if sm else None)
+
+
 class Run:
     def __init__(self, args, stream):
         self.args = args
@@ -110,7 +134,32 @@ class Run:
         return self.args.max_requests is None or self.http.requests < self.args.max_requests
 
     def get(self, url):
-        return c.openfda_get(self.http, url, self.key)
+        """GET; a "No matches" answer is accepted as zero only when every searched field exists on the endpoint (one
+        cached _exists_ probe per endpoint and field), else FieldMissing."""
+        data, pub = c.openfda_get(self.http, url, self.key)
+        if data is None:
+            endpoint, search = split_query(url)
+            missing = [f for f in search_fields(search) if not self.field_exists(endpoint, f)] if search else []
+            if missing:
+                raise FieldMissing(f"{endpoint} has no field {', '.join(missing)}")
+        return data, pub
+
+    def field_exists(self, endpoint, field):
+        k = f"{endpoint}|{field}"
+        with self.lock:
+            known = self.state.setdefault("_fields", {})
+            if k in known:
+                return known[k]
+        probe, _ = c.openfda_get(self.http, c.openfda_query(endpoint, search=f"_exists_:{field}", limit=1), self.key)
+        with self.lock:
+            known[k] = probe is not None
+            return known[k]
+
+    def unsupported(self, key, reason):
+        """Record a task whose query cannot be answered (FieldMissing) and mark it done: nothing is written for it."""
+        with self.lock:
+            self.state.setdefault("_unsupported", {})[key] = reason
+            self.done.add(key)
 
     def mark(self, key):
         with self.lock:
@@ -359,7 +408,11 @@ def series_task(run, subject, stream, series, extra, unit, endpoint, date_field,
         return None
     st = run.subject_state(subject["id"])
     url = c.openfda_query(endpoint, search=and_clause(subject["search"][stream], extra), count=date_field)
-    data, pub = run.get(url)
+    try:
+        data, pub = run.get(url)
+    except FieldMissing as e:
+        run.unsupported(key, str(e))
+        return None
     months = c.day_counts_to_months((data or {}).get("results", []))
     if series in ("faers_reports", "maude_reports", "caers_reports"):
         st["first_month"] = next((m for m, v in months.items() if v > 0 and floor <= m <= through), None)
@@ -379,11 +432,17 @@ def breakdown_task(run, subject, stream, endpoint, dim, count_field, period, lim
         return
     search = and_clause(subject["search"][stream], search_extra)
     url = c.openfda_query(endpoint, search=search, count=count_field, limit=limit)
-    data, pub = run.get(url)
-    res = (data or {}).get("results", [])
+    try:
+        data, pub = run.get(url)
+        res = (data or {}).get("results", [])
+        sdata = None
+        if serious_clause and res:
+            sdata, _ = run.get(c.openfda_query(endpoint, search=and_clause(search, serious_clause), count=count_field, limit=limit))
+    except FieldMissing as e:
+        run.unsupported(key, str(e))
+        return
     serious = None
     if serious_clause and res:
-        sdata, _ = run.get(c.openfda_query(endpoint, search=and_clause(search, serious_clause), count=count_field, limit=limit))
         sres = (sdata or {}).get("results", [])
         serious = ({str(r["term"])[:500]: r["count"] for r in sres}, len(sres) >= limit)
     merged = {}
@@ -480,7 +539,8 @@ def build_faers(args):
 
     stop = run_subjects(run, subs, worker)
     outputs = run.close()
-    c.write_manifest(run.out, "openfda/faers", outputs, {"through": through}, {"stopped_at_budget": stop, "requests": run.http.requests})
+    c.write_manifest(run.out, "openfda/faers", outputs, {"through": through}, {"stopped_at_budget": stop, "requests": run.http.requests,
+                                                                     "unsupported": run.state.get("_unsupported", {})})
     print(json.dumps({"through": through, "requests": run.http.requests, "stopped": stop,
                       "rows": {o["target"]: o["rows"] for o in outputs}}))
 
@@ -518,7 +578,8 @@ def build_maude(args):
 
     stop = run_subjects(run, subs, worker)
     outputs = run.close()
-    c.write_manifest(run.out, "openfda/maude", outputs, {"through": through}, {"stopped_at_budget": stop, "requests": run.http.requests})
+    c.write_manifest(run.out, "openfda/maude", outputs, {"through": through}, {"stopped_at_budget": stop, "requests": run.http.requests,
+                                                                     "unsupported": run.state.get("_unsupported", {})})
     print(json.dumps({"through": through, "requests": run.http.requests, "stopped": stop,
                       "rows": {o["target"]: o["rows"] for o in outputs}}))
 
@@ -557,7 +618,11 @@ def build_other(args):
                 continue
             ep = spec["endpoint"]
             url = c.openfda_query(ep, search=spec["search"], count=field)
-            data, pub = run.get(url)
+            try:
+                data, pub = run.get(url)
+            except FieldMissing as e:
+                run.unsupported(key, str(e))
+                continue
             months = c.day_counts_to_months((data or {}).get("results", []))
             cov_from, cov_to = endpoints[ep]
             method = (f"openFDA {ep} count={field} summed by calendar month; the window is the endpoint's own coverage, so a "
@@ -565,7 +630,8 @@ def build_other(args):
             run.writer("series", None, source_id).add(series_row(g["id"], series, unit, source_id, pub, method, months, cov_from, cov_to))
             run.mark(key)
     outputs = run.close()
-    c.write_manifest(run.out, "openfda/other", outputs, {"endpoints": endpoints}, {"requests": run.http.requests})
+    c.write_manifest(run.out, "openfda/other", outputs, {"endpoints": endpoints}, {"requests": run.http.requests,
+                                                                           "unsupported": run.state.get("_unsupported", {})})
     print(json.dumps({"endpoints": endpoints, "requests": run.http.requests, "rows": {o["target"]: o["rows"] for o in outputs}}))
 
 
@@ -628,7 +694,11 @@ def build_records(args):
     seen = set()
     incomplete = []
     for g in groups:
-        data, _ = run.get(c.openfda_query("device/event.json", search=g["search"]["maude"], count="date_received"))
+        try:
+            data, _ = run.get(c.openfda_query("device/event.json", search=g["search"]["maude"], count="date_received"))
+        except FieldMissing as e:
+            run.unsupported(f"records|{g['id']}", str(e))
+            continue
         days = {r["time"]: r["count"] for r in (data or {}).get("results", []) if re.fullmatch(r"(19|20)\d{6}", r["time"])}
         taken = 0
         for a, b, expected in windows_from_days(days):
@@ -671,7 +741,8 @@ def build_records(args):
                 run.writer("record_subjects", None, "openfda_maude").add_group(links[i:i + args.chunk_rows])
             run.mark(key)
     outputs = run.close()
-    c.write_manifest(run.out, "openfda/records", outputs, {}, {"incomplete_windows": incomplete, "requests": run.http.requests})
+    c.write_manifest(run.out, "openfda/records", outputs, {}, {"incomplete_windows": incomplete, "requests": run.http.requests,
+                                                         "unsupported": run.state.get("_unsupported", {})})
     print(json.dumps({"requests": run.http.requests, "incomplete": len(incomplete), "rows": {o["target"]: o["rows"] for o in outputs}}))
 
 

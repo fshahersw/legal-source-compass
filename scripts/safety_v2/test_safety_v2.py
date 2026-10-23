@@ -107,6 +107,42 @@ class OpenfdaTests(unittest.TestCase):
         days = {"20240101": 10, "20240102": 15, "20240103": 30, "20240104": 1}
         self.assertEqual(ob.windows_from_days(days, cap=25), [("20240101", "20240102", 25), ("20240103", "20240103", 30), ("20240104", "20240104", 1)])
 
+    def test_search_fields_and_query_split(self):
+        self.assertEqual(ob.search_fields('recalling_firm:"philips"+AND+product_code:("BZD"+"CBK")'), ["product_code", "recalling_firm"])
+        self.assertEqual(ob.search_fields('(patient.drug.openfda.generic_name:"a: b")+AND+receivedate:[20200101+TO+20200131]'),
+                         ["patient.drug.openfda.generic_name", "receivedate"])
+        self.assertEqual(ob.search_fields("_exists_:product_code"), [])
+        u = c.openfda_query("device/enforcement.json", search='recalling_firm:"philips respironics"', count="report_date")
+        self.assertEqual(ob.split_query(u), ("device/enforcement.json", 'recalling_firm:"philips respironics"'))
+        self.assertEqual(ob.split_query(c.openfda_query("drug/event.json", count="receivedate")), ("drug/event.json", None))
+
+    def test_no_match_is_zero_only_when_every_field_exists(self):
+        class FakeHttp:
+            def __init__(self):
+                self.urls = []
+
+            def request(self, url):
+                self.urls.append(url)
+                if "_exists_:product_code" in url and "device/enforcement" in url:
+                    return 404, b""
+                if "_exists_:" in url:
+                    return 200, b'{"results": [{}]}'
+                return 404, b""  # every real query: no matches
+
+        run = ob.Run.__new__(ob.Run)
+        run.http, run.key, run.state, run.done = FakeHttp(), "K", {}, set()
+        import threading
+        run.lock = threading.RLock()
+        ok = c.openfda_query("device/recall.json", search='recalling_firm:"philips"+AND+product_code:"BZD"', count="event_date_initiated")
+        self.assertEqual(run.get(ok)[0], None)  # a true zero: both fields exist on device/recall
+        bad = c.openfda_query("device/enforcement.json", search='recalling_firm:"philips"+AND+product_code:"BZD"', count="report_date")
+        with self.assertRaises(ob.FieldMissing):
+            run.get(bad)
+        probes = [u for u in run.http.urls if "_exists_" in u]
+        run.get(ok)
+        self.assertEqual(len([u for u in run.http.urls if "_exists_" in u]), len(probes))  # probes are cached
+        self.assertTrue(all("api_key=K" in u for u in run.http.urls))
+
     def test_maude_record_keeps_published_text_and_drops_placeholders(self):
         r = {"report_number": "1234567-2020-00001", "mdr_report_key": "99", "date_received": "20200105", "event_type": "Injury",
              "device": [{"brand_name": "X", "manufacturer_d_name": "M", "device_report_product_code": "DQX", "model_number": "*"}],
@@ -147,6 +183,13 @@ class NhtsaTests(unittest.TestCase):
         self.assertFalse(nh.matches({"text": ["TAKATA"], "component": ["ENGINE"]}, cpl))
         self.assertFalse(nh.matches({"make": ["KIA"]}, cpl))
         self.assertFalse(nh.matches({"make": ["TESLA"], "fire": True}, cpl))
+
+    def test_series_only_from_complete_contiguous_reads(self):
+        self.assertEqual(nh.series_window(["2020-2024", "2025-2026"], "2025-06-12", True), ("2020-01", "2025-05"))
+        self.assertEqual(nh.series_window(["2025-2026"], "2025-06-12", True), ("2025-01", "2025-05"))
+        self.assertIsNone(nh.series_window(["2025-2026"], "2025-06-12", False))  # --limit: partial, unsorted read
+        self.assertIsNone(nh.series_window(["2015-2019", "2025-2026"], "2025-06-12", True))  # gap 2020-2024
+        self.assertIsNone(nh.series_window(["2025-2026"], "2025-01-03", True))  # nothing complete yet
 
     def test_decode_falls_back_to_cp1252(self):
         self.assertEqual(nh.decode("it’s".encode("utf-8")), "it’s")

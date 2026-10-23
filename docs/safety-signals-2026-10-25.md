@@ -85,6 +85,12 @@ delete, drop or truncate.
   - Juul: no brand field.
   - Onewheel: CPSC scope.
   - PPA: withdrawn before FAERS coverage.
+- **No false zeros from openFDA.** openFDA answers a query on a nonexistent field with the same 404 "No matches
+  found" as a true zero. Whenever a query returns no matches, the builder therefore checks each searched field once per
+  endpoint with `_exists_:<field>`. If a field is missing, nothing is written, and the task appears under
+  `unsupported` in the manifest. Six device groups search recalls by FDA product code (Cook IVC filters, Davol/Bard
+  mesh, Philips, Covidien mesh, Bard and AngioDynamics ports). FDA enforcement reports carry no product code, so these
+  six get a `recalls` series (device/recall) and no `enforcement_reports` series.
 - Philips CPAP (MDL 3014) counts only reports with "Philips" in the manufacturer or brand. Reports filed under
   "Respironics" alone are not counted, so that group understates.
 
@@ -179,10 +185,14 @@ visible). Refresh with `select insights.refresh_safety2('manual')`, or through
 
 - `/safety/products` is the index, with list views "Named in MDL titles", "Drugs (FAERS)" and "Devices (MAUDE)".
   It is searchable and paged.
-- `/safety/products/$id` is the product profile, with tabs Overview (signal timeline), Reactions / problems (term ×
-  period heatmap), Records (MAUDE or NHTSA; searchable, paged, linked to the publisher) and Sources (basis, queries,
-  caveats).
-- `/safety/companies?name=…` shows exact-name company facts per source.
+- `/safety/products/$id` is the product profile, with these tabs:
+  - Timeline: the signal series.
+  - Reactions or Device problems: top terms, plus a term × period heatmap whose rows are the terms most reported in
+    the periods shown. Vehicle groups have no such tab.
+  - Reports or Complaints: MAUDE or NHTSA records, searchable, paged and linked to the publisher.
+  - MDLs & sources: basis, queries and caveats.
+- `/safety/companies?name=…` shows exact-name company facts per source. MAUDE makers on product pages and records
+  link here, and the page without a name offers an exact-name form.
 - One new "Products & devices" tab in the Product safety section brings it to 7 tabs. The 9-section sidebar is
   unchanged.
 - Server functions are in `src/lib/external/safetySignals.functions.ts`. They are read-only, zod-validated, use
@@ -196,9 +206,9 @@ visible). Refresh with `select insights.refresh_safety2('manual')`, or through
 | openfda/subjects | 78 subjects, 16 MDL links | tokens vs title snapshot | all pass |
 | openfda/faers | 360 series, 308 breakdowns (MDLs 2740, 3094 …) | series months vs openFDA search totals; terms with serious counts | 135 checked across openFDA, 0 mismatches |
 | openfda/maude | 92 series, 96 breakdowns | as above | (in the 135) |
-| openfda/other | 9 series | enforcement/recall month sums | (in the 135) |
+| openfda/other | 8 series (rebuilt with the field guard; Philips enforcement withheld as unsupported) | enforcement/recall month sums; `_exists_` probes | (in the 135); 6 field probes |
 | openfda/records | 3,000 MAUDE reports + 3,000 subject links | re-read by report number | (in the 135) |
-| nhtsa | 27,579 complaints (first 40,000 lines of the 2025–2026 file), 36 series, 58 links | vs api.nhtsa.gov complaintsByVehicle | 20 checked, 0 mismatches, 5 skipped (API 400/404 for some models) |
+| nhtsa | 27,579 complaints (first 40,000 lines of the 2025–2026 file), 58 links, no series (partial read) | vs api.nhtsa.gov complaintsByVehicle | 20 checked, 0 mismatches, 5 skipped (API 400/404 for some models) |
 | cfpb | 14,748 aggregates, 19,104 records (5 companies) | vs CFPB API, settled months only | 30 checked, 0 mismatches |
 | neiss (HELD) | 3,000 cases of 2025 | full years 2021–2025 vs published case counts and weight sums | exact: 340,442 / 323,343 / 338,262 / 361,672 / 410,201 cases |
 | osha | 2,000 inspections, 6,071 violations, 66 accidents | DuckDB re-read of the DOL files | 75 checked, 0 mismatches |
@@ -269,14 +279,18 @@ python3 -I scripts/safety_v2/validate_openfda.py --outdir private/build/w1025_sa
 python3 -I scripts/safety_v2/load.py private/build/w1025_safety/full/openfda --delete-loaded
 ```
 
-**4. NHTSA** (streams the zips remotely; one file at a time):
+**4. NHTSA** (streams both zips remotely in one build, ~20–40 min; output ~75–100 MB of chunks; up to a few GB of
+RAM while complaints are grouped):
 
 ```
-python3 -I scripts/safety_v2/nhtsa_complaints.py --files 2020-2024 --outdir private/build/w1025_safety/full/nhtsa
+python3 -I scripts/safety_v2/nhtsa_complaints.py --outdir private/build/w1025_safety/full/nhtsa      # default --files 2020-2024,2025-2026
 python3 -I scripts/safety_v2/validate_nhtsa.py --outdir private/build/w1025_safety/full/nhtsa
 python3 -I scripts/safety_v2/load.py private/build/w1025_safety/full/nhtsa --delete-loaded
-# then --files 2025-2026
 ```
+
+Read both files in one build. The vehicle groups' monthly series are written only from a complete read of contiguous
+files, from 2020-01 to the month before the last received date. A single-file build would replace the series with a
+shorter window, and a `--limit` build writes records and links only.
 
 **5. CFPB** (reads the 5.6 GB CSV member as a stream, ~20–30 min; or `--url` to stream from CFPB):
 
@@ -345,3 +359,8 @@ select public.safety_subjects_v1('mdl_group', null, null, 20, 0);
 - The FAERS request budget takes about two days at the daily key limit if every product gets quarter grain.
 - The local CFPB and OSHA copies are shared files dated 2026-10-15/17.
 - openFDA counts change as FDA re-processes reports. The weekly patch rewrites the last 3 months only.
+- NHTSA complaint descriptions and MAUDE event text are stored as the publishers release them. They can contain names,
+  dealer addresses or other details the publisher did not redact. The structured personal fields are withheld, but
+  the free text is not rewritten.
+- openFDA harmonised generic names include strength and OTC-label variants (e.g. "ASPIRIN 81 MG", "PAIN RELIEVER").
+  Ranked FAERS products can therefore overlap: one report is counted under each name it lists.
