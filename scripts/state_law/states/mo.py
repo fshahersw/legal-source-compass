@@ -2,7 +2,7 @@
 
 Source: the Revisor's home page `https://revisor.mo.gov/main/Home.aspx` lists every chapter
 (`OneChapter.aspx?chapter=N`); `https://revisor.mo.gov/main/ViewChapter.aspx?chapter=N` prints a whole chapter. The
-home page states: "The language of statutory sections enacted during a legislative session are updated and available
+home page states: "In accordance with Section 3.090, the language of statutory sections enacted during a legislative session are updated and available
 on this website on the effective date of such enacted statutory section." and "CERTIFICATION STATUS: Currently the
 statutes posted on this website are uncertified and unofficial" — both are kept verbatim in the currency statement.
 No robots.txt (the site answers its home page).
@@ -140,8 +140,9 @@ def acquire(ctx):
     home = ctx.fetch(HOME_URL)
     page = lib.html_text(home.body)
     parts = []
-    m = re.search(r"The language of statutory sections enacted during a legislative session are updated and available "
-                  r"on this website on the effective date of such enacted statutory section\.", lib.norm_ws(page))
+    m = re.search(r"In accordance with Section 3\.090, the language of statutory sections enacted during a legislative "
+                  r"session are updated and available on this website on the effective date of such enacted statutory "
+                  r"section\.", lib.norm_ws(page))
     if m:
         parts.append(m.group(0))
     m = re.search(r"CERTIFICATION STATUS:\s*Currently the statutes posted on this website are uncertified and "
