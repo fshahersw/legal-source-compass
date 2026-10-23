@@ -55,13 +55,13 @@ def parse_fields(body: bytes, url: str, level: str, hosts: set[str]) -> dict:
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------- pages
-def verify_pages(n: int, seed: int) -> None:
+def verify_pages(n: int, seed: int, exclude: set[str]) -> None:
     courts = load_courts()
     pool = []
     for cid, c in courts.items():
         for j in c["judges"]:
             if j.get("status") == 200 and j.get("name") and not j.get("listing_only") and "#" not in j["page_url"] and not j.get("data_url") \
-                    and fl.cached_page(j["page_url"]) is not None:
+                    and fl.cached_page(j["page_url"]) is not None and fl.pace_key(urllib.parse.urlparse(j["page_url"]).netloc) not in exclude:
                 pool.append((cid, j))
     rnd = random.Random(seed)
     sample = rnd.sample(pool, min(n, len(pool)))
@@ -104,14 +104,15 @@ def verify_pages(n: int, seed: int) -> None:
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------- docs
-def verify_docs(n: int, seed: int) -> None:
+def verify_docs(n: int, seed: int, exclude: set[str]) -> None:
     import docstore
 
     store = docstore.DocStore()
     pool = []
     for f in sorted(os.listdir(DOCS)):
         d = json.load(open(os.path.join(DOCS, f), encoding="utf-8"))
-        if d.get("status") == 200 and (d.get("storage") or {}).get("readback_ok") and d.get("sha256"):
+        if d.get("status") == 200 and (d.get("storage") or {}).get("readback_ok") and d.get("sha256") and d.get("kind") != "pagetext" \
+                and fl.pace_key(urllib.parse.urlparse(d["url"]).netloc) not in exclude:
             pool.append(d)
     rnd = random.Random(seed)
     sample = rnd.sample(pool, min(n, len(pool)))
@@ -250,8 +251,10 @@ def main() -> None:
     ap.add_argument("what", choices=["pages", "docs", "counts", "texts"])
     ap.add_argument("--n", type=int, default=30)
     ap.add_argument("--seed", type=int, default=1023)
+    ap.add_argument("--exclude-sites", default="", help="comma-separated court site labels (e.g. txs,azd) to leave out while another process is downloading from them")
     a = ap.parse_args()
-    {"pages": lambda: verify_pages(a.n, a.seed), "docs": lambda: verify_docs(a.n, a.seed), "counts": verify_counts,
+    ex = set(filter(None, a.exclude_sites.split(",")))
+    {"pages": lambda: verify_pages(a.n, a.seed, ex), "docs": lambda: verify_docs(a.n, a.seed, ex), "counts": verify_counts,
      "texts": lambda: verify_texts(a.n, a.seed)}[a.what]()
 
 

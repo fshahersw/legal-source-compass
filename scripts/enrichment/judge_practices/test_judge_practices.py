@@ -270,6 +270,29 @@ class Fetching(unittest.TestCase):
         self.assertNotEqual(a, fl.page_path("https://www.nysd.uscourts.gov/judges?x=1"))
 
 
+class CaseSpecificFilings(unittest.TestCase):
+    """A judge's page may link the judge's decisions in particular cases; those are not rules or practices."""
+
+    def test_decisions_are_left_out_and_practice_documents_kept(self):
+        cs = pl.case_specific
+        self.assertIsNotNone(cs("OPINION AND ORDER DENYING AMENDED PETITION FOR WRIT OF HABEAS CORPUS", "17-11356: LEONARD WARE v. SHAWN BREWER"))
+        self.assertIsNotNone(cs("Scheduling Order", "06-14431 (civil) 99-20011 (criminal) : Robinson v. United States of America"))
+        self.assertIsNotNone(cs("In re Peterson, 566 B.R. 179 (Bankr. M.D. Tenn. Apr. 7, 2017)", "Judge Tabs"))
+        self.assertIsNotNone(cs("Harley-Davidson v. The Partnerships", "Judge Thomas M. Durkin"))
+        self.assertIsNone(cs("Print All Practice Guidelines", "Trials +"))
+        self.assertIsNone(cs("Vest v. Freightliner (Wrongful Death)", "Sample Jury Instructions"))          # a sample the judge posts
+        self.assertIsNone(cs("In re: Possession and Use of Personal Electronic Devices", "Federal Judicial Service"))  # an administrative order
+        self.assertIsNone(cs("Order Granting Motion to Extend Automatic Stay", "Judge Tabs"))                 # the judge's form of order
+
+    def test_document_links_reports_why(self):
+        html = (b"<html><body><main><h2>17-11356: LEONARD WARE v. SHAWN BREWER</h2><p><a href='/pdffiles/17-11356Opn.pdf'>OPINION AND ORDER</a></p>"
+                b"<h2>Practice Guidelines</h2><p><a href='/pdffiles/guidelines.pdf'>Civil Practice Guidelines</a></p></main></body></html>")
+        links = pl.extract_links(html, "https://www.mied.uscourts.gov/judges/lawson")
+        docs, excluded = pl.document_links(links, "https://www.mied.uscourts.gov/judges/lawson", {"www.mied.uscourts.gov"})
+        self.assertEqual([d.title for d in docs], ["Civil Practice Guidelines"])
+        self.assertTrue(excluded and "docket number heading" in excluded[0]["reason"])
+
+
 class JudgePageText(unittest.TestCase):
     """A judge's own page that carries the judge's practices in its text: when it counts, and what is left out of the stored text."""
 

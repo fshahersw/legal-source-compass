@@ -641,6 +641,26 @@ HTML_LINK_WORDS = re.compile(
     r"case management|judge.s (?:rules|procedures|practices|preferences|page))", re.I)
 
 
+# A judge's page may also list the judge's decisions in particular cases. Those are filings of a case, not the judge's rules or practices.
+DOCKET_HEADING = re.compile(r"^\s*\d{1,2}\s*[-:]\s*(?:cv\s*-\s*)?\d{3,6}\b|\b\d{1,2}:\d{2}-(?:cv|cr|md|mc|bk|ap)-\d+", re.I)
+CASE_CAPTION = re.compile(r"\s[vV]\.?\s+[A-Z\"'“]|\svs\.\s+[A-Z]")  # "A v. B" (not "In-Person vs Virtual")
+REPORTER_CITE = re.compile(r"\breh[’']g\b|\baff[’']d\b|\brev[’']d\b|\bcert\. denied|\b\d+\s+(?:B\.R\.|F\.\s?(?:2d|3d|4th)|F\.\s?Supp\.?(?:\s?[23]d)?|U\.S\.)\s+\d+|\bWL\s+\d+|\(Bankr\.|\bB\.A\.P\.", re.I)
+PRACTICE_CONTEXT = re.compile(r"standing order|practice|procedure|guideline|requirement|preference|instruction|chambers|courtroom|template|sample|"
+                              r"scheduling order|case management|\bforms?\b", re.I)
+
+
+def case_specific(title: str, heading: str | None) -> str | None:
+    """Why a linked file is a filing in one case rather than a practice document of the judge, or None."""
+    h = heading or ""
+    if DOCKET_HEADING.search(h):
+        return "filed in a specific case (docket number heading)"
+    if REPORTER_CITE.search(title):
+        return "a reported decision (citation in the title)"
+    if (CASE_CAPTION.search(title) or CASE_CAPTION.search(h)) and not PRACTICE_CONTEXT.search(f"{title} {h}"):
+        return "a decision or filing in a named case (caption)"
+    return None
+
+
 def file_ext(url: str) -> str | None:
     path = urllib.parse.urlparse(url).path
     m = re.search(r"\.([A-Za-z0-9]{2,5})$", path)
@@ -726,6 +746,10 @@ def document_links(links: list[Link], page_url: str, site_host: set[str], *, jud
                 pass
             else:
                 continue
+        why_case = case_specific(text, ln.heading)
+        if why_case:
+            excluded.append({"url": ln.href, "title": text, "reason": f"not a practice document: {why_case}"})
+            continue
         if is_file:
             if NOT_PRACTICE_TEXT.search(text):
                 excluded.append({"url": ln.href, "title": text, "reason": "not a practice document (title)"})
