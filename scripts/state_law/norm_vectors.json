@@ -39,6 +39,18 @@
   {
    "input": "  Sec 3 ",
    "expected": "3"
+  },
+  {
+   "input": "79-32,117",
+   "expected": "79-32,117"
+  },
+  {
+   "input": "31–3302.06a",
+   "expected": "31-3302.06a"
+  },
+  {
+   "input": "[3-1210.12]",
+   "expected": "[3-1210.12]"
   }
  ],
  "norm_cite": [
@@ -124,6 +136,20 @@
    "expected": [
     "fla. stat. ch. 95",
     null
+   ]
+  },
+  {
+   "input": "K.S.A. 2025 Supp. 79-32,117(a)",
+   "expected": [
+    "k.s.a. 2025 supp. 79-32,117",
+    "(a)"
+   ]
+  },
+  {
+   "input": "14 M.R.S. § 752-C(1)",
+   "expected": [
+    "14 m.r.s. § 752-c",
+    "(1)"
    ]
   }
  ],
@@ -3606,6 +3632,1202 @@
     {
      "code": "GTR",
      "regex": "md\\.\\s?code\\s?ann\\.,\\s?transp\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AZ",
+   "input": "A.R.S. § 12-542",
+   "expected": [
+    [
+     "ARS",
+     "12-542"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ARS",
+     "regex": "(?:ariz\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|arizona\\s?revised\\s?statutes\\.?|ariz\\.\\s?rev\\.\\s?stat\\.?|a\\.r\\.s\\.?|ars\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ARS",
+     "regex": "ariz\\.\\s?rev\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AZ",
+   "input": "Ariz. Rev. Stat. Ann. § 12-542(1)",
+   "expected": [
+    [
+     "ARS",
+     "12-542"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ARS",
+     "regex": "(?:ariz\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|arizona\\s?revised\\s?statutes\\.?|ariz\\.\\s?rev\\.\\s?stat\\.?|a\\.r\\.s\\.?|ars\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ARS",
+     "regex": "ariz\\.\\s?rev\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AZ",
+   "input": "ARS 12-542",
+   "expected": [
+    [
+     "ARS",
+     "12-542"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ARS",
+     "regex": "(?:ariz\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|arizona\\s?revised\\s?statutes\\.?|ariz\\.\\s?rev\\.\\s?stat\\.?|a\\.r\\.s\\.?|ars\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ARS",
+     "regex": "ariz\\.\\s?rev\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "KY",
+   "input": "KRS 413.140(1)(a)",
+   "expected": [
+    [
+     "KRS",
+     "413.140"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "KRS",
+     "regex": "(?:kentucky\\s?revised\\s?statutes\\.?|ky\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|ky\\.\\s?rev\\.\\s?stat\\.?|k\\.r\\.s\\.?|krs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "KRS",
+     "regex": "ky\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "KY",
+   "input": "Ky. Rev. Stat. Ann. § 413.140",
+   "expected": [
+    [
+     "KRS",
+     "413.140"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "KRS",
+     "regex": "(?:kentucky\\s?revised\\s?statutes\\.?|ky\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|ky\\.\\s?rev\\.\\s?stat\\.?|k\\.r\\.s\\.?|krs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "KRS",
+     "regex": "ky\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "LA",
+   "input": "La. R.S. 9:5604",
+   "expected": [
+    [
+     "RS",
+     "9:5604"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "RS",
+     "regex": "(?:la\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?rev\\.\\s?stat\\.?|la\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?r\\.s\\.?|lsa\\-r\\.s\\.?|r\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RS",
+     "regex": "la\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "(?:la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?civ\\.\\s?code\\s?art\\.?|la\\.\\s?c\\.c\\.\\s?art\\.?|civil\\s?code\\s?art\\.?|c\\.c\\.\\s?art\\.?|la\\.\\s?c\\.c\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.\\s?art\\.?|c\\.c\\.p\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "(?:la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.cr\\.p\\.\\s?art\\.?|c\\.cr\\.p\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "(?:la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?evid\\.\\s?art\\.?|la\\.\\s?c\\.e\\.\\s?art\\.?|c\\.e\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "(?:la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?children's\\s?code\\s?art\\.?|la\\.\\s?ch\\.c\\.\\s?art\\.?|ch\\.c\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "LA",
+   "input": "La. Stat. Ann. § 9:5604",
+   "expected": [
+    [
+     "RS",
+     "9:5604"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "RS",
+     "regex": "(?:la\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?rev\\.\\s?stat\\.?|la\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?r\\.s\\.?|lsa\\-r\\.s\\.?|r\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RS",
+     "regex": "la\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "(?:la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?civ\\.\\s?code\\s?art\\.?|la\\.\\s?c\\.c\\.\\s?art\\.?|civil\\s?code\\s?art\\.?|c\\.c\\.\\s?art\\.?|la\\.\\s?c\\.c\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.\\s?art\\.?|c\\.c\\.p\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "(?:la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.cr\\.p\\.\\s?art\\.?|c\\.cr\\.p\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "(?:la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?evid\\.\\s?art\\.?|la\\.\\s?c\\.e\\.\\s?art\\.?|c\\.e\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "(?:la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?children's\\s?code\\s?art\\.?|la\\.\\s?ch\\.c\\.\\s?art\\.?|ch\\.c\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "LA",
+   "input": "La. Civ. Code art. 3492",
+   "expected": [
+    [
+     "CC",
+     "3492"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "RS",
+     "regex": "(?:la\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?rev\\.\\s?stat\\.?|la\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?r\\.s\\.?|lsa\\-r\\.s\\.?|r\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RS",
+     "regex": "la\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "(?:la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?civ\\.\\s?code\\s?art\\.?|la\\.\\s?c\\.c\\.\\s?art\\.?|civil\\s?code\\s?art\\.?|c\\.c\\.\\s?art\\.?|la\\.\\s?c\\.c\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.\\s?art\\.?|c\\.c\\.p\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "(?:la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.cr\\.p\\.\\s?art\\.?|c\\.cr\\.p\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "(?:la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?evid\\.\\s?art\\.?|la\\.\\s?c\\.e\\.\\s?art\\.?|c\\.e\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "(?:la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?children's\\s?code\\s?art\\.?|la\\.\\s?ch\\.c\\.\\s?art\\.?|ch\\.c\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "LA",
+   "input": "La. C.C.P. art. 1001",
+   "expected": [
+    [
+     "CCP",
+     "1001"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "RS",
+     "regex": "(?:la\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?rev\\.\\s?stat\\.?|la\\.\\s?stat\\.\\s?ann\\.?|la\\.\\s?r\\.s\\.?|lsa\\-r\\.s\\.?|r\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RS",
+     "regex": "la\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "(?:la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?civ\\.\\s?code\\s?art\\.?|la\\.\\s?c\\.c\\.\\s?art\\.?|civil\\s?code\\s?art\\.?|c\\.c\\.\\s?art\\.?|la\\.\\s?c\\.c\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CC",
+     "regex": "la\\.\\s?civ\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.\\s?art\\.?|c\\.c\\.p\\.\\s?art\\.?|la\\.\\s?c\\.c\\.p\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "la\\.\\s?code\\s?civ\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "(?:la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?art\\.?|la\\.\\s?c\\.cr\\.p\\.\\s?art\\.?|c\\.cr\\.p\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCRP",
+     "regex": "la\\.\\s?code\\s?crim\\.\\s?proc\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "(?:la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.?|la\\.\\s?code\\s?evid\\.\\s?art\\.?|la\\.\\s?c\\.e\\.\\s?art\\.?|c\\.e\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CE",
+     "regex": "la\\.\\s?code\\s?evid\\.\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "(?:la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.?|la\\.\\s?children's\\s?code\\s?art\\.?|la\\.\\s?ch\\.c\\.\\s?art\\.?|ch\\.c\\.\\s?art\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CHC",
+     "regex": "la\\.\\s?child\\.\\s?code\\s?ann\\.\\s?art\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AL",
+   "input": "Ala. Code § 6-2-38",
+   "expected": [
+    [
+     "ALC",
+     "6-2-38"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ALC",
+     "regex": "(?:ala\\.\\s?code\\s?1975\\.?|code\\s?of\\s?alabama\\.?|ala\\.\\s?code\\s?ann\\.?|code\\s?of\\s?ala\\.?|ala\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ALC",
+     "regex": "ala\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AL",
+   "input": "Ala. Code 1975, § 6-2-38(l)",
+   "expected": [
+    [
+     "ALC",
+     "6-2-38"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ALC",
+     "regex": "(?:ala\\.\\s?code\\s?1975\\.?|code\\s?of\\s?alabama\\.?|ala\\.\\s?code\\s?ann\\.?|code\\s?of\\s?ala\\.?|ala\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ALC",
+     "regex": "ala\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AL",
+   "input": "Code of Alabama § 6-2-38",
+   "expected": [
+    [
+     "ALC",
+     "6-2-38"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ALC",
+     "regex": "(?:ala\\.\\s?code\\s?1975\\.?|code\\s?of\\s?alabama\\.?|ala\\.\\s?code\\s?ann\\.?|code\\s?of\\s?ala\\.?|ala\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ALC",
+     "regex": "ala\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CT",
+   "input": "Conn. Gen. Stat. § 52-577",
+   "expected": [
+    [
+     "CGS",
+     "52-577"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "CGS",
+     "regex": "(?:conn\\.\\s?gen\\.\\s?stat\\.\\s?ann\\.?|conn\\.\\s?gen\\.\\s?stat\\.?|general\\s?statutes\\.?|gen\\.\\s?stat\\.?|c\\.g\\.s\\.?|cgs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CGS",
+     "regex": "conn\\.\\s?gen\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CT",
+   "input": "C.G.S. § 52-584",
+   "expected": [
+    [
+     "CGS",
+     "52-584"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "CGS",
+     "regex": "(?:conn\\.\\s?gen\\.\\s?stat\\.\\s?ann\\.?|conn\\.\\s?gen\\.\\s?stat\\.?|general\\s?statutes\\.?|gen\\.\\s?stat\\.?|c\\.g\\.s\\.?|cgs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CGS",
+     "regex": "conn\\.\\s?gen\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CT",
+   "input": "General Statutes § 52-577",
+   "expected": [
+    [
+     "CGS",
+     "52-577"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "CGS",
+     "regex": "(?:conn\\.\\s?gen\\.\\s?stat\\.\\s?ann\\.?|conn\\.\\s?gen\\.\\s?stat\\.?|general\\s?statutes\\.?|gen\\.\\s?stat\\.?|c\\.g\\.s\\.?|cgs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CGS",
+     "regex": "conn\\.\\s?gen\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "DE",
+   "input": "10 Del. C. § 8106",
+   "expected": [
+    [
+     "DELC",
+     "10:8106"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "DELC",
+     "regex": "(?:del\\.?\\s?code\\s?(?:ann\\.?)?,?\\s?)?tit\\.?\\s?([0-9]+),?\\s?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "DELC",
+     "regex": "([0-9]+)\\s?del\\.?\\s?c\\.?\\s?(?:ann\\.?\\s?)?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "DELC",
+     "regex": "del\\.\\s?code\\s?ann\\.\\s?tit\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "DE",
+   "input": "Del. Code Ann. tit. 10, § 8106(a)",
+   "expected": [
+    [
+     "DELC",
+     "10:8106"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "DELC",
+     "regex": "(?:del\\.?\\s?code\\s?(?:ann\\.?)?,?\\s?)?tit\\.?\\s?([0-9]+),?\\s?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "DELC",
+     "regex": "([0-9]+)\\s?del\\.?\\s?c\\.?\\s?(?:ann\\.?\\s?)?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "DELC",
+     "regex": "del\\.\\s?code\\s?ann\\.\\s?tit\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "DE",
+   "input": "tit. 10, § 8119",
+   "expected": [
+    [
+     "DELC",
+     "10:8119"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "DELC",
+     "regex": "(?:del\\.?\\s?code\\s?(?:ann\\.?)?,?\\s?)?tit\\.?\\s?([0-9]+),?\\s?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "DELC",
+     "regex": "([0-9]+)\\s?del\\.?\\s?c\\.?\\s?(?:ann\\.?\\s?)?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "DELC",
+     "regex": "del\\.\\s?code\\s?ann\\.\\s?tit\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "DC",
+   "input": "D.C. Code § 12-301(a)(8)",
+   "expected": [
+    [
+     "DCC",
+     "12-301"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "DCC",
+     "regex": "(?:d\\.c\\.\\s?code\\s?annotated\\.?|d\\.c\\.\\s?official\\s?code\\.?|d\\.c\\.\\s?code\\s?ann\\.?|d\\.c\\.\\s?code\\.?|dc\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "DCC",
+     "regex": "d\\.c\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "DC",
+   "input": "D.C. Official Code § 28:2-725",
+   "expected": [
+    [
+     "DCC",
+     "28:2-725"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "DCC",
+     "regex": "(?:d\\.c\\.\\s?code\\s?annotated\\.?|d\\.c\\.\\s?official\\s?code\\.?|d\\.c\\.\\s?code\\s?ann\\.?|d\\.c\\.\\s?code\\.?|dc\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "DCC",
+     "regex": "d\\.c\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "DC",
+   "input": "DC Code § 12-301",
+   "expected": [
+    [
+     "DCC",
+     "12-301"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "DCC",
+     "regex": "(?:d\\.c\\.\\s?code\\s?annotated\\.?|d\\.c\\.\\s?official\\s?code\\.?|d\\.c\\.\\s?code\\s?ann\\.?|d\\.c\\.\\s?code\\.?|dc\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "DCC",
+     "regex": "d\\.c\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "HI",
+   "input": "Haw. Rev. Stat. § 657-7",
+   "expected": [
+    [
+     "HRS",
+     "657-7"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "HRS",
+     "regex": "(?:haw\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|hawaii\\s?revised\\s?statutes\\.?|haw\\.\\s?rev\\.\\s?stat\\.?|h\\.r\\.s\\.?|hrs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HRS",
+     "regex": "haw\\.\\s?rev\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "HI",
+   "input": "HRS § 657-1.5",
+   "expected": [
+    [
+     "HRS",
+     "657-1.5"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "HRS",
+     "regex": "(?:haw\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|hawaii\\s?revised\\s?statutes\\.?|haw\\.\\s?rev\\.\\s?stat\\.?|h\\.r\\.s\\.?|hrs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HRS",
+     "regex": "haw\\.\\s?rev\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "HI",
+   "input": "Hawaii Revised Statutes § 657-7",
+   "expected": [
+    [
+     "HRS",
+     "657-7"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "HRS",
+     "regex": "(?:haw\\.\\s?rev\\.\\s?stat\\.\\s?ann\\.?|hawaii\\s?revised\\s?statutes\\.?|haw\\.\\s?rev\\.\\s?stat\\.?|h\\.r\\.s\\.?|hrs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HRS",
+     "regex": "haw\\.\\s?rev\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "ID",
+   "input": "Idaho Code § 5-219(4)",
+   "expected": [
+    [
+     "IC",
+     "5-219"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:idaho\\s?code\\s?ann\\.?|idaho\\s?code\\.?|idaho\\s?stat\\.?|i\\.c\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "idaho\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "ID",
+   "input": "I.C. § 5-219",
+   "expected": [
+    [
+     "IC",
+     "5-219"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:idaho\\s?code\\s?ann\\.?|idaho\\s?code\\.?|idaho\\s?stat\\.?|i\\.c\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "idaho\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "ID",
+   "input": "Idaho Code Ann. § 5-224",
+   "expected": [
+    [
+     "IC",
+     "5-224"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:idaho\\s?code\\s?ann\\.?|idaho\\s?code\\.?|idaho\\s?stat\\.?|i\\.c\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "idaho\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "IA",
+   "input": "Iowa Code § 614.1(2)",
+   "expected": [
+    [
+     "IC",
+     "614.1"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:iowa\\s?code\\s?ann\\.?|iowa\\s?code\\.?|i\\.c\\.a\\.?|ica\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "iowa\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "IA",
+   "input": "Iowa Code Ann. § 614.8A",
+   "expected": [
+    [
+     "IC",
+     "614.8a"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:iowa\\s?code\\s?ann\\.?|iowa\\s?code\\.?|i\\.c\\.a\\.?|ica\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "iowa\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "IA",
+   "input": "I.C.A. § 614.1",
+   "expected": [
+    [
+     "IC",
+     "614.1"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:iowa\\s?code\\s?ann\\.?|iowa\\s?code\\.?|i\\.c\\.a\\.?|ica\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "iowa\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "KS",
+   "input": "K.S.A. 60-513(a)(4)",
+   "expected": [
+    [
+     "KSA",
+     "60-513"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "KSA",
+     "regex": "(?:k\\.?s\\.?a\\.?|kan\\.?\\s?stat\\.?\\s?ann\\.?|kan\\.?\\s?stat\\.?)\\s?(?:[0-9]{4}\\s?supp\\.?\\s?)?(?:§\\s?)?([0-9]+[a-z]?-[0-9]+[a-z]?(?:,[0-9]+[a-z]?)?)",
+     "number": "\\1"
+    },
+    {
+     "code": "KSA",
+     "regex": "([0-9]+[a-z]?-[0-9]+[a-z]?(?:,[0-9]+[a-z]?)?)",
+     "number": "\\1"
+    },
+    {
+     "code": "KSA",
+     "regex": "kan\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "KS",
+   "input": "K.S.A. 2025 Supp. 79-32,117",
+   "expected": [
+    [
+     "KSA",
+     "79-32,117"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "KSA",
+     "regex": "(?:k\\.?s\\.?a\\.?|kan\\.?\\s?stat\\.?\\s?ann\\.?|kan\\.?\\s?stat\\.?)\\s?(?:[0-9]{4}\\s?supp\\.?\\s?)?(?:§\\s?)?([0-9]+[a-z]?-[0-9]+[a-z]?(?:,[0-9]+[a-z]?)?)",
+     "number": "\\1"
+    },
+    {
+     "code": "KSA",
+     "regex": "([0-9]+[a-z]?-[0-9]+[a-z]?(?:,[0-9]+[a-z]?)?)",
+     "number": "\\1"
+    },
+    {
+     "code": "KSA",
+     "regex": "kan\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "KS",
+   "input": "Kan. Stat. Ann. § 60-513a",
+   "expected": [
+    [
+     "KSA",
+     "60-513a"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "KSA",
+     "regex": "(?:k\\.?s\\.?a\\.?|kan\\.?\\s?stat\\.?\\s?ann\\.?|kan\\.?\\s?stat\\.?)\\s?(?:[0-9]{4}\\s?supp\\.?\\s?)?(?:§\\s?)?([0-9]+[a-z]?-[0-9]+[a-z]?(?:,[0-9]+[a-z]?)?)",
+     "number": "\\1"
+    },
+    {
+     "code": "KSA",
+     "regex": "([0-9]+[a-z]?-[0-9]+[a-z]?(?:,[0-9]+[a-z]?)?)",
+     "number": "\\1"
+    },
+    {
+     "code": "KSA",
+     "regex": "kan\\.\\s?stat\\.\\s?ann\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "ME",
+   "input": "14 M.R.S. § 752",
+   "expected": [
+    [
+     "MRS",
+     "14:752"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MRS",
+     "regex": "(?:me\\.?\\s?rev\\.?\\s?stat\\.?\\s?(?:ann\\.?\\s?)?,?\\s?)?tit\\.?\\s?([0-9]+(?:-[a-z])?),?\\s?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "([0-9]+(?:-[a-z])?)\\s?m\\.?\\s?r\\.?\\s?s\\.?\\s?a?\\.?\\s?(?:§\\s?)?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "me\\.\\s?rev\\.\\s?stat\\.\\s?tit\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "ME",
+   "input": "14 M.R.S.A. § 752-C",
+   "expected": [
+    [
+     "MRS",
+     "14:752-c"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MRS",
+     "regex": "(?:me\\.?\\s?rev\\.?\\s?stat\\.?\\s?(?:ann\\.?\\s?)?,?\\s?)?tit\\.?\\s?([0-9]+(?:-[a-z])?),?\\s?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "([0-9]+(?:-[a-z])?)\\s?m\\.?\\s?r\\.?\\s?s\\.?\\s?a?\\.?\\s?(?:§\\s?)?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "me\\.\\s?rev\\.\\s?stat\\.\\s?tit\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "ME",
+   "input": "Me. Rev. Stat. tit. 14, § 752",
+   "expected": [
+    [
+     "MRS",
+     "14:752"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MRS",
+     "regex": "(?:me\\.?\\s?rev\\.?\\s?stat\\.?\\s?(?:ann\\.?\\s?)?,?\\s?)?tit\\.?\\s?([0-9]+(?:-[a-z])?),?\\s?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "([0-9]+(?:-[a-z])?)\\s?m\\.?\\s?r\\.?\\s?s\\.?\\s?a?\\.?\\s?(?:§\\s?)?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "me\\.\\s?rev\\.\\s?stat\\.\\s?tit\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "ME",
+   "input": "22-A M.R.S. § 205",
+   "expected": [
+    [
+     "MRS",
+     "22-a:205"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MRS",
+     "regex": "(?:me\\.?\\s?rev\\.?\\s?stat\\.?\\s?(?:ann\\.?\\s?)?,?\\s?)?tit\\.?\\s?([0-9]+(?:-[a-z])?),?\\s?§\\s?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "([0-9]+(?:-[a-z])?)\\s?m\\.?\\s?r\\.?\\s?s\\.?\\s?a?\\.?\\s?(?:§\\s?)?([0-9][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MRS",
+     "regex": "me\\.\\s?rev\\.\\s?stat\\.\\s?tit\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "AK",
+   "input": "AS 09.10.070",
+   "expected": [
+    [
+     "AS",
+     "09.10.070"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "AS",
+     "regex": "(?:alaska\\s?stat\\.\\s?ann\\.?|alaska\\s?stat\\.?|a\\.s\\.?|as\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "AS",
+     "regex": "alaska\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AK",
+   "input": "Alaska Stat. § 09.10.070(a)",
+   "expected": [
+    [
+     "AS",
+     "09.10.070"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "AS",
+     "regex": "(?:alaska\\s?stat\\.\\s?ann\\.?|alaska\\s?stat\\.?|a\\.s\\.?|as\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "AS",
+     "regex": "alaska\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "AK",
+   "input": "A.S. 09.10.010",
+   "expected": [
+    [
+     "AS",
+     "09.10.010"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "AS",
+     "regex": "(?:alaska\\s?stat\\.\\s?ann\\.?|alaska\\s?stat\\.?|a\\.s\\.?|as\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "AS",
+     "regex": "alaska\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "IN",
+   "input": "Ind. Code § 34-11-2-4",
+   "expected": [
+    [
+     "IC",
+     "34-11-2-4"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:ind\\.\\s?code\\s?ann\\.?|indiana\\s?code\\.?|ind\\.\\s?code\\.?|i\\.c\\.?|ic\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "ind\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "IN",
+   "input": "IC 34-11-2-4(a)",
+   "expected": [
+    [
+     "IC",
+     "34-11-2-4"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:ind\\.\\s?code\\s?ann\\.?|indiana\\s?code\\.?|ind\\.\\s?code\\.?|i\\.c\\.?|ic\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "ind\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "IN",
+   "input": "Ind. Code Ann. § 1-1-3.5-1.5",
+   "expected": [
+    [
+     "IC",
+     "1-1-3.5-1.5"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "IC",
+     "regex": "(?:ind\\.\\s?code\\s?ann\\.?|indiana\\s?code\\.?|ind\\.\\s?code\\.?|i\\.c\\.?|ic\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "IC",
+     "regex": "ind\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
      "number": "\\1"
     }
    ]
