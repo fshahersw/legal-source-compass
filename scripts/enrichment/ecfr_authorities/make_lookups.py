@@ -3,9 +3,10 @@
   python3 -I -B make_lookups.py
 
 Reads (all produced by the uscode, ecfr_full and agencies_fr streams and published unchanged):
-  private/build/uscode/us_code_sections.json.gz               -> lookups/us_code_section_ids.json
+  private/build/uscode/us_code_sections.json.gz               -> lookups/us_code_section_ids.json, us_code_section_cells.json
+  (the cells file only feeds mock_corpus.py, the local stand-in used to check the panels before publication)
   private/build/ecfr_full/ecfr_sections_full.rows.jsonl.gz    -> lookups/ecfr_part_ids.json   (rows with kind "part")
-  private/build/agencies_fr/fr_agency_profiles.json.gz        -> lookups/fr_agency_slugs.json (federalregister.gov slug -> id)
+  private/build/agencies_fr/fr_agency_profiles.json.gz        -> lookups/fr_agency_rows.json (id and links, for the federalregister.gov slug)
 Each lookup file records its source file, that file's sha256 and the row count, so the counts can be compared with the
 live corpus (done with read-only SELECT counts in verify_ecfr_authorities.py's report).
 """
@@ -51,6 +52,8 @@ def main() -> None:
         rows = json.load(fh)["rows"]
     ids = {r["id"]: ((r.get("filters") or {}).get("status") or [""])[0] for r in rows}
     write("us_code_section_ids.json", {"source_file": os.path.relpath(src, ROOT), "sha256": sha256_file(src), "count": len(ids), "made_at": stamp(), "status_by_id": ids})
+    cells = {r["id"]: [str(((r.get("item") or {}).get("cells") or {}).get(k) or "") for k in ("citation", "heading", "status")] for r in rows}
+    write("us_code_section_cells.json", {"source_file": os.path.relpath(src, ROOT), "sha256": sha256_file(src), "count": len(cells), "made_at": stamp(), "cells_by_id": cells, "columns": ["citation", "heading", "status"]})
     print("us_code_sections", len(ids))
 
     src = os.path.join(BUILD, "ecfr_full", "ecfr_sections_full.rows.jsonl.gz")

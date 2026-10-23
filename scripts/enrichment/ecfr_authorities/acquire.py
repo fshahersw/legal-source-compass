@@ -5,6 +5,7 @@
                                               and granule summaries, the text rendition of every granule, and the PDF of
                                               the Parallel Table of Authorities and Rules (second path for verification)
   python3 -I -B acquire.py pdf EDITION N      the PDF rendition of granule N of that edition (N=2 Subject/Agency Index)
+  python3 -I -B acquire.py robots             the eCFR host's robots.txt (evidence)
   python3 -I -B acquire.py ecfr               eCFR admin API agencies.json and versioner titles.json
 
 Why GovInfo for the tables: the eCFR pages /parallel-table-of-authorities/current, /subject-index/current and
@@ -101,6 +102,14 @@ def cmd_pdf(edition: str, number: int) -> None:
     print(json.dumps({"granule": gid, "what": "pdf", "bytes": e["bytes"]}), flush=True)
 
 
+def cmd_robots() -> None:
+    """robots.txt of the eCFR host, kept as evidence of what the crawl rules allow."""
+    url = f"{ECFR}/robots.txt"
+    status, body, ctype = fl.get(url, accept="text/plain")
+    e = fl.save(url, "evidence/ecfr_robots.txt.gz", body, status, ctype)
+    print(json.dumps({"saved": e["path"], "bytes": e["bytes"]}))
+
+
 def cmd_ecfr() -> None:
     for url, rel in (
         (f"{ECFR}/api/admin/v1/agencies.json", "ecfr/agencies.json.gz"),
@@ -121,6 +130,8 @@ def main(argv: list[str]) -> None:
         cmd_govinfo(argv[1] if len(argv) > 1 else None)
     elif cmd == "pdf" and len(argv) == 3:
         cmd_pdf(argv[1], int(argv[2]))
+    elif cmd == "robots":
+        cmd_robots()
     elif cmd == "ecfr":
         cmd_ecfr()
     else:

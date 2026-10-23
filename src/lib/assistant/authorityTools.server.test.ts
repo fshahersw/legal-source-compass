@@ -20,7 +20,7 @@ const meta = {
   total: null,
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const parse = (o: { content: string }) => JSON.parse(o.content) as Record<string, any>;
+const parse = (o: { content: string }) => JSON.parse(o.content) as any;
 
 function wire(handlers: {
   usc?: unknown[];

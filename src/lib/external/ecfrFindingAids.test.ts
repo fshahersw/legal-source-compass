@@ -58,6 +58,17 @@ describe("agencies", () => {
     expect(parseAgencyRow(agency("fda", { fr_agency_id: "abc" }))!.profileId).toBeNull();
   });
 
+  it("accepts the slugs the eCFR publishes, parentheses and apostrophes included", () => {
+    const slug = "office-of-secretary-(aviation-proceedings)";
+    expect(parseAgencyRow(agency(slug))!.slug).toBe(slug);
+    const kid = "office-of-assistant-secretary-for-veterans'-employment-and-training-service";
+    expect(
+      parseAgencyRow(agency("labor", { children: [{ slug: kid, name: "Office" }] }))!.children[0]!
+        .slug,
+    ).toBe(kid);
+    expect(parseAgencyRow(agency("a/b"))).toBeNull();
+  });
+
   it("keeps a reference with no title (as the eCFR prints it)", () => {
     const n = parseAgencyRow(agency("x", { cfr_references: [{ title: null, chapter: "II" }] }))!;
     expect(referenceLabel(n.references[0]!)).toBe("Chapter II");

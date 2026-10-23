@@ -360,3 +360,9 @@ export function parseTableMeta(metadata: unknown): TableMeta {
     retrievedAt: str(s?.["retrieved_at"], 40),
   };
 }
+
+/** "CFR Index and Finding Aids 2025, revised as of January 1, 2025": what the table is and how current it is. */
+export function tableEdition(meta: TableMeta): string {
+  if (!meta.edition) return "Parallel Table of Authorities and Rules";
+  return `CFR Index and Finding Aids ${meta.edition}${meta.revisedAsOf ? `, revised as of ${meta.revisedAsOf}` : ""}`;
+}

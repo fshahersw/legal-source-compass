@@ -10,7 +10,8 @@ export const SUBJECTS_DATASET = "ecfr_subject_index";
 export const AGENCY_SELECT = "select=id,a:detail->agency,x:detail->prepared_index";
 export const SUBJECT_SELECT = "select=id,s:detail->subject";
 
-const SLUG = /^[a-z0-9][a-z0-9-]{0,120}$/;
+/** eCFR agency slugs as published: lower case with hyphens, and sometimes parentheses, commas, apostrophes or periods. */
+const SLUG = /^[a-z0-9][a-z0-9'(),.-]{0,200}$/;
 
 const obj = (v: unknown) =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -69,7 +70,7 @@ export function parseAgencyRow(raw: unknown): AgencyNode | null {
   const r = obj(raw);
   const a = obj(r?.["a"]);
   const id = str(r?.["id"], 200);
-  const slug = str(a?.["slug"], 121);
+  const slug = str(a?.["slug"], 201);
   const name = str(a?.["name"], 300);
   if (!r || !a || !id || !slug || !SLUG.test(slug) || !name || id !== `agency:${slug}`) return null;
   const refs = arr(a["cfr_references"]).map(reference);
@@ -77,12 +78,12 @@ export function parseAgencyRow(raw: unknown): AgencyNode | null {
   const kids: { slug: string; name: string }[] = [];
   for (const c of arr(a["children"])) {
     const k = obj(c);
-    const ks = str(k?.["slug"], 121);
+    const ks = str(k?.["slug"], 201);
     const kn = str(k?.["name"], 300);
     if (!ks || !SLUG.test(ks) || !kn) return null;
     kids.push({ slug: ks, name: kn });
   }
-  const parent = str(a["parent"], 121);
+  const parent = str(a["parent"], 201);
   if (parent && !SLUG.test(parent)) return null;
   const profile = str(a["fr_agency_id"], 8);
   return {
@@ -106,7 +107,7 @@ export function parsePreparedRow(raw: unknown): PreparedIndex | null {
   const id = str(r?.["id"], 100);
   const title = nat(x?.["cfr_title"], 50);
   if (!r || !x || !id || title === null || !id.startsWith("prepared-index:")) return null;
-  const linked = str(x["linked_agency"], 121);
+  const linked = str(x["linked_agency"], 201);
   return {
     id,
     cfrTitle: title,
