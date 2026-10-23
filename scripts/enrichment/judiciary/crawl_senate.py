@@ -5,6 +5,7 @@ collects the candidate votes. Stored by fetchlib (gzip, sha256 in the manifest);
 
   python3 -I -B crawl_senate.py menus
   python3 -I -B crawl_senate.py votes
+  python3 -I -B crawl_senate.py judicial   (after build_nominations.py: votes on judicial PNs whose menu title omits the office)
 """
 from __future__ import annotations
 
@@ -48,7 +49,27 @@ def candidates(root):
             yield number
 
 
+def judicial_keys() -> set:
+    """(congress, PN) of every nomination in the judicial_nominations build: votes whose menu title does not name the
+    office (e.g. 'Nomination - Clarence Thomas') are found by this exact key instead."""
+    build = json.loads((fl.ROOT / "private" / "build" / "judiciary" / "judicial_nominations.json").read_text())
+    return {(r["item"]["congress"], r["item"]["citation"]) for r in build["rows"]}
+
+
 def main(step: str) -> None:
+    if step == "judicial":
+        keys, count, new = judicial_keys(), 0, 0
+        for c, s, root in menus():
+            for vote in root.iter("vote"):
+                pns = [text(vote, "issue")] + [text(m, "issue") for m in vote.iter("matter")]
+                if any((c, p.upper().replace(" ", "")) in keys for p in pns if p):
+                    url = VOTE.format(c=c, s=s, n=text(vote, "vote_number"))
+                    name = fl.safe_name(url)
+                    new += not (fl.ACQ / "senate" / (name + ".gz")).exists()
+                    fl.fetch(url, "senate", method="direct urllib GET (senate.gov roll-call vote XML)", ok_missing=True)
+                    count += 1
+        print(json.dumps({"judicial_votes": count, "newly_fetched": new}), flush=True)
+        return
     if step == "menus":
         n = 0
         for c, s, root in menus():

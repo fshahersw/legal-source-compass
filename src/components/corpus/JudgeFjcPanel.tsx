@@ -1,20 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { fjcRecordQuery } from "@/components/judiciary/judiciaryQueries";
 import {
-  getCourtJudges,
-  getJudgeFjcProfile,
-  type FjcProfile,
-} from "@/lib/external/judgeProfiles.functions";
+  getCourtSittingJudges,
+  type FjcRecord,
+  type FjcService,
+} from "@/lib/external/judiciary.functions";
 
 const FJC = (nid: string) => `https://www.fjc.gov/node/${nid}`;
 const year = (iso: string | null) => (iso ? iso.slice(0, 4) : "—");
+const NR = "Not recorded";
 
 export function JudgeFjcPanel({ judgeId }: { judgeId: string }) {
-  const q = useQuery({
-    queryKey: ["judge-fjc", judgeId],
-    queryFn: () => getJudgeFjcProfile({ data: { id: judgeId } }),
-    staleTime: 10 * 60 * 1000,
-  });
+  const q = useQuery(fjcRecordQuery(judgeId));
   if (q.isLoading)
     return (
       <div
@@ -25,15 +23,25 @@ export function JudgeFjcPanel({ judgeId }: { judgeId: string }) {
     );
   if (q.isError)
     return (
-      <p role="alert" className="mb-5 text-xs text-muted-foreground">
+      <p
+        role="alert"
+        className="mb-5 flex flex-wrap items-center gap-2 rounded-lg border border-border px-4 py-3 text-xs text-muted-foreground"
+      >
         The judicial service record could not be loaded.
+        <button
+          type="button"
+          onClick={() => void q.refetch()}
+          className="rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          Retry
+        </button>
       </p>
     );
   return q.data ? <Panel p={q.data} /> : null;
 }
 
-function Panel({ p }: { p: FjcProfile }) {
-  const current = p.services.filter((s) => !s.termination).at(-1) ?? p.services.at(-1);
+function Panel({ p }: { p: FjcRecord }) {
+  const current = p.services.filter((s) => !s.terminationDate).at(-1) ?? p.services.at(-1);
   const mdlActions = p.mdls.reduce((sum, m) => sum + m.pending, 0);
   return (
     <section
@@ -55,21 +63,21 @@ function Panel({ p }: { p: FjcProfile }) {
         <Fact label="Status" value={p.status} />
         <Fact
           label="Appointed by"
-          value={current ? `${current.president}` : "—"}
-          note={current?.party}
+          value={current?.president ?? NR}
+          note={current?.partyLabel ?? undefined}
         />
-        <Fact label="ABA rating" value={current?.aba_rating ?? "Not recorded"} />
+        <Fact label="ABA rating" value={current?.abaRating ?? NR} />
         <Fact
           label="Confirmed"
-          value={current?.confirmation ?? "—"}
-          note={current?.vote ? `Vote ${current.vote.trim()}` : undefined}
+          value={current?.confirmation ?? (current?.recessAppointment ? "Recess appointment" : NR)}
+          note={current?.voteLabel}
         />
         <Fact
           label="Years of service"
-          value={p.years_service?.toString() ?? "—"}
+          value={p.yearsService?.toString() ?? NR}
           note={
-            p.birth_year
-              ? `Born ${p.birth_year}${p.birth_place ? `, ${p.birth_place}` : ""}`
+            p.birthYear
+              ? `Born ${p.birthYear}${p.birthPlace ? `, ${p.birthPlace}` : ""}`
               : undefined
           }
         />
@@ -85,43 +93,31 @@ function Panel({ p }: { p: FjcProfile }) {
             <h3 className="mb-1 text-xs font-semibold text-muted-foreground">
               Federal judicial service
             </h3>
-            <ol className="space-y-1.5 text-xs">
+            <ol className="space-y-2 text-xs">
               {p.services.map((s) => (
-                <li key={`${s.court}-${s.commission}`} className="border-l-2 border-border pl-2">
-                  <div className="font-medium">
-                    {s.court_id ? (
-                      <Link
-                        to="/courts/$id"
-                        params={{ id: s.court_id }}
-                        className="hover:underline"
-                      >
-                        {s.court}
-                      </Link>
-                    ) : (
-                      s.court
-                    )}
-                  </div>
-                  <div className="text-muted-foreground">
-                    {s.title} · commissioned {s.commission ?? "—"} · {s.president}
-                    {s.chief_begin
-                      ? ` · chief judge ${year(s.chief_begin)}–${year(s.chief_end)}`
-                      : ""}
-                    {s.senior_status ? ` · senior status ${s.senior_status}` : ""}
-                    {s.termination
-                      ? ` · ${s.termination.toLowerCase()} ${s.termination_date ?? ""}`
-                      : ""}
-                  </div>
-                </li>
+                <ServiceItem key={`${s.court}-${s.commission}-${s.nomination}`} s={s} />
               ))}
             </ol>
           </div>
-          {p.other_federal_service.length ? (
+          {p.otherNominations.length ? (
+            <div>
+              <h3 className="mb-1 text-xs font-semibold text-muted-foreground">
+                Other nominations and recess appointments
+              </h3>
+              <ul className="list-disc space-y-0.5 pl-4 text-xs">
+                {p.otherNominations.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {p.otherFederalService.length ? (
             <div>
               <h3 className="mb-1 text-xs font-semibold text-muted-foreground">
                 Other federal judicial service
               </h3>
               <ul className="list-disc space-y-0.5 pl-4 text-xs">
-                {p.other_federal_service.map((s) => (
+                {p.otherFederalService.map((s) => (
                   <li key={s}>{s}</li>
                 ))}
               </ul>
@@ -132,7 +128,7 @@ function Panel({ p }: { p: FjcProfile }) {
               <h3 className="mb-1 text-xs font-semibold text-muted-foreground">Education</h3>
               <ul className="space-y-0.5 text-xs">
                 {p.education.map((e) => (
-                  <li key={`${e.school}-${e.year}`}>
+                  <li key={`${e.school}-${e.year}-${e.degree}`}>
                     {e.school}
                     <span className="text-muted-foreground">
                       {e.degree ? `, ${e.degree}` : ""}
@@ -143,6 +139,14 @@ function Panel({ p }: { p: FjcProfile }) {
               </ul>
             </div>
           ) : null}
+          <div>
+            <h3 className="mb-1 text-xs font-semibold text-muted-foreground">
+              Demographics ({p.demographicsLabel})
+            </h3>
+            <p className="text-xs">
+              Gender: {p.gender ?? NR} · Race or ethnicity: {p.raceEthnicity ?? NR}
+            </p>
+          </div>
         </div>
         <div className="min-w-0 space-y-3">
           {p.mdls.length ? (
@@ -177,24 +181,62 @@ function Panel({ p }: { p: FjcProfile }) {
                 Professional career
               </h3>
               <ul className="space-y-0.5 text-xs">
-                {p.career.split(/;\s*/).map((c) => (
-                  <li key={c}>{c}</li>
+                {p.career.split(/;\s*/).map((c, i) => (
+                  <li key={`${i}-${c}`}>{c}</li>
                 ))}
               </ul>
             </div>
           ) : null}
-          {p.court_workload ? (
+          {p.courtWorkload ? (
             <p className="text-xs text-muted-foreground">
               Court workload (June 2026):{" "}
-              {p.court_workload["per_judge_weighted_filings"]?.toLocaleString("en-US") ?? "—"}{" "}
-              weighted filings and{" "}
-              {p.court_workload["per_judge_pending"]?.toLocaleString("en-US") ?? "—"} pending cases
-              per judgeship.
+              {p.courtWorkload.weightedPerJudge?.toLocaleString("en-US") ?? NR} weighted filings and{" "}
+              {p.courtWorkload.pendingPerJudge?.toLocaleString("en-US") ?? NR} pending cases per
+              judgeship.
             </p>
           ) : null}
         </div>
       </div>
     </section>
+  );
+}
+
+function ServiceItem({ s }: { s: FjcService }) {
+  const steps = [
+    s.nomination ? `nominated ${s.nomination}` : null,
+    s.committeeReferral ? `referred ${s.committeeReferral}` : null,
+    s.hearing ? `hearing ${s.hearing}` : null,
+    s.committeeAction
+      ? `${s.committeeAction.toLowerCase()}${s.committeeActionDate ? ` ${s.committeeActionDate}` : ""}`
+      : null,
+    s.confirmation ? `confirmed ${s.confirmation} (${s.voteLabel})` : null,
+    s.recessAppointment ? `recess appointment ${s.recessAppointment}` : null,
+  ].filter(Boolean);
+  return (
+    <li className="border-l-2 border-border pl-2">
+      <div className="font-medium">
+        {s.courtId ? (
+          <Link to="/courts/$id" params={{ id: s.courtId }} className="hover:underline">
+            {s.court}
+          </Link>
+        ) : (
+          s.court
+        )}
+      </div>
+      <div className="text-muted-foreground">
+        {s.title ?? "Judge"} · commissioned {s.commission ?? NR}
+        {s.president ? ` · ${s.president}` : ""}
+        {s.partyLabel ? ` · ${s.partyLabel}` : ""}
+        {s.chiefBegin ? ` · chief judge ${year(s.chiefBegin)}–${year(s.chiefEnd)}` : ""}
+        {s.seniorStatus ? ` · senior status ${s.seniorStatus}` : ""}
+        {s.termination ? ` · ${s.termination.toLowerCase()} ${s.terminationDate ?? ""}` : ""}
+      </div>
+      <div className="text-muted-foreground">
+        Seat {s.seatId ?? NR}
+        {s.statute ? ` · seat created by ${s.statute}` : ""}
+        {steps.length ? ` · ${steps.join(" · ")}` : ""}
+      </div>
+    </li>
   );
 }
 
@@ -210,11 +252,35 @@ function Fact({ label, value, note }: { label: string; value: string; note?: str
 
 export function CourtJudgesPanel({ courtId }: { courtId: string }) {
   const q = useQuery({
-    queryKey: ["court-judges", courtId],
-    queryFn: () => getCourtJudges({ data: { id: courtId } }),
+    queryKey: ["court-sitting-judges", courtId],
+    queryFn: () => getCourtSittingJudges({ data: { id: courtId } }),
     staleTime: 10 * 60 * 1000,
   });
-  if (q.isLoading || q.isError || !q.data?.length) return null;
+  if (q.isLoading)
+    return (
+      <div
+        className="mb-5 h-32 animate-pulse rounded-lg border border-border bg-muted/40"
+        aria-busy="true"
+        aria-label="Loading sitting judges"
+      />
+    );
+  if (q.isError)
+    return (
+      <p
+        role="alert"
+        className="mb-5 flex flex-wrap items-center gap-2 rounded-lg border border-border px-4 py-3 text-xs text-muted-foreground"
+      >
+        The list of sitting judges could not be loaded.
+        <button
+          type="button"
+          onClick={() => void q.refetch()}
+          className="rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          Retry
+        </button>
+      </p>
+    );
+  if (!q.data?.length) return null;
   return (
     <section
       className="mb-5 rounded-lg border border-border bg-surface"
@@ -223,7 +289,8 @@ export function CourtJudgesPanel({ courtId }: { courtId: string }) {
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
         <h2 className="font-sans text-sm font-semibold">Sitting judges · {q.data.length}</h2>
         <p className="text-xs text-muted-foreground">
-          From the Federal Judicial Center directory (top 1,000 sitting judges selection)
+          Federal Judicial Center biographical directory, all sitting Article III judges of this
+          court
         </p>
       </header>
       <div className="overflow-x-auto">
@@ -238,6 +305,9 @@ export function CourtJudgesPanel({ courtId }: { courtId: string }) {
               </th>
               <th scope="col" className="px-2 py-2 text-left font-medium">
                 Appointed by
+              </th>
+              <th scope="col" className="px-2 py-2 text-left font-medium">
+                Confirmation vote
               </th>
               <th scope="col" className="px-2 py-2 text-left font-medium">
                 Commissioned
@@ -265,8 +335,12 @@ export function CourtJudgesPanel({ courtId }: { courtId: string }) {
                 </td>
                 <td className="px-2 py-1.5">{j.status}</td>
                 <td className="px-2 py-1.5">
-                  {j.president} <span className="text-muted-foreground">({j.party})</span>
+                  {j.president ?? NR}
+                  {j.partyLabel ? (
+                    <span className="block text-[11px] text-muted-foreground">{j.partyLabel}</span>
+                  ) : null}
                 </td>
+                <td className="px-2 py-1.5">{j.voteLabel}</td>
                 <td className="px-2 py-1.5 tabular-nums">{j.commission ?? "—"}</td>
                 <td className="px-4 py-1.5 text-right tabular-nums">
                   {j.mdls ? `${j.mdls} · ${j.mdlActions.toLocaleString("en-US")} actions` : "—"}

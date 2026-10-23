@@ -16,6 +16,7 @@ import build_appeals as ba  # noqa: E402
 import build_bankruptcy as bb  # noqa: E402
 import build_criminal as bc  # noqa: E402
 import build_judge_profiles as bjp  # noqa: E402
+import build_nominations as bn  # noqa: E402
 import extract_idb as ex  # noqa: E402
 import idb_common as ic  # noqa: E402
 import jcodes as jc  # noqa: E402
@@ -245,6 +246,81 @@ class JudgeProfiles(unittest.TestCase):
                 {"termination": None, "senior_status": "2020-01-01", "chief_begin": None, "chief_end": None, "chief2_begin": None, "chief2_end": None}]
         self.assertEqual(bjp.status_of(serv)[0], "Senior")
         self.assertEqual(bjp.status_of(serv[:1])[0], "Service ended")
+
+
+class Nominations(unittest.TestCase):
+    def test_classify_scope_and_courts(self):
+        c = bn.classify
+        self.assertEqual(c("Aida M. Delgado-Colon, of Puerto Rico, to be United States District Judge for the District of Puerto Rico, vice Salvador E. Casellas, retired."), ("district", "prd", None))
+        self.assertEqual(c("X, of Ohio, to be United States Circuit Judge for the Sixth Circuit, vice Y, retired."), ("circuit", "ca6", None))
+        self.assertEqual(c("X to be U. S. Circuit Judge for the District of Columbia Circuit vice Y"), ("circuit", "cadc", None))
+        self.assertEqual(c("X to be United States District Judge for the District of Columbia vice Y, retired."), ("district", "dcd", None))
+        self.assertEqual(c("X, to be United States District Judge for the Northen District of Indiana vice Y"), ("district", "innd", None))
+        self.assertEqual(c("X to be United States District Judge for the District of the Virgin Islands for the term of ten years"), ("territorial_district", "vid", None))
+        self.assertEqual(c("X to be Judge for the District Court of Guam for the term of ten years, vice Y"), ("territorial_district", "gud", None))
+        self.assertEqual(c("X to be an Associate Justice of the Supreme Court of the United States, vice Y, retired."), ("supreme_court", "scotus", None))
+        self.assertEqual(c("X to be a Judge of the United States Court of International Trade, vice Y"), ("international_trade", "cit", None))
+        # combined judgeships name several districts: no single court id
+        self.assertEqual(c("X to be United States District Judge for the Eastern and Western Districts of Missouri, vice Y"), ("district", None, None))
+        self.assertEqual(bn.district_ids("district judge for the northern, eastern and western districts of oklahoma vice y"), ["oknd", "oked", "okwd"])
+        # out of scope, counted not kept
+        self.assertEqual(c("X to be a Judge of the United States Tax Court")[0:3:2], ("out_of_scope", "tax_court"))
+        self.assertEqual(c("X to be an Associate Judge of the Superior Court of the District of Columbia")[2], "dc_local")
+        self.assertEqual(c("X to be a Judge of the United States Court of Federal Claims")[2], "federal_claims")
+        self.assertEqual(c("X to be a Judge of the United States Court of Appeals for Veterans Claims")[2], "veterans")
+
+    def test_predecessor_as_published(self):
+        self.assertEqual(bn.predecessor("A, of B, to be United States District Judge for the District of C, vice Jose L. Linares, retired."), ("Jose L. Linares, retired", False))
+        self.assertEqual(bn.predecessor("A, to be United States Circuit Judge for the Ninth Circuit. (New Position)"), (None, True))
+        self.assertEqual(bn.predecessor(None), (None, False))
+
+    def test_tally_and_method(self):
+        self.assertEqual(bn.tally("Confirmed by the Senate by Yea-Nay Vote. 66 - 33. Record Vote Number: 220."), (66, 33, 220))
+        self.assertEqual(bn.tally("Confirmed by the Senate by Yea-Nay Vote. 94-4. Record Vote No: EX. 190."), (94, 4, 190))
+        self.assertEqual(bn.tally("Confirmed by the Senate by Yea-Nay Vote. 62-36. Record Vote No: 193 EX."), (62, 36, 193))
+        self.assertEqual(bn.confirmation_method("Confirmed by the Senate by Voice Vote."), "Voice vote")
+        self.assertEqual(bn.confirmation_method("Confirmed by the Senate by Unanimous Consent."), "Unanimous consent")
+        self.assertEqual(bn.confirmation_method("Confirmed by the Senate by Yea-Nay Vote. 66 - 33."), "Roll call")
+
+    def test_actions_status_and_steps(self):
+        acts = [
+            {"actionCode": "S05310", "actionDate": "2021-06-08", "text": "Confirmed by the Senate by Yea-Nay Vote. 66 - 33. Record Vote Number: 220.", "type": "Floor"},
+            {"actionCode": "S05240", "actionDate": "2021-06-07", "text": "Cloture invoked in Senate by Yea-Nay Vote. 66 - 33. Record Vote Number: 218.", "type": "Floor"},
+            {"actionCode": "S05180", "actionDate": "2021-05-20", "text": "Placed on Senate Executive Calendar. Calendar No. 98.", "type": "Calendars"},
+            {"actionCode": "S05890", "actionDate": "2021-05-20", "text": "Committee on the Judiciary. Ordered to be reported favorably.", "type": "Committee",
+             "committees": [{"name": "Judiciary Committee"}]},
+            {"actionCode": "S05750", "actionDate": "2021-04-28", "text": "Committee on the Judiciary. Hearings held. Hearings printed: S.Hrg. 117-1, pt. 2.", "type": "Committee"},
+            {"actionCode": "S05120", "actionDate": "2021-04-19", "text": "Received in the Senate and referred to the Committee on the Judiciary.", "type": "IntroReferral",
+             "committees": [{"name": "Judiciary Committee"}]},
+        ]
+        p = bn.parse_actions(acts)
+        self.assertEqual(p["final"]["status"], "confirmed")
+        self.assertEqual(p["confirmation"], {"date": "2021-06-08", "method": "Roll call", "text": acts[0]["text"], "yeas": 66, "nays": 33, "record_vote": 220})
+        self.assertEqual(p["referral"], {"date": "2021-04-19", "committee": "Judiciary Committee"})
+        self.assertEqual(p["hearing_actions"][0]["citation"], "S.Hrg. 117-1, pt. 2")
+        self.assertEqual(p["calendar"], {"date": "2021-05-20", "number": 98})
+        self.assertEqual(p["cloture"][0]["record_vote"], 218)
+        returned = bn.parse_actions([{"actionCode": "S05335", "actionDate": "2025-01-03", "text": "Returned to the President under the provisions of Senate Rule XXXI, paragraph 6 of the Standing Rules of the Senate."}])
+        self.assertEqual(returned["final"]["status"], "returned")
+        self.assertIsNone(bn.parse_actions([])["final"])
+        # a discharge resolution coded S05185 is not a return to the President
+        self.assertIsNone(bn.parse_actions([{"actionCode": "S05185", "actionDate": "2005-05-01", "text": "S.Res. 192, Executive Resolution to discharge nomination, submitted by Mr. Frist and placed on Executive Calendar."}])["final"])
+
+    def test_fjc_link_exact_and_unique(self):
+        idx = {"nomination": {("njd", "neals", "2021-04-19"): {"10226111"}}, "confirmation": {("njd", "neals", "2021-06-08"): {"10226111"}},
+               "other": {("ca11", "abudu", "2022-01-10"): {"13651551"}, ("nysd", "smith", "2000-01-01"): {"1", "2"}}}
+        self.assertEqual(bn.fjc_link(idx, ["njd"], "neals", "2021-04-19", "2021-06-08"), ("10226111", "nomination_date+confirmation_date"))
+        self.assertEqual(bn.fjc_link(idx, ["njd"], "neals", "2021-04-20", None), (None, "no_match"))
+        self.assertEqual(bn.fjc_link(idx, ["ca11"], "abudu", "2022-01-10", None), ("13651551", "other_nomination_date"))
+        self.assertEqual(bn.fjc_link(idx, ["nysd"], "smith", "2000-01-01", None), (None, "ambiguous"))
+        self.assertEqual(bn.fjc_link(idx, [], "neals", "2021-04-19", None), (None, "missing_key"))
+        self.assertEqual(bn.fjc_link(idx, ["nyed"], "neals", "2021-04-19", "2021-06-08"), (None, "no_match"))
+
+    def test_names_and_ordinals(self):
+        self.assertEqual(bn.nominee_name("Aida M. Delgado-Colon, of Puerto Rico, to be United States District Judge", []), "Aida M. Delgado-Colon")
+        self.assertEqual(bn.nominee_name("Withdrawal message ... nomination of X", [{"first": "Jefferson", "middle": "B.", "last": "Sessions", "suffix": "III"}]), "Jefferson B. Sessions III")
+        self.assertEqual([bn.ordinal(n) for n in (101, 102, 103, 111, 112, 117)], ["101st", "102nd", "103rd", "111th", "112th", "117th"])
+        self.assertEqual(bn.norm("Delgado-Colón"), "delgadocolon")
 
 
 if __name__ == "__main__":

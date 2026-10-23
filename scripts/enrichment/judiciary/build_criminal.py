@@ -162,8 +162,9 @@ def main() -> None:
         crows = [[fy, og, dg, st, n] for (c, fy, og, dg, st), n in sorted(cube.items(), key=lambda kv: tuple(str(x) for x in kv[0])) if c == court]
         frows = [[fy, og, n] for (c, fy, og), n in sorted(fcube.items(), key=lambda kv: tuple(str(x) for x in kv[0])) if c == court]
         lat = next((s for s in series if s["fy"] == ic.LATEST_FY), None)
-        rows.append(record(f"district:{court}", f"Criminal defendants in {court}, FY1996-FY2026", court, jc.district_state(next(k for k in jc.DISTRICTS if jc.district_court_id(k) == court)), {
-            "kind": "district", "court_id": court, "series": series, "offenses_window": offense_rows, "top_offense_codes_window": top_codes,
+        dlabel = jc.district_label_for(court) or court
+        rows.append(record(f"district:{court}", f"Criminal defendants in the {dlabel} district, FY1996-FY2026", court, jc.district_state(next(k for k in jc.DISTRICTS if jc.district_court_id(k) == court)), {
+            "kind": "district", "court_id": court, "district_label": dlabel, "series": series, "offenses_window": offense_rows, "top_offense_codes_window": top_codes,
             "counsel_window": counsel,
             "cube_columns": ["fy", "offense_group", "disposition", "sentence_type", "defendants_disposed"], "cube": crows,
             "filings_cube_columns": ["fy", "offense_group", "defendants_filed"], "filings_cube": frows,
@@ -173,6 +174,7 @@ def main() -> None:
     for r in rows:
         if r["item"]["kind"] == "district":
             r["item"]["ranks_latest"] = {m: v.get(r["item"]["court_id"]) for m, v in ranks.items()}
+            r["item"]["ranks_of"] = {m: len(v) for m, v in ranks.items()}
     summary = {
         "source": "Federal Judicial Center, Integrated Database (IDB): criminal defendants filed, terminated and pending, FY1996 to present",
         "source_page": SOURCE_PAGE, "source_file": SOURCE_FILE, "codebook": jc.CRIMINAL_CODEBOOK,
@@ -217,7 +219,7 @@ def record(rid, title, court, state, payload, latest, links):
     rl = list(links)
     if court:
         rl.insert(0, {"url": f"/courts/{court}", "label": "Court profile"})
-    cells = {"court": court or "All districts", "filed_fy2025": ic.fmt_int(lat.get("filed")), "terminated_fy2025": ic.fmt_int(lat.get("terminated")),
+    cells = {"court": payload.get("district_label") or court or "All districts", "filed_fy2025": ic.fmt_int(lat.get("filed")), "terminated_fy2025": ic.fmt_int(lat.get("terminated")),
              "plea_pct_fy2025": ic.fmt_pct(lat.get("plea_pct")), "prison_pct_fy2025": ic.fmt_pct(lat.get("prison_pct"))}
     return {"dataset": DATASET, "id": rid, "category": DATASET, "state": state or "", "title": title, "source_url": SOURCE_FILE,
             "item": {"id": rid, "title": title, "subtitle": "FJC Integrated Database, criminal defendants", "cells": cells, "badges": [],

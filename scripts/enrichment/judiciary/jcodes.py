@@ -106,6 +106,14 @@ def bankruptcy_court_id(district_id: str | None) -> str | None:
     return BANKRUPTCY_ID_EXCEPTIONS.get(district_id, district_id[:-1] + "b")
 
 
+def district_label_for(court_id: str | None) -> str | None:
+    """Codebook label of the district with this court id ('nysd' -> 'New York - Southern'); None when not a district."""
+    for code, label in DISTRICTS.items():
+        if court_id and district_court_id(code) == court_id:
+            return label
+    return None
+
+
 def district_state(code: str) -> str | None:
     label = DISTRICTS.get((code or "").strip())
     return STATE_USPS_UPPER.get(label.split(" - ")[0]) if label else None

@@ -180,8 +180,13 @@ def main() -> None:
             stats[f"nominee_link_{nb}"] += 1
             confs.append({**{x: c[x] for x in ("nominee", "nomination_date", "confirmation_date", "url")}, "listed_months": sorted(c["listed"]),
                           "fjc_link": nl, "link_basis": nb})
-        nominees = [{"nominee": n["nominee"], "nomination_date": n["nomination_date"], "first_listed": min(n["months"]), "last_listed": max(n["months"])}
-                    for n in sorted(e["nominees"].values(), key=lambda n: (n["nomination_date"] or "", n["nominee"]))]
+        nominees = []
+        for n in sorted(e["nominees"].values(), key=lambda n: (n["nomination_date"] or "", n["nominee"])):
+            dated = sorted(m for m in n["months"] if m != "current")
+            nominees.append({"nominee": n["nominee"], "nomination_date": n["nomination_date"], "first_listed": dated[0] if dated else None,
+                             "last_listed": dated[-1] if dated else None, "on_current_list": "current" in n["months"]})
+        # the nominee printed on the current (Oct 22, 2026) list; an earlier nominee no longer printed is history, not pending
+        pending = [n for n in nominees if n["on_current_list"]] if status in ("open", "announced") else []
         vdate = e["vacancy_date"]
         days_open = (AS_OF - date.fromisoformat(vdate)).days if (status == "open" and vdate) else None
         days_to_conf = None
@@ -201,7 +206,8 @@ def main() -> None:
             "emergency": {"months": len(e["emergency_months"]), "first": min(e["emergency_months"]) if e["emergency_months"] else None,
                           "last": max(e["emergency_months"]) if e["emergency_months"] else None, "current": e["on_current_emergencies"],
                           "latest": e["emergency_latest"]},
-            "nominees": nominees, "confirmations": confs, "days_open_as_of_2026_10_22": days_open, "days_vacancy_to_confirmation": days_to_conf,
+            "nominees": nominees, "pending_nominee": pending[-1] if pending else None,
+            "confirmations": confs, "days_open_as_of_2026_10_22": days_open, "days_vacancy_to_confirmation": days_to_conf,
             "incumbent_fjc_link": inc_link, "incumbent_link_basis": inc_basis,
             "source_urls": sorted(e["sources"])[-6:], "source_count": len(e["sources"]),
         }
@@ -240,7 +246,10 @@ def main() -> None:
                        "published_nominees_pending": tot.get("Nominees Pending"),
                        "reports": {k: v["status"] for k, v in cov_by_month[m].items()}})
     current = {k: v for k, v in cov_by_month.get("current", {}).items()}
+    confirmed = [i for items in by_court.values() for i in items if i["confirmations"] and i["confirmations"][-1]["confirmation_date"]]
+    recent_conf = sorted(confirmed, key=lambda i: i["confirmations"][-1]["confirmation_date"], reverse=True)[:60]
     nat = {"kind": "national", "series": series, "current_reports": current,
+           "recent_confirmations": [slim(i) for i in recent_conf],
            "current_counts": {"open": stats["status_open"], "announced": stats["status_announced"],
                               "emergencies": sum(1 for r in out_rows if r["item"].get("kind") in ("vacancy", "future") and r["item"]["emergency"]["current"])},
            "coverage": dict(collections.Counter(c["status"] for c in coverage)),
@@ -261,7 +270,7 @@ def main() -> None:
              "listing_block": {"page": 1, "limit": 50,
                                "columns": [{"key": "court", "label": "Court"}, {"key": "incumbent", "label": "Vacancy created by"},
                                            {"key": "reason", "label": "Reason"}, {"key": "vacancy_date", "label": "Vacancy date"},
-                                           {"key": "status", "label": "Status"}, {"key": "nominee", "label": "Latest nominee"}],
+                                           {"key": "status", "label": "Status"}, {"key": "nominee", "label": "Nominee (pending if open)"}],
                                "filters": [{"name": "q", "type": "search", "label": "Search"},
                                            {"name": "status", "type": "select", "label": "Status", "options": [{"label": "Open", "value": "open"}, {"label": "Announced (future)", "value": "announced"}, {"label": "Confirmation listed", "value": "confirmation_listed"}, {"label": "No longer listed", "value": "no_longer_listed"}]},
                                            {"name": "kind", "type": "select", "label": "Record", "options": [{"label": "Vacancy", "value": "vacancy"}, {"label": "Future vacancy", "value": "future"}, {"label": "Court summary", "value": "court"}]}]},
@@ -275,6 +284,8 @@ def slim(i: dict) -> dict:
     return {k: i[k] for k in ("court_id", "incumbent", "reason", "vacancy_date", "notification_date", "status", "days_open_as_of_2026_10_22",
                               "first_listed", "last_listed")} | {
         "nominee": (i["nominees"][-1]["nominee"] if i["nominees"] else None), "nomination_date": (i["nominees"][-1]["nomination_date"] if i["nominees"] else None),
+        "pending_nominee": (i["pending_nominee"] or {}).get("nominee"), "pending_nomination_date": (i["pending_nominee"] or {}).get("nomination_date"),
+        "court_name": i["court_name"], "court_as_published": i["court_as_published"],
         "emergency_days_pending": ((i["emergency"]["latest"] or {}).get("days_pending")), "weighted": ((i["emergency"]["latest"] or {}).get("weighted")),
         "confirmation": (i["confirmations"][-1] if i["confirmations"] else None), "incumbent_fjc_link": i["incumbent_fjc_link"]}
 
@@ -288,12 +299,15 @@ def record(rid: str, item: dict) -> dict:
                  ["Reason", item["reason"] or "Not recorded"], ["Vacancy date", item["vacancy_date"] or "Not recorded (TBD)"],
                  ["Status", item["status"].replace("_", " ")],
                  ["Months on the vacancy list", f"{item['months_listed']} ({item['first_listed']} to {item['last_listed']})" if item["months_listed"] else "None in the parsed archive"],
+                 ["Nominee on the current list", ((item["pending_nominee"] or {}).get("nominee") or "None") if item["status"] in ("open", "announced") else "Not applicable (no longer open)"],
                  ["Nominees listed", "; ".join(f"{n['nominee']} (nominated {n['nomination_date'] or 'date not recorded'})" for n in item["nominees"]) or "None listed"],
                  ["Confirmation listed", "; ".join(f"{c['nominee']} confirmed {c['confirmation_date']}" for c in item["confirmations"]) or "None listed"],
                  ["Judicial emergency", f"{item['emergency']['months']} months listed" + (" (on the current list)" if item["emergency"]["current"] else "") if (item["emergency"]["months"] or item["emergency"]["current"]) else "Not listed"],
                  ["Source", "Administrative Office of the U.S. Courts, judicial vacancy reports (uscourts.gov)"]]
         cells = {"court": item["court_as_published"], "incumbent": item["incumbent"], "reason": item["reason"], "vacancy_date": item["vacancy_date"] or "TBD",
-                 "status": item["status"].replace("_", " "), "nominee": latest_nom["nominee"] if latest_nom else "—"}
+                 "status": item["status"].replace("_", " "),
+                 "nominee": ((item["pending_nominee"] or {}).get("nominee") or "None pending") if item["status"] in ("open", "announced")
+                 else (latest_nom["nominee"] if latest_nom else "—")}
         src = item["source_urls"][-1] if item["source_urls"] else CURRENT_URL
         links = [{"url": f"/courts/{item['court_id']}", "label": "Court profile"}] if item["court_id"] else []
         if item["incumbent_fjc_link"] and item["incumbent_fjc_link"].get("judge_profile_id"):

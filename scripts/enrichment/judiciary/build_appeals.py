@@ -240,7 +240,8 @@ def main() -> None:
             elif o == "not_recorded":
                 entry["label"] = "Origin not recorded"
             else:
-                entry["label"] = o
+                dl = jc.district_label_for(o)
+                entry["label"] = f"District court: {dl}" if dl else o
             origins.append(entry)
         origins.sort(key=lambda r: -r["terminated"])
         rows.append(record(f"circuit:{cid}", f"{jc.CIRCUIT_NAMES[code]} - appeal outcomes by origin district, FY2008-FY2026", "circuit", cid, {
@@ -263,8 +264,9 @@ def main() -> None:
                       s["remanded"], s["other"], s["coa_denied"], s["median_days"]]
                      for (c, o, nat, nos, fy), s in sorted(cube.items(), key=lambda kv: (kv[0][4], kv[0][1], kv[0][2], kv[0][3])) if o == oid]
         district_reversal[oid] = (main_circuit, (win_s or {}).get("reversed_pct"))
-        rows.append(record(f"district:{oid}", f"Appeals from {oid} - outcomes in the court of appeals, FY2008-FY2026", "district", oid, {
-            "kind": "district", "court_id": oid, "circuit_id": main_circuit, "circuits": dict(circuits), "series": os_,
+        dlabel = jc.district_label_for(oid) or oid
+        rows.append(record(f"district:{oid}", f"Appeals from the {dlabel} district: outcomes in the court of appeals, FY2008-FY2026", "district", oid, {
+            "kind": "district", "court_id": oid, "district_label": dlabel, "circuit_id": main_circuit, "circuits": dict(circuits), "series": os_,
             "window": win_s, "by_nature_window": nature_table(origin_nature_win, oid), "top_nos_window": nos_table(origin_nos_win, oid),
             "circuit_from_districts_window": circ_from_districts_win.get(main_circuit),
             "pending_2026_06_30": pending[("origin", oid)],
@@ -332,7 +334,9 @@ def record(rid: str, title: str, kind: str, court: str | None, payload: dict, la
     rid_links = list(links)
     if court:
         rid_links.insert(0, {"url": f"/courts/{court}", "label": "Court profile"})
-    cells = {"scope": title.split(" - ")[0], "kind": kind, "terminated_fy2025": ic.fmt_int(lat.get("terminated")),
+    scope = {"national": "All regional circuits", "circuit": payload.get("circuit_name"),
+             "district": f"Appeals from {payload.get('district_label')}"}.get(kind) or title
+    cells = {"scope": scope, "kind": kind, "terminated_fy2025": ic.fmt_int(lat.get("terminated")),
              "reversed_pct_fy2025": ic.fmt_pct(lat.get("reversed_pct")), "median_days_fy2025": ic.fmt_int(lat.get("median_days"))}
     return {
         "dataset": DATASET, "id": rid, "category": DATASET, "state": "", "title": title, "source_url": SOURCE_FILE,

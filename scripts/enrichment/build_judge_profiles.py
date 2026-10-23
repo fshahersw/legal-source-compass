@@ -312,6 +312,8 @@ def build_row(row, judges_by_nid, cl_by_jid, mdls, workload, others, link_stats)
             "party": [(party or "not_recorded").lower().replace(" ", "_")],
             # `court` holds the current court of sitting judges only (court pages list sitting judges from it)
             "court": [cur_court] if cur_court else [], "courts_served": courts_served,
+            # kept from the previous publication: district = the last court is a U.S. District Court
+            "court_level": ["district" if (last or {}).get("court_type") == "U.S. District Court" else "appellate_or_other"],
             "sitting": ["yes" if sitting else "no"], "mdl_judge": ["yes" if my_mdls else "no"],
             "judge_profile": [profile] if profile else [], "cl_person": [cl] if cl else [], "fjc_nid": [nid],
         },
