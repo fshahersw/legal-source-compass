@@ -460,7 +460,7 @@ insert into ingest.sources as s (id, dataset, label, publisher, source_url, func
 values
   ('state_registers', 'state_register_issues', 'State register issues', 'State register publishers (secretaries of state, legislative agencies)',
    'https://www.sos.texas.gov/texreg/index.shtml', 'ingest-state-registers', '17 6 * * 2',
-   interval '10 days', 'upsert', 'prepend', 'state_register_issues', '^[a-z]{2}-reg:[0-9]{4}-[0-9]{2}-[0-9]{2}(:[A-Za-z0-9.-]{1,24})?$',
+   interval '10 days', 'upsert', 'prepend', 'state_register_issues', '^[a-z]{2}-reg:[0-9]{4}-[0-9]{2}(-[0-9]{2})?(:[A-Za-z0-9.-]{1,24})?$',
    '{"counted_filters": [], "extend_filters": [], "summary_counts": {}}',
    'Official state register listing pages (state government works; issue listings only: date, volume/issue, official address).',
    'One listing page per state per run (at most 20 requests), at least 2 s apart per host; robots.txt honoured by the builder that chose the pages.')
