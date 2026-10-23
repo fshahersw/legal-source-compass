@@ -369,6 +369,19 @@ class ArizonaVersionTests(unittest.TestCase):
         self.assertIsNone(bare["version"])
 
 
+class KansasTests(unittest.TestCase):
+    def test_repealed_section_prints_its_number_in_the_history_paragraph(self):
+        ks = load("ks")
+        body = ('<html><head><meta charset="utf-8"></head><body><div id="print"><div>'
+                '<p class="ksa_stat_hist"><span class="stat_number"> 8-1,141a. </span></p>'
+                '<p class="ksa_stat_hist"><span class="history"> History: </span> L. 1994, ch. 12, \u00a7 2; '
+                'Repealed, L. 2025, ch. 125, \u00a7 14; July 1.</p></div></div></body></html>').encode()
+        got = ks.parse_section(fetched("https://www.ksrevisor.gov/statutes/chapters/ch08/008_001_0141a.html", body))
+        self.assertEqual(got["number"], "8-1,141a")
+        self.assertEqual(got["text"], "")
+        self.assertIn("Repealed, L. 2025, ch. 125", got["history"])
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):

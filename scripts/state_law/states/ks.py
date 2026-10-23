@@ -108,6 +108,13 @@ def parse_section(page: lib.Fetched) -> dict:
             if text:
                 lines.append(text)
         elif cls == "ksa_stat_hist":
+            num = p.find_class("stat_number") if number is None else []
+            if num:  # a repealed section prints its number in a history paragraph and has no text paragraph
+                number = lib.norm_ws(num[0].text_content()).rstrip(".")
+                cap = p.find_class("stat_caption")
+                heading = lib.norm_ws(cap[0].text_content()) if cap else None
+                for span in num + cap:
+                    span.drop_tree()
             for span in p.find_class("history"):
                 span.drop_tree()
             text = lib.html_text(lxml_html.tostring(p, encoding="unicode"))
