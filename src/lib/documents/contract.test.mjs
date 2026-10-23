@@ -334,7 +334,7 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
     });
 
     await t.test(
-      "pages: display rule withholds every page of the bytes; ECF header dates fold in",
+      "pages: every eligible filing is indexed whatever words it holds; ECF header dates fold in",
       async () => {
         let r;
         do r = await rpc("documents_build_pages_v1", ["b1", 2]);
@@ -343,10 +343,10 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
           "select status, policy_page from documents.page_sets where sha256 = $1",
           [S.B],
         );
-        assert.deepEqual(b, { status: "withheld_policy", policy_page: 2 });
+        assert.deepEqual(b, { status: "indexed", policy_page: null }, "no keyword withholding (owner 2026-10-23)");
         assert.equal(
           (await one("select count(*)::int n from documents.pages where sha256 = $1", [S.B])).n,
-          0,
+          2,
         );
         assert.equal(
           (await one("select count(*)::int n from documents.pages where sha256 = $1", [S.E])).n,
@@ -378,7 +378,7 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
               [S.B],
             )
           ).withheld_reason,
-          "page_text_policy",
+          null,
         );
       },
     );
@@ -453,10 +453,10 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
           ["3166"],
         );
         const sealed = await rpc("documents_search_v1", ["confidential settlement"]);
-        assert.equal(
-          sealed.rows.length,
-          0,
-          "bytes withheld by the display rule are not searchable",
+        assert.deepEqual(
+          sealed.rows.map((r) => r.native_document_id),
+          ["njd-3:2016-md-02738-00002-001"],
+          "a filing that mentions a seal is searchable like any other (owner 2026-10-23)",
         );
         const browse = await rpc("documents_search_v1", [
           null,
@@ -521,7 +521,8 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
         const ex = await rpc("documents_export_pages_v1", ["", 50]);
         const shas = new Set(ex.pages.map((p) => p.sha256));
         assert.ok(shas.has(S.A) && shas.has(S.C) && shas.has(S.D) && shas.has(S.I));
-        for (const no of [S.B, S.E, S.F, S.J, S.K]) assert.ok(!shas.has(no));
+        assert.ok(shas.has(S.B), "text mentioning a seal is exported like any other filing");
+        for (const no of [S.E, S.F, S.J, S.K]) assert.ok(!shas.has(no));
         const at = (text, needle) => {
           const i = [...text].join("").indexOf(needle);
           return {
@@ -567,7 +568,7 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
             kind: "date",
             key: null,
           },
-          { sha256: S.B, page: 1, start: 0, end: 7, matched: "EXHIBIT", kind: "date", key: null },
+          { sha256: S.E, page: 1, start: 0, end: 6, matched: "Motion", kind: "date", key: null },
           { sha256: S.A, page: 1, start: 0, end: 4, matched: "Case", kind: "usc", key: "usc:bad" },
           { sha256: S.A, page: 9, start: 0, end: 4, matched: "Case", kind: "date", key: null },
           row(S.A, 1, PAGE_A1, "MDL No. 2738", "state_code", "x"),

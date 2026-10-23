@@ -367,9 +367,9 @@ export function DocumentSearch({ s, nav }: { s: DocSearchState; nav: Nav }) {
       </form>
       <p className="text-[11px] leading-4 text-muted-foreground">
         Searches the text of the court filings the matter pages list and that are open to view
-        (English word forms; “quoted phrases”, or, -word). Filings whose text mentions sealed,
-        restricted, in camera, ex parte or redacted material are listed but never searched or
-        quoted; scanned filings are searched once their text is recognised.
+        (English word forms; “quoted phrases”, or, -word). Filings the docket source marks as held
+        or sealed are listed but not searched or quoted; scanned filings are searched once their
+        text is recognised.
       </p>
       <Filters s={s} nav={nav} />
       <Results s={s} nav={nav} open={setOpen} />

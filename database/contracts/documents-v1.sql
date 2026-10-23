@@ -11,11 +11,12 @@
 --   3. no association or local occurrence of the same bytes carries an explicit seal / restriction / policy flag.
 -- Text: page text never leaves corpus_ingest.pdf_text_pages. This schema holds a tsvector per page, char counts and
 -- pointers; snippets are cut from the stored text at query time and only for documents this layer serves. Display rule
--- (owner 2026-10-03: "docket text shown as published, minus sealed/restricted/in camera/ex parte/redacted material"):
--- if ANY page of the bytes, or the published description of ANY document with those bytes, mentions sealed, under seal,
--- restricted, in camera, ex parte or redact*, no page of those bytes is indexed, snippeted, exported or extracted; the
--- document stays listed with its published metadata and text status 'withheld_policy' (it is already listed, with its
--- PDF, on the matter page).
+-- (owner 2026-10-23 night: "dont withhold filings", superseding the 2026-10-03 keyword rule): every eligible filing's
+-- text is indexed, snippeted, exported and extracted, and its published description is shown as published, whatever words
+-- it contains. Text is withheld only where the docket source itself flags the entry (CourtListener entry held, sealed
+-- documents on the entry, or a withheld description; a DocketBird withheld description) — status 'withheld_policy',
+-- reason 'entry_withheld' — and then for every listing of the same bytes ('same_bytes_withheld'). documents.withheld_text
+-- and documents.withheld_label are kept for callers outside this layer; this layer no longer applies them.
 -- MDL: the listing rule above is the only MDL basis (registry relationship, the court's own MDL page, or the JPML master
 -- docket). A citation of "MDL No. 2738" inside a document's text is a mention, never membership.
 -- Links (contract src/lib/insights/contract.ts Link): resolved only to ids that exist, by exact key —
@@ -445,27 +446,25 @@ begin
     case when m.pub_date is not null then m.pub_date_basis
          when m.ecf ->> 'filed' is not null then 'ECF header printed on page ' || (m.ecf ->> 'at_page')
            || case when m.ecf ->> 'date_kind' = 'entered' then ' (date entered on the docket)' else '' end end as date_basis,
-    case when m.raw_title is null or documents.withheld_label(m.raw_title) then null else left(btrim(m.raw_title), 500) end as title,
+    case when m.raw_title is null then null else left(btrim(m.raw_title), 500) end as title,
     case when m.raw_title is null then null
-         when documents.withheld_label(m.raw_title) then null
          when m.meta_src = 'listing' then case when m.source_system = 'govinfo' then 'GovInfo title' else 'Title printed on the court''s MDL page' end
          else 'Docket description as published' end as title_basis,
-    documents.doc_type(m.listing ->> 'doc_kind', case when documents.withheld_label(m.raw_title) then null else m.raw_title end) as doc_type,
+    documents.doc_type(m.listing ->> 'doc_kind', m.raw_title) as doc_type,
     case when m.listing ->> 'doc_kind' is not null then 'Listing document kind'
-         when documents.doc_type(null, m.raw_title) is not null and not documents.withheld_label(m.raw_title) then 'First words of the docket description' end as type_basis,
+         when documents.doc_type(null, m.raw_title) is not null then 'First words of the docket description' end as type_basis,
     coalesce(m.durable_url, m.db_cells ->> 'court_url', m.listing ->> 'url') as source_url,
     case when m.db_id is not null then 'sw_docket_documents_v1/' || m.db_id when m.cl_id is not null then 'sw_docket_entries_v1/' || m.cl_id end as published_record,
     m.page_count, m.pages_with_text, m.ocr_pending_pages,
-    case when m.entry_flag is not null or documents.withheld_label(m.raw_title) then 'withheld_policy'
+    case when m.entry_flag is not null then 'withheld_policy'
          when m.t_status is null then 'not_extracted'
          when coalesce(m.pages_with_text, 0) = 0 then 'no_text_layer'
          when m.ps_fp is distinct from m.fp then 'pending_index'
-         when m.ps_status = 'withheld_policy' then 'withheld_policy'
+         -- a byte set the retired keyword rule withheld is indexed again on the next pages pass
+         when m.ps_status = 'withheld_policy' then 'pending_index'
          when m.t_status = 'complete' then 'text_layer'
          else 'partial_text' end as text_status,
-    case when m.entry_flag is not null then m.entry_flag
-         when documents.withheld_label(m.raw_title) then 'description_policy'
-         when m.ps_fp is not distinct from m.fp and m.ps_status = 'withheld_policy' then 'page_text_policy' end as withheld_reason
+    m.entry_flag as withheld_reason
   from meta m;
 
   -- the same bytes listed twice: one withheld listing withholds the text of every listing of those bytes
@@ -547,11 +546,11 @@ begin
 end $$;
 
 -- ------------------------------------------------------------------------------------------------ build: pages
--- Indexes up to p_limit byte sets whose stored text changed since they were last indexed: the display rule first (any
--- page hit withholds every page of those bytes), then one english tsvector per page and the first ECF header.
+-- Indexes up to p_limit byte sets whose stored text changed since they were last indexed (or that the retired keyword
+-- rule withheld): one english tsvector per page and the first ECF header. Bytes of a source-withheld entry are skipped.
 create or replace function public.documents_build_pages_v1(p_build text, p_limit integer default 100) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare s record; v_hit integer; v_ecf jsonb; v_pages integer; v_chars bigint; v_ocr integer; v_n integer;
+declare s record; v_ecf jsonb; v_pages integer; v_chars bigint; v_ocr integer; v_n integer;
   n_indexed integer := 0; n_withheld integer := 0; n_pages integer := 0; v_remaining integer;
 begin
   if p_build is null or p_build !~ '^[a-z0-9_.-]{1,40}$' then raise exception 'Invalid build' using errcode = '22023'; end if;
@@ -566,39 +565,28 @@ begin
      order by t.sha256
      limit p_limit
   loop
-    select min(p.page) into v_hit from corpus_ingest.pdf_text_pages p where p.sha256 = s.sha256 and documents.withheld_text(p.text);
     with gone as (delete from documents.pages p where p.sha256 = s.sha256 returning 1) select count(*) into v_n from gone;
     with gone as (delete from documents.extractions e where e.sha256 = s.sha256 returning 1) select count(*) into v_n from gone;
-    if v_hit is not null then
-      insert into documents.page_sets as ps (sha256, fingerprint, status, pages, chars, ocr_pages, policy_page, ecf, build, built_at)
-      values (s.sha256, s.fp, 'withheld_policy', 0, 0, 0, v_hit, null, p_build, now())
-      on conflict (sha256) do update set fingerprint = excluded.fingerprint, status = excluded.status, pages = 0, chars = 0,
-        ocr_pages = 0, policy_page = excluded.policy_page, ecf = null, build = excluded.build, built_at = excluded.built_at;
-      update documents.documents d set text_status = 'withheld_policy', withheld_reason = 'page_text_policy'
-       where d.sha256 = s.sha256;
-      n_withheld := n_withheld + 1;
-    else
-      insert into documents.pages (sha256, page, chars, ocr, tsv)
-      select p.sha256, p.page, p.chars, p.engine = 'surya-ocr', to_tsvector('english', p.text)
-        from corpus_ingest.pdf_text_pages p where p.sha256 = s.sha256;
-      get diagnostics v_pages = row_count;
-      select coalesce(sum(p.chars), 0), count(*) filter (where p.engine = 'surya-ocr') into v_chars, v_ocr
-        from corpus_ingest.pdf_text_pages p where p.sha256 = s.sha256;
-      select documents.ecf_header(p.text, current_date) || jsonb_build_object('at_page', p.page) into v_ecf
-        from corpus_ingest.pdf_text_pages p
-       where p.sha256 = s.sha256 and documents.ecf_header(p.text, current_date) is not null
-       order by p.page limit 1;
-      insert into documents.page_sets as ps (sha256, fingerprint, status, pages, chars, ocr_pages, policy_page, ecf, build, built_at)
-      values (s.sha256, s.fp, 'indexed', v_pages, v_chars, v_ocr, null, v_ecf, p_build, now())
-      on conflict (sha256) do update set fingerprint = excluded.fingerprint, status = excluded.status, pages = excluded.pages,
-        chars = excluded.chars, ocr_pages = excluded.ocr_pages, policy_page = null, ecf = excluded.ecf, build = excluded.build,
-        built_at = excluded.built_at;
-      update documents.documents d
-         set text_status = case when t.status = 'complete' then 'text_layer' else 'partial_text' end, withheld_reason = null
-        from corpus_ingest.pdf_texts t
-       where d.sha256 = s.sha256 and t.sha256 = s.sha256 and d.text_status = 'pending_index';
-      n_indexed := n_indexed + 1; n_pages := n_pages + v_pages;
-    end if;
+    insert into documents.pages (sha256, page, chars, ocr, tsv)
+    select p.sha256, p.page, p.chars, p.engine = 'surya-ocr', to_tsvector('english', p.text)
+      from corpus_ingest.pdf_text_pages p where p.sha256 = s.sha256;
+    get diagnostics v_pages = row_count;
+    select coalesce(sum(p.chars), 0), count(*) filter (where p.engine = 'surya-ocr') into v_chars, v_ocr
+      from corpus_ingest.pdf_text_pages p where p.sha256 = s.sha256;
+    select documents.ecf_header(p.text, current_date) || jsonb_build_object('at_page', p.page) into v_ecf
+      from corpus_ingest.pdf_text_pages p
+     where p.sha256 = s.sha256 and documents.ecf_header(p.text, current_date) is not null
+     order by p.page limit 1;
+    insert into documents.page_sets as ps (sha256, fingerprint, status, pages, chars, ocr_pages, policy_page, ecf, build, built_at)
+    values (s.sha256, s.fp, 'indexed', v_pages, v_chars, v_ocr, null, v_ecf, p_build, now())
+    on conflict (sha256) do update set fingerprint = excluded.fingerprint, status = excluded.status, pages = excluded.pages,
+      chars = excluded.chars, ocr_pages = excluded.ocr_pages, policy_page = null, ecf = excluded.ecf, build = excluded.build,
+      built_at = excluded.built_at;
+    update documents.documents d
+       set text_status = case when t.status = 'complete' then 'text_layer' else 'partial_text' end, withheld_reason = null
+      from corpus_ingest.pdf_texts t
+     where d.sha256 = s.sha256 and t.sha256 = s.sha256 and d.text_status = 'pending_index';
+    n_indexed := n_indexed + 1; n_pages := n_pages + v_pages;
   end loop;
   select count(distinct d.sha256) into v_remaining from documents.documents d where d.text_status = 'pending_index';
   update documents.builds set steps = steps || jsonb_build_object('pages', coalesce(steps -> 'pages', '{}'::jsonb)
