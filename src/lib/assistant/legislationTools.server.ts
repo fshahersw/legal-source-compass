@@ -208,7 +208,7 @@ async function getBillTool(input: Record<string, unknown>): Promise<ToolOutcome>
     cosponsors: b.cosponsors.slice(0, 60),
     actions: b.actions.slice(0, 120),
     summary: b.summary ? { ...b.summary, blocks: b.summary.blocks.slice(0, 80) } : null,
-    crs_reports: r.crs,
+    crs_reports: r.crsFailed ? "the CRS report lookup failed; not known" : r.crs,
     page: fedPage(b.congress, b.type, b.number),
     note: "Status milestones are derived only from published Congress.gov action codes; the CRS summary describes the version named.",
   };

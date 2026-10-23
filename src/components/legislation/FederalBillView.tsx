@@ -34,7 +34,15 @@ function copy(text: string, what: string) {
   );
 }
 
-export function FederalBillView({ bill: b, crs }: { bill: FederalBill; crs: CrsHit[] }) {
+export function FederalBillView({
+  bill: b,
+  crs,
+  crsFailed = false,
+}: {
+  bill: FederalBill;
+  crs: CrsHit[];
+  crsFailed?: boolean;
+}) {
   return (
     <div className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -68,7 +76,7 @@ export function FederalBillView({ bill: b, crs }: { bill: FederalBill; crs: CrsH
           {b.reports.length || b.cbo.length ? <Reports bill={b} /> : null}
           {b.texts.length ? <Texts bill={b} /> : null}
           {b.related.length ? <Related bill={b} /> : null}
-          {crs.length ? <Crs items={crs} /> : null}
+          {crs.length || crsFailed ? <Crs items={crs} failed={crsFailed} /> : null}
         </div>
         <aside className="min-w-0 space-y-4">
           <MilestoneTrack milestones={applicable(b)} rule={MILESTONE_RULE} />
@@ -381,19 +389,29 @@ function Related({ bill: b }: { bill: FederalBill }) {
   );
 }
 
-function Crs({ items }: { items: CrsHit[] }) {
+function Crs({ items, failed }: { items: CrsHit[]; failed: boolean }) {
   return (
-    <Section title="CRS reports citing this measure" aside="Congress.gov">
-      <ul className="m-0 list-none space-y-1 p-0 text-[12.5px]">
-        {items.map((c) => (
-          <li key={c.id}>
-            {c.url ? <SourceLink href={c.url}>{c.title}</SourceLink> : c.title}
-            <span className="block text-[11px] text-muted-foreground">
-              {c.id} · {c.type ?? "CRS product"} · updated {fmtDay(c.updated)}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <Section title="CRS reports that list this measure" aside="Congress.gov">
+      {failed ? (
+        <p role="alert" className="m-0 text-[12.5px] text-muted-foreground">
+          The CRS report list could not load; reload the page to try again.
+        </p>
+      ) : (
+        <ul className="m-0 list-none space-y-1 p-0 text-[12.5px]">
+          {items.map((c) => (
+            <li key={c.id}>
+              {c.url ? <SourceLink href={c.url}>{c.title}</SourceLink> : c.title}
+              <span className="block text-[11px] text-muted-foreground">
+                {c.id} · {c.type ?? "CRS product"} · updated {fmtDay(c.updated)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="m-0 mt-2 text-[11px] text-muted-foreground">
+        Reports whose Congress.gov record names this measure among its related legislation. Only
+        reports whose full record has been retrieved can be matched, so the list may be incomplete.
+      </p>
     </Section>
   );
 }

@@ -87,7 +87,7 @@ function FederalBillPage() {
           This bill could not be loaded.
         </StateNote>
       ) : q.data ? (
-        <FederalBillView bill={q.data.bill} crs={q.data.crs} />
+        <FederalBillView bill={q.data.bill} crs={q.data.crs} crsFailed={q.data.crsFailed} />
       ) : (
         <StateNote>
           No Bill Status record for {cite} is stored. GovInfo publishes every numbered measure of

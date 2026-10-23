@@ -92,7 +92,20 @@ describe("readFederalBill", () => {
     const r = await readFederalBill({ congress: "118", type: "hr", number: "1" });
     expect(r!.bill.title).toBe("T");
     expect(r!.crs.map((c) => c.id)).toEqual(["R1"]);
+    expect(r!.crsFailed).toBe(false);
     expect(decodeURIComponent(mocked.mock.calls[1]![0])).toContain('{"related_bill":["118-hr-1"]}');
+  });
+
+  it("reports a failed CRS lookup instead of an empty list", async () => {
+    mocked
+      .mockResolvedValueOnce({
+        rows: [{ id: "118-hr-1", b: { congress: 118, type: "hr", number: "1" } }],
+        total: null,
+      })
+      .mockRejectedValueOnce(new Error("upstream 503"));
+    const r = await readFederalBill({ congress: "118", type: "hr", number: "1" });
+    expect(r!.crs).toEqual([]);
+    expect(r!.crsFailed).toBe(true);
   });
 });
 

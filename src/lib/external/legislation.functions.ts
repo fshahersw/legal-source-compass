@@ -193,7 +193,7 @@ const federalInput = z.object({
   number: z.string().regex(BILL_NUMBER),
 });
 
-export type FederalBillResult = { bill: FederalBill; crs: CrsHit[] } | null;
+export type FederalBillResult = { bill: FederalBill; crs: CrsHit[]; crsFailed: boolean } | null;
 
 export async function readFederalBill(d: z.infer<typeof federalInput>): Promise<FederalBillResult> {
   const id = federalId(d.congress, d.type, d.number);
@@ -203,12 +203,17 @@ export async function readFederalBill(d: z.infer<typeof federalInput>): Promise<
     ),
     restGet<unknown[]>(
       `corpus_records?select=id,source_url,c:item->cells&dataset=eq.${CRS_DATASET}&filters=cs.${cs({ related_bill: [id] })}&order=ordinal.asc&limit=20`,
-    ).catch(() => ({ rows: [] as unknown[], total: null })),
+    ).catch(() => null),
   ]);
   if (r.rows.length !== 1) return null;
   const bill = parseFederalBill(id, r.rows[0]!.b);
   if (!bill) return null;
-  return { bill, crs: crs.rows.map(parseCrsHit).filter((x): x is CrsHit => !!x) };
+  // a failed CRS lookup is reported as such (crsFailed), never as "no CRS report lists this measure"
+  return {
+    bill,
+    crs: crs ? crs.rows.map(parseCrsHit).filter((x): x is CrsHit => !!x) : [],
+    crsFailed: !crs,
+  };
 }
 
 export const getFederalBill = createServerFn({ method: "GET" })
