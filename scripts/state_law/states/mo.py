@@ -136,6 +136,29 @@ def list_chapters(home_html: str):
     return out
 
 
+def chapter_page(ctx, chapter: str):
+    """A chapter listed on the home page, asked again after 15, 45 and 90 seconds when the revisor answers with its
+    LoadChap.aspx loading page (a chapter it is still assembling: 95 and 227 on 2026-10-23) or with a 404 that a
+    later request does not repeat (11 and 344 the same evening). Never read as a chapter without sections."""
+    problem = None
+    for wait in (0, 15, 45, 90):
+        if wait:
+            ctx.log(f"chapter {chapter}: {problem}; asking again in {wait}s")
+            time.sleep(wait)
+        try:
+            fetched = ctx.get(CHAPTER_URL.format(chapter))
+        except RuntimeError as error:
+            if "HTTP 404" not in str(error):
+                raise
+            problem = "HTTP 404"
+            continue
+        if "LoadChap.aspx" in (fetched.final_url or ""):
+            problem = "the publisher answered with its loading page"
+            continue
+        return fetched
+    raise RuntimeError(f"chapter {chapter}: {problem} after four requests")
+
+
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
@@ -161,17 +184,7 @@ def acquire(ctx):
     for chapter, chapter_name, title_no, title_name in chapters:
         path = ([{"level": "title", "label": "Title", "number": title_no, "heading": title_name}] if title_no else [])
         path.append({"level": "chapter", "label": "Chapter", "number": chapter, "heading": chapter_name})
-        fetched = ctx.get(CHAPTER_URL.format(chapter))
-        for wait in (10, 30, 60):
-            if "LoadChap.aspx" not in (fetched.final_url or ""):
-                break
-            # a chapter the revisor is still assembling is answered with a short LoadChap.aspx page (chapters 95 and 227
-            # on 2026-10-23): ask again later instead of reading it as a chapter with no sections
-            ctx.log(f"chapter {chapter}: the publisher answered with its loading page; asking again in {wait}s")
-            time.sleep(wait)
-            fetched = ctx.get(CHAPTER_URL.format(chapter))
-        if "LoadChap.aspx" in (fetched.final_url or ""):
-            raise RuntimeError(f"chapter {chapter}: the publisher kept answering with its loading page")
+        fetched = chapter_page(ctx, chapter)
         sections = parse_chapter(fetched.body, chapter, run_date)
         if not sections:
             ctx.log(f"chapter {chapter}: no sections printed")
