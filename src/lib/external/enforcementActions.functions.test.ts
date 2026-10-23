@@ -21,9 +21,24 @@ import {
   parseFtcCase,
   parseOfficialSettlement,
   parseSecAction,
+  readAll,
   secActionsPath,
   webUrl,
 } from "./enforcementActions.functions";
+import { restGet } from "./rest.server";
+
+describe("readAll", () => {
+  it("pages through results 1,000 rows at a time until a short page", async () => {
+    const get = vi.mocked(restGet);
+    get.mockReset();
+    get
+      .mockResolvedValueOnce({ rows: Array.from({ length: 1000 }, (_, i) => i), total: null })
+      .mockResolvedValueOnce({ rows: [1000, 1001], total: null });
+    const rows = await readAll<number>("corpus_records?select=id");
+    expect(rows).toHaveLength(1002);
+    expect(get.mock.calls.map((c) => c[1])).toEqual([{ range: [0, 999] }, { range: [1000, 1999] }]);
+  });
+});
 
 // Shapes copied from the build files written by scripts/enrichment/enforcement_actions/*.
 const OVERVIEW = {

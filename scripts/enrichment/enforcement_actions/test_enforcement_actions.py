@@ -17,6 +17,15 @@ class TextTests(unittest.TestCase):
         text = ex.html_to_text("<p>WASHINGTON &ndash; Acme&nbsp;Corp. paid.</p><p>Second&#039;s line</p><script>x()</script>")
         self.assertEqual(text, "WASHINGTON – Acme Corp. paid.\nSecond's line")
 
+    def test_long_sentence_window_is_a_word_bounded_span(self):
+        text = ("word " * 120) + "paid $5 million " + ("more " * 120) + "end."
+        pos = text.index("$5")
+        s = ex.sentence_at(text, pos, limit=200)
+        self.assertIn(s, text)
+        self.assertIn("$5 million", s)
+        self.assertTrue(s.startswith("word") and s.endswith("more"))
+        self.assertLessEqual(len(s), 200)
+
     def test_sentences_ignore_abbreviations(self):
         text = "Acme Inc. of Washington, D.C. agreed to pay $5 million. The U.S. Attorney said so."
         spans = ex.sentence_spans(text)

@@ -115,7 +115,11 @@ export function SecActions() {
         </div>
       ) : !res.data?.rows.length ? (
         <div className="p-3">
-          <StateNote>No SEC action matches these filters.</StateNote>
+          <StateNote>
+            {!f.type && !f.year && !f.amount && !q
+              ? "SEC enforcement actions have not been published yet."
+              : "No SEC action matches these filters."}
+          </StateNote>
         </div>
       ) : (
         <>

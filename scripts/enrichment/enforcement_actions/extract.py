@@ -69,9 +69,16 @@ def sentence_at(text, pos, spans=None, limit=400):
             s = text[a:b].strip()
             if len(s) <= limit:
                 return s
+            # a window around pos, cut at word boundaries (still a verbatim span of the text)
             rel = pos - a
             lo = max(0, rel - limit // 2)
-            return text[a + lo:a + lo + limit].strip()
+            hi = min(b - a, lo + limit)
+            window = text[a + lo:a + hi]
+            if lo > 0 and " " in window[:40]:
+                window = window[window.index(" ") + 1:]
+            if a + hi < b and " " in window[-40:]:
+                window = window[:window.rindex(" ")]
+            return window.strip()
     return None
 
 

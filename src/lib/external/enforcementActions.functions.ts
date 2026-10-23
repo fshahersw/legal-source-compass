@@ -113,6 +113,17 @@ const AMOUNT_IDS = AMOUNT_BUCKETS.map((b) => b.id) as [AmountBucket, ...AmountBu
 type Page<T> = { rows: T[]; total: number | null; page: number; pageSize: number };
 const PAGE_SIZE = 50;
 
+/** Every row of an ordered read, 1,000 at a time (the API returns at most 1,000 rows per request). */
+export async function readAll<T>(path: string, max = 20_000): Promise<T[]> {
+  const out: T[] = [];
+  for (let start = 0; start < max; start += 1000) {
+    const { rows } = await restGet<T[]>(path, { range: [start, start + 999] });
+    out.push(...rows);
+    if (rows.length < 1000) break;
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- DOJ
 
 export type DojPartition = { dataset: string; year: string; records: number };
@@ -314,10 +325,15 @@ export const getDojLargest = createServerFn({ method: "GET" }).handler(
     const overview = await readDojOverview();
     if (!overview) return [];
     const list = overview.partitions.map((p) => p.dataset).join(",");
-    const { rows } = await restGet<
-      { dataset: unknown; id: unknown; title: unknown; source_url: unknown; r: unknown }[]
-    >(
-      `corpus_records?select=dataset,id,title,source_url,r:item->release&dataset=in.(${list})&filters=cs.${cs({ amount: ["1b_plus"] })}&limit=1000`,
+    const rows = await readAll<{
+      dataset: unknown;
+      id: unknown;
+      title: unknown;
+      source_url: unknown;
+      r: unknown;
+    }>(
+      `corpus_records?select=dataset,id,title,source_url,r:item->release&dataset=in.(${list})&filters=cs.${cs({ amount: ["1b_plus"] })}&order=dataset.asc,ordinal.asc`,
+      5000,
     );
     return rows
       .flatMap((r) => {
@@ -421,8 +437,8 @@ let ftcActionsCache: { at: number; value: FtcAction[] } | null = null;
 export const getFtcActions = createServerFn({ method: "GET" }).handler(
   async (): Promise<FtcAction[]> => {
     if (ftcActionsCache && Date.now() - ftcActionsCache.at < TTL) return ftcActionsCache.value;
-    const { rows } = await restGet<{ id: unknown; source_url: unknown; a: unknown }[]>(
-      "corpus_records?select=id,source_url,a:item->ftc_action&dataset=eq.ftc_enforcement_actions&order=ordinal.asc&limit=5000",
+    const rows = await readAll<{ id: unknown; source_url: unknown; a: unknown }>(
+      "corpus_records?select=id,source_url,a:item->ftc_action&dataset=eq.ftc_enforcement_actions&order=ordinal.asc",
     );
     const value = rows.flatMap((r) => {
       const p = parseFtcAction(r);
@@ -721,8 +737,8 @@ let settlementsCache: { at: number; value: OfficialSettlement[] } | null = null;
 export const getOfficialSettlements = createServerFn({ method: "GET" }).handler(
   async (): Promise<OfficialSettlement[]> => {
     if (settlementsCache && Date.now() - settlementsCache.at < TTL) return settlementsCache.value;
-    const { rows } = await restGet<{ id: unknown; source_url: unknown; s: unknown }[]>(
-      "corpus_records?select=id,source_url,s:item->settlement&dataset=eq.settlement_claims_official&order=ordinal.asc&limit=3000",
+    const rows = await readAll<{ id: unknown; source_url: unknown; s: unknown }>(
+      "corpus_records?select=id,source_url,s:item->settlement&dataset=eq.settlement_claims_official&order=ordinal.asc",
     );
     const value = rows.flatMap((r) => {
       const p = parseOfficialSettlement(r);

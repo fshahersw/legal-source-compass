@@ -216,7 +216,7 @@ function Body({ rows }: { rows: OfficialSettlement[] }) {
                         <span title={r.amounts[0]!.sentence ?? undefined}>
                           <span className="font-mono">{r.amounts[0]!.asWritten}</span>
                           {r.amounts[0]!.sentence ? (
-                            <span className="line-clamp-2 block text-[11px] text-muted-foreground">
+                            <span className="line-clamp-2 text-[11px] text-muted-foreground">
                               “{r.amounts[0]!.sentence}”
                             </span>
                           ) : null}

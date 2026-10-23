@@ -322,7 +322,11 @@ function FtcCases() {
         </div>
       ) : !res.data?.rows.length ? (
         <div className="p-3">
-          <StateNote>No FTC case matches these filters.</StateNote>
+          <StateNote>
+            {!f.actionType && !f.status && !f.mission && !q
+              ? "FTC cases have not been published yet."
+              : "No FTC case matches these filters."}
+          </StateNote>
         </div>
       ) : (
         <>
