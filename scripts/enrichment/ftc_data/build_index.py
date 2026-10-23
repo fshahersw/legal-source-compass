@@ -202,6 +202,14 @@ def parse_open_gov(html):
     return out
 
 
+def short(text, limit=160):
+    """Text for a list cell: whole as published when it fits, else cut at a word boundary and marked with an ellipsis (the full text is in the facts)."""
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(" ,;:")
+    return cut + "\u2026"
+
+
 def file_format(url):
     m = re.search(r"\.([A-Za-z0-9]+)(?:$|\?)", url)
     return (m.group(1).upper() if m else "page")
@@ -236,7 +244,7 @@ def build_catalog(entries=None):
         rows.append(
             B.record(
                 "ftc_open_data_catalog", rid, f["name"], source_url=OPEN_GOV, subtitle=f"FTC download, {file_format(f['url'])}",
-                cells={"name": f["name"], "kind": "Download", "period": (f["description"] or f"Edition {f['name'].split(' ')[-1]}")[:160], "download": f"Yes ({file_format(f['url'])}" + (f", {f['size']})" if f["size"] else ")"), "loaded": (loaded + " (from the PDF edition)" if loaded_how else loaded) or "Not loaded"},
+                cells={"name": f["name"], "kind": "Download", "period": short(f["description"] or f"Edition {f['name'].split(' ')[-1]}"), "download": f"Yes ({file_format(f['url'])}" + (f", {f['size']})" if f["size"] else ")"), "loaded": (loaded + " (from the PDF edition)" if loaded_how else loaded) or "Not loaded"},
                 facts=[("Name", f["name"]), ("Format and size as listed", f"{file_format(f['url'])}" + (f", {f['size']}" if f["size"] else "")), ("File", f["url"]), ("Dictionary", f["dictionary_url"]), ("What the FTC says", f["description"]),
                        ("On this platform", (f"{loaded}: {loaded_how}" if loaded_how else loaded) or "Not loaded here (the file is listed, not read)"), ("Read by this build", f"Yes, sha256 {got['sha256']}" if got else "No"), ("Listed on", OPEN_GOV)],
                 links=[{"url": f["url"], "label": "Download from ftc.gov"}] + ([{"url": f"/data/{loaded}", "label": "Dataset on this platform"}] if loaded else []),
@@ -253,7 +261,7 @@ def build_catalog(entries=None):
         rows.append(
             B.record(
                 "ftc_open_data_catalog", rid, name, source_url=BASE + "/developer", subtitle="FTC API (api.data.gov key)",
-                cells={"name": name, "kind": "API", "period": desc[:160], "download": "Yes (JSON API, key required)", "loaded": loaded},
+                cells={"name": name, "kind": "API", "period": short(desc), "download": "Yes (JSON API, key required)", "loaded": loaded},
                 facts=[("Endpoint", "https://api.ftc.gov" + path), ("What it serves", desc), ("Documentation", docs), ("Access", "Free api.data.gov key; the FTC states 20,000 requests an hour per key is the header limit and throttling is set by api.data.gov"), ("On this platform", loaded)],
                 links=[{"url": docs, "label": "API documentation (FTC)"}, {"url": f"/data/{loaded}", "label": "Dataset on this platform"}], text=f"{name} FTC API {path}",
                 filters={"kind": ["api"]}, extra={"kind": "api", "loaded_as": loaded},

@@ -401,6 +401,15 @@ class HsrBuildTests(unittest.TestCase):
 
 
 class IndexBuildTests(unittest.TestCase):
+    def test_list_cell_text_is_cut_at_a_word_and_marked_never_mid_sentence_unmarked(self):
+        self.assertEqual(BI.short("Short text."), "Short text.")
+        long_text = "This data set includes information on all nonmerger enforcement actions brought by the Federal Trade Commission from fiscal year 1996 through the third quarter of fiscal year 2025."
+        out = BI.short(long_text)
+        self.assertLessEqual(len(out), 160)
+        self.assertTrue(out.endswith("…"))
+        self.assertTrue(long_text.startswith(out[:-1]))
+        self.assertFalse(out[:-1].endswith(" "))
+
     def test_open_government_tables(self):
         html = (
             "<main><table><tr><th>Data Set Name</th><th>Dictionary</th><th>Description</th></tr>"
