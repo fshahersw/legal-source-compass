@@ -19,6 +19,7 @@ Link kinds (one row per unit-law pair; kinds and evidence list every way the pai
 import argparse
 import datetime
 import json
+import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -71,6 +72,44 @@ def display_label(law):
     if law["doc_tag"] == "resolution":
         return f"{law.get('type') or 'Resolution'} {law.get('doc_number') or ''}".strip()
     return f"{law.get('type') or 'Act'} {law.get('doc_number') or ''}".strip()
+
+
+# GovInfo's dc:title is "<designation>: <title>" ("Public Law 118–63: To amend title 49, ...", "Chap. II: for laying
+# a Duty ...", "No. 1: authorizing ..."). A record already names its measure by its label, so the title shown is the part
+# after GovInfo's own designation; the designation as printed stays on the record (detail.law.title_as_printed and,
+# when it differs from the label, a "Designation in GovInfo title" fact). Only these designation forms are split off.
+DESIGNATION_PREFIX = re.compile(
+    r"^\s*(?P<d>\[?\*?\s*(?:(?:Public|Private) Laws? \d{1,4}(?:\s*[–-]\s*\d{1,4})?"
+    r"|Chap(?:ter|\.)?\s?(?:\d{1,4}|[IVXLCDM]{1,12})\.?|No\.?\s?\d{1,4}\.?"
+    r"|Resolutions?(?:\s(?:\d{1,4}|[IVXLCDM]{1,12}))?|Join Resolution|H\. J\. Res\., No\. \d{1,4}"
+    r"|\d{1,4}\.|[IVXLCDM]{1,12})\s*\]?)\s*:\s*(?P<t>.*)$", re.S)
+# "I. Resolution in relation to ..." under document number I: a leading number is split off only when it is the
+# measure's own document number.
+LEADING_NUMBER = re.compile(r"^(?P<d>(?P<n>\d{1,4}|[IVXLCDM]{1,12})\.)\s+(?P<t>\S.*)$", re.S)
+
+
+def split_title(law):
+    """(title, designation as printed) from GovInfo's dc:title; (None, None) when no title is recorded."""
+    raw = (law.get("title") or "").strip()
+    if not raw:
+        return None, None
+    m = DESIGNATION_PREFIX.match(raw)
+    if m:
+        return m.group("t").strip() or None, m.group("d").strip()
+    m = LEADING_NUMBER.match(raw)
+    if m and law.get("doc_number") and m.group("n") == str(law["doc_number"]).strip():
+        return m.group("t").strip(), m.group("d").strip()
+    return raw, None
+
+
+def same_designation(printed, law, label):
+    """True when GovInfo's printed designation is the label or the public law number already shown."""
+    def norm(x):
+        return re.sub(r"\s+", " ", re.sub(r"[\[\]*]", "", x or "")).replace("-", "–").strip().rstrip(".").strip()
+    shown = {norm(label)}
+    if law.get("public_law"):
+        shown.add(norm(law["public_law"].get("printed")))
+    return norm(printed) in shown
 
 
 def load_laws():
@@ -168,10 +207,13 @@ def law_row(law, linked_units):
     label = display_label(law)
     stat = lawindex.stat_label(law)
     links = govinfo_links(law)
-    title = law.get("title") or "Title not recorded"
+    official, printed = split_title(law)
+    title = official or "Title not recorded"
     facts = [["Law", label], ["Kind", law_kind(law)]]
     if law.get("public_law"):
         facts.append(["Public law number as printed", law["public_law"]["printed"]])
+    if printed and not same_designation(printed, law, label):
+        facts.append(["Designation in GovInfo title", printed])
     if law.get("chapter") is not None:
         facts.append(["Chapter", law.get("doc_number") or str(law["chapter"])])
     facts.append(["Enacted", long_date(law.get("enacted")) or "Not recorded"])
@@ -188,7 +230,8 @@ def law_row(law, linked_units):
         "label": label, "kind": law_kind(law), "type": law.get("type"), "public_law": law.get("public_law"),
         "pl_shared": law["pl_shared"], "chapter": law.get("chapter"), "doc_number": law.get("doc_number"),
         "congress": law.get("congress"), "session": law.get("session"), "enacted": law.get("enacted"),
-        "stat": law.get("stat"), "last_page": law.get("last_page"), "title": law.get("title"),
+        "stat": law.get("stat"), "last_page": law.get("last_page"), "title": official,
+        "title_as_printed": law.get("title"),
         "bill": law.get("bill"), "govinfo": links, "sources": law["sources"], "usc_refs": len(law["usc_refs"]),
         "code_units": linked_units,
     }

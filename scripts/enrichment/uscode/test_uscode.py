@@ -12,6 +12,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import bodytext  # noqa: E402
+import build_laws  # noqa: E402
 import cite  # noqa: E402
 import lawindex  # noqa: E402
 import olrc  # noqa: E402
@@ -351,6 +352,47 @@ class IndependentPath(unittest.TestCase):
                 self.assertEqual([verify_uscode.words_of(f) for f in x["footnotes"]], got["footnotes"])
                 self.assertEqual([verify_uscode.words_of(t) + [w for f in fns for w in verify_uscode.words_of(f)]
                                   for t, fns in x["notes"]], got["notes"])
+
+
+class LawTitles(unittest.TestCase):
+    """GovInfo's dc:title carries the measure's designation; the record shows it once (the label)."""
+
+    def law(self, title, **kw):
+        base = {"title": title, "doc_number": None, "public_law": None, "doc_tag": "pLaw"}
+        base.update(kw)
+        return base
+
+    def test_public_law_prefix_split(self):
+        pl = {"congress": 118, "number": 63, "printed": "Public Law 118–63"}
+        law = self.law("Public Law 118–63: To amend title 49, United States Code, to reauthorize.", public_law=pl)
+        self.assertEqual(build_laws.split_title(law), ("To amend title 49, United States Code, to reauthorize.",
+                                                       "Public Law 118–63"))
+        self.assertTrue(build_laws.same_designation("Public Law 118–63", law, "Pub. L. 118–63"))
+        hyphen = self.law("Public Law 100-145: To designate the week.", public_law={"printed": "Public Law 100–145"})
+        self.assertEqual(build_laws.split_title(hyphen)[0], "To designate the week.")
+        self.assertTrue(build_laws.same_designation("Public Law 100-145", hyphen, "Pub. L. 100–145"))
+        star = self.law("*Public Law 118–42: Making consolidated appropriations.")
+        self.assertEqual(build_laws.split_title(star), ("Making consolidated appropriations.", "*Public Law 118–42"))
+
+    def test_chapters_and_resolutions(self):
+        chap = self.law("Chap. II: for laying a Duty on Goods.", doc_number="II")
+        self.assertEqual(build_laws.split_title(chap), ("for laying a Duty on Goods.", "Chap. II"))
+        self.assertFalse(build_laws.same_designation("Chap. II", chap, "Act of July 4, 1789, ch. 2"))
+        self.assertEqual(build_laws.split_title(self.law("[No. 1.]: for the Appointment of Regents."))[0],
+                         "for the Appointment of Regents.")
+        self.assertEqual(build_laws.split_title(self.law("1. : extending the time fixed."))[0], "extending the time fixed.")
+        lead = self.law("I. Resolution in relation to an intended visit.", doc_number="I")
+        self.assertEqual(build_laws.split_title(lead), ("Resolution in relation to an intended visit.", "I."))
+
+    def test_titles_left_whole(self):
+        # A colon inside the title, a leading number that is not this measure's, and no title at all.
+        inner = self.law("To amend the Act entitled: “An Act for the acquisition”.")
+        self.assertEqual(build_laws.split_title(inner), ("To amend the Act entitled: “An Act for the acquisition”.", None))
+        other = self.law("II. Resolution providing a place.", doc_number="I")
+        self.assertEqual(build_laws.split_title(other), ("II. Resolution providing a place.", None))
+        self.assertEqual(build_laws.split_title(self.law("")), (None, None))
+        # GovInfo printed only the designation: no title is recorded.
+        self.assertEqual(build_laws.split_title(self.law("No. 2:")), (None, "No. 2"))
 
 
 if __name__ == "__main__":
