@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { FreshnessBadge } from "@/components/freshness/FreshnessBadge";
 import { ExternalBadge } from "@/components/corpus/ExternalBadge";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
 import { datasetLabel } from "@/lib/external/groups";
@@ -48,8 +49,9 @@ function DatasetPage() {
       title={label}
       description={info?.records != null ? `${info.records.toLocaleString()} imported records` : ""}
     >
-      <div className="mb-3">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <ExternalBadge />
+        <FreshnessBadge dataset={dataset} />
       </div>
       {ds.data && !info ? (
         <p className="text-[13px] text-destructive">

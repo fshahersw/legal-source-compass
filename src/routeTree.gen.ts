@@ -15,7 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as DataExportsRouteImport } from './routes/data-exports'
 import { Route as EndpointExplorerRouteImport } from './routes/endpoint-explorer'
-import { Route as InsightsRouteImport } from './routes/insights'
+import { Route as EnforcementRouteImport } from './routes/enforcement'
 import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
 import { Route as LawRouteImport } from './routes/law'
 import { Route as LawsRouteImport } from './routes/laws'
@@ -58,6 +58,13 @@ import { Route as CourtsSecuritiesRouteImport } from './routes/courts.securities
 import { Route as CourtsVacanciesRouteImport } from './routes/courts.vacancies'
 import { Route as DataIndexRouteImport } from './routes/data.index'
 import { Route as DataDatasetRouteImport } from './routes/data.$dataset'
+import { Route as InsightsIndexRouteImport } from './routes/insights.index'
+import { Route as InsightsExploreRouteImport } from './routes/insights.explore'
+import { Route as InsightsRankingsRouteImport } from './routes/insights.rankings'
+import { Route as InsightsResearchRouteImport } from './routes/insights.research'
+import { Route as InsightsSignalsRouteImport } from './routes/insights.signals'
+import { Route as InsightsTodayRouteImport } from './routes/insights.today'
+import { Route as InsightsTrendsRouteImport } from './routes/insights.trends'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
 import { Route as JudgesIdRouteImport } from './routes/judges.$id'
 import { Route as JudgesAnalyticsRouteImport } from './routes/judges.analytics'
@@ -68,8 +75,11 @@ import { Route as LawEnforcementRouteImport } from './routes/law_.enforcement'
 import { Route as LawLegislationRouteImport } from './routes/law_.legislation'
 import { Route as LawMonitoringRouteImport } from './routes/law_.monitoring'
 import { Route as LawRegulationsRouteImport } from './routes/law_.regulations'
+import { Route as LawRulemakingRouteImport } from './routes/law_.rulemaking'
 import { Route as LawUscodeRouteImport } from './routes/law_.uscode'
 import { Route as LimitationsStatutoryRouteImport } from './routes/limitations_.statutory'
+import { Route as LitigationIndexRouteImport } from './routes/litigation.index'
+import { Route as LitigationSettlementsRouteImport } from './routes/litigation.settlements'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
 import { Route as MattersAnalyticsRouteImport } from './routes/matters.analytics'
@@ -156,9 +166,9 @@ const EndpointExplorerRoute = EndpointExplorerRouteImport.update({
   path: '/endpoint-explorer',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InsightsRoute = InsightsRouteImport.update({
-  id: '/insights',
-  path: '/insights',
+const EnforcementRoute = EnforcementRouteImport.update({
+  id: '/enforcement',
+  path: '/enforcement',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JurisdictionsRoute = JurisdictionsRouteImport.update({
@@ -371,6 +381,41 @@ const DataDatasetRoute = DataDatasetRouteImport.update({
   path: '/data/$dataset',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InsightsIndexRoute = InsightsIndexRouteImport.update({
+  id: '/insights/',
+  path: '/insights/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsExploreRoute = InsightsExploreRouteImport.update({
+  id: '/insights/explore',
+  path: '/insights/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsRankingsRoute = InsightsRankingsRouteImport.update({
+  id: '/insights/rankings',
+  path: '/insights/rankings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsResearchRoute = InsightsResearchRouteImport.update({
+  id: '/insights/research',
+  path: '/insights/research',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsSignalsRoute = InsightsSignalsRouteImport.update({
+  id: '/insights/signals',
+  path: '/insights/signals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsTodayRoute = InsightsTodayRouteImport.update({
+  id: '/insights/today',
+  path: '/insights/today',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsTrendsRoute = InsightsTrendsRouteImport.update({
+  id: '/insights/trends',
+  path: '/insights/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JudgesIndexRoute = JudgesIndexRouteImport.update({
   id: '/judges/',
   path: '/judges/',
@@ -421,6 +466,11 @@ const LawRegulationsRoute = LawRegulationsRouteImport.update({
   path: '/law/regulations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LawRulemakingRoute = LawRulemakingRouteImport.update({
+  id: '/law_/rulemaking',
+  path: '/law/rulemaking',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LawUscodeRoute = LawUscodeRouteImport.update({
   id: '/law_/uscode',
   path: '/law/uscode',
@@ -429,6 +479,16 @@ const LawUscodeRoute = LawUscodeRouteImport.update({
 const LimitationsStatutoryRoute = LimitationsStatutoryRouteImport.update({
   id: '/limitations_/statutory',
   path: '/limitations/statutory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LitigationIndexRoute = LitigationIndexRouteImport.update({
+  id: '/litigation/',
+  path: '/litigation/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LitigationSettlementsRoute = LitigationSettlementsRouteImport.update({
+  id: '/litigation/settlements',
+  path: '/litigation/settlements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MattersIndexRoute = MattersIndexRouteImport.update({
@@ -721,7 +781,7 @@ export interface FileRoutesByFullPath {
   '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
-  '/insights': typeof InsightsRoute
+  '/enforcement': typeof EnforcementRoute
   '/jurisdictions': typeof JurisdictionsRoute
   '/law': typeof LawRoute
   '/laws': typeof LawsRoute
@@ -759,6 +819,12 @@ export interface FileRoutesByFullPath {
   '/courts/securities': typeof CourtsSecuritiesRoute
   '/courts/vacancies': typeof CourtsVacanciesRoute
   '/data/$dataset': typeof DataDatasetRoute
+  '/insights/explore': typeof InsightsExploreRoute
+  '/insights/rankings': typeof InsightsRankingsRoute
+  '/insights/research': typeof InsightsResearchRoute
+  '/insights/signals': typeof InsightsSignalsRoute
+  '/insights/today': typeof InsightsTodayRoute
+  '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
   '/law/cfr': typeof LawCfrRouteWithChildren
@@ -768,8 +834,10 @@ export interface FileRoutesByFullPath {
   '/law/legislation': typeof LawLegislationRouteWithChildren
   '/law/monitoring': typeof LawMonitoringRoute
   '/law/regulations': typeof LawRegulationsRouteWithChildren
+  '/law/rulemaking': typeof LawRulemakingRoute
   '/law/uscode': typeof LawUscodeRouteWithChildren
   '/limitations/statutory': typeof LimitationsStatutoryRoute
+  '/litigation/settlements': typeof LitigationSettlementsRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -793,7 +861,9 @@ export interface FileRoutesByFullPath {
   '/companies/': typeof CompaniesIndexRoute
   '/courts/': typeof CourtsIndexRoute
   '/data/': typeof DataIndexRoute
+  '/insights/': typeof InsightsIndexRoute
   '/judges/': typeof JudgesIndexRoute
+  '/litigation/': typeof LitigationIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/prototypes/': typeof PrototypesIndexRoute
@@ -839,7 +909,7 @@ export interface FileRoutesByTo {
   '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
-  '/insights': typeof InsightsRoute
+  '/enforcement': typeof EnforcementRoute
   '/jurisdictions': typeof JurisdictionsRoute
   '/law': typeof LawRoute
   '/laws': typeof LawsRoute
@@ -877,11 +947,19 @@ export interface FileRoutesByTo {
   '/courts/securities': typeof CourtsSecuritiesRoute
   '/courts/vacancies': typeof CourtsVacanciesRoute
   '/data/$dataset': typeof DataDatasetRoute
+  '/insights/explore': typeof InsightsExploreRoute
+  '/insights/rankings': typeof InsightsRankingsRoute
+  '/insights/research': typeof InsightsResearchRoute
+  '/insights/signals': typeof InsightsSignalsRoute
+  '/insights/today': typeof InsightsTodayRoute
+  '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
   '/law/enforcement': typeof LawEnforcementRoute
   '/law/monitoring': typeof LawMonitoringRoute
+  '/law/rulemaking': typeof LawRulemakingRoute
   '/limitations/statutory': typeof LimitationsStatutoryRoute
+  '/litigation/settlements': typeof LitigationSettlementsRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -905,7 +983,9 @@ export interface FileRoutesByTo {
   '/companies': typeof CompaniesIndexRoute
   '/courts': typeof CourtsIndexRoute
   '/data': typeof DataIndexRoute
+  '/insights': typeof InsightsIndexRoute
   '/judges': typeof JudgesIndexRoute
+  '/litigation': typeof LitigationIndexRoute
   '/matters': typeof MattersIndexRoute
   '/places': typeof PlacesIndexRoute
   '/prototypes': typeof PrototypesIndexRoute
@@ -950,7 +1030,7 @@ export interface FileRoutesById {
   '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
-  '/insights': typeof InsightsRoute
+  '/enforcement': typeof EnforcementRoute
   '/jurisdictions': typeof JurisdictionsRoute
   '/law': typeof LawRoute
   '/laws': typeof LawsRoute
@@ -988,6 +1068,12 @@ export interface FileRoutesById {
   '/courts/securities': typeof CourtsSecuritiesRoute
   '/courts/vacancies': typeof CourtsVacanciesRoute
   '/data/$dataset': typeof DataDatasetRoute
+  '/insights/explore': typeof InsightsExploreRoute
+  '/insights/rankings': typeof InsightsRankingsRoute
+  '/insights/research': typeof InsightsResearchRoute
+  '/insights/signals': typeof InsightsSignalsRoute
+  '/insights/today': typeof InsightsTodayRoute
+  '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
   '/law_/cfr': typeof LawCfrRouteWithChildren
@@ -997,8 +1083,10 @@ export interface FileRoutesById {
   '/law_/legislation': typeof LawLegislationRouteWithChildren
   '/law_/monitoring': typeof LawMonitoringRoute
   '/law_/regulations': typeof LawRegulationsRouteWithChildren
+  '/law_/rulemaking': typeof LawRulemakingRoute
   '/law_/uscode': typeof LawUscodeRouteWithChildren
   '/limitations_/statutory': typeof LimitationsStatutoryRoute
+  '/litigation/settlements': typeof LitigationSettlementsRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -1022,7 +1110,9 @@ export interface FileRoutesById {
   '/companies/': typeof CompaniesIndexRoute
   '/courts/': typeof CourtsIndexRoute
   '/data/': typeof DataIndexRoute
+  '/insights/': typeof InsightsIndexRoute
   '/judges/': typeof JudgesIndexRoute
+  '/litigation/': typeof LitigationIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/prototypes/': typeof PrototypesIndexRoute
@@ -1070,7 +1160,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
-    | '/insights'
+    | '/enforcement'
     | '/jurisdictions'
     | '/law'
     | '/laws'
@@ -1108,6 +1198,12 @@ export interface FileRouteTypes {
     | '/courts/securities'
     | '/courts/vacancies'
     | '/data/$dataset'
+    | '/insights/explore'
+    | '/insights/rankings'
+    | '/insights/research'
+    | '/insights/signals'
+    | '/insights/today'
+    | '/insights/trends'
     | '/judges/$id'
     | '/judges/analytics'
     | '/law/cfr'
@@ -1117,8 +1213,10 @@ export interface FileRouteTypes {
     | '/law/legislation'
     | '/law/monitoring'
     | '/law/regulations'
+    | '/law/rulemaking'
     | '/law/uscode'
     | '/limitations/statutory'
+    | '/litigation/settlements'
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
@@ -1142,7 +1240,9 @@ export interface FileRouteTypes {
     | '/companies/'
     | '/courts/'
     | '/data/'
+    | '/insights/'
     | '/judges/'
+    | '/litigation/'
     | '/matters/'
     | '/places/'
     | '/prototypes/'
@@ -1188,7 +1288,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
-    | '/insights'
+    | '/enforcement'
     | '/jurisdictions'
     | '/law'
     | '/laws'
@@ -1226,11 +1326,19 @@ export interface FileRouteTypes {
     | '/courts/securities'
     | '/courts/vacancies'
     | '/data/$dataset'
+    | '/insights/explore'
+    | '/insights/rankings'
+    | '/insights/research'
+    | '/insights/signals'
+    | '/insights/today'
+    | '/insights/trends'
     | '/judges/$id'
     | '/judges/analytics'
     | '/law/enforcement'
     | '/law/monitoring'
+    | '/law/rulemaking'
     | '/limitations/statutory'
+    | '/litigation/settlements'
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
@@ -1254,7 +1362,9 @@ export interface FileRouteTypes {
     | '/companies'
     | '/courts'
     | '/data'
+    | '/insights'
     | '/judges'
+    | '/litigation'
     | '/matters'
     | '/places'
     | '/prototypes'
@@ -1298,7 +1408,7 @@ export interface FileRouteTypes {
     | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
-    | '/insights'
+    | '/enforcement'
     | '/jurisdictions'
     | '/law'
     | '/laws'
@@ -1336,6 +1446,12 @@ export interface FileRouteTypes {
     | '/courts/securities'
     | '/courts/vacancies'
     | '/data/$dataset'
+    | '/insights/explore'
+    | '/insights/rankings'
+    | '/insights/research'
+    | '/insights/signals'
+    | '/insights/today'
+    | '/insights/trends'
     | '/judges/$id'
     | '/judges/analytics'
     | '/law_/cfr'
@@ -1345,8 +1461,10 @@ export interface FileRouteTypes {
     | '/law_/legislation'
     | '/law_/monitoring'
     | '/law_/regulations'
+    | '/law_/rulemaking'
     | '/law_/uscode'
     | '/limitations_/statutory'
+    | '/litigation/settlements'
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
@@ -1370,7 +1488,9 @@ export interface FileRouteTypes {
     | '/companies/'
     | '/courts/'
     | '/data/'
+    | '/insights/'
     | '/judges/'
+    | '/litigation/'
     | '/matters/'
     | '/places/'
     | '/prototypes/'
@@ -1417,7 +1537,7 @@ export interface RootRouteChildren {
   CategoriesRoute: typeof CategoriesRoute
   DataExportsRoute: typeof DataExportsRoute
   EndpointExplorerRoute: typeof EndpointExplorerRoute
-  InsightsRoute: typeof InsightsRoute
+  EnforcementRoute: typeof EnforcementRoute
   JurisdictionsRoute: typeof JurisdictionsRoute
   LawRoute: typeof LawRoute
   LawsRoute: typeof LawsRoute
@@ -1455,6 +1575,12 @@ export interface RootRouteChildren {
   CourtsSecuritiesRoute: typeof CourtsSecuritiesRoute
   CourtsVacanciesRoute: typeof CourtsVacanciesRoute
   DataDatasetRoute: typeof DataDatasetRoute
+  InsightsExploreRoute: typeof InsightsExploreRoute
+  InsightsRankingsRoute: typeof InsightsRankingsRoute
+  InsightsResearchRoute: typeof InsightsResearchRoute
+  InsightsSignalsRoute: typeof InsightsSignalsRoute
+  InsightsTodayRoute: typeof InsightsTodayRoute
+  InsightsTrendsRoute: typeof InsightsTrendsRoute
   JudgesIdRoute: typeof JudgesIdRoute
   JudgesAnalyticsRoute: typeof JudgesAnalyticsRoute
   LawCfrRoute: typeof LawCfrRouteWithChildren
@@ -1464,8 +1590,10 @@ export interface RootRouteChildren {
   LawLegislationRoute: typeof LawLegislationRouteWithChildren
   LawMonitoringRoute: typeof LawMonitoringRoute
   LawRegulationsRoute: typeof LawRegulationsRouteWithChildren
+  LawRulemakingRoute: typeof LawRulemakingRoute
   LawUscodeRoute: typeof LawUscodeRouteWithChildren
   LimitationsStatutoryRoute: typeof LimitationsStatutoryRoute
+  LitigationSettlementsRoute: typeof LitigationSettlementsRoute
   MattersIdRoute: typeof MattersIdRoute
   MattersAnalyticsRoute: typeof MattersAnalyticsRoute
   MattersCasesRoute: typeof MattersCasesRoute
@@ -1489,7 +1617,9 @@ export interface RootRouteChildren {
   CompaniesIndexRoute: typeof CompaniesIndexRoute
   CourtsIndexRoute: typeof CourtsIndexRoute
   DataIndexRoute: typeof DataIndexRoute
+  InsightsIndexRoute: typeof InsightsIndexRoute
   JudgesIndexRoute: typeof JudgesIndexRoute
+  LitigationIndexRoute: typeof LitigationIndexRoute
   MattersIndexRoute: typeof MattersIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
   PrototypesIndexRoute: typeof PrototypesIndexRoute
@@ -1550,11 +1680,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EndpointExplorerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/insights': {
-      id: '/insights'
-      path: '/insights'
-      fullPath: '/insights'
-      preLoaderRoute: typeof InsightsRouteImport
+    '/enforcement': {
+      id: '/enforcement'
+      path: '/enforcement'
+      fullPath: '/enforcement'
+      preLoaderRoute: typeof EnforcementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jurisdictions': {
@@ -1851,6 +1981,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataDatasetRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/insights/': {
+      id: '/insights/'
+      path: '/insights'
+      fullPath: '/insights/'
+      preLoaderRoute: typeof InsightsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights/explore': {
+      id: '/insights/explore'
+      path: '/insights/explore'
+      fullPath: '/insights/explore'
+      preLoaderRoute: typeof InsightsExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights/rankings': {
+      id: '/insights/rankings'
+      path: '/insights/rankings'
+      fullPath: '/insights/rankings'
+      preLoaderRoute: typeof InsightsRankingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights/research': {
+      id: '/insights/research'
+      path: '/insights/research'
+      fullPath: '/insights/research'
+      preLoaderRoute: typeof InsightsResearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights/signals': {
+      id: '/insights/signals'
+      path: '/insights/signals'
+      fullPath: '/insights/signals'
+      preLoaderRoute: typeof InsightsSignalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights/today': {
+      id: '/insights/today'
+      path: '/insights/today'
+      fullPath: '/insights/today'
+      preLoaderRoute: typeof InsightsTodayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights/trends': {
+      id: '/insights/trends'
+      path: '/insights/trends'
+      fullPath: '/insights/trends'
+      preLoaderRoute: typeof InsightsTrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/judges/': {
       id: '/judges/'
       path: '/judges'
@@ -1921,6 +2100,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawRegulationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/law_/rulemaking': {
+      id: '/law_/rulemaking'
+      path: '/law/rulemaking'
+      fullPath: '/law/rulemaking'
+      preLoaderRoute: typeof LawRulemakingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/law_/uscode': {
       id: '/law_/uscode'
       path: '/law/uscode'
@@ -1933,6 +2119,20 @@ declare module '@tanstack/react-router' {
       path: '/limitations/statutory'
       fullPath: '/limitations/statutory'
       preLoaderRoute: typeof LimitationsStatutoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/litigation/': {
+      id: '/litigation/'
+      path: '/litigation'
+      fullPath: '/litigation/'
+      preLoaderRoute: typeof LitigationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/litigation/settlements': {
+      id: '/litigation/settlements'
+      path: '/litigation/settlements'
+      fullPath: '/litigation/settlements'
+      preLoaderRoute: typeof LitigationSettlementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/matters/': {
@@ -2478,7 +2678,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriesRoute: CategoriesRoute,
   DataExportsRoute: DataExportsRoute,
   EndpointExplorerRoute: EndpointExplorerRoute,
-  InsightsRoute: InsightsRoute,
+  EnforcementRoute: EnforcementRoute,
   JurisdictionsRoute: JurisdictionsRoute,
   LawRoute: LawRoute,
   LawsRoute: LawsRoute,
@@ -2516,6 +2716,12 @@ const rootRouteChildren: RootRouteChildren = {
   CourtsSecuritiesRoute: CourtsSecuritiesRoute,
   CourtsVacanciesRoute: CourtsVacanciesRoute,
   DataDatasetRoute: DataDatasetRoute,
+  InsightsExploreRoute: InsightsExploreRoute,
+  InsightsRankingsRoute: InsightsRankingsRoute,
+  InsightsResearchRoute: InsightsResearchRoute,
+  InsightsSignalsRoute: InsightsSignalsRoute,
+  InsightsTodayRoute: InsightsTodayRoute,
+  InsightsTrendsRoute: InsightsTrendsRoute,
   JudgesIdRoute: JudgesIdRoute,
   JudgesAnalyticsRoute: JudgesAnalyticsRoute,
   LawCfrRoute: LawCfrRouteWithChildren,
@@ -2525,8 +2731,10 @@ const rootRouteChildren: RootRouteChildren = {
   LawLegislationRoute: LawLegislationRouteWithChildren,
   LawMonitoringRoute: LawMonitoringRoute,
   LawRegulationsRoute: LawRegulationsRouteWithChildren,
+  LawRulemakingRoute: LawRulemakingRoute,
   LawUscodeRoute: LawUscodeRouteWithChildren,
   LimitationsStatutoryRoute: LimitationsStatutoryRoute,
+  LitigationSettlementsRoute: LitigationSettlementsRoute,
   MattersIdRoute: MattersIdRoute,
   MattersAnalyticsRoute: MattersAnalyticsRoute,
   MattersCasesRoute: MattersCasesRoute,
@@ -2550,7 +2758,9 @@ const rootRouteChildren: RootRouteChildren = {
   CompaniesIndexRoute: CompaniesIndexRoute,
   CourtsIndexRoute: CourtsIndexRoute,
   DataIndexRoute: DataIndexRoute,
+  InsightsIndexRoute: InsightsIndexRoute,
   JudgesIndexRoute: JudgesIndexRoute,
+  LitigationIndexRoute: LitigationIndexRoute,
   MattersIndexRoute: MattersIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
   PrototypesIndexRoute: PrototypesIndexRoute,

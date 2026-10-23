@@ -176,7 +176,7 @@ function Panel({ d }: { d: DistrictPanel }) {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   labelFormatter={(_, p) => String(p?.[0]?.payload?.full ?? "")}
-                  formatter={(v, name: string) => [fmtNum(asNum(v)), name]}
+                  formatter={(v, name) => [fmtNum(asNum(v)), String(name)]}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} iconSize={9} />
                 <Bar
@@ -212,7 +212,7 @@ function Panel({ d }: { d: DistrictPanel }) {
                 <Tooltip
                   contentStyle={tooltipStyle}
                   labelFormatter={(_, p) => String(p?.[0]?.payload?.full ?? "")}
-                  formatter={(v, name: string) => [`${fmtNum(asNum(v), 1)} months`, name]}
+                  formatter={(v, name) => [`${fmtNum(asNum(v), 1)} months`, String(name)]}
                 />
                 <Legend wrapperStyle={{ fontSize: 11 }} iconType="plainline" />
                 <Line

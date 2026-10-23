@@ -538,10 +538,7 @@ const SECTIONS: readonly SectionSpec[] = [
     ],
   },
   {
-    /**
-     * Insights pages are W3's (src/routes/insights*.tsx); the former /analytics pages stay in this section until
-     * W3 redirects them, lighting the tab that replaces them.
-     */
+    /** The former /analytics pages redirect into this section and light the tab that replaced them. */
     id: "insights",
     tabs: [
       {
@@ -582,6 +579,12 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/insights/today",
         label: "Insights of the day",
         owns: (p) => at(p, "/insights/today") || at(p, "/analytics/insights"),
+      },
+      {
+        id: "research",
+        to: "/insights/research",
+        label: "Research",
+        owns: (p) => at(p, "/insights/research"),
       },
     ],
     extra: (p) => at(p, "/insights") || at(p, "/analytics"),

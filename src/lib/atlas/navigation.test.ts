@@ -113,7 +113,15 @@ describe("section tabs", () => {
     [
       "/insights",
       undefined,
-      ["Overview", "Explore", "Trends", "Rankings & maps", "Signals", "Insights of the day"],
+      [
+        "Overview",
+        "Explore",
+        "Trends",
+        "Rankings & maps",
+        "Signals",
+        "Insights of the day",
+        "Research",
+      ],
     ],
     [
       "/sources",

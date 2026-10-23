@@ -11,11 +11,19 @@ describe("state-first loading boundaries", () => {
     "/agencies",
     "/limitations",
     "/sources/library",
+    "/insights",
+    "/insights/explore",
   ])("does not download the external litigation catalog for %s", (path) =>
     expect(needsCaseCatalog(path)).toBe(false),
   );
-  it.each(["/matters", "/matters/cases", "/insights", "/overview", "/courts/ned", "/judges/123"])(
-    "preserves the legacy catalog for direct route %s",
-    (path) => expect(needsCaseCatalog(path)).toBe(true),
+  it.each([
+    "/matters",
+    "/matters/cases",
+    "/insights/research",
+    "/overview",
+    "/courts/ned",
+    "/judges/123",
+  ])("preserves the legacy catalog for direct route %s", (path) =>
+    expect(needsCaseCatalog(path)).toBe(true),
   );
 });

@@ -33,7 +33,8 @@ export function Field({
 
 export const ENTITY_LABEL: Record<EntityType, { one: string; many: string }> = {
   nation: { one: "United States", many: "United States" },
-  state: { one: "state", many: "states" },
+  // the state entities include DC and the territories (insights.geo_states), so the plural says so
+  state: { one: "state", many: "states, DC and territories" },
   county: { one: "county", many: "counties" },
   circuit: { one: "circuit", many: "circuits" },
   court: { one: "court", many: "courts" },

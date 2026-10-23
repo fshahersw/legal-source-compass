@@ -1,8 +1,8 @@
 /**
  * The Insights pages' one data adapter. Every number a page shows comes through here, from one of:
  *
- * - the insights data layer (contract src/lib/insights/contract.ts; server functions by W2). Until W2's module lands,
- *   `./layerStub` stands in and reports "not published yet" (see that file for the one-line swap);
+ * - the insights data layer (contract src/lib/insights/contract.ts) through `./layerClient`, which reports "not
+ *   published yet" while the layer's SQL is not installed;
  * - bridged existing, tested readers (state metrics, MDL reports): `./bridge/*`, ids with a dot ("sm.", "mdl.");
  * - dev-only fixtures, when the dev server runs with VITE_INSIGHTS_FIXTURES=1 (fixtureMode.ts); never in production.
  *
@@ -14,17 +14,7 @@ import { getStateMetrics, type StateMetricsBundle } from "@/lib/external/stateMe
 import { getMdlAnalytics, type MdlAnalytics } from "@/lib/external/mdlAnalytics.functions";
 import { comparePeriods, densePeriods } from "@/components/charts/format";
 import { getDailyInsights } from "@/lib/insights/insights.functions";
-import {
-  getInsightsCatalog,
-  getInsightsCross,
-  getInsightsEntity,
-  getInsightsFreshness,
-  getInsightsLatest,
-  getInsightsLinks,
-  getInsightsSeries,
-  getInsightsSnapshot,
-  InsightsLayerNotReady,
-} from "./layerStub"; // REPLACE with W2's module ("@/lib/insights/insights.functions") when it lands.
+import { InsightsLayerNotReady, liveLayer } from "./layerClient";
 import { INSIGHTS_FIXTURES } from "./fixtureMode";
 import {
   NATION_ID,
@@ -40,21 +30,10 @@ export { getDailyInsights };
 
 // ------------------------------------------------------------------------------------------------ providers
 
-const realLayer: InsightsLayer = {
-  catalog: () => getInsightsCatalog(),
-  series: (data) => getInsightsSeries({ data }),
-  snapshot: (data) => getInsightsSnapshot({ data }),
-  latest: (data) => getInsightsLatest({ data }),
-  cross: (data) => getInsightsCross({ data }),
-  entity: (data) => getInsightsEntity({ data }),
-  links: (data) => getInsightsLinks({ data }),
-  freshness: () => getInsightsFreshness(),
-};
-
 /** The data layer provider: the dev fixtures when they are switched on (dev server only), else the real layer. */
 async function layer(): Promise<InsightsLayer> {
   if (INSIGHTS_FIXTURES) return (await import("./fixtures")).fixtureLayer;
-  return realLayer;
+  return liveLayer;
 }
 
 export const fixturesOn = INSIGHTS_FIXTURES;

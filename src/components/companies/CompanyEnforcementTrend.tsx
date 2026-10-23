@@ -32,7 +32,11 @@ export function CompanyEnforcementTrend({ cik, className }: { cik: string; class
         id: `company-enforcement-years-${cik}`,
         title: "Enforcement items naming this company, by year",
         measure: "enforcement items naming the company",
-        detail: { to: "/analytics/enforcement", label: "Enforcement trends" },
+        detail: {
+          to: "/insights/trends",
+          search: { view: "national", topic: "enforcement" },
+          label: "Enforcement trends",
+        },
         group: "enforcement",
       }),
     [cik],

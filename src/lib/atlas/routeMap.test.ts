@@ -146,6 +146,12 @@ const EXPECTED: Record<string, NavigationSection | null> = {
   "/companies/$cik": "companies",
   "/companies/payments": "companies",
   "/insights": "insights",
+  "/insights/explore": "insights",
+  "/insights/trends": "insights",
+  "/insights/rankings": "insights",
+  "/insights/signals": "insights",
+  "/insights/today": "insights",
+  "/insights/research": "insights",
   "/analytics": "insights",
   "/analytics/enforcement": "insights",
   "/analytics/insights": "insights",
@@ -210,6 +216,10 @@ describe("every route file has a place", () => {
         .map((r) => r.pattern)
         .sort(),
     ).toEqual([
+      "/analytics",
+      "/analytics/enforcement",
+      "/analytics/insights",
+      "/analytics/safety",
       "/categories",
       "/endpoint-explorer",
       "/jurisdictions",
@@ -228,15 +238,6 @@ describe("every route file has a place", () => {
   });
 });
 
-/** W3 builds the Insights pages; until their branch lands, these tab targets have no route file here. */
-const PENDING_W3 = new Set([
-  "/insights/explore",
-  "/insights/trends",
-  "/insights/rankings",
-  "/insights/signals",
-  "/insights/today",
-]);
-
 describe("navigation targets exist", () => {
   it("every sidebar section and tab opens an existing route", () => {
     const targets = [
@@ -246,7 +247,7 @@ describe("navigation targets exist", () => {
         contextualNavigation(s.to).map((t) => t.to),
       ),
     ];
-    for (const to of targets) if (!PENDING_W3.has(to)) expect(exists(to), to).toBe(true);
+    for (const to of targets) expect(exists(to), to).toBe(true);
   });
   it("every hub link opens an existing route in its own section (or names the other section)", () => {
     for (const [section, hub] of Object.entries(HUBS))

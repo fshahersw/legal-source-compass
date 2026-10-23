@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { SourcesHub } from "@/components/sources/SourcesHub";
+import { FreshnessTable } from "@/components/freshness/FreshnessTable";
 import { pageHead } from "@/lib/corpus/head";
 import { normalizeSourcesSearch, type SourcesSearch } from "@/lib/external/sourcesCatalog";
 
@@ -34,6 +35,7 @@ function SourcesPage() {
       description="Published datasets by category with the pages that use them, the official sites they come from, and workflows for common research tasks."
     >
       <SourcesHub search={search} onSearch={onSearch} />
+      <FreshnessTable className="mt-6" />
     </AppShell>
   );
 }

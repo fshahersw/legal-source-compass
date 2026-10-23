@@ -46,7 +46,7 @@ export const CATEGORIES: readonly Category[] = [
   },
   {
     id: "law",
-    label: "Law & regulation",
+    label: "Law & government",
     blurb:
       "eCFR and CFR text, the Federal Register, public laws, state codes, citations and limitation periods.",
   },
@@ -256,7 +256,7 @@ export type AppPath =
   | "/law"
   | "/law/codes"
   | "/law/monitoring"
-  | "/law/enforcement"
+  | "/enforcement"
   | "/law/legislation"
   | "/agencies"
   | "/safety"
@@ -267,7 +267,7 @@ export type AppPath =
   | "/limitations"
   | "/limitations/statutory"
   | "/people"
-  | "/insights"
+  | "/insights/research"
   | "/search"
   | "/data"
   | "/sources/library"
@@ -292,12 +292,12 @@ const P = {
   mdlAnalytics: { to: "/matters/analytics", label: "MDL analytics" },
   mdlIntel: { to: "/matters/intel", label: "MDL intelligence" },
   cases: { to: "/matters/cases", label: "Cases" },
-  law: { to: "/law", label: "Law & regulation" },
+  law: { to: "/law", label: "Law & government" },
   codes: { to: "/law/codes", label: "State codes" },
-  enforcement: { to: "/law/enforcement", label: "Enforcement" },
+  enforcement: { to: "/enforcement", label: "Enforcement" },
   legislation: { to: "/law/legislation", label: "Legislation" },
   agencies: { to: "/agencies", label: "Agencies" },
-  safety: { to: "/safety", label: "Product safety" },
+  safety: { to: "/safety", label: "Products & safety" },
   signals: { to: "/safety/signals", label: "Safety signals" },
   companies: { to: "/companies", label: "Companies" },
   payments: { to: "/companies/payments", label: "Industry payments" },
@@ -305,7 +305,7 @@ const P = {
   states: { to: "/", label: "State pages" },
   limitations: { to: "/limitations", label: "Time limits" },
   people: { to: "/people", label: "People" },
-  insights: { to: "/insights", label: "Research" },
+  insights: { to: "/insights/research", label: "Research" },
   library: { to: "/sources/library", label: "Source library" },
 } as const satisfies Record<string, AppLink>;
 
@@ -656,7 +656,7 @@ export const WORKFLOWS: readonly Workflow[] = [
       { to: "/safety", label: "Product safety: recalls, reports and injury estimates" },
       { to: "/safety/signals", label: "Safety signals across agencies" },
       { to: "/law/monitoring", label: "Regulatory intelligence and recall patterns" },
-      { to: "/law/enforcement", label: "Enforcement actions and settlements" },
+      { to: "/enforcement", label: "Enforcement actions and settlements" },
       { to: "/companies", label: "Company profiles and SEC filings" },
       { to: "/companies/payments", label: "Industry payments to physicians" },
     ],
@@ -716,7 +716,7 @@ export const WORKFLOWS: readonly Workflow[] = [
     title: "Find the governing law",
     question: "Which statute, regulation or agency document applies?",
     steps: [
-      { to: "/law", label: "Law & regulation overview" },
+      { to: "/law", label: "Law & government overview" },
       { to: "/law/codes", label: "State codes" },
       { to: "/agencies", label: "Agencies and the Federal Register" },
       { to: "/search", label: "Search the corpus" },
@@ -730,7 +730,7 @@ export const WORKFLOWS: readonly Workflow[] = [
     steps: [
       { to: "/", label: "State map and state pages" },
       { to: "/places/analytics", label: "State analytics" },
-      { to: "/law/enforcement", label: "Consumer complaints and enforcement" },
+      { to: "/enforcement", label: "Consumer complaints and enforcement" },
     ],
     categories: ["states", "consumer"],
   },
