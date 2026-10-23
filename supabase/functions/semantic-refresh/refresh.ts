@@ -194,6 +194,16 @@ export async function planRecord(
       snippet: snippetOf(c.body),
     });
   }
+  // the table's own checks (semantic-v1.sql): a row that would be refused is an error for this record, never for the batch
+  const bad = rows.find(
+    (r) => !/^\/[^/]/.test(r.href) || (r.source_url !== null && !/^https?:\/\//.test(r.source_url)),
+  );
+  if (bad || item.record_id.length > 300)
+    return {
+      kind: "error",
+      item,
+      reason: "passage fields refused by the index (link, source URL or id)",
+    };
   const docSha = await sha256Hex(
     JSON.stringify([
       doc.dataset,
@@ -298,7 +308,12 @@ function mergeCounts(into: Counts, from: Counts | undefined) {
 
 type ApplyRecord = Record<string, unknown>;
 
-function decision(p: Plan, known: Set<string>, holdReason: string | null): ApplyRecord | null {
+function decision(
+  p: Plan,
+  known: Set<string>,
+  holdReason: string | null,
+  tooLarge: Set<string> = new Set(),
+): ApplyRecord | null {
   const base = { dataset: p.item.dataset, record_id: p.item.record_id, seq: p.item.seq };
   switch (p.kind) {
     case "unchanged":
@@ -311,6 +326,8 @@ function decision(p: Plan, known: Set<string>, holdReason: string | null): Apply
       };
     case "index": {
       const missing = p.rows.some((r) => !known.has(r.embed_sha256));
+      if (missing && p.rows.some((r) => tooLarge.has(r.embed_sha256)))
+        return { ...base, action: "hold", reason: "input_too_large" };
       if (missing) return { ...base, action: "hold", reason: holdReason ?? "vectors_pending" };
       return {
         ...base,
@@ -429,6 +446,45 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
     let cursor: unknown = null;
     let driftRecords = 0;
     const embeddedKnown = new Set<string>();
+    const tooLarge = new Set<string>();
+    // One record the database refuses must not block every run: a refused call is split until the refused record is
+    // alone, and that record is recorded as an error (it moves behind the others after three attempts).
+    const applySafely = async (batch: ApplyRecord[]): Promise<void> => {
+      try {
+        const res = await deps.rpc<{ counts: Counts }>("semantic_refresh_apply_v1", {
+          p_run: runId,
+          p_records: batch,
+        });
+        mergeCounts(summary.applied, res.counts);
+      } catch (error) {
+        const status = (error as { status?: number }).status ?? 0;
+        if (error instanceof Error && /run is not open/.test(error.message)) throw error;
+        if (
+          status < 400 ||
+          status >= 500 ||
+          (batch.length === 1 && batch[0]!["action"] === "error")
+        )
+          throw error;
+        if (batch.length === 1) {
+          const r = batch[0]!;
+          const message = error instanceof Error ? error.message.slice(0, 200) : "refused";
+          log({ step: "apply-refused", dataset: r["dataset"], record_id: r["record_id"] });
+          await applySafely([
+            {
+              dataset: r["dataset"],
+              record_id: r["record_id"],
+              seq: r["seq"],
+              action: "error",
+              reason: `apply refused: ${message}`,
+            },
+          ]);
+          return;
+        }
+        const mid = Math.ceil(batch.length / 2);
+        await applySafely(batch.slice(0, mid));
+        await applySafely(batch.slice(mid));
+      }
+    };
     let dailyRemaining = usage.daily_remaining;
     let totalRemaining = usage.total_remaining;
     for (;;) {
@@ -531,12 +587,18 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
         let reserve = 0;
         while (at < need.length && batch.length < settings.max_request_inputs) {
           const r = reserveFor(need[at]!.text);
+          if (r > settings.max_request_reserve) {
+            tooLarge.add(need[at]!.key); // never sendable within the request bound: its record is held
+            at += 1;
+            continue;
+          }
           if (reserve + r > limit) break;
           batch.push(need[at]!);
           reserve += r;
           at += 1;
         }
         if (!batch.length) {
+          if (at >= need.length) break; // only inputs too large for one request were left
           summary.embeddingStop = totalRemaining < dailyRemaining ? "total_cap" : "daily_cap";
           break;
         }
@@ -609,17 +671,11 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
             record_id: p.item.record_id,
             reason: p.reason,
           });
-        const d = decision(p, known, summary.embeddingStop ?? (dry ? "dry_run" : null));
+        const d = decision(p, known, summary.embeddingStop ?? (dry ? "dry_run" : null), tooLarge);
         if (d) records.push(d);
       }
       if (!dry) {
-        for (const batch of applyBatches(records)) {
-          const res = await deps.rpc<{ counts: Counts }>("semantic_refresh_apply_v1", {
-            p_run: runId,
-            p_records: batch,
-          });
-          mergeCounts(summary.applied, res.counts);
-        }
+        for (const batch of applyBatches(records)) await applySafely(batch);
       }
       log({
         step: "page",

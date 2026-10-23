@@ -444,6 +444,52 @@ describe("runRefresh: budget guard and failures", () => {
     expect(s.holds[0]).toMatchObject({ reason: "heading_drift_guard" });
   });
 
+  it("one record the database refuses is split out and recorded as an error; the rest are applied", async () => {
+    const bad = item(row("first", "doj_oig_reports"));
+    const good = [unchanged(), item(row("first", "ftc_publications_index")), changed()];
+    const db = fakeDb([...good, bad]);
+    const inner = db.rpc;
+    const rpc: Rpc = async <T>(name: string, args: Record<string, unknown>) => {
+      if (name === "semantic_refresh_apply_v1") {
+        const recs = args["p_records"] as { record_id: string; action: string }[];
+        if (recs.some((r) => r.record_id === bad.record_id && r.action !== "error"))
+          throw Object.assign(new Error("semantic_refresh_apply_v1: HTTP 400 invalid record"), {
+            status: 400,
+          });
+      }
+      return inner<T>(name, args);
+    };
+    const s = await runRefresh({ rpc, embedder: fakeEmbedder(), trigger: "manual" });
+    expect(s.status).toBe("ok");
+    expect(db.applied.filter((a) => a.record_id === bad.record_id).map((a) => a.action)).toEqual([
+      "error",
+    ]);
+    expect(db.applied.filter((a) => a.record_id !== bad.record_id)).toHaveLength(3);
+  });
+
+  it("a database failure that is not about one record fails the run", async () => {
+    const db = fakeDb([unchanged()]);
+    const inner = db.rpc;
+    const rpc: Rpc = async <T>(name: string, args: Record<string, unknown>) => {
+      if (name === "semantic_refresh_apply_v1")
+        throw Object.assign(new Error("semantic_refresh_apply_v1: HTTP 503"), { status: 503 });
+      return inner<T>(name, args);
+    };
+    const s = await runRefresh({ rpc, embedder: fakeEmbedder(), trigger: "manual" });
+    expect(s.status).toBe("failed");
+    expect(db.calls.at(-1)!.name).toBe("semantic_refresh_finish_run_v1");
+  });
+
+  it("a passage the index would refuse (link or source URL) is an error for its record only", async () => {
+    const g = row("first", "crs_reports");
+    const p = await planRecord(
+      item(g, { source: { ...sourceOf(g), source_url: "ftp://example.gov/x" } }),
+      SETTINGS,
+      NOW,
+    );
+    expect(p).toMatchObject({ kind: "error" });
+  });
+
   it("logs counts only: never the key, never record text", async () => {
     const lines: string[] = [];
     const db = fakeDb([changed()]);

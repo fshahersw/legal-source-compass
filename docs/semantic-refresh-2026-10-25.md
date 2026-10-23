@@ -38,7 +38,7 @@ removed source records reach the index every night, within a hard token budget.
    (`semantic.vector_cache`), so the next night spends only what is missing. Zero-token work (unchanged records,
    metadata-only changes, removals) continues after a budget stop.
 5. **Apply.** One transaction per batch: passages upserted (identical rows untouched, the same guard as `semantic_load_v1`),
-   extra passages deleted, `semantic.corpora` records/chunks/capped moved by the exact difference (keeps
+   extra passages deleted, `semantic.corpora` records/chunks/capped recounted for every collection the call changed (keeps
    `semantic_status_v1` and the exact small-set path of `semantic.nearest_v1` right; HNSW is maintained by Postgres).
 6. **Removal safety.** A record is removed only if its source row is still gone at apply time, has been missing for at
    least 20 hours (a `corpus_writer.publish` deletes and re-inserts a whole dataset), its collection has rows and

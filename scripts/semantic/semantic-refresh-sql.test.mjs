@@ -768,6 +768,59 @@ test("unseeded passages are held instead of re-embedded; the sweep finds writes 
   await consistent(t);
 });
 
+test("passages lost behind the refresh's back are rebuilt; a refused record does not block the others", async () => {
+  const t = await setup();
+  await batchBuilt(t);
+  await t.rpc("semantic_refresh_record_usage_v1", {
+    p_kind: "seed",
+    p_tokens: 1000,
+    p_note: "test",
+  });
+  const emb = fakeEmbedder();
+  for (const d of DATASETS) await t.rpc("semantic_refresh_enqueue_v1", { p_dataset: d });
+  await run(t, emb);
+  const crs = golden.rows.find((g) => g.dataset === "crs_reports");
+  await t.rpc("semantic_purge_v1", { p_dataset: "oversight_reports", p_limit: 1 });
+  await t.db.query("delete from semantic.chunks where dataset = $1 and record_id = $2", [
+    crs.dataset,
+    crs.id,
+  ]);
+  await t.db.exec("update semantic.refresh_settings set sweep_rows_per_run = 1000");
+  let s = await run(t, emb);
+  assert.equal(s.status, "ok");
+  assert.equal(s.embeddedInputs, 2, "the purged and the deleted record are embedded again");
+  assert.equal(
+    (
+      await t.one(
+        "select count(*)::int n from semantic.chunks where dataset = $1 and record_id = $2",
+        [crs.dataset, crs.id],
+      )
+    ).n,
+    1,
+  );
+  // a record whose source URL the index refuses is an error for itself only
+  await t.db.exec("update semantic.refresh_settings set sweep_rows_per_run = 0");
+  const doj = golden.rows.find((g) => g.dataset === "doj_oig_reports");
+  await t.db.query(
+    "update public.corpus_records set source_url = 'ftp://example.gov/x' where dataset = $1 and id = $2",
+    [doj.dataset, doj.id],
+  );
+  const ftc = golden.rows.find((g) => g.dataset === "ftc_publications_index");
+  await t.db.query(
+    "update public.corpus_records set title = title || ' (2nd ed.)' where dataset = $1 and id = $2",
+    [ftc.dataset, ftc.id],
+  );
+  s = await run(t, emb);
+  assert.equal(s.applied.doj_oig_reports.errors, 1);
+  assert.equal(s.applied.ftc_publications_index.indexed, 1);
+  const q = await t.one(
+    "select attempts, last_error from semantic.refresh_queue where dataset = $1 and record_id = $2",
+    [doj.dataset, doj.id],
+  );
+  assert.equal(q.attempts, 1);
+  await consistent(t);
+});
+
 test("dry run reads only; a run is single and abandoned runs are closed", async () => {
   const t = await setup();
   await batchBuilt(t);

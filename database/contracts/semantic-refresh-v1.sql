@@ -24,9 +24,9 @@
 -- Invariants:
 --   * A record's passages are replaced only as a whole (apply, one transaction): every vector is resolved before anything
 --     changes (stored passage with the same key, or the cache); a missing vector rolls the call back. Passages are written
---     with the same upsert as semantic_load_v1 (identical rows untouched), extra passages deleted, semantic.corpora
---     records/chunks/capped_records moved by the exact difference, so semantic_status_v1 and the exact small-set path of
---     semantic.nearest_v1 stay right; the HNSW index is maintained by Postgres on every insert and delete.
+--     with the same upsert as semantic_load_v1 (identical rows untouched), extra passages deleted, and semantic.corpora
+--     records/chunks/capped_records recounted for every collection the call changed, so semantic_status_v1 and the exact
+--     small-set path of semantic.nearest_v1 stay right; the HNSW index is maintained by Postgres on every insert and delete.
 --   * Removal is never inferred from absence alone: a record is removed only when its source row is gone at apply time, was
 --     already missing at least removal_grace earlier (a dataset republish deletes and re-inserts), its source collection still
 --     has rows and is ready, and the run's removals of that collection stay within max(removal_guard_min,
@@ -287,6 +287,14 @@ language sql stable set search_path = '' as $$
   from s, u
 $$;
 
+-- Whether the index holds what the ledger says for a record (passages purged or loaded behind the refresh's back make it
+-- false, and the record is rebuilt instead of being taken as unchanged).
+create or replace function semantic.ledger_holds(p_dataset text, p_record_id text, p_state text, p_chunks integer) returns boolean
+language sql stable set search_path = '' as $$
+  select (select count(*) from semantic.chunks c where c.dataset = p_dataset and c.record_id = p_record_id)
+         = case when p_state = 'indexed' then coalesce(p_chunks, -1) else 0 end
+$$;
+
 -- Removals one run may make in a collection.
 create or replace function semantic.removal_limit(p_dataset text) returns integer
 language sql stable set search_path = '' as $$
@@ -449,8 +457,9 @@ end $$;
 
 -- Detection, bounded: (1) U.S. Code title markers -> their sections; (2) Supreme Court records whose case left the store;
 -- (3) the sweep: the next sweep_rows_per_run corpus rows (rolling over the collections by id) whose fingerprint differs from
--- the ledger, ledger records in that range whose row is gone, indexed records in that range with no ledger row; (4) the
--- prune: queued records whose fingerprint equals the ledger's (a write that changed nothing the builders read).
+-- the ledger (or whose stored passages no longer match the ledger), ledger records in that range whose row is gone, indexed
+-- records in that range with no ledger row; (4) the prune: queued records whose fingerprint equals the ledger's and whose
+-- passages are what the ledger says (a write that changed nothing the builders read).
 create or replace function public.semantic_refresh_detect_v1(p_run uuid) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -466,7 +475,7 @@ begin
   perform pg_advisory_xact_lock(hashtextextended('semantic:refresh', 0));
 
   -- (1) title markers
-  if 'us_code_sections' = any (s.datasets) then
+  if 'us_code_sections' = any (s.datasets) and exists (select 1 from semantic.refresh_queue q where q.dataset = 'us_code_titles') then
     with markers as (delete from semantic.refresh_queue q where q.dataset = 'us_code_titles' returning q.record_id),
     ins as (insert into semantic.refresh_queue (dataset, record_id, reason)
             select 'us_code_sections', c.id, 'title_changed' from public.corpus_records c
@@ -506,7 +515,7 @@ begin
                  v_tn -> (c.detail -> 'usc' ->> 'title'))) as fp
         from public.corpus_records c where c.dataset = v_ds and c.id > v_after order by c.id limit v_budget),
       diff as (select p.id from page p left join semantic.refresh_records l on l.dataset = v_ds and l.record_id = p.id
-               where l.fingerprint is distinct from p.fp),
+               where l.fingerprint is distinct from p.fp or not semantic.ledger_holds(v_ds, p.id, l.state, l.chunks)),
       ins as (insert into semantic.refresh_queue (dataset, record_id, reason) select v_ds, d.id, 'sweep' from diff d
               on conflict (dataset, record_id) do nothing returning 1)
       select (select count(*) from page), (select max(p.id) from page p), (select count(*) from ins) into v_n, v_last, v_k;
@@ -562,6 +571,7 @@ begin
       delete from semantic.refresh_queue q using cur, semantic.refresh_records l
       where q.dataset = cur.dataset and q.record_id = cur.record_id and q.seq = cur.seq
         and l.dataset = cur.dataset and l.record_id = cur.record_id and l.fingerprint = cur.fp
+        and semantic.ledger_holds(l.dataset, l.record_id, l.state, l.chunks)
       returning 1)
     select count(*) into v_pruned from del;
   end if;
@@ -621,7 +631,8 @@ begin
         into v_src from public.corpus_records c where c.dataset = q.dataset and c.id = q.record_id;
       v_fp := case when v_src is not null then semantic.fingerprint(v_src) end;
     end if;
-    if v_fp is not null and l.fingerprint is not null and l.fingerprint = v_fp then
+    if v_fp is not null and l.fingerprint is not null and l.fingerprint = v_fp
+       and semantic.ledger_holds(q.dataset, q.record_id, l.state, l.chunks) then
       v_item := jsonb_build_object('dataset', q.dataset, 'record_id', q.record_id, 'seq', q.seq, 'same', true, 'fingerprint', v_fp,
         'ledger', jsonb_build_object('state', l.state, 'doc_sha256', l.doc_sha256, 'chunks', l.chunks));
     else
@@ -910,11 +921,16 @@ begin
     v_delta := semantic.bump(v_delta, v_ds, 'capped', (v_a_n > 0 and v_a_total > v_a_n)::integer - (v_b_n > 0 and v_b_total > v_b_n)::integer);
   end loop;
 
-  for d in select jsonb_object_keys(v_delta) loop
+  -- corpora counts: recounted exactly for every collection whose passages this call changed (so a purge or load done
+  -- outside the refresh is corrected too); unchanged collections are not touched
+  for d in select x.key from jsonb_each(v_delta) x
+           where coalesce((x.value ->> 'records')::integer, 0) <> 0 or coalesce((x.value ->> 'chunks')::integer, 0) <> 0
+              or coalesce((x.value ->> 'capped')::integer, 0) <> 0 loop
     update semantic.corpora k set
-      records = k.records + coalesce((v_delta -> d ->> 'records')::integer, 0),
-      chunks = k.chunks + coalesce((v_delta -> d ->> 'chunks')::integer, 0),
-      capped_records = k.capped_records + coalesce((v_delta -> d ->> 'capped')::integer, 0),
+      records = (select count(*) from (select distinct c.record_id from semantic.chunks c where c.dataset = d) t),
+      chunks = (select count(*) from semantic.chunks c where c.dataset = d),
+      capped_records = (select count(*) from (select c.record_id from semantic.chunks c where c.dataset = d
+                          group by c.record_id having max(c.chunk_total) > count(*)) t),
       loaded_at = now()
     where k.dataset = d;
   end loop;
@@ -1066,6 +1082,7 @@ begin
     'semantic.source_input(text,text,text,text,text,jsonb,jsonb,jsonb)', 'semantic.fingerprint(jsonb)', 'semantic.usc_title_map()',
     'semantic.source_datasets()', 'semantic.source_present(text,text)', 'semantic.source_ready(text)', 'semantic.clean_error(text)',
     'semantic.usage_state()', 'semantic.removal_limit(text)', 'semantic.embedding_for(text)',
+    'semantic.ledger_holds(text,text,text,integer)',
     'semantic.retire_record(text,text,text[],uuid)', 'semantic.bump(jsonb,text,text,bigint)',
     'semantic.delete_passages(text,text,integer)', 'semantic.forget_record(text,text)', 'semantic.dequeue(text,text)', 'semantic.merge_counts(jsonb,jsonb)',
     'semantic.enqueue_one(text,text,text,jsonb)', 'semantic.enqueue_corpus_change()'] loop
