@@ -832,7 +832,11 @@ begin
        (select coalesce(jsonb_object_agg(kind, n), '{}'::jsonb) from (select e.kind, count(*) n from documents.extractions e where e.sha256 = d.sha256 group by 1) s)
        else '{}'::jsonb end,
     'links', (select coalesce(jsonb_agg(jsonb_build_object('to_type', l.to_type, 'to_id', l.to_id, 'relation', l.relation,
-                'evidence', l.evidence, 'mentions', l.mentions, 'first_page', l.first_page) order by l.mentions desc, l.to_id), '[]'::jsonb)
+                'evidence', l.evidence, 'mentions', l.mentions, 'first_page', l.first_page,
+                'cited_as', (select e.normalized from documents.extractions e
+                              where e.sha256 = d.sha256 and e.resolution = 'resolved' and e.target_type = l.to_type
+                                and e.target_id = l.to_id order by e.page, e.start_offset limit 1))
+                order by l.mentions desc, l.to_id), '[]'::jsonb)
                 from (select * from documents.links l where l.document_id = d.id order by l.mentions desc, l.to_id limit 100) l),
     'amounts', case when d.text_status in ('text_layer', 'partial_text') then
        (select coalesce(jsonb_agg(jsonb_build_object('page', e.page, 'matched', e.matched, 'value', e.value) order by e.page, e.start_offset), '[]'::jsonb)

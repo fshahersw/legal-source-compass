@@ -59,6 +59,7 @@ const STEP_LABELS: Record<string, string> = {
   verify_citations: "Checking citations",
   get_opinion: "Reading an opinion",
   lookup_government_domain: "Checking a government domain",
+  search_documents: "Searching court documents",
 };
 
 export function systemPrompt(today: string): string {

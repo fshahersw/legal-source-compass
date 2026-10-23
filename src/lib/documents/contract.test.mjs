@@ -665,6 +665,12 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
       assert.equal(into.length, 2);
       const doc = await rpc("documents_document_v1", [docId]);
       assert.equal(doc.extractions.usc, 2);
+      const uscLink = doc.links.find((l) => l.to_id === "usc:42:1983");
+      assert.equal(
+        uscLink.cited_as,
+        "42 U.S.C. § 1983",
+        "a link carries the citation as the filing writes it",
+      );
       assert.deepEqual([doc.amounts[0].page, doc.amounts[0].value.amount], [2, 5000000]);
       const same = await rpc("documents_document_v1", [
         (

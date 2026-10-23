@@ -18,6 +18,7 @@ import { CONGRESS_EXECUTORS, CONGRESS_TOOL_DEFINITIONS } from "./congressTools.s
 import { OVERSIGHT_EXECUTORS, OVERSIGHT_TOOL_DEFINITIONS } from "./oversightTools.server";
 import { SEMANTIC_EXECUTORS, SEMANTIC_TOOL_DEFINITIONS } from "./semanticTools.server";
 import { semanticConfigured } from "@/lib/semantic/semantic.server";
+import { DOCUMENT_EXECUTORS, DOCUMENT_TOOL_DEFINITIONS } from "./documentTools.server";
 import {
   CITATION_EXECUTORS,
   CITATION_TOOL_DEFINITIONS,
@@ -167,6 +168,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   ...AUTHORITY_TOOL_DEFINITIONS,
   ...CITATION_TOOL_DEFINITIONS,
   ...GOV_DOMAIN_TOOL_DEFINITIONS,
+  ...DOCUMENT_TOOL_DEFINITIONS,
 ];
 
 function env(name: string): string | null {
@@ -517,6 +519,7 @@ const EXECUTORS: Record<
   ...AUTHORITY_EXECUTORS,
   ...CITATION_EXECUTORS,
   ...GOV_DOMAIN_EXECUTORS,
+  ...DOCUMENT_EXECUTORS,
 };
 
 /** Tools whose service keys are present; the model is only offered these. */
