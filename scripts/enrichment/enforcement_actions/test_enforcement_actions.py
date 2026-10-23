@@ -94,6 +94,18 @@ class AmountTests(unittest.TestCase):
         self.assertEqual([a["keyword"] for a in amounts], ["special assessment", "restitution", "special assessment"])
         self.assertEqual(ex.headline_figure("Sentencings for November 15", amounts)["as_written"], "$500.00")
 
+    def test_deal_values_and_program_totals_are_not_resolution_figures(self):
+        text = ("The division filed a lawsuit to block the $107 billion transaction, along with a proposed settlement. "
+                "Settlements and judgments since 1986 now total more than $85 billion. "
+                "This settlement is part of the work of the RMBS Working Group, which has recovered $36.65 billion to date. "
+                "Acme agreed to pay $5 million to settle allegations that, since 2012, it billed for unneeded tests.")
+        kinds = [a["keyword"] for a in ex.extract_amounts(text)]
+        self.assertEqual(kinds, ["transaction value", "cumulative total", "cumulative total", "settlement"])
+
+    def test_billion_is_not_billing(self):
+        self.assertIsNone(ex.extract_amounts("Revenue reached $3 billion last year.")[0].get("keyword"))
+        self.assertEqual(ex.extract_amounts("The clinic billed Medicare $3 million.")[0]["keyword"], "alleged loss or scheme")
+
     def test_statutory_maximum_forms(self):
         for text in ("The charge provides for a sentence of up to 20 years in prison and a fine of $250,000 or twice the gross gain.",
                      "Each count carries up to five years in prison and a $250,000 fine.",

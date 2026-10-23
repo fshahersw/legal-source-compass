@@ -111,10 +111,19 @@ KIND_KEYWORDS = [
     ("forfeiture", re.compile(r"\bforfeit", re.I)),
     ("disgorgement", re.compile(r"\bdisgorge", re.I)),
     ("judgment", re.compile(r"\bjudgment", re.I)),
-    ("alleged loss or scheme", re.compile(r"\b(?:loss|defraud|fraud|scheme|brib|kickback|launder|embezzl|stole|stolen|bill|obtain|misappropriat|steal)", re.I)),
+    ("alleged loss or scheme", re.compile(r"\b(?:loss|defraud|fraud|scheme|brib|kickback|launder|embezzl|stole|stolen|bill(?:ed|ing|s)?\b|obtain|misappropriat|steal)", re.I)),
 ]
 _SPECIAL_AFTER = re.compile(r"^\s*(?:in\s+)?(?:(?:mandatory|felony|federal)\s+)*(?:special\s+assessments?|mandatory\s+assessments?)\b", re.I)
 _SPECIAL_BEFORE = re.compile(r"\bspecial\s+assessments?\s+(?:fees?\s+)?(?:of|totaling|totalling|in\s+the\s+amount\s+of)?\s*$", re.I)
+# "$107 billion transaction", "$78 billion proposed acquisition", "$44 billion merger": a deal's value, not a resolution
+_TRANSACTION_AFTER = re.compile(r"^\s*(?:(?:proposed|planned|pending|cash|stock|all-cash|all-stock|hostile)\s+)*"
+                                r"(?:transactions?|acquisitions?|mergers?|deals?|buyouts?|takeovers?|combinations?|tender\s+offers?)\b", re.I)
+# program or office totals over a period ("Since 2009, the division has secured more than $29 billion"; "settlements and
+# judgments since 1986 now total more than $85 billion"; "which has recovered $36.65 billion to date")
+_CUMULATIVE_SPAN = re.compile(r"\bsince\s+(?:its\s+(?:creation|inception|founding)|the\s+(?:creation|inception|start|beginning)|"
+                              r"(?:19|20)\d{2}|(?:January|February|March|April|May|June|July|August|September|October|November|"
+                              r"December)\s+(?:19|20)\d{2})\b|\bto\s+date\b", re.I)
+_CUMULATIVE_VERB = re.compile(r"\b(?:recover(?:ed|ies|y)|collected|secured|imposed|imposing|now\s+totals?)\b", re.I)
 # proper names that contain a keyword but say nothing about the figure ("Bank for International Settlements")
 _NOT_KEYWORDS = re.compile(r"Bank (?:for|of) (?:the )?International Settlements", re.I)
 # a resolution figure is a stated settlement/penalty/...; figures of $1 trillion or more are listed but never used as one
@@ -161,6 +170,10 @@ def extract_amounts(text, spans=None, limit=None):
         # "$100 special assessment" / "a special assessment of $200" is a fixed court fee, whatever the sentence says
         if _SPECIAL_AFTER.match(text[m.end():m.end() + 50]) or _SPECIAL_BEFORE.search(text[max(0, m.start() - 50):m.start()]):
             kind = "special assessment"
+        elif _TRANSACTION_AFTER.match(text[m.end():m.end() + 60]):
+            kind = "transaction value"
+        elif kind in RESOLUTION_KINDS and sentence and _CUMULATIVE_SPAN.search(sentence) and _CUMULATIVE_VERB.search(sentence):
+            kind = "cumulative total"
         out.append({
             "as_written": as_written,
             "offset": m.start(),
