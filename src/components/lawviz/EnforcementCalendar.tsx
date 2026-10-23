@@ -29,7 +29,7 @@ import {
 } from "@/lib/lawviz/calendar";
 import { getEnforcementCalendar } from "@/lib/lawviz/lawviz.functions";
 import { HatchSwatch, Notice, RampLegend } from "./parts";
-import { builtLabel, fmtDate, fmtInt } from "./format";
+import { builtNote, fmtDate, fmtInt } from "./format";
 import { RAMP, ZERO_FILL, rampStep } from "./ramp";
 
 const control =
@@ -284,7 +284,7 @@ export function EnforcementCalendar() {
         status={status}
         table={table}
         minHeight={240}
-        asOf={builtLabel(q.data?.builtAt ?? null)}
+        footnotes={builtNote(q.data?.builtAt ?? null)}
         partialNotice={
           [
             data?.dropped

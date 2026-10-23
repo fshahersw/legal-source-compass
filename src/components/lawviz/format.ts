@@ -17,5 +17,6 @@ export function fmtDate(iso: string | null | undefined): string {
       });
 }
 
-/** "computed Oct 23, 2026" from a build timestamp. */
-export const builtLabel = (at: string | null) => (at ? `computed ${fmtDate(at)}` : undefined);
+/** Footnote naming when the database computed the figures (from the build timestamp); none when unknown. */
+export const builtNote = (at: string | null): string[] =>
+  at ? [`Figures computed ${fmtDate(at)} from the stored records.`] : [];

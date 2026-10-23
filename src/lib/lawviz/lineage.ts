@@ -155,7 +155,9 @@ export function parseLineage(raw: unknown): LineageView {
       for (const f of arr(y[1])) {
         const g = arr(f);
         const citation = str(g[0], 60);
-        if (citation) fr.push({ citation, url: safeUrl(g[1], FR_HOSTS) });
+        const doc = typeof g[1] === "string" && /^[0-9A-Za-z-]{4,40}$/.test(g[1]) ? g[1] : null;
+        if (citation)
+          fr.push({ citation, url: doc ? `https://www.federalregister.gov/d/${doc}` : null });
       }
       ds.push({ date, fr });
     }

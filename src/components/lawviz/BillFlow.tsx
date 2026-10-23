@@ -33,7 +33,7 @@ import {
   type StageFlow,
 } from "@/lib/lawviz/billFlow";
 import { getBillFlow } from "@/lib/lawviz/lawviz.functions";
-import { builtLabel, fmtInt } from "./format";
+import { builtNote, fmtInt } from "./format";
 
 type BillFlowOk = Extract<BillFlowData, { status: "ok" }>;
 const REACHED = seriesVar(0);
@@ -317,7 +317,6 @@ export function BillFlow() {
         status={status}
         table={table}
         minHeight={340}
-        asOf={builtLabel(q.data?.builtAt ?? null)}
         partialNotice={
           data?.dropped
             ? `${fmtInt(data.dropped)} stored rows could not be read and are left out.`
@@ -329,6 +328,7 @@ export function BillFlow() {
           "Hover or use the arrow keys on the chart to read each flow; the table gives the counts by Congress.",
         ]}
         footnotes={[
+          ...builtNote(q.data?.builtAt ?? null),
           `${fmtInt(flow.total)} bills and joint resolutions; ${fmtInt(lawN)} became law (${fmtInt(flow.withLawNumber)} with a law number on the record).`,
           ...(publicLaws !== null
             ? [

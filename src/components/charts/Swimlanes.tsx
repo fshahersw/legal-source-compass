@@ -1,8 +1,9 @@
 /**
  * Swimlane timeline: one horizontal lane per series of dated events, lanes grouped under headed bands, one shared time
  * axis. A lane shows either its events as dots (several events on one day merge into one larger dot with the count) or,
- * when it holds too many to draw, monthly bars whose height is the month's count within that lane. Events outside the
- * axis are counted at the lane's edges, never dropped silently.
+ * when it holds too many to draw, monthly bars whose height is the month's count within that lane. A dot lane whose
+ * dots would sit on top of each other (most neighbours closer than 6 px) is drawn by month the same way, so no event is
+ * hidden under another. Events outside the axis are counted at the lane's edges, never dropped silently.
  *
  * Hover snaps to the nearest mark within 12 px of the pointer (hit target larger than the dot); the same details are on
  * keyboard focus: ArrowUp/ArrowDown change lane, ArrowLeft/ArrowRight move between a lane's marks, Enter opens the
@@ -21,6 +22,8 @@ export type SwimEvent = {
   label: string;
   detail?: string | undefined;
   href?: string | null | undefined;
+  /** What the event counts for when the lane is drawn by month (default 1). */
+  weight?: number | undefined;
 };
 export type SwimBar = { month: string; n: number };
 export type SwimLane = {
@@ -56,7 +59,7 @@ const toMs = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`);
 const HEAD = 18;
 const AXIS = 22;
 
-/** One drawn mark: a day of events, or a month bar. */
+/** One drawn mark: a day of events, or a month bar (`dense` when a dot lane was too crowded to draw by day). */
 export type SwimMark = {
   x: number;
   key: string;
@@ -64,7 +67,10 @@ export type SwimMark = {
   n: number;
   month: boolean;
   x1: number;
+  dense?: boolean;
 };
+
+const monthEnd = (ym: string) => Date.UTC(Number(ym.slice(0, 4)), Number(ym.slice(5, 7)), 1);
 
 /** Events of a lane merged by day and placed on the scale (pure; tested). */
 export function laneMarks(
@@ -118,6 +124,25 @@ export function laneMarks(
       return { x: px, x1: px, key, events: evs, n: evs.length, month: false };
     })
     .sort((a, b) => a.x - b.x || a.key.localeCompare(b.key));
+  const tight = marks.filter((m, i) => i > 0 && m.x - marks[i - 1]!.x < 6).length;
+  if (marks.length > 12 && tight > marks.length * 0.3) {
+    const byMonth = new Map<string, SwimEvent[]>();
+    for (const m of marks) {
+      const k = m.key.slice(0, 7);
+      byMonth.set(k, [...(byMonth.get(k) ?? []), ...m.events]);
+    }
+    const dense: SwimMark[] = [...byMonth.entries()].map(([k, evs]) => ({
+      x: x(Math.max(toMs(`${k}-01`), domain[0])),
+      x1: x(Math.min(monthEnd(k), domain[1])),
+      key: k,
+      events: evs,
+      n: evs.reduce((a, e) => a + (e.weight ?? 1), 0),
+      month: true,
+      dense: true,
+    }));
+    dense.sort((a, b) => a.x - b.x);
+    return { marks: dense, before, after };
+  }
   return { marks, before, after };
 }
 
@@ -296,6 +321,7 @@ export function Swimlanes({
           title: fmtMonth(m.key),
           subtitle: lane.label,
           rows: [{ key: "n", label: "", value: label(m.n, active.lane) }],
+          footer: m.dense ? "Drawn by month here: too many to show one by one" : undefined,
         },
       };
     const shown = m.events.slice(0, 5);
@@ -428,7 +454,9 @@ export function Swimlanes({
                   ) : null}
                   {!info.marks.length ? (
                     <text x={plotX0 + 6} y={cy - 4} fontSize={9.5} fill="var(--chart-axis)">
-                      {lane.emptyText ?? "None in this period"}
+                      {info.before || info.after
+                        ? "None in this period"
+                        : (lane.emptyText ?? "None in this period")}
                     </text>
                   ) : null}
                   {info.marks.map((m, k) => {

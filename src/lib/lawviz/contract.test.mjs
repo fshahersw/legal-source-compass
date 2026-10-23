@@ -167,6 +167,19 @@ async function seed(db) {
     },
     filters: { title: ["21"], part: ["7"], chapter: ["I"], kind: ["section"] },
   });
+  await rec("ecfr_sections_full", "cfr:21:Appendix A to Chapter I", {
+    title: "21 CFR Appendix A to Chapter I—Addresses",
+    item: {
+      cells: {
+        kind: "appendix",
+        part: "",
+        identifier: "Appendix A to Chapter I",
+        characters: 70,
+        title_number: "21",
+      },
+    },
+    filters: { title: ["21"], chapter: ["I"], kind: ["appendix"] },
+  });
   await rec("ecfr_sections_full", "cfr:21:part-101", {
     title: "21 CFR Part 101—Food Labeling",
     item: {
@@ -422,7 +435,7 @@ test("atlas RPC: focus, path, grandchildren, bins and ranges", async () => {
   assert.equal(t1.grandchildren.length, 4);
   const ch = await atlas("usc", "usc/26/c2");
   assert.equal(ch.binned, true);
-  assert.ok(ch.children.length <= 48 && ch.children.length > 20);
+  assert.ok(ch.children.length <= 24 && ch.children.length > 20);
   assert.equal(
     ch.children.reduce((a, c) => a + c[5], 0),
     650,
@@ -467,12 +480,23 @@ test("CFR atlas: parts with and without records, reserved, version recency", asy
   assert.equal(p2.label, "[Reserved]");
   const p7 = await node("cfr/21/p/7");
   assert.equal(p7.parent, "cfr/21/c/I", "a part with no record takes its sections' chapter");
+  const loose = await node("cfr:21:Appendix A to Chapter I");
+  assert.equal(
+    loose.parent,
+    "cfr/21/p/_I",
+    "a chapter-level appendix goes to its chapter's not-in-a-part group",
+  );
+  const grp = await node("cfr/21/p/_I");
+  assert.equal(grp.kind, "group");
+  assert.equal(grp.label, "Not in a part");
+  assert.equal(grp.num, null);
+  assert.equal(grp.parent, "cfr/21/c/I");
   const ch = await node("cfr/21/c/I");
   assert.equal(ch.label, "Food and Drug Administration");
-  assert.equal(ch.children, 3);
-  assert.equal(ch.sections, 4);
+  assert.equal(ch.children, 4);
+  assert.equal(ch.sections, 5);
   assert.equal((await node("cfr/21")).label, "Food and Drugs");
-  assert.equal((await node("cfr")).sections, 4);
+  assert.equal((await node("cfr")).sections, 5);
   await db.close();
 });
 
@@ -503,10 +527,7 @@ test("part lineage: exact CFR pair, version lanes, statutes and missing ids", as
   ]);
   const lane = r.versions.lanes.find((l) => l[0] === "cfr:21:101.1");
   assert.equal(lane[4], 2);
-  assert.deepEqual(lane[5][1], [
-    "2023-03-24",
-    [["88 FR 17710", "https://www.federalregister.gov/d/2023-05418"]],
-  ]);
+  assert.deepEqual(lane[5][1], ["2023-03-24", [["88 FR 17710", "2023-05418"]]]);
   assert.deepEqual(
     r.statutes.map((s) => s[0]),
     ["1:1", "1:3"],

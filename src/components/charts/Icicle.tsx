@@ -9,7 +9,7 @@
  * ArrowLeft to the parent, Home/End to the ends of a column, Enter opens, Escape goes up. The pointer snaps to the cell
  * under it in its column, so a sliver thinner than a pixel can still be read.
  */
-import { useId, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useState, type KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import { ChartTooltip, textWidth, useMeasuredWidth, type TooltipContent } from "./canvas";
 import { chartTokens } from "./palette";
@@ -153,6 +153,8 @@ export function Icicle({
   const liveId = useId();
   const [active, setActive] = useState<number | null>(null);
   const [announce, setAnnounce] = useState("");
+  // A new focus is a new chart: the keyboard position starts again from its first child.
+  useEffect(() => setActive(null), [root.id]);
   const layout = useMemo(
     () => (width ? icicleLayout(root, width, height) : null),
     [root, width, height],

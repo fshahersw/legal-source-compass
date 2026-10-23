@@ -16,7 +16,10 @@
 --                  (ecfr_section_versions, same record id). A parent's colour is the median of its sections' years
 --                  (sections without a recorded date are left out of the median and counted as not recorded). An
 --                  impossible date (before 1789-03-04, after the refresh day, malformed) is not recorded, never repaired.
---   Lineage      = live, bounded reads by exact keys only: the Federal Register documents whose CFR references list the
+--   Lineage      = live, bounded reads by exact keys only (payload <= ~200 KB: the latest 600 or 200 documents, monthly
+--                  counts by type, every substantive version date of the part, and lanes for up to 16 sections — the
+--                  8 most changed when the part has more — each with its latest 100 version dates and the Federal Register
+--                  document numbers the eCFR gives for them): the Federal Register documents whose CFR references list the
 --                  exact "<title>:<part>" pair (filters.cfr_pair), the part's section version records
 --                  (filters.title + filters.part), and the laws linked to U.S. Code section ids the caller resolved by
 --                  exact citation (the app passes at most 24 ids; ids that are not stored come back in `missing`).
@@ -167,14 +170,14 @@ $$;
 
 create or replace function lawviz.begin_build(p_build text, p_family text) returns void
 language sql security definer set search_path = '' as $$
-  insert into lawviz.builds (build, family) values (p_build, p_family)
-  on conflict (build, family) do update set started_at = now(), finished_at = null, rows_written = null,
+  insert into lawviz.builds (build, family, started_at) values (p_build, p_family, clock_timestamp())
+  on conflict (build, family) do update set started_at = clock_timestamp(), finished_at = null, rows_written = null,
                                             detail = '{}'::jsonb
 $$;
 
 create or replace function lawviz.end_build(p_build text, p_family text, p_rows integer, p_detail jsonb) returns jsonb
 language sql security definer set search_path = '' as $$
-  update lawviz.builds set finished_at = now(), rows_written = p_rows, detail = coalesce(p_detail, '{}'::jsonb)
+  update lawviz.builds set finished_at = clock_timestamp(), rows_written = p_rows, detail = coalesce(p_detail, '{}'::jsonb)
   where build = p_build and family = p_family
   returning jsonb_build_object('family', family, 'rows', rows_written, 'ms',
                                round(extract(epoch from finished_at - started_at) * 1000), 'detail', detail)
@@ -318,7 +321,9 @@ begin
   with s as materialized (
     select r.id, r.ordinal, r.title as rtitle, r.item -> 'cells' as c,
            coalesce(r.filters -> 'title' ->> 0, r.item -> 'cells' ->> 'title_number') as t,
-           coalesce(r.item -> 'cells' ->> 'part', r.filters -> 'part' ->> 0) as part
+           -- a unit printed outside any part (chapter-level appendices) goes to its chapter's "not in a part" group
+           coalesce(nullif(r.item -> 'cells' ->> 'part', ''), nullif(r.filters -> 'part' ->> 0, ''),
+                    '_' || coalesce(nullif(r.filters -> 'chapter' ->> 0, ''), '')) as part
     from public.corpus_records r
     where r.dataset = 'ecfr_sections_full' and r.item -> 'cells' ->> 'kind' in ('section', 'appendix')
   ), v as materialized (
@@ -356,7 +361,8 @@ begin
     order by t, part, ordinal
   ), sch as materialized (
     select coalesce(r.filters -> 'title' ->> 0, r.item -> 'cells' ->> 'title_number') as t,
-           coalesce(r.item -> 'cells' ->> 'part', r.filters -> 'part' ->> 0) as part,
+           coalesce(nullif(r.item -> 'cells' ->> 'part', ''), nullif(r.filters -> 'part' ->> 0, ''),
+                    '_' || coalesce(nullif(r.filters -> 'chapter' ->> 0, ''), '')) as part,
            min(nullif(r.filters -> 'chapter' ->> 0, '')) as chapter
     from public.corpus_records r
     where r.dataset = 'ecfr_sections_full' and r.item -> 'cells' ->> 'kind' in ('section', 'appendix')
@@ -375,12 +381,14 @@ begin
            lp.median_year, lp.min_ord
     from pr full join lp on lp.pid = 'cfr/' || pr.t || '/p/' || pr.part
   )
-  select 'cfr', p.id, 'cfr/' || p.t || '/c/' || coalesce(p.chapter, sch.chapter, '_'), 3, 'part',
-         coalesce(p.ordinal, p.min_ord, 0), 'Part ' || p.part,
+  select 'cfr', p.id, 'cfr/' || p.t || '/c/' || coalesce(p.chapter, sch.chapter, '_'), 3,
+         case when p.part like '\_%' then 'group' else 'part' end,
+         coalesce(p.ordinal, p.min_ord, 0), case when p.part like '\_%' then null else 'Part ' || p.part end,
+         case when p.part like '\_%' then 'Not in a part' else
          coalesce(nullif(btrim(substring(p.rtitle from '—(.*)$')), ''),
                   nullif(btrim(regexp_replace(coalesce(p.rtitle, ''),
                                               '^[0-9]{1,2} CFR Part [^[:space:]—]+[[:space:]]*', '')), ''),
-                  'Not recorded'),
+                  'Not recorded') end,
          coalesce(p.sections, 0), coalesce(p.chars, 0), coalesce(p.recorded, 0), p.last_change, p.median_year,
          coalesce(p.sections, 0), case when p.reserved then 'reserved' end, p_build
   from parts p left join sch on sch.t = p.t and sch.part = p.part;
@@ -658,7 +666,7 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- Atlas: a node, its ancestors, its children and (when they are few) its grandchildren.
---   > 600 leaf children are returned as consecutive ranges (<= 48 bins, exact sums and medians); open a range with
+--   > 600 leaf children are returned as consecutive ranges (<= 24 bins, exact sums and medians); open a range with
 --   p_from/p_to (its first and last `ord`). Grandchildren are included only when they number <= 800.
 create or replace function public.lawviz_atlas_v1(p_corpus text, p_node text default null,
                                                    p_from bigint default null, p_to bigint default null)
@@ -668,7 +676,7 @@ declare
   v_path jsonb; v_kids jsonb; v_grand jsonb := '[]'::jsonb;
   n_kids integer; n_grand integer := 0; n_nonleaf integer;
   v_binned boolean := false; v_truncated boolean := false; v_grand_included boolean := false;
-  k_bins constant integer := 48; k_kids constant integer := 600; k_grand constant integer := 800;
+  k_bins constant integer := 24; k_kids constant integer := 600; k_grand constant integer := 800;
   v_step integer;
 begin
   if p_corpus is null or p_corpus not in ('usc', 'cfr') then
@@ -773,7 +781,7 @@ begin
   with d as materialized (
     select r.id, lawviz.iso_date(r.item -> 'cells' ->> 'published') as day,
            coalesce(nullif(btrim(r.item -> 'cells' ->> 'type'), ''), 'Not recorded') as type,
-           r.item -> 'cells' ->> 'citation' as citation, left(r.title, 180) as title, r.source_url
+           r.item -> 'cells' ->> 'citation' as citation, left(r.title, 140) as title, r.source_url
     from public.corpus_records r
     where r.dataset = 'federal_register_history'
       and r.filters @> jsonb_build_object('cfr_pair', jsonb_build_array(k_pair))
@@ -800,7 +808,8 @@ begin
   ), v as materialized (
     select s.id, lawviz.iso_date(e ->> 'date') as day,
            bool_or(e -> 'substantive' = 'true'::jsonb) as substantive,
-           coalesce(jsonb_agg(distinct jsonb_build_array(f ->> 'citation', f ->> 'url'))
+           coalesce(jsonb_agg(distinct jsonb_build_array(f ->> 'citation',
+                                                         substring(f ->> 'url' from '/d/([0-9A-Za-z-]{4,40})$')))
                     filter (where jsonb_typeof(f) = 'object'), '[]'::jsonb) as fr
     from s
     cross join lateral jsonb_array_elements(lawviz.arr(s.vs)) e
@@ -815,7 +824,7 @@ begin
   ), chosen as (
     select * from counts
     order by case when (select count(*) from counts) <= 16 then 0 else -n end, ordinal, id
-    limit case when (select count(*) from counts) <= 16 then 16 else 12 end
+    limit case when (select count(*) from counts) <= 16 then 16 else 8 end
   )
   select jsonb_build_object(
     'sections', (select count(*) from s),
@@ -823,8 +832,8 @@ begin
     'dates', (select coalesce(jsonb_agg(jsonb_build_array(day, n) order by day), '[]'::jsonb)
               from (select sub.day, count(distinct sub.id) as n from sub group by sub.day) x),
     'lanes', (select coalesce(jsonb_agg(jsonb_build_array(c.id, c.ident, c.title, c.removed, c.n,
-                     (select coalesce(jsonb_agg(jsonb_build_array(sub.day, sub.fr) order by sub.day), '[]'::jsonb)
-                      from sub where sub.id = c.id))
+                     (select coalesce(jsonb_agg(jsonb_build_array(z.day, z.fr) order by z.day), '[]'::jsonb)
+                      from (select sub.day, sub.fr from sub where sub.id = c.id order by sub.day desc limit 100) z))
                      order by c.ordinal, c.id), '[]'::jsonb) from chosen c),
     'selection', case when (select count(*) from s) <= 16 then 'all' else 'most_changed' end)
   into v_versions;

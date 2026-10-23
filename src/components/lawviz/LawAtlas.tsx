@@ -29,7 +29,7 @@ import {
 } from "@/lib/lawviz/atlas";
 import { getAtlasView } from "@/lib/lawviz/lawviz.functions";
 import { Notice, RampLegend } from "./parts";
-import { builtLabel, fmtDate, fmtInt } from "./format";
+import { builtNote, fmtDate, fmtInt } from "./format";
 import { RAMP, rampInkLight } from "./ramp";
 
 const COPY: Record<
@@ -152,7 +152,15 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
   };
 
   // The focus shown at the left: the range itself when one is open, else the node the server returned.
-  const shownFocus = ok ? (focus.range ?? ok.focus) : null;
+  // While the next level loads the previous one stays on screen (dimmed): a range applies only to its own payload.
+  const range =
+    focus.range &&
+    ok?.range &&
+    ok.focus.id === focus.range.parent &&
+    ok.range[0] === focus.range.range?.lo
+      ? focus.range
+      : null;
+  const shownFocus = ok ? (range ?? ok.focus) : null;
   const root = useMemo((): IcicleDatum | null => {
     if (!ok || !shownFocus) return null;
     const grand = new Map<string, AtlasNode[]>();
@@ -160,26 +168,18 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
       if (!g.parent) continue;
       grand.set(g.parent, [...(grand.get(g.parent) ?? []), g]);
     }
-    const datum = (n: AtlasNode, kids?: AtlasNode[], placeholder?: string): IcicleDatum => {
+    // Cells carry the full name (truncated to fit). Children not loaded are not drawn as empty boxes: the tooltip and
+    // the table say how many there are.
+    const datum = (n: AtlasNode, kids?: AtlasNode[]): IcicleDatum => {
       const c = colourOf(n);
       return {
         id: n.id,
-        label: shortName(corpus, n),
+        label: n.kind === "root" ? copy.root : fullName(corpus, n),
         value: sizeOf(n, sizeBy),
         fill: c.fill,
         lightInk: c.light,
-        ...(kids ? { children: kids.map((k) => datumOf(k)) } : {}),
-        ...(placeholder ? { placeholder } : {}),
+        ...(kids ? { children: kids.map((k) => datum(k, grand.get(k.id))) } : {}),
       };
-    };
-    const datumOf = (k: AtlasNode): IcicleDatum => {
-      const g = grand.get(k.id);
-      if (g) return datum(k, g);
-      const open =
-        k.children > 0 && !isLeaf(k)
-          ? `${fmtInt(k.children)} ${k.kind === "range" ? unit[1] : childNoun(corpus, k)} — open to see them`
-          : undefined;
-      return datum(k, undefined, open);
     };
     return datum(shownFocus, ok.children);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -189,9 +189,9 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
     const m = new Map<string, AtlasNode>();
     if (ok)
       for (const n of [ok.focus, ...ok.path, ...ok.children, ...ok.grandchildren]) m.set(n.id, n);
-    if (focus.range) m.set(focus.range.id, focus.range);
+    if (range) m.set(range.id, range);
     return m;
-  }, [ok, focus.range]);
+  }, [ok, range]);
 
   const zoom = (n: AtlasNode) => {
     if (n.kind === "range" && n.parent) setFocus({ node: n.parent, range: n });
@@ -203,11 +203,11 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
   };
   const up = () => {
     if (!ok) return;
-    if (focus.range) setFocus({ node: ok.focus.id === corpus ? null : ok.focus.id, range: null });
+    if (range) setFocus({ node: ok.focus.id === corpus ? null : ok.focus.id, range: null });
     else if (ok.focus.parent)
       setFocus({ node: ok.focus.parent === corpus ? null : ok.focus.parent, range: null });
   };
-  const atTop = !!ok && !focus.range && ok.focus.parent === null;
+  const atTop = !!ok && !range && ok.focus.parent === null;
 
   const tooltipFor = (d: IcicleDatum, depth: number) => {
     const n = byId.get(d.id);
@@ -228,6 +228,8 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
         label: `of ${fmtInt(n.sections)} with a recorded date`,
         value: fmtInt(n.recorded),
       });
+    if (!isLeaf(n) && n.kind !== "range" && depth > 0)
+      rows.push({ key: "k", label: childNoun(corpus, n), value: fmtInt(n.children) });
     const hint =
       depth === 0
         ? atTop
@@ -326,7 +328,7 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
   if (ok?.dropped)
     notices.push(`${fmtInt(ok.dropped)} stored rows could not be read and are left out.`);
   const zeroHidden = ok ? ok.children.filter((n) => sizeOf(n, sizeBy) === 0).length : 0;
-  const crumbs = ok ? [...ok.path, ok.focus, ...(focus.range ? [focus.range] : [])] : [];
+  const crumbs = ok ? [...ok.path, ok.focus, ...(range ? [range] : [])] : [];
   const focusLink = shownFocus ? nodeLink(corpus, shownFocus) : null;
 
   return (
@@ -340,7 +342,6 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
       sources={copy.sources}
       status={status}
       table={table}
-      asOf={builtLabel(view?.builtAt ?? null)}
       minHeight={420}
       partialNotice={notices.length ? notices.join(" ") : undefined}
       actions={
@@ -360,6 +361,7 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
         "Hatched cells have no recorded change date. Use the arrow keys inside the chart to move, Enter to zoom in or open a section, Escape to go back up; the table lists every row with a link.",
       ]}
       footnotes={[
+        ...builtNote(view?.builtAt ?? null),
         ...(ok
           ? [
               `${fmtInt(ok.focus.recorded)} of ${fmtInt(ok.focus.sections)} ${unit[1]} here have a recorded change date.`,
@@ -367,7 +369,7 @@ export function LawAtlas({ corpus }: { corpus: AtlasCorpus }) {
           : []),
         ...(zeroHidden
           ? [
-              `${fmtInt(zeroHidden)} with no ${sizeBy === "chars" ? "stored text" : unit[1]} are listed in the table but not drawn.`,
+              `${fmtInt(zeroHidden)} ${zeroHidden === 1 ? "entry" : "entries"} with no ${sizeBy === "chars" ? "stored text" : unit[1]} ${zeroHidden === 1 ? "is" : "are"} listed in the table but not drawn.`,
             ]
           : []),
       ]}

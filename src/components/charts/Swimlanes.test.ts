@@ -32,6 +32,22 @@ describe("laneMarks", () => {
     expect(r.marks[0]!.x).toBeLessThan(r.marks[1]!.x);
   });
 
+  it("draws a crowded dot lane by month, summing event weights", () => {
+    const events = Array.from({ length: 60 }, (_, i) => ({
+      id: `e${i}`,
+      date: `2020-${String(1 + Math.floor(i / 20)).padStart(2, "0")}-${String(1 + (i % 20)).padStart(2, "0")}`,
+      label: "x",
+      weight: 2,
+    }));
+    const r = laneMarks({ events }, x, domain);
+    expect(r.marks.every((m) => m.month && m.dense)).toBe(true);
+    expect(r.marks.map((m) => [m.key, m.n])).toEqual([
+      ["2020-01", 40],
+      ["2020-02", 40],
+      ["2020-03", 40],
+    ]);
+  });
+
   it("places monthly bars over their month and counts bars outside the axis", () => {
     const r = laneMarks(
       {

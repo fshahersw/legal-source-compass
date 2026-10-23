@@ -283,7 +283,9 @@ export function nodeLink(corpus: AtlasCorpus, n: AtlasNode): AtlasLink | null {
     };
   }
   const p = /\/p\/(.+)$/.exec(n.id);
-  if (p) return { to: "/law/cfr/$title/part/$part", params: { title: t, part: p[1]! } };
+  // "_<chapter>" groups units printed outside any part: there is no part page to open.
+  if (p && !p[1]!.startsWith("_"))
+    return { to: "/law/cfr/$title/part/$part", params: { title: t, part: p[1]! } };
   return { to: "/law/cfr/$title", params: { title: t } };
 }
 
@@ -357,7 +359,7 @@ export function childNoun(corpus: AtlasCorpus, n: AtlasNode): string {
     case "chapter":
     case "division":
     case "group":
-      return corpus === "usc" ? "sections" : "parts";
+      return corpus === "usc" || n.id.includes("/p/") ? UNIT_WORD[corpus][1] : "parts";
     case "part":
     case "range":
       return UNIT_WORD[corpus][1];

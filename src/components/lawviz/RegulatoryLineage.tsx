@@ -48,6 +48,9 @@ const GROUPS: SwimGroup[] = [
 ];
 
 const today = () => new Date().toISOString().slice(0, 10);
+/** "101.9" -> "§ 101.9"; an appendix keeps its own name. */
+const sectionLabel = (identifier: string) =>
+  /^\d/.test(identifier) ? `§ ${identifier}` : identifier;
 
 function buildLanes(l: Lineage, title: string, part: string, laneLimit: number) {
   const lanes: SwimLane[] = [];
@@ -104,6 +107,7 @@ function buildLanes(l: Lineage, title: string, part: string, laneLimit: number) 
       id: `all-${d.date}`,
       date: d.date,
       label: `${fmtInt(d.n)} ${d.n === 1 ? "section" : "sections"} changed`,
+      weight: d.n,
       href: `https://www.ecfr.gov/on/${d.date}/title-${title}/part-${encodeURIComponent(part)}`,
     })),
   });
@@ -111,7 +115,7 @@ function buildLanes(l: Lineage, title: string, part: string, laneLimit: number) 
     lanes.push({
       id: `ver-${s.id}`,
       group: "ver",
-      label: `§ ${s.identifier}${s.removed ? " (removed)" : ""}`,
+      label: `${sectionLabel(s.identifier)}${s.removed ? " (removed)" : ""}`,
       emptyText: "No substantive change recorded",
       events: s.dates.map((d) => ({
         id: `${s.id}@${d.date}`,
@@ -246,7 +250,7 @@ export function RegulatoryLineage({ title, part }: { title: string; part: string
             s.dates.map((d) => ({
               key: `ver-${s.id}-${d.date}`,
               cells: [
-                `§ ${s.identifier}${s.removed ? " (removed)" : ""}`,
+                `${sectionLabel(s.identifier)}${s.removed ? " (removed)" : ""}`,
                 fmtDate(d.date),
                 d.fr.map((f) => f.citation).join("; ") || "Version date",
               ],
@@ -280,7 +284,7 @@ export function RegulatoryLineage({ title, part }: { title: string; part: string
         status={status}
         table={table}
         minHeight={260}
-        asOf={lin?.part_record?.asOf ? `eCFR ${fmtDate(lin.part_record.asOf)}` : undefined}
+        asOf={lin?.part_record?.asOf ? `${fmtDate(lin.part_record.asOf)} (eCFR)` : undefined}
         partialNotice={notices.length ? notices.join(" ") : undefined}
         actions={
           <Segmented
@@ -309,7 +313,23 @@ export function RegulatoryLineage({ title, part }: { title: string; part: string
               ariaLabel={`Lineage of ${title} CFR part ${part}: authorizing statutes, Federal Register documents and section versions over time.`}
               onOpen={onOpen}
               unitLabel={(n, lane) =>
-                `${fmtInt(n)} ${lane.group === "fr" ? (n === 1 ? "document" : "documents") : lane.group === "law" ? (n === 1 ? "law" : "laws") : n === 1 ? "change" : "changes"}`
+                `${fmtInt(n)} ${
+                  lane.group === "fr"
+                    ? n === 1
+                      ? "document"
+                      : "documents"
+                    : lane.group === "law"
+                      ? n === 1
+                        ? "law"
+                        : "laws"
+                      : lane.id === "ver-all"
+                        ? n === 1
+                          ? "section change"
+                          : "section changes"
+                        : n === 1
+                          ? "change"
+                          : "changes"
+                }`
               }
             />
           </div>
