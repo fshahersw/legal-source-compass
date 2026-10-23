@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
+import { SectionHub } from "@/components/atlas/hub/SectionHub";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { CourtArtwork } from "@/components/corpus/CourtArtwork";
@@ -151,6 +152,8 @@ function CourtsPage() {
       />
     );
 
+  // The bare /courts address is the Courts & judges landing: headline counts and the sub-areas above the folders.
+  const landing = !s.system && !s.state && !s.type;
   return (
     <AppShell
       breadcrumbs={crumbs}
@@ -161,11 +164,15 @@ function CourtsPage() {
             ? `${stateLabel(s.state)} courts`
             : s.system
               ? `${s.system} courts`
-              : "Courts"
+              : "Courts & judges"
       }
-      description="Open a folder to narrow down, then open a court for its full page."
+      description={
+        landing
+          ? "Every court and judge in the directory, caseloads, vacancies and court and judge comparisons. Open a court system below to narrow down, then a court for its full page."
+          : "Open a folder to narrow down, then open a court for its full page."
+      }
     >
-      {body}
+      {landing ? <SectionHub section="courts">{body}</SectionHub> : body}
     </AppShell>
   );
 }

@@ -76,7 +76,7 @@ function ProvisionPage() {
   ];
   crumbs.push(
     federal
-      ? { label: "Federal", to: "/law", search: { scope: "federal" } }
+      ? { label: "Federal law", to: "/law", search: { scope: "federal" } }
       : usps
         ? { label: p.state!, to: "/law", search: { scope: "states", state: usps } }
         : { label: p.state || "Jurisdiction not recorded" },

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalBadge } from "@/components/corpus/ExternalBadge";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
-import { SECTIONS, datasetLabel, sectionOf } from "@/lib/external/groups";
+import { datasetLabel } from "@/lib/external/groups";
 import { pageHead } from "@/lib/corpus/head";
 
 type S = { q?: string | undefined; f?: Record<string, string> | undefined };
@@ -41,15 +41,10 @@ function DatasetPage() {
   const ds = useDatasets();
   const info = ds.data?.find((d) => d.id === dataset);
   const label = datasetLabel(dataset, info?.label);
-  const section = SECTIONS.find((s) => s.id === sectionOf(dataset))!;
   return (
     <AppShell
-      breadcrumbs={[
-        { label: "Home", to: "/" },
-        { label: "Data catalog", to: "/data" },
-        { label: section.label },
-        { label },
-      ]}
+      // The shell puts the dataset under its section and tab (e.g. Enforcement › Actions by agency).
+      breadcrumbs={[{ label: "Data catalog", to: "/data" }, { label }]}
       title={label}
       description={info?.records != null ? `${info.records.toLocaleString()} imported records` : ""}
     >

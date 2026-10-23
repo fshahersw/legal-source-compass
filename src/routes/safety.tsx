@@ -16,8 +16,8 @@ import { NeissEstimates } from "@/components/safety/neiss/NeissEstimates";
 import { FsisRecallsTable } from "@/components/enforcement/extra/FsisRecallsTable";
 import { SaferProductsReports } from "@/components/safety/saferproducts/SaferProductsReports";
 import { SafetyRecallTrends, SafetyAgencyTrends } from "@/components/safety/SafetyTrendCards";
-import { SafetyTabPanel, SafetyTabs } from "@/components/safety/SafetyTabs";
-import { safetyViewOf, type SafetyView } from "@/components/safety/safetyView";
+import { safetyViewOf } from "@/components/safety/safetyView";
+import { SectionHub } from "@/components/atlas/hub/SectionHub";
 import { sectionOf } from "@/lib/external/groups";
 import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
 import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
@@ -35,8 +35,8 @@ export const Route = createFileRoute("/safety")({
   loader: ({ context }) => context.queryClient.prefetchQuery(safetyIntelligenceQuery),
   head: () =>
     pageHead(
-      "Product safety",
-      "Browse FDA, CPSC and other agency safety records by agency, then record kind.",
+      "Products & safety",
+      "Recalls, adverse events, injury estimates, consumer reports, approvals and product signals from FDA, CPSC, NHTSA, FSIS and other agencies.",
     ),
   component: SafetyPage,
 });
@@ -61,9 +61,7 @@ const DERIVED = new Set(["agency_safety_insights"]);
 function SafetyPage() {
   const s = Route.useSearch();
   const datasets = useDatasets();
-  const navigate = Route.useNavigate();
-  const selectView = (view: SafetyView) =>
-    void navigate({ search: view === "overview" ? {} : { view } });
+  // Overview, Injuries (NEISS), Consumer reports and Collections are the section's tabs (?view=), not an in-page row.
   if (s.view === "list") return <SectionPage section="safety" path="/safety" ds={undefined} />;
   if (s.view === "reports" || s.view === "neiss") {
     const view = safetyViewOf(s.view);
@@ -83,11 +81,8 @@ function SafetyPage() {
             : "Weighted national estimates, CPSC NEISS: emergency-department-treated consumer-product injuries."
         }
       >
-        <div className="space-y-3">
-          <SafetyTabs mode="landing" active={view} onSelect={selectView} />
-          <SafetyTabPanel mode="landing" active={view}>
-            {view === "reports" ? <SaferProductsReports /> : <NeissEstimates />}
-          </SafetyTabPanel>
+        <div className="min-w-0">
+          {view === "reports" ? <SaferProductsReports /> : <NeissEstimates />}
         </div>
       </AppShell>
     );
@@ -137,9 +132,8 @@ function SafetyPage() {
     // The caveat applies to every summed count, so it is stated once in full above the cards.
     const summed = agencyCards.some((c) => c.summed);
     body = (
-      <div className="space-y-4">
-        <SafetyTabs mode="landing" active="overview" onSelect={selectView} />
-        <SafetyTabPanel mode="landing" active="overview" className="space-y-6">
+      <SectionHub section="safety">
+        <div className="space-y-6">
           <DailyInsightCard section="safety" />
           <SafetyIntelligence />
           <SafetyRecallTrends />
@@ -153,24 +147,10 @@ function SafetyPage() {
                 ? "Counts add up each agency's collections (rows across separate datasets and snapshots), so one recall or notice can be counted more than once."
                 : undefined
             }
-            items={[
-              ...agencyCards,
-              {
-                key: "signals",
-                label: "Mass-tort product signals",
-                note: "MDL litigation next to FDA adverse events, recalls and NHTSA complaints",
-                link: { to: "/safety/signals" },
-              },
-              {
-                key: "list",
-                label: "All safety collections",
-                note: "Browse recalls, notices, approvals and product classifications",
-                link: { to: "/safety", search: { view: "list" } },
-              },
-            ]}
+            items={agencyCards}
           />
-        </SafetyTabPanel>
-      </div>
+        </div>
+      </SectionHub>
     );
   } else {
     body = (
@@ -200,17 +180,11 @@ function SafetyPage() {
   return (
     <AppShell
       breadcrumbs={crumbs}
-      title={
-        s.ds
-          ? safetyKind(s.ds)
-          : agency
-            ? `${agency} safety records`
-            : "Product safety & regulatory watch"
-      }
+      title={s.ds ? safetyKind(s.ds) : agency ? `${agency} safety records` : "Products & safety"}
       description={
         s.ds || agency
           ? "Browse recalls, safety notices and product classifications by agency."
-          : "Automated trend and anomaly flags across agency safety records, then every collection by agency."
+          : "Recalls, adverse events, injury estimates, consumer reports, approvals and product signals, with automated trend and anomaly flags and every collection by agency."
       }
     >
       {body}

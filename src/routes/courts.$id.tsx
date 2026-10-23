@@ -56,12 +56,19 @@ function Page() {
   const type = String(
     raw?.["type"] ?? cells["type"] ?? fact("type") ?? view.subtitle?.split(" · ")[0] ?? "Court",
   );
+  // Courts & judges › <state> (the court directory narrowed to this court's system and state) › <court>.
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "States & courts", to: "/" },
+    { label: "Courts", to: "/courts" },
   ];
   if (state)
-    crumbs.push({ label: state.name, to: "/places/" + state.usps, search: { tab: "courts" } });
-  else crumbs.push({ label: "Courts", to: "/courts" });
+    crumbs.push({
+      label: state.name,
+      to: "/courts",
+      search:
+        system === "Federal" || system === "State"
+          ? { system, state: state.usps }
+          : { state: state.usps },
+    });
   const withheld = view.links.filter((link) => !courtLinkCompatible(link, system)).length;
   return (
     <EntityPage

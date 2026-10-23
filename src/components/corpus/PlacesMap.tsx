@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -45,7 +45,11 @@ const DESTINATIONS = [
 ];
 const RANKED = STATES.map((s) => s.fips);
 
-export function PlacesMap({ home }: { home?: boolean | undefined }) {
+/**
+ * The national map. On "/" it is the Overview (its briefing is passed as `after`); on /places it is the Places
+ * section's Map tab. Both keep the same metric selector, layers, readout and data table.
+ */
+export function PlacesMap({ home, after }: { home?: boolean | undefined; after?: ReactNode }) {
   const atlas = useAtlas();
   const corpus = useCorpus();
   const navigate = useNavigate();
@@ -159,13 +163,13 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
 
   return (
     <AppShell
-      breadcrumbs={
+      breadcrumbs={[]}
+      title={home ? "Overview" : "Places"}
+      description={
         home
-          ? [{ label: "States & courts" }]
-          : [{ label: "Home", to: "/" }, { label: "States & courts" }]
+          ? "The national map of courts, litigation, law, enforcement and Census figures, with a briefing across the platform below it."
+          : "States, counties and cities: shade the map by a metric, then open a state for its courts, law, litigation and figures."
       }
-      title="States & courts"
-      description="Find statutes, courts, judges and practical research resources by jurisdiction."
     >
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
@@ -536,6 +540,7 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
           ) : null}
         </aside>
       </div>
+      {after ? <div className="mt-6">{after}</div> : null}
     </AppShell>
   );
 }

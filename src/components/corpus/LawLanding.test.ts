@@ -2,7 +2,7 @@ import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DatasetInfo } from "@/lib/external/catalog.functions";
-import { LawLanding } from "./LawLanding";
+import { FederalLawCollections, LawLanding } from "./LawLanding";
 
 const mocks = vi.hoisted(() => ({ links: [] as Record<string, unknown>[] }));
 vi.mock("@tanstack/react-router", () => ({
@@ -30,6 +30,8 @@ const directory = (options: { value: string; label: string }[]) =>
   });
 const render = (datasets: DatasetInfo[] = []) =>
   renderToStaticMarkup(createElement(LawLanding, { datasets }));
+const renderFederal = (datasets: DatasetInfo[] = []) =>
+  renderToStaticMarkup(createElement(FederalLawCollections, { datasets }));
 const agencyLink = (name: string) =>
   mocks.links.find((link) => String(link["aria-label"]).endsWith(name));
 const federalLink = (group: string) =>
@@ -70,7 +72,7 @@ describe("law landing recorded destinations", () => {
   });
 
   it("opens the sole recorded available collection for its actual law group", () => {
-    render([dataset("public_laws"), dataset("federal_register_history")]);
+    renderFederal([dataset("public_laws"), dataset("federal_register_history")]);
     expect(federalLink("statutes")).toMatchObject({
       to: "/law",
       search: { scope: "federal", group: "statutes", ds: "public_laws" },
@@ -81,7 +83,7 @@ describe("law landing recorded destinations", () => {
   });
 
   it("uses the group browse route for multiple, unavailable or unknown collections", () => {
-    const html = render([
+    const html = renderFederal([
       dataset("federal_regulations_titles"),
       dataset("federal_regulations_sections"),
       dataset("public_laws", { ready: false }),
@@ -95,7 +97,7 @@ describe("law landing recorded destinations", () => {
   });
 
   it("browses agencies for notices instead of opening unrelated court reference websites or an empty group", () => {
-    const html = render([
+    const html = renderFederal([
       dataset("federal", { label: "Federal court websites and legal reference resources" }),
     ]);
     expect(
@@ -113,7 +115,7 @@ describe("law landing recorded destinations", () => {
 
   it("shows metadata loading and failure without pretending a direct destination is recorded", () => {
     const pending = renderToStaticMarkup(createElement(LawLanding, { metadataState: "loading" }));
-    expect(pending).toContain("Loading collection and agency shortcuts");
+    expect(pending).toContain("Loading agency shortcuts");
     const failed = renderToStaticMarkup(createElement(LawLanding, { metadataState: "error" }));
     expect(failed).toContain('role="alert"');
     expect(failed).toContain("Retry shortcut metadata");

@@ -48,16 +48,13 @@ function Page() {
         .map((s) => [s.usps, s]),
     ).values(),
   ];
+  // Courts & judges › Judges › <state> (the judge directory filtered to the state exactly as recorded) › <judge>.
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "States & courts", to: "/" },
+    { label: "Judges", to: "/judges" },
   ];
-  if (states.length === 1)
-    crumbs.push({
-      label: states[0]!.name,
-      to: "/places/" + states[0]!.usps,
-      search: { tab: "judges" },
-    });
-  else crumbs.push({ label: "Judicial profiles", to: "/judges" });
+  const recorded = rawStates.filter((s): s is string => typeof s === "string");
+  if (states.length === 1 && recorded.includes(states[0]!.name))
+    crumbs.push({ label: states[0]!.name, to: "/judges", search: { state: states[0]!.name } });
   return (
     <EntityPage
       dataset="judges"

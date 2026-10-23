@@ -1,7 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
-import { LawLanding } from "@/components/corpus/LawLanding";
+import { HubLinks, SectionHub } from "@/components/atlas/hub/SectionHub";
+import { FederalLawCollections, LawLanding } from "@/components/corpus/LawLanding";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid, type FolderItem } from "@/components/corpus/FolderGrid";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
@@ -33,7 +34,11 @@ export const Route = createFileRoute("/law")({
     state: str(s["state"]),
     group: str(s["group"]),
   }),
-  head: () => pageHead("Law & regulation", "Browse law by jurisdiction."),
+  head: () =>
+    pageHead(
+      "Law & government",
+      "Federal and state law, legislation and Congress, rulemaking, time limits and agencies.",
+    ),
   beforeLoad: ({ search }) => {
     if (search.view === "tx-code") {
       throw redirect({ to: "/law/codes/$state", params: { state: "TX" }, search: { q: "" } });
@@ -42,7 +47,6 @@ export const Route = createFileRoute("/law")({
   component: LawPage,
 });
 
-const FED_GROUPS: LawGroup[] = ["statutes", "regulations", "register", "notices", "other"];
 const stName = (c: string) => (c === "FEDERAL" ? "Federal" : (stateByUsps.get(c)?.name ?? c));
 
 function LawPage() {
@@ -76,13 +80,13 @@ function LawPage() {
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
     { label: "Home", to: "/" },
-    { label: "Law & regulation", to: "/law" },
+    { label: "Law & government", to: "/law" },
   ];
   const scopeLabel =
     s.scope === "federal"
-      ? "Federal"
+      ? "Federal law"
       : s.scope === "states"
-        ? "States"
+        ? "State law"
         : s.scope === "reference"
           ? "Reference tools"
           : undefined;
@@ -111,11 +115,13 @@ function LawPage() {
   const savedLawError = datasets.error;
   const err = s.scope === "states" ? stateSources.error : savedLawError;
   const landing = (
-    <LawLanding
-      datasets={lawDs}
-      metadataState={datasets.error ? "error" : datasets.isLoading ? "loading" : "ready"}
-      onRetry={() => void datasets.refetch()}
-    />
+    <SectionHub section="law">
+      <LawLanding
+        datasets={lawDs}
+        metadataState={datasets.error ? "error" : datasets.isLoading ? "loading" : "ready"}
+        onRetry={() => void datasets.refetch()}
+      />
+    </SectionHub>
   );
   if (!s.scope && !s.ds && !s.view) body = landing;
   else if (err) body = <ExternalError error={err} />;
@@ -138,17 +144,36 @@ function LawPage() {
   } else if (s.scope === "federal") {
     body = (
       <div className="space-y-5">
-        <FolderGrid
-          title="Federal record sets"
-          items={FED_GROUPS.map((g) => ({
-            key: g,
-            label: LAW_GROUP_LABELS[g],
-            count: lawDs
-              .filter((d) => lawGroup(d.id) === g)
-              .reduce((a, d) => a + (d.records ?? 0), 0),
-            link: { to: "/law", search: { scope: "federal", group: g } },
-          }))}
+        <HubLinks
+          title="Federal codes"
+          links={[
+            {
+              to: "/law/uscode",
+              label: "United States Code",
+              description:
+                "Official text from the Law Revision Counsel, title by title, with enacting and amending laws.",
+              counts: [
+                { dataset: "us_code_titles", label: "titles" },
+                { dataset: "us_code_sections", label: "sections" },
+              ],
+            },
+            {
+              to: "/law/cfr",
+              label: "Code of Federal Regulations",
+              description:
+                "Full current eCFR text of every section, with change history and the issuing agencies.",
+              counts: [{ dataset: "ecfr_sections_full", label: "sections" }],
+            },
+            {
+              to: "/law",
+              search: { scope: "federal", ds: "public_laws_enacted" },
+              label: "Public laws",
+              description: "Public laws enacted, from the Statutes at Large and slip laws.",
+              counts: [{ dataset: "public_laws_enacted", label: "public laws" }],
+            },
+          ]}
         />
+        <FederalLawCollections datasets={lawDs} />
       </div>
     );
   } else if (s.scope === "reference") {
@@ -210,7 +235,36 @@ function LawPage() {
     );
   } else if (!s.state) {
     body = (
-      <div className="space-y-3">
+      <div className="space-y-4">
+        <HubLinks
+          title="State law across the states"
+          links={[
+            {
+              to: "/law/codes",
+              label: "State codes",
+              description: "Read each state's statutes title by title, chapter by chapter.",
+            },
+            {
+              to: "/law/constitutions",
+              label: "State constitutions",
+              description: "Article and section text from the official publishers.",
+              counts: [{ dataset: "state_constitution_sections", label: "sections" }],
+            },
+            {
+              to: "/law/regulations",
+              label: "State administrative codes",
+              description: "Titles, agencies and chapters as listed by each official publisher.",
+              counts: [{ dataset: "state_regulation_index", label: "entries" }],
+            },
+            {
+              to: "/data/court_rule_sections",
+              label: "Court rules",
+              description:
+                "Court rules rule by rule from official sources; each court's own rules are on its court page.",
+              counts: [{ dataset: "court_rule_sections", label: "rules" }],
+            },
+          ]}
+        />
         <p className="text-[13px] text-muted-foreground">
           Choose a state to browse its official sources and saved statutes.
         </p>
@@ -263,15 +317,20 @@ function LawPage() {
     ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label)
     : s.state
       ? `${stName(s.state)} law`
-      : (scopeLabel ?? "Law & regulation");
+      : (scopeLabel ?? "Law & government");
   return (
     <AppShell
       breadcrumbs={crumbs}
       title={title}
-      {...(s.scope === "states"
+      {...(s.ds || s.state || s.group
         ? {}
         : {
-            description: "Browse law by jurisdiction.",
+            description:
+              s.scope === "federal"
+                ? "The United States Code, the Code of Federal Regulations, public laws and the federal record sets."
+                : s.scope === "states"
+                  ? "State codes, constitutions, administrative codes and court rules, and each state's official law sources."
+                  : "Federal and state law, legislation and Congress, rulemaking, time limits and agencies, from the official publishers.",
           })}
     >
       {body}

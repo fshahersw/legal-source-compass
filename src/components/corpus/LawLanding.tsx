@@ -1,14 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  BookOpen,
-  Building2,
-  Clock3,
-  FileText,
-  LibraryBig,
-  Scale,
-  Activity,
-} from "lucide-react";
+import { ArrowRight, Building2, FileText, LibraryBig, MapPinned, Scale } from "lucide-react";
 import { AgencyMark, StateMark } from "./EntityArtwork";
 import { STATES } from "@/lib/corpus/geo";
 import type { DatasetInfo } from "@/lib/external/catalog.functions";
@@ -42,6 +33,91 @@ const federal = [
     icon: Building2,
   },
 ];
+
+/**
+ * Federal record sets on Law & government › Federal law: one card per law group, opening the group's only available
+ * collection directly when exactly one is recorded, the group otherwise, and the agency directory for notices when
+ * no notice collection exists.
+ */
+export function FederalLawCollections({ datasets = [] }: { datasets?: readonly DatasetInfo[] }) {
+  const other = datasets.filter((d) => lawGroup(d.id) === "other").length;
+  return (
+    <section className="resource-panel" aria-label="Federal record sets">
+      <div className="research-band">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <LibraryBig className="size-4" aria-hidden />
+          Federal record sets
+        </h2>
+        <Link
+          to="/law"
+          search={{ view: "list" }}
+          className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
+        >
+          All collections →
+        </Link>
+      </div>
+      <div className="grid gap-px bg-border md:grid-cols-2 xl:grid-cols-4">
+        {federal.map(({ group, title, description, icon: Icon }) => {
+          const available = datasets.filter(
+            (dataset) => lawGroup(dataset.id) === group && dataset.ready === true,
+          );
+          const destination = available.length === 1 ? available[0] : undefined;
+          const browseAgencies = group === "notices" && available.length === 0;
+          return (
+            <Link
+              key={group}
+              {...(browseAgencies
+                ? { to: "/agencies" as const, search: { q: "" } }
+                : {
+                    to: "/law" as const,
+                    search: {
+                      scope: "federal",
+                      group,
+                      ...(destination ? { ds: destination.id } : {}),
+                    },
+                  })}
+              aria-label={browseAgencies ? "Browse agencies for published notices" : title}
+              className="group flex min-h-24 items-center gap-3 bg-surface p-4 transition-colors hover:bg-[var(--blue-tint)]"
+            >
+              <span className="resource-icon !size-10">
+                <Icon className="size-5" strokeWidth={1.65} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">{title}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                  {destination
+                    ? datasetDisplayName(destination.id, destination.label)
+                    : description}
+                </span>
+                <span className="mt-1 block text-[11px] text-primary">
+                  {browseAgencies
+                    ? "Browse agencies"
+                    : destination
+                      ? "Open collection"
+                      : "Browse collections"}
+                </span>
+              </span>
+              <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden />
+            </Link>
+          );
+        })}
+      </div>
+      {other ? (
+        <p className="m-0 border-t border-border bg-surface px-4 py-2 text-xs text-muted-foreground">
+          Other federal collections ({other}):{" "}
+          <Link
+            to="/law"
+            search={{ scope: "federal", group: "other" }}
+            className="text-primary underline"
+          >
+            browse
+          </Link>
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 const agencies = [
   { name: "Food and Drug Administration", short: "FDA", subject: "Food, drugs & devices" },
   { name: "Environmental Protection Agency", short: "EPA", subject: "Environmental rules" },
@@ -52,6 +128,11 @@ const agencies = [
   { name: "Justice Department", short: "Justice", subject: "Federal legal resources" },
   { name: "Transportation Department", short: "Transport", subject: "Transportation rules" },
 ];
+
+/**
+ * The lower part of the Law & government overview: agency shortcuts and a way into each state's law. The sub-areas
+ * themselves (federal law, state law, legislation, rulemaking, time limits, agencies) are the section hub above it.
+ */
 export function LawLanding({
   datasets = [],
   metadataState = "ready",
@@ -68,23 +149,8 @@ export function LawLanding({
   );
   return (
     <div className="space-y-4">
-      <Link
-        to="/law/monitoring"
-        search={{ view: "patterns", page: 1, dateBasis: "detected" }}
-        className="flex items-center gap-3 rounded-md border border-border bg-surface p-3 transition-colors hover:bg-muted/30"
-      >
-        <Activity className="size-5 shrink-0 text-primary" aria-hidden />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">Regulatory intelligence</span>
-          <span className="mt-1 block text-xs text-muted-foreground">
-            Recall patterns, repeat-recall firms, multi-firm clusters, complaint types, FDA
-            analytics and source changes.
-          </span>
-        </span>
-        <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-      </Link>
       {metadataState === "loading" ? (
-        <p className="text-xs text-muted-foreground">Loading collection and agency shortcuts…</p>
+        <p className="text-xs text-muted-foreground">Loading agency shortcuts…</p>
       ) : metadataState === "error" ? (
         <p role="alert" className="text-xs text-muted-foreground">
           Shortcut metadata could not be refreshed. Browse links remain available.{" "}
@@ -93,102 +159,10 @@ export function LawLanding({
           </button>
         </p>
       ) : null}
-      <section className="resource-panel" aria-label="Browse legal authorities">
-        <div className="research-band">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <BookOpen className="size-4" />
-            Law & regulation
-          </h2>
-          <Link
-            to="/law"
-            search={{ view: "list" }}
-            className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
-          >
-            All collections →
-          </Link>
-        </div>
-        <div className="grid gap-px bg-border md:grid-cols-2 xl:grid-cols-3">
-          {federal.map(({ group, title, description, icon: Icon }) => {
-            const available = datasets.filter(
-              (dataset) => lawGroup(dataset.id) === group && dataset.ready === true,
-            );
-            const destination = available.length === 1 ? available[0] : undefined;
-            const browseAgencies = group === "notices" && available.length === 0;
-            return (
-              <Link
-                key={group}
-                {...(browseAgencies
-                  ? { to: "/agencies" as const, search: { q: "" } }
-                  : {
-                      to: "/law" as const,
-                      search: {
-                        scope: "federal",
-                        group,
-                        ...(destination ? { ds: destination.id } : {}),
-                      },
-                    })}
-                aria-label={browseAgencies ? "Browse agencies for published notices" : title}
-                className="group flex min-h-24 items-center gap-3 bg-surface p-4 transition-colors hover:bg-[var(--blue-tint)]"
-              >
-                <span className="resource-icon !size-10">
-                  <Icon className="size-5" strokeWidth={1.65} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold">{title}</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                    {destination
-                      ? datasetDisplayName(destination.id, destination.label)
-                      : description}
-                  </span>
-                  <span className="mt-1 block text-[11px] text-primary">
-                    {browseAgencies
-                      ? "Browse agencies"
-                      : destination
-                        ? "Open collection"
-                        : "Browse collections"}
-                  </span>
-                </span>
-                <ArrowRight className="size-3.5 text-muted-foreground" />
-              </Link>
-            );
-          })}
-          <Link
-            to="/law/codes"
-            search={{ q: "" }}
-            className="flex min-h-24 items-center gap-3 bg-surface p-4 hover:bg-[var(--blue-tint)]"
-          >
-            <span className="resource-icon !size-10">
-              <BookOpen className="size-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold">State statutes</span>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Read titles, chapters and sections
-              </span>
-            </span>
-            <ArrowRight className="size-3.5 text-muted-foreground" />
-          </Link>
-          <Link
-            to="/limitations"
-            className="flex min-h-24 items-center gap-3 bg-surface p-4 hover:bg-[var(--blue-tint)]"
-          >
-            <span className="resource-icon !size-10">
-              <Clock3 className="size-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold">Deadline assessment</span>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Cited rules and case-specific exceptions
-              </span>
-            </span>
-            <ArrowRight className="size-3.5 text-muted-foreground" />
-          </Link>
-        </div>
-      </section>
       <section className="resource-panel" aria-label="Agency shortcuts">
         <div className="research-band">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
-            <Building2 className="size-4" />
+            <Building2 className="size-4" aria-hidden />
             Regulatory agencies
           </h2>
           <Link
@@ -220,7 +194,7 @@ export function LawLanding({
                     {agency ? a.subject : "Browse agency directory"}
                   </span>
                 </span>
-                <ArrowRight className="size-3 text-muted-foreground" />
+                <ArrowRight className="size-3 text-muted-foreground" aria-hidden />
               </Link>
             );
           })}
@@ -228,12 +202,16 @@ export function LawLanding({
       </section>
       <section className="resource-panel" aria-label="State law shortcuts">
         <div className="research-band">
-          <h2 className="text-sm font-semibold">State law & court rules</h2>
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <MapPinned className="size-4" aria-hidden />
+            Law by state
+          </h2>
           <Link
-            to="/"
+            to="/law"
+            search={{ scope: "states" }}
             className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
           >
-            Open map →
+            State law →
           </Link>
         </div>
         <div className="grid gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
@@ -253,6 +231,13 @@ export function LawLanding({
             ))}
         </div>
       </section>
+      <p className="m-0 text-xs text-muted-foreground">
+        Every law collection in one list:{" "}
+        <Link to="/law" search={{ view: "list" }} className="text-primary underline">
+          all law collections
+        </Link>
+        .
+      </p>
     </div>
   );
 }

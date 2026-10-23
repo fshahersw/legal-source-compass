@@ -1,72 +1,31 @@
+import { Link } from "@tanstack/react-router";
+import { BadgeDollarSign } from "lucide-react";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
+import { SectionHub } from "@/components/atlas/hub/SectionHub";
 import {
-  FileSearch,
-  FileText,
-  GitMerge,
-  Handshake,
-  HardHat,
-  Landmark,
-  ListChecks,
-  MessageSquareWarning,
-  ShieldAlert,
-  UserX,
-} from "lucide-react";
-import { RulemakingActivity } from "@/components/rulemaking/RulemakingActivity";
+  DEFAULT_ENFORCEMENT_AGENCY,
+  ENFORCEMENT_AGENCIES,
+  type EnforcementAgency,
+  type EnforcementSearch,
+} from "@/lib/atlas/legacyRoutes";
 import { cn } from "@/lib/utils";
+import { ActionsPanel } from "./actions/ActionsSection";
 import { ConsumerComplaints } from "./ConsumerComplaints";
 import { CpscRecalls } from "./CpscRecalls";
 import { EnforcementSources } from "./EnforcementSources";
 import { ExclusionsSearch } from "./extra/ExclusionsSearch";
 import { EpaEnforcement } from "./EpaEnforcement";
-import { OshaEnforcement } from "./OshaEnforcement";
-import { SettlementNotices } from "./SettlementNotices";
-import { OversightReports } from "./oversight/OversightReports";
 import { FtcMergerReview } from "./FtcMergerReview";
+import { OshaEnforcement } from "./OshaEnforcement";
+import { OversightReports } from "./oversight/OversightReports";
 
-export type EnforcementTab =
-  | "epa"
-  | "rulemaking"
-  | "cpsc"
-  | "cfpb"
-  | "osha"
-  | "settlements"
-  | "exclusions"
-  | "oversight"
-  | "merger"
-  | "sources";
-export type EnforcementSearch = { tab?: EnforcementTab; state?: string };
+export type { EnforcementSearch };
 
-const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
-  { id: "epa", label: "EPA enforcement", Icon: Landmark },
-  { id: "rulemaking", label: "Federal rulemaking", Icon: FileText },
-  { id: "cpsc", label: "CPSC recalls", Icon: ShieldAlert },
-  { id: "cfpb", label: "Consumer complaints (CFPB)", Icon: MessageSquareWarning },
-  { id: "osha", label: "Workplace safety (OSHA)", Icon: HardHat },
-  { id: "settlements", label: "Settlement notices", Icon: Handshake },
-  { id: "exclusions", label: "Exclusions", Icon: UserX },
-  { id: "oversight", label: "Oversight reports", Icon: FileSearch },
-  { id: "merger", label: "Merger review (HSR)", Icon: GitMerge },
-  { id: "sources", label: "Agency data sources", Icon: ListChecks },
-];
-
-/** URL search for /law/enforcement; anything unrecognised is dropped rather than guessed. */
-export function normalizeEnforcementSearch(raw: Record<string, unknown>): EnforcementSearch {
-  const out: EnforcementSearch = {};
-  if (
-    raw["tab"] === "rulemaking" ||
-    raw["tab"] === "cpsc" ||
-    raw["tab"] === "cfpb" ||
-    raw["tab"] === "osha" ||
-    raw["tab"] === "settlements" ||
-    raw["tab"] === "exclusions" ||
-    raw["tab"] === "oversight" ||
-    raw["tab"] === "merger" ||
-    raw["tab"] === "sources"
-  )
-    out.tab = raw["tab"];
-  if (typeof raw["state"] === "string" && /^[A-Z]{2}$/.test(raw["state"])) out.state = raw["state"];
-  return out;
-}
-
+/**
+ * /enforcement: the section's tabs (Overview, Actions by agency, Exclusions, Oversight reports, Merger review, Agency
+ * data sources) are the shell's tab strip (`?tab=`); Actions by agency has one agency selector (`?agency=`). Rulemaking
+ * moved to Law & government and settlements to Litigation (the former addresses redirect there).
+ */
 export function EnforcementPage({
   search,
   onSearch,
@@ -74,68 +33,93 @@ export function EnforcementPage({
   search: EnforcementSearch;
   onSearch: (next: EnforcementSearch) => void;
 }) {
-  const tab = search.tab ?? "epa";
+  switch (search.tab) {
+    case "actions":
+      return (
+        <AgencyActions
+          agency={search.agency ?? DEFAULT_ENFORCEMENT_AGENCY}
+          state={search.state}
+          onState={(state) =>
+            onSearch({ tab: "actions", agency: "epa", ...(state ? { state } : {}) })
+          }
+        />
+      );
+    case "exclusions":
+      return <ExclusionsSearch />;
+    case "oversight":
+      return <OversightReports />;
+    case "merger":
+      return <FtcMergerReview />;
+    case "sources":
+      return <EnforcementSources />;
+    default:
+      return (
+        <SectionHub section="enforcement">
+          <DailyInsightCard section="enforcement" />
+        </SectionHub>
+      );
+  }
+}
+
+/** Agencies whose figures are the publisher's own per release (never summed across releases). */
+const PUBLISHED_ACTIONS = new Set<EnforcementAgency>(["doj", "ftc", "sec", "frb"]);
+
+function AgencyActions({
+  agency,
+  state,
+  onState,
+}: {
+  agency: EnforcementAgency;
+  state: string | undefined;
+  onState: (state: string | undefined) => void;
+}) {
+  const current = ENFORCEMENT_AGENCIES.find((a) => a.id === agency)!;
   return (
-    <div className="space-y-3">
-      <div
-        role="tablist"
-        aria-label="Enforcement sources"
-        className="flex flex-wrap gap-1 rounded-md border border-border bg-surface p-1"
-      >
-        {TABS.map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            id={`enforcement-tab-${id}`}
-            aria-selected={tab === id}
-            aria-controls={`enforcement-panel-${id}`}
-            onClick={() =>
-              onSearch(id === "epa" ? (search.state ? { state: search.state } : {}) : { tab: id })
-            }
-            className={cn(
-              "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-              tab === id
-                ? "bg-primary font-semibold text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted",
-            )}
-          >
-            <Icon className="size-3.5" aria-hidden />
-            {label}
-          </button>
-        ))}
+    <div className="min-w-0 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <nav
+          aria-label="Agency"
+          className="flex max-w-full gap-1 overflow-x-auto rounded-md border border-border bg-surface p-1"
+        >
+          {ENFORCEMENT_AGENCIES.map((a) => (
+            <Link
+              key={a.id}
+              to="/enforcement"
+              search={{ tab: "actions", agency: a.id }}
+              replace
+              resetScroll={false}
+              title={a.name}
+              aria-current={a.id === agency ? "page" : undefined}
+              className={cn(
+                "shrink-0 whitespace-nowrap rounded px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+                a.id === agency
+                  ? "bg-primary font-semibold text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {a.label}
+            </Link>
+          ))}
+        </nav>
+        {PUBLISHED_ACTIONS.has(agency) ? (
+          <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <BadgeDollarSign className="size-3.5" aria-hidden />
+            Figures are as stated by the publisher, never summed across releases
+          </span>
+        ) : null}
       </div>
-      <div
-        role="tabpanel"
-        id={`enforcement-panel-${tab}`}
-        aria-labelledby={`enforcement-tab-${tab}`}
-        className="min-w-0"
-      >
-        {tab === "epa" ? (
-          <EpaEnforcement
-            state={search.state}
-            onState={(state) => onSearch(state ? { state } : {})}
-          />
-        ) : tab === "rulemaking" ? (
-          <RulemakingActivity />
-        ) : tab === "cfpb" ? (
-          <ConsumerComplaints />
-        ) : tab === "osha" ? (
-          <OshaEnforcement />
-        ) : tab === "settlements" ? (
-          <SettlementNotices />
-        ) : tab === "exclusions" ? (
-          <ExclusionsSearch />
-        ) : tab === "oversight" ? (
-          <OversightReports />
-        ) : tab === "merger" ? (
-          <FtcMergerReview />
-        ) : tab === "sources" ? (
-          <EnforcementSources />
-        ) : (
-          <CpscRecalls />
-        )}
-      </div>
+      <h2 className="sr-only">{current.name}</h2>
+      {agency === "doj" || agency === "ftc" || agency === "sec" || agency === "frb" ? (
+        <ActionsPanel view={agency} />
+      ) : agency === "epa" ? (
+        <EpaEnforcement state={state} onState={onState} />
+      ) : agency === "osha" ? (
+        <OshaEnforcement />
+      ) : agency === "cpsc" ? (
+        <CpscRecalls />
+      ) : (
+        <ConsumerComplaints />
+      )}
     </div>
   );
 }

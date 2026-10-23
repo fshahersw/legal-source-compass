@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, Landmark } from "lucide-react";
+import { useId, useState } from "react";
 import type { MemberHit } from "@/lib/external/congressMembers";
 import { getStateDelegation } from "@/lib/external/congressMembers.functions";
 import { PartyChip } from "./MemberSearch";
@@ -63,6 +64,10 @@ export function StateDelegationPanel({ usps }: { usps: string }) {
   );
 }
 
+/** Groups longer than this show their first SHORT_LIST rows and a "Show all N" control. */
+const LONG_LIST = 12;
+const SHORT_LIST = 8;
+
 function Group({
   title,
   rows,
@@ -72,15 +77,19 @@ function Group({
   rows: MemberHit[];
   district?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const listId = useId();
   if (!rows.length) return null;
+  const long = rows.length > LONG_LIST;
+  const shown = long && !expanded ? rows.slice(0, SHORT_LIST) : rows;
   return (
     <div>
       <h3 className="m-0 mb-1 flex items-baseline justify-between gap-2 text-[11.5px] font-semibold">
         {title}
         <span className="font-mono font-normal text-muted-foreground">{rows.length}</span>
       </h3>
-      <ul className="m-0 list-none space-y-1 p-0">
-        {rows.map((m) => (
+      <ul id={listId} className="m-0 list-none space-y-1 p-0">
+        {shown.map((m) => (
           <li key={m.id} className="flex min-w-0 flex-wrap items-baseline gap-x-2">
             {district ? (
               <span className="w-[7.5rem] shrink-0 text-[10.5px] text-muted-foreground">
@@ -102,6 +111,17 @@ function Group({
           </li>
         ))}
       </ul>
+      {long ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={listId}
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1.5 text-[11px] font-medium text-primary hover:underline"
+        >
+          {expanded ? `Show the first ${SHORT_LIST}` : `Show all ${rows.length}`}
+        </button>
+      ) : null}
     </div>
   );
 }
