@@ -18,6 +18,7 @@ revisor's notes are dropped (annotations are not kept). The dark-green separator
 from __future__ import annotations
 
 import re
+import time
 import sys
 from pathlib import Path
 
@@ -161,6 +162,16 @@ def acquire(ctx):
         path = ([{"level": "title", "label": "Title", "number": title_no, "heading": title_name}] if title_no else [])
         path.append({"level": "chapter", "label": "Chapter", "number": chapter, "heading": chapter_name})
         fetched = ctx.get(CHAPTER_URL.format(chapter))
+        for wait in (10, 30, 60):
+            if "LoadChap.aspx" not in (fetched.final_url or ""):
+                break
+            # a chapter the revisor is still assembling is answered with a short LoadChap.aspx page (chapters 95 and 227
+            # on 2026-10-23): ask again later instead of reading it as a chapter with no sections
+            ctx.log(f"chapter {chapter}: the publisher answered with its loading page; asking again in {wait}s")
+            time.sleep(wait)
+            fetched = ctx.get(CHAPTER_URL.format(chapter))
+        if "LoadChap.aspx" in (fetched.final_url or ""):
+            raise RuntimeError(f"chapter {chapter}: the publisher kept answering with its loading page")
         sections = parse_chapter(fetched.body, chapter, run_date)
         if not sections:
             ctx.log(f"chapter {chapter}: no sections printed")
