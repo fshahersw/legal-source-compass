@@ -260,9 +260,10 @@ export function EnforcementCalendar() {
             }}
           />
         </div>
-        <label className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
-          Year
+        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+          <label htmlFor="lawviz-calendar-year">Year</label>
           <select
+            id="lawviz-calendar-year"
             className={control}
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
@@ -274,7 +275,7 @@ export function EnforcementCalendar() {
               </option>
             ))}
           </select>
-        </label>
+        </div>
       </div>
       <ChartFrame
         title={`Daily events, ${year}`}
@@ -363,9 +364,10 @@ export function EnforcementCalendar() {
           }}
           actions={
             data.series.length > 1 ? (
-              <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                Series
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <label htmlFor="lawviz-calendar-series">Series</label>
                 <select
+                  id="lawviz-calendar-series"
                   className={control}
                   value={overview.id}
                   onChange={(e) => setOverviewSeries(e.target.value)}
@@ -376,7 +378,7 @@ export function EnforcementCalendar() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
             ) : undefined
           }
           notes={[

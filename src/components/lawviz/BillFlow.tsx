@@ -259,9 +259,10 @@ export function BillFlow() {
         role="group"
         aria-label="Filter the bill-to-law flow"
       >
-        <label className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
-          Congress
+        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+          <label htmlFor="lawviz-bill-congress">Congress</label>
           <select
+            id="lawviz-bill-congress"
             className={control}
             value={String(filter.congress)}
             onChange={(e) =>
@@ -279,10 +280,11 @@ export function BillFlow() {
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
-          Policy area
+        </div>
+        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+          <label htmlFor="lawviz-bill-policy">Policy area</label>
           <select
+            id="lawviz-bill-policy"
             className={`${control} max-w-[18rem]`}
             value={filter.policy === "all" ? "\u0000all" : filter.policy}
             onChange={(e) =>
@@ -300,7 +302,7 @@ export function BillFlow() {
               </option>
             ))}
           </select>
-        </label>
+        </div>
       </div>
       <ChartFrame
         title="From bill to law"
@@ -342,7 +344,7 @@ export function BillFlow() {
             : []),
           ...(flow.lawWithoutPassage
             ? [
-                `${fmtInt(flow.lawWithoutPassage)} recorded as law have no chamber passage recorded; they end at “No chamber passage recorded”.`,
+                `${fmtInt(flow.lawWithoutPassage)} recorded as law have no chamber passage recorded; they end at “No passage recorded”.`,
               ]
             : []),
         ]}

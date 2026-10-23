@@ -164,7 +164,9 @@ $$;
 -- One atlas node as a compact array (the app's parseAtlasTuple reads the same positions).
 create or replace function lawviz.node_tuple(n lawviz.atlas_nodes) returns jsonb
 language sql immutable parallel safe set search_path = '' as $$
-  select jsonb_build_array(n.id, n.parent, n.kind, n.num, left(n.label, 140), n.sections, n.chars, n.recorded,
+  select jsonb_build_array(n.id, n.parent, n.kind, n.num,
+                           case when length(n.label) > 140 then left(n.label, 139) || '…' else n.label end,
+                           n.sections, n.chars, n.recorded,
                            n.last_change, n.median_year, n.children, n.status, n.ord)
 $$;
 

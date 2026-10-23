@@ -4,7 +4,7 @@
  * codes and text (introduced, reported, passed House/Senate, became law; vitiated passages excluded). Builds the
  * stage funnel for the current filters: every bill flows left to right through five columns and stops at the last
  * stage its record shows. Nothing is inferred: a bill whose introduction is not recorded is its own node, and the few
- * bills recorded as law with only one chamber's passage recorded flow from "Passed one chamber only" to "Became law".
+ * bills recorded as law with only one chamber's passage recorded flow from "One chamber only" to "Became law".
  */
 
 export type BillRow = {
@@ -141,20 +141,20 @@ const NODE_DEFS: Omit<StageNode, "value">[] = [
   {
     id: "not_reported",
     column: 1,
-    label: "No committee report recorded",
+    label: "No report recorded",
     reached: false,
     terminal: false,
   },
-  { id: "passed", column: 2, label: "Passed one or both chambers", reached: true, terminal: false },
+  { id: "passed", column: 2, label: "Passed a chamber", reached: true, terminal: false },
   {
     id: "no_passage",
     column: 2,
-    label: "No chamber passage recorded",
+    label: "No passage recorded",
     reached: false,
     terminal: true,
   },
   { id: "both", column: 3, label: "Passed both chambers", reached: true, terminal: false },
-  { id: "one_only", column: 3, label: "Passed one chamber only", reached: false, terminal: false },
+  { id: "one_only", column: 3, label: "One chamber only", reached: false, terminal: false },
   { id: "law", column: 4, label: "Became law", reached: true, terminal: true },
   { id: "not_law", column: 4, label: "Not enacted", reached: false, terminal: true },
 ];
