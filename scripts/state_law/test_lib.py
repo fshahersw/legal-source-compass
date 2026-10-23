@@ -71,6 +71,20 @@ class NormTests(unittest.TestCase):
         self.assertEqual(lib.classify_status(None, "[Reserved]")[0], "reserved")
         self.assertEqual(lib.classify_status("Renumbered as § 12-3-4.", None)[0], "renumbered")
         self.assertEqual(lib.classify_status("Definitions.", "In this chapter, repealed statutes mean ..."), (None, None))
+        # a catchline that merely starts with a marker word is not a marker
+        for heading in ("Transferred employees; rights.", "Reserved powers.", "Repealed laws; savings clause.",
+                        "Repealed Laws Not Revived.", "Sunset.", "Terminated employees, benefits."):
+            self.assertEqual(lib.classify_status(heading, None), (None, None), heading)
+        self.assertEqual(lib.classify_status("Reserved for future use.", None)[0], "reserved")
+        self.assertEqual(lib.classify_status("Expired July 1, 2020.", None)[0], "expired")
+        self.assertEqual(lib.classify_status("Limitations. [Repealed]", None), ("repealed", "[Repealed]"))
+
+    def test_xml_text_inline_and_instructions(self):
+        body = ('<section xmlns="https://code.dccouncil.us/schemas/dc-library" '
+                'xmlns:codify="https://code.dccouncil.us/schemas/codify"><num>1-1</num><para><num>(9)</num>'
+                '<text>for a violation of <cite path="x">§ 7-1201.01(11)</cite>— 1 year;</text>'
+                '<codify:repeal doc="D.C. Law 25-217"/></para><text>a<br/>b</text></section>').encode()
+        self.assertEqual(lib.xml_text(body), "1-1\n(9)\nfor a violation of § 7-1201.01(11)— 1 year;\na\nb")
 
     def test_html_text(self):
         html = b"<html><head><title>x</title><script>var a=1</script></head><body><p>A&nbsp;b <i>c</i></p><div>d<br>e</div></body></html>"

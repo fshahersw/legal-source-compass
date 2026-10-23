@@ -167,6 +167,99 @@ class MassachusettsAndMarylandTests(unittest.TestCase):
         self.assertEqual(md.parse_section(page), ("5–101", "A civil action shall be filed within three years."))
 
 
+class DistrictOfColumbiaTests(unittest.TestCase):
+    NS = ('xmlns="https://code.dccouncil.us/schemas/dc-library" xmlns:codify="https://code.dccouncil.us/schemas/codify" '
+          'xmlns:xi="http://www.w3.org/2001/XInclude"')
+
+    def test_section_text_status_and_pending_instructions(self):
+        dc = load("dc")
+        body = (f'<section {self.NS}><num>12-301</num><heading>Limitation of time.</heading>'
+                '<para><num>[(a)]</num><text>Except as provided:</text><para><num>(9)</num><text>for a violation of '
+                '<cite path="§7-1201.01|(11)">§ 7-1201.01(11)</cite>— 1 year;</text>'
+                '<codify:repeal doc="D.C. Law 25-217" path="§2162"/></para></para>'
+                '<para><prefix>Article</prefix><num>I</num><heading>Purposes.</heading><text>The purposes are:</text></para>'
+                '<table><tr><td>Not over $10,000</td><td>6%</td></tr></table>'
+                '<annotations><annotation type="History">Dec. 23, 1963, 77 Stat. 510</annotation>'
+                '<annotation type="Cross References">see § 9-315</annotation></annotations></section>').encode()
+        got = dc.parse_section(body, dt.date(2026, 10, 24))
+        self.assertEqual(got["text"].split("\n"), ["[(a)] Except as provided:", "(9) for a violation of § 7-1201.01(11)— 1 year;",
+                                                   "Article I Purposes.", "The purposes are:", "Not over $10,000 6%"])
+        self.assertEqual(got["history"], "Dec. 23, 1963, 77 Stat. 510")
+        self.assertIsNone(got["status"])
+        self.assertIn("D.C. Law 25-217", got["effective"]["note"])
+        rendered = lib.norm_ws(lib.render_text(body, "application/xml", "x.xml"))
+        self.assertTrue(lib.check_quote(rendered, got["text"]))
+
+    def test_reason_markers(self):
+        dc = load("dc")
+        today = dt.date(2026, 10, 24)
+
+        def parse(reason, text, placeholder=""):
+            attr = f' placeholder="{placeholder}"' if placeholder else ""
+            return dc.parse_section(f'<section {self.NS}{attr}><num>1-1</num><reason>{reason}</reason><heading>H.</heading>'
+                                    f'<text>{text}</text></section>'.encode(), today)
+
+        self.assertEqual(parse("Repealed", "Repealed.")["status"], "repealed")
+        self.assertEqual(parse("Recodified", "Recodified as § 1-2.")["status"], "renumbered")
+        future = parse("Applicable on January 1, 2027", "Applicable on January 1, 2027.", "Not Funded")
+        self.assertEqual((future["status"], future["effective"]["start"]), ("future_effective", "2027-01-01"))
+        self.assertEqual(parse("Not Funded", "Not Funded.", "Not Funded")["status"], "not_recorded")
+        # a <reason> that annotates an editorial substitution leaves an in-force text alone
+        self.assertIsNone(parse("Commissioner", "The Superintendent [Commissioner] may examine.")["status"])
+
+    def test_title_and_code_index(self):
+        dc = load("dc")
+        title, entries = dc.walk_title(f'<container {self.NS}><prefix>Title</prefix><num>12</num><heading>Right to Remedy.'
+                                       '</heading><container><prefix>Chapter</prefix><num>3</num><heading>Limitation.</heading>'
+                                       '<xi:include href="./sections/12-301.xml"/></container></container>'.encode())
+        self.assertEqual(title["number"], "12")
+        self.assertEqual(entries, [([{"level": "chapter", "label": "Chapter", "number": "3", "heading": "Limitation."}],
+                                    "sections/12-301.xml")])
+        titles, recency = dc.walk_code(f'<document {self.NS}><meta><recency through="2026-10-20"><law doc="D.C. Law 26-190"/>'
+                                       '</recency></meta><subheading>Division II. Judiciary.</subheading>'
+                                       '<xi:include href="./titles/12/index.xml"/></document>'.encode())
+        self.assertEqual(titles[0][0]["number"], "II")
+        self.assertEqual(recency, {"through": "2026-10-20", "law": "D.C. Law 26-190"})
+
+
+class HawaiiAndIdahoTests(unittest.TestCase):
+    def test_hi_section_history_and_repealed_pair(self):
+        hi = load("hi")
+        page = fetched("https://data.capitol.hawaii.gov/x/HRS_0657-0001.htm", (
+            '<html><body><div class="WordSection1"><p class="RegularParagraphs" align="center"><b>PART I. PERSONAL ACTIONS</b></p>'
+            '<p class="XNotesHeading">Case Notes</p><p class="XNotes">A note.</p>'
+            '<p class="RegularParagraphs"> <b>§657-1  Six years.</b> The following actions:</p>'
+            '<p class="oneParagraph"> (1) Actions on debts. [CC 1859, §1036; am L 1972, c 105, §1(a)]</p>'
+            '<p class="XNotesHeading">Case Notes</p><p class="XNotes">Dropped.</p></div></body></html>').encode())
+        got = hi.parse_section(page)
+        self.assertEqual((got["numbers"], got["heading"]), (["657-1"], "Six years."))
+        self.assertEqual(got["text"], "The following actions:\n(1) Actions on debts.")
+        self.assertEqual(got["history"], "CC 1859, §1036; am L 1972, c 105, §1(a)")
+        pair = hi.parse_section(fetched("https://x/HRS_0657-0016.htm", (
+            '<html><body><div class="WordSection1"><p class="RegularParagraphs"> <b>§§657-16 and 657-17  REPEALED.</b>'
+            '  L 1976, c 200, pt of §1.</p></div></body></html>').encode()))
+        self.assertEqual((pair["numbers"], pair["status"], pair["text"], pair["history"]),
+                         (["657-16", "657-17"], "repealed", "", "L 1976, c 200, pt of §1."))
+
+    def test_id_section(self):
+        idaho = load("id")
+        page = fetched("https://legislature.idaho.gov/statutesrules/idstat/Title5/T5CH2/SECT5-219", (
+            '<html><body><div class="pgbrk"><div style="text-align: center"><span>TITLE 5 </span></div>'
+            '<div style="text-align: center"><span>PROCEEDINGS IN CIVIL ACTIONS</span></div>'
+            '<div style="text-align: center"><span>CHAPTER 2 </span></div><div style="text-align: center"><span>LIMITATION OF ACTIONS</span></div>'
+            '<div style="text-align: justify"><span>5-219.&nbsp;&nbsp;<span style="text-transform: uppercase">Actions against officers.&nbsp;</span>'
+            'Within two (2) years:</span></div><div style="text-align: justify"><span>1.&nbsp;&nbsp;An action against a sheriff.</span></div>'
+            '<p></p><div style="text-align: justify"><span>History:</span></div>'
+            '<div style="text-align: justify"><span>[(5-219) C.C.P. 1881, sec. 159; am. 1971, ch. 180, sec. 1, p. 845.]</span></div>'
+            '</div></body></html>').encode())
+        got = idaho.parse_section(page)
+        self.assertEqual((got["number"], got["heading"]), ("5-219", "Actions against officers."))
+        self.assertEqual(got["text"], "Within two (2) years:\n1. An action against a sheriff.")
+        self.assertEqual(got["history"], "(5-219) C.C.P. 1881, sec. 159; am. 1971, ch. 180, sec. 1, p. 845.")
+        self.assertEqual([(h["level"], h["number"], h["heading"]) for h in got["headers"]],
+                         [("title", "5", "PROCEEDINGS IN CIVIL ACTIONS"), ("chapter", "2", "LIMITATION OF ACTIONS")])
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar"):

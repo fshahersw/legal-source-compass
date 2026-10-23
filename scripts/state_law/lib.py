@@ -197,9 +197,24 @@ def decode_bytes(body: bytes, encoding: str | None = None) -> str:
         return body.decode("cp1252", errors="replace")
 
 
+# inline XML elements (no line break around them) and namespaces whose elements are instructions, not text
+XML_INLINE = frozenset({"cite", "em", "strong", "u", "i", "b", "span", "sup", "sub", "a", "small", "term", "def"})
+XML_SKIP_NS = frozenset({"https://code.dccouncil.us/schemas/codify"})
+
+
+def xml_local(el) -> tuple[str, str]:
+    """(namespace, local name) of an ElementTree/lxml element tag ("" for comments and processing instructions)."""
+    tag = el.tag if isinstance(el.tag, str) else ""
+    if tag.startswith("{"):
+        ns, _, name = tag[1:].partition("}")
+        return ns, name
+    return "", tag
+
+
 def xml_text(body: bytes | str) -> str:
-    """Plain-text rendering of an XML document: element boundaries are line breaks, raw newlines inside text are
-    ordinary whitespace."""
+    """Plain-text rendering of an XML document: block element boundaries are line breaks, inline elements
+    (XML_INLINE) continue the line, <br/> breaks it, raw newlines inside text are ordinary whitespace, and elements in
+    XML_SKIP_NS (codification instructions) are left out."""
     from xml.etree import ElementTree as ET
 
     if isinstance(body, str):
@@ -209,12 +224,21 @@ def xml_text(body: bytes | str) -> str:
     BR = "\x1e"
 
     def walk(el: ET.Element) -> None:
-        out.append(BR)
-        if el.text:
-            out.append(el.text.replace("\n", " "))
-        for child in el:
-            walk(child)
-        out.append(BR)
+        ns, name = xml_local(el)
+        if ns in XML_SKIP_NS:
+            pass
+        elif name == "br":
+            out.append(BR)
+        else:
+            inline = name in XML_INLINE
+            if not inline:
+                out.append(BR)
+            if el.text:
+                out.append(el.text.replace("\n", " "))
+            for child in el:
+                walk(child)
+            if not inline:
+                out.append(BR)
         if el.tail:
             out.append(el.tail.replace("\n", " "))
 
@@ -480,12 +504,26 @@ def alias_patterns(aliases: Iterable[str], *, prefix: str | None = None, number:
     return (Pattern(regex, r"\1"),)
 
 
+# A marker word counts only when the heading/short body *is* the marker: the word is followed by the end, punctuation,
+# a number, or a word that introduces the marker's particulars ("Repealed by …", "Renumbered as …", "Expired July 1,
+# 2020"). "Transferred employees; rights." or "Reserved powers." are ordinary catchlines, not markers.
+_MARK_NEXT = (r"(?:\s*$|\s*[.,;:)\]\[(\u2014\u2013-]|\s+\d|\s+(?:by|as|to|from|under|eff\.?|effective|on|and|in|"
+              r"pursuant|per|with|see|at|until|after|before|for\s+future|(?:acts?|laws?)(?=\s*(?:\d|of\b|,))|l\.|"
+              r"sec\.?|section|pub\.?|stat\.?|ch\.?|chapter|art\.?|article|title|session|ord\.?|p\.\s?l\.|s\.\s?l\.|"
+              r"january|february|march|april|may|june|july|august|september|october|november|december|jan\.|feb\.|"
+              r"mar\.|apr\.|jun\.|jul\.|aug\.|sept?\.|oct\.|nov\.|dec\.)\b)")
+
+
+def _marker(words: str, tail: int) -> re.Pattern[str]:
+    return re.compile(rf"^\[?\(?\s*(?:{words})\b(?={_MARK_NEXT})[^\n]{{0,{tail}}}", re.I)
+
+
 _STATUS_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("renumbered", re.compile(r"^\[?\(?\s*(?:renumbered|redesignated)\b[^\n]{0,300}", re.I)),
-    ("transferred", re.compile(r"^\[?\(?\s*transferred\b[^\n]{0,300}", re.I)),
-    ("repealed", re.compile(r"^\[?\(?\s*(?:repealed|repealed and reserved)\b[^\n]{0,400}", re.I)),
-    ("reserved", re.compile(r"^\[?\(?\s*reserved\b[^\n]{0,200}", re.I)),
-    ("expired", re.compile(r"^\[?\(?\s*(?:expired|terminated|sunset(?:ted)?)\b[^\n]{0,300}", re.I)),
+    ("renumbered", _marker("renumbered|redesignated", 300)),
+    ("transferred", _marker("transferred", 300)),
+    ("repealed", _marker("repealed and reserved|repealed", 400)),
+    ("reserved", _marker("reserved", 200)),
+    ("expired", _marker("expired|terminated", 300)),
 )
 
 
