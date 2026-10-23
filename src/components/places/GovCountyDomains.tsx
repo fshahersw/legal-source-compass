@@ -105,7 +105,11 @@ export function GovCountyDomains({
             GSA&rsquo;s note) equals the Census name of the county exactly; no registry gives a
             county. {snapshotText(data.snapshot)}.
           </div>
-          <details className="group border-t border-border">
+          <details
+            key={area?.full ?? "no-area"}
+            open={matches.length === 0}
+            className="group border-t border-border"
+          >
             <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-xs font-medium hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring">
               <ChevronRight
                 className="size-3.5 transition-transform group-open:rotate-90"

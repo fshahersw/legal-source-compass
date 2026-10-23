@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, MapPin } from "lucide-react";
 import { StateCensusSection } from "@/components/places/census/StateCensusSection";
-import { StateSourcePanel } from "@/components/corpus/StateSourcePanel";
+import { StateSourcePanelWithRegistry } from "@/components/corpus/StateSourcePanelWithRegistry";
 import { StateMetricsPanel } from "@/components/states/StateMetricsPanel";
 import type { MergedStateSource } from "@/lib/atlas/stateSources";
 import type { CourtRow } from "@/lib/external/directoryTree";
@@ -225,7 +225,7 @@ export function StateOverviewTab(props: {
         title="Research resources"
         note="Official and library sources; commercial publishers and other states' pages are not listed"
       >
-        <StateSourcePanel
+        <StateSourcePanelWithRegistry
           key={usps}
           compact
           heading="Research resources"

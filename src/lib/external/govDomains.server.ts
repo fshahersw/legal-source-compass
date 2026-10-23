@@ -72,16 +72,25 @@ async function readPathEntries(): Promise<GovFacts[]> {
   });
 }
 
+/** Entry ids per read, so the request address stays short however many hosts are asked about. */
+const IDS_PER_READ = 80;
+
 async function readEntries(ids: string[]): Promise<Map<string, GovFacts>> {
   const out = new Map<string, GovFacts>();
-  if (!ids.length) return out;
-  const { rows } = await restGet<{ id: string; g: unknown }[]>(
-    `corpus_records?select=id,g:item->gov&dataset=eq.${GOV_DOMAINS_DATASET}&id=in.(${ids.map(enc).join(",")})&limit=${ids.length}`,
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += IDS_PER_READ) chunks.push(ids.slice(i, i + IDS_PER_READ));
+  const reads = await Promise.all(
+    chunks.map((chunk) =>
+      restGet<{ id: string; g: unknown }[]>(
+        `corpus_records?select=id,g:item->gov&dataset=eq.${GOV_DOMAINS_DATASET}&id=in.(${chunk.map(enc).join(",")})&limit=${chunk.length}`,
+      ),
+    ),
   );
-  for (const r of rows) {
-    const f = parseGovFacts(r.id, r.g);
-    if (f) out.set(f.id, f);
-  }
+  for (const { rows } of reads)
+    for (const r of rows) {
+      const f = parseGovFacts(r.id, r.g);
+      if (f) out.set(f.id, f);
+    }
   return out;
 }
 

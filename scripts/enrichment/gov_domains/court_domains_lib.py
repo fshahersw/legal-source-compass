@@ -10,6 +10,7 @@ title in another state, or equals only a short name, is listed apart and never m
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections import defaultdict
 
 NAME_WORD = re.compile(r"\bcourts?\b|\bjudiciary\b|\bjudicial\b", re.I)
@@ -21,8 +22,8 @@ OFFICE_WORD = re.compile(
 
 
 def norm(name: str) -> str:
-    """Case and spacing only (a typographic apostrophe is the plain one)."""
-    return re.sub(r"\s+", " ", name.replace("’", "'")).strip().rstrip(".").casefold()
+    """Case, spacing and Unicode composition only (a typographic apostrophe is the plain one)."""
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFC", name).replace("’", "'")).strip().rstrip(".").casefold()
 
 
 def publisher_names(gov: dict) -> list[tuple[str, str]]:

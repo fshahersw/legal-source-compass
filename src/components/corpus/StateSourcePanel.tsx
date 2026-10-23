@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUpRight, BookOpen, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import type { GovLookupResult } from "@/lib/external/govDomainsModel";
 import { GovEvidenceTag } from "./govEvidence";
-import { useGovEvidence } from "./useGovEvidence";
 import { hiddenCounts, type Hidden } from "@/components/places/state/resourceFilter";
 import type { MergedStateSource } from "@/lib/atlas/stateSources";
 import { filterResources, safeResourceHref } from "@/lib/corpus/resourcePresentation";
@@ -22,6 +22,8 @@ export function StateSourcePanel({
   compact = false,
   hidden = [],
   heading = "Laws & research resources",
+  registry,
+  onVisibleUrls,
 }: {
   rows: MergedStateSource[];
   state: string;
@@ -32,6 +34,10 @@ export function StateSourcePanel({
   /** Resources withheld from the list, with the reason (commercial publisher, or another state's host). */
   hidden?: Hidden<MergedStateSource>[] | undefined;
   heading?: string | undefined;
+  /** Government domain registry lookups by resource address; a listed host gets a quiet tag, an unlisted one nothing. */
+  registry?: ReadonlyMap<string, GovLookupResult> | undefined;
+  /** Told which addresses are on screen (after filtering and paging) so the caller can look them up. */
+  onVisibleUrls?: ((urls: string[]) => void) | undefined;
 }) {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
@@ -44,11 +50,10 @@ export function StateSourcePanel({
       ),
     [rows, q, category],
   );
-  // Which of the listed hosts the government domain registries list (a quiet tag; a host that is not listed gets none).
-  const evidence = useGovEvidence(
-    shown.slice(0, limit).map((row) => row.url),
-    !loading,
-  );
+  const visibleUrls = useMemo(() => shown.slice(0, limit).map((row) => row.url), [shown, limit]);
+  useEffect(() => {
+    onVisibleUrls?.(visibleUrls);
+  }, [visibleUrls, onVisibleUrls]);
   function reset() {
     setQ("");
     setCategory("");
@@ -144,7 +149,7 @@ export function StateSourcePanel({
                   </span>
                   <span className="flex min-w-0 items-center gap-1.5">
                     <span className="truncate text-[11px] text-muted-foreground">{row.domain}</span>
-                    <GovEvidenceTag result={evidence.get(row.url)} />
+                    <GovEvidenceTag result={registry?.get(row.url)} />
                   </span>
                 </span>
                 {resourceGroup(row) !== "Other resources" ? (

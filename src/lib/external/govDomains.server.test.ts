@@ -150,12 +150,20 @@ describe("lookupGovDomains", () => {
     expect(out.results.every((r) => r.status === "invalid")).toBe(true);
     expect(paths.filter((p) => p.includes("gov_domains&"))).toHaveLength(0);
   });
-  it("still answers when the snapshot summary is not published", async () => {
+  it("still finds a listing when the snapshot summary is not published, and then says unavailable rather than not listed", async () => {
     summaryRows = [];
     const { lookupGovDomains } = await load();
-    const out = await lookupGovDomains(["laramiecounty.gov"]);
+    const out = await lookupGovDomains(["laramiecounty.gov", "unlisted.gov"]);
     expect(out.snapshot).toBeNull();
-    expect(out.results[0]!.status).toBe("registered");
+    expect(out.results.map((r) => r.status)).toEqual(["registered", "unavailable"]);
+  });
+  it("splits a long list of hosts across reads", async () => {
+    const { lookupGovDomains } = await load();
+    const hosts = Array.from({ length: 60 }, (_, i) => `a.b.host${i}.example.gov`);
+    await lookupGovDomains(hosts);
+    const reads = paths.filter((p) => p.includes("&id=in."));
+    expect(reads.length).toBeGreaterThan(1);
+    for (const p of reads) expect(p.length).toBeLessThan(4000);
   });
 });
 

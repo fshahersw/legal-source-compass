@@ -372,6 +372,10 @@ class CourtDomainTests(unittest.TestCase):
             self.assertEqual(self.match(gov_of("x.gov", org, ["AZ"]))["status"], "unmatched", org)
         self.assertEqual(self.match(gov_of("x.gov", "Lakewood Court", ["OH"]))["status"], "short_name_only")
 
+    def test_composed_and_decomposed_accents_are_the_same_name(self):
+        self.assertEqual(courts.norm("Doña Ana County Court"), courts.norm("Doña Ana County Court"))
+        self.assertEqual(courts.norm("Judges’ Court."), "judges' court")
+
     def test_same_name_in_another_state_is_never_matched(self):
         m = self.match(gov_of("montgomeryprobatecourtal.gov", "Montgomery County Probate Court", ["AL"]))
         self.assertEqual(m["status"], "state_differs")

@@ -357,7 +357,8 @@ export type GovLookupResult = {
   input: string;
   host: string | null;
   path: string | null;
-  status: "registered" | "path_listed_only" | "not_listed" | "invalid";
+  /** `unavailable`: the registry datasets could not be read or are not published, so a host that matched nothing proves nothing. */
+  status: "registered" | "path_listed_only" | "not_listed" | "unavailable" | "invalid";
   scope: GovScope | null;
   invalidReason: string | null;
   tier: GovTier | null;
@@ -411,15 +412,18 @@ export function buildLookupResult(
   const hit = match.hit;
   if (!hit) {
     const scoped = match.pathScoped;
+    const unavailable = !scoped.length && snapshot === null;
     return {
       ...base,
-      status: scoped.length ? "path_listed_only" : "not_listed",
+      status: scoped.length ? "path_listed_only" : unavailable ? "unavailable" : "not_listed",
       scope: null,
       tier: null,
       matchedEntry: null,
       facts: null,
       pathScopedEntries: scoped.map((e) => e.id),
-      tldNote: tldNote(parsed.host, false, snapshot),
+      tldNote: unavailable
+        ? "The government domain registries are not available, so this lookup cannot say whether the host is listed."
+        : tldNote(parsed.host, false, snapshot),
       cautions: scoped.length
         ? ["GSA lists only specific pages of this host, not the host itself."]
         : [],
@@ -598,7 +602,7 @@ export function parseCensusArea(name: string): CensusArea | null {
 export type CountyMatchMethod = "organization_name" | "organization_name_form_of" | "gsa_note";
 export type CountyMatch = { row: GovRow; method: CountyMatchMethod; detail: string };
 
-const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
+const norm = (s: string) => s.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
 
 /**
  * Registered domains that name this county exactly. No registry gives a county field, so the only evidence is the

@@ -8,7 +8,7 @@ import { UsMap } from "@/components/corpus/UsMap";
 import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
 import { StateMark } from "@/components/corpus/EntityArtwork";
 import { StateCourtDirectory, StateJudgeDirectory } from "@/components/corpus/StateDirectories";
-import { StateSourcePanel } from "@/components/corpus/StateSourcePanel";
+import { StateSourcePanelWithRegistry } from "@/components/corpus/StateSourcePanelWithRegistry";
 import { StateAnalysisView } from "@/components/places/StateAnalysisView";
 import { DEFAULT_METRIC } from "@/components/places/placeMetrics";
 import {
@@ -285,7 +285,7 @@ function StatePage() {
       {tab === "sources" ? (
         <div className="space-y-3">
           <FullCodeEntry state={usps} />
-          <StateSourcePanel
+          <StateSourcePanelWithRegistry
             key={usps}
             rows={sources}
             hidden={hiddenSources}

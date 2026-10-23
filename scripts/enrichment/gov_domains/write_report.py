@@ -125,7 +125,7 @@ def main() -> None:
         "|---|---|---|---|---|---|",
     ]
     for i, sp in enumerate(spots, 1):
-        lines.append(f"| {i} | {sp['id']} | {sp['field']} | {' / '.join(str(v) for v in sp['published'])} | {sp['where']} | {'yes' if sp['match'] else 'NO'} |")
+        lines.append(f"| {i} | {sp['id']} | {sp['field']} | {' / '.join('Not recorded' if v is None else str(v) for v in sp['published'])} | {sp['where']} | {'yes' if sp['match'] else 'NO'} |")
     lines += [
         "",
         f"Spot checks: {len(spots)}, mismatches: {sum(1 for sp in spots if not sp['match'])}.",

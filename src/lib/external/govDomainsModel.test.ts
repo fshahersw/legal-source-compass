@@ -257,6 +257,21 @@ describe("lookup result", () => {
     expect(r.tldNote).toContain("2026-10-22");
     expect(look("example.com").tldNote).toBeNull();
   });
+  it("says the registries are unavailable, not that a host is unlisted, when there is no snapshot", () => {
+    const parsed = ok("example.gov");
+    const r = buildLookupResult("example.gov", parsed, matchRegistry(parsed, new Map(), []), null);
+    expect(r.status).toBe("unavailable");
+    expect(r.tldNote).toMatch(/not available/);
+    expect(evidenceLabel(r)).toBeNull();
+    // a listing found anyway is still a listing
+    const hit = buildLookupResult(
+      "ca.gov",
+      ok("ca.gov"),
+      matchRegistry(ok("ca.gov"), byId, paths),
+      null,
+    );
+    expect(hit.status).toBe("registered");
+  });
   it("cannot judge .mil hosts", () => {
     expect(look("army.mil").tldNote).toMatch(/\.mil domains are not published/);
   });
@@ -574,6 +589,15 @@ describe("matchCountyRows", () => {
       row("alexandriaky.gov", { states: ["KY"], organization: "City of Alexandria" }),
     ];
     expect(matchCountyRows(vrows, alex, "VA").map((x) => x.row.id)).toEqual(["alexandriava.gov"]);
+  });
+  it("compares names after Unicode composition, so a decomposed accent still matches", () => {
+    const dona = parseCensusArea("Doña Ana County, New Mexico")!;
+    const r = row("donaana.gov", {
+      group: "county",
+      states: ["NM"],
+      organization: "Doña Ana County",
+    });
+    expect(matchCountyRows([r], dona, "NM")).toHaveLength(1);
   });
   it("returns nothing when no entry names the area exactly", () => {
     expect(matchCountyRows(rows, parseCensusArea("Sublette County, Wyoming")!, "WY")).toEqual([]);
