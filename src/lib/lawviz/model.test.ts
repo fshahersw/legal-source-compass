@@ -18,32 +18,74 @@ import {
   stagePath,
   type BillRow,
 } from "./billFlow";
-import { breakLabels, classOf, countBreaks, monthPoints, parseCalendar, yearGrid, type Series } from "./calendar";
+import {
+  breakLabels,
+  classOf,
+  countBreaks,
+  monthPoints,
+  parseCalendar,
+  yearGrid,
+  type Series,
+} from "./calendar";
 import { frLane, parseAuthorityLine, parseLineage, safeUrl, uniqueIds } from "./lineage";
 
 const t = (id: string, parent: string | null, kind: string, extra: unknown[] = []) => [
   id,
   parent,
   kind,
-  ...(extra.length ? extra : ["CHAPTER 21", "CIVIL RIGHTS", 10, 1000, 4, "2020-01-02", 2001, 10, null, 5]),
+  ...(extra.length
+    ? extra
+    : ["CHAPTER 21", "CIVIL RIGHTS", 10, 1000, 4, "2020-01-02", 2001, 10, null, 5]),
 ];
 
 describe("atlas tuples", () => {
   it("parses a node and rejects malformed tuples", () => {
     const n = parseAtlasTuple(t("usc/42/c21", "usc/42", "chapter"))!;
-    expect(n).toMatchObject({ kind: "chapter", sections: 10, recorded: 4, lastChange: "2020-01-02", medianYear: 2001 });
+    expect(n).toMatchObject({
+      kind: "chapter",
+      sections: 10,
+      recorded: 4,
+      lastChange: "2020-01-02",
+      medianYear: 2001,
+    });
     // recorded without a date is inconsistent
-    expect(parseAtlasTuple(t("usc/42/c21", "usc/42", "chapter", ["C", "X", 10, 1, 4, null, null, 1, null, 5]))).toBeNull();
+    expect(
+      parseAtlasTuple(
+        t("usc/42/c21", "usc/42", "chapter", ["C", "X", 10, 1, 4, null, null, 1, null, 5]),
+      ),
+    ).toBeNull();
     expect(parseAtlasTuple(t("usc/42/c21", "usc/42", "bogus"))).toBeNull();
     expect(parseAtlasTuple(t("../etc", "usc/42", "chapter"))).toBeNull();
     expect(parseAtlasTuple(["usc"])).toBeNull();
     // more recorded than sections
-    expect(parseAtlasTuple(t("usc/42/c21", "usc/42", "chapter", ["C", "X", 1, 1, 4, "2020-01-01", 2020, 1, null, 5]))).toBeNull();
+    expect(
+      parseAtlasTuple(
+        t("usc/42/c21", "usc/42", "chapter", ["C", "X", 1, 1, 4, "2020-01-01", 2020, 1, null, 5]),
+      ),
+    ).toBeNull();
   });
 
   it("parses a range bin only when its id, parent and bounds agree", () => {
-    const ok = ["usc/26/c2#10-20", "usc/26/c2", "range", "§ 1", "§ 11", 11, 50, 0, null, null, 11, null, 10, 20];
-    expect(parseAtlasTuple(ok)).toMatchObject({ kind: "range", range: { lo: 10, hi: 20, lastNum: "§ 11" } });
+    const ok = [
+      "usc/26/c2#10-20",
+      "usc/26/c2",
+      "range",
+      "§ 1",
+      "§ 11",
+      11,
+      50,
+      0,
+      null,
+      null,
+      11,
+      null,
+      10,
+      20,
+    ];
+    expect(parseAtlasTuple(ok)).toMatchObject({
+      kind: "range",
+      range: { lo: 10, hi: 20, lastNum: "§ 11" },
+    });
     expect(parseAtlasTuple([...ok.slice(0, 13), 21])).toBeNull();
     expect(parseAtlasTuple(["usc/26/c3#10-20", ...ok.slice(1)])).toBeNull();
   });
@@ -53,15 +95,58 @@ describe("atlas tuples", () => {
       {
         status: "ok",
         corpus: "usc",
-        focus: t("usc/1", "usc", "title", ["Title 1", "General", 3, 30, 1, "2001-01-01", 2001, 2, null, 10]),
-        path: [t("usc", null, "root", [null, "United States Code", 3, 30, 1, "2001-01-01", 2001, 1, null, 0])],
-        children: [
-          t("usc/1/c1", "usc/1", "chapter"),
-          t("usc/1/c9", "usc/2", "chapter"),
+        focus: t("usc/1", "usc", "title", [
+          "Title 1",
+          "General",
+          3,
+          30,
+          1,
+          "2001-01-01",
+          2001,
+          2,
+          null,
+          10,
+        ]),
+        path: [
+          t("usc", null, "root", [
+            null,
+            "United States Code",
+            3,
+            30,
+            1,
+            "2001-01-01",
+            2001,
+            1,
+            null,
+            0,
+          ]),
         ],
+        children: [t("usc/1/c1", "usc/1", "chapter"), t("usc/1/c9", "usc/2", "chapter")],
         grandchildren: [
-          t("1:1", "usc/1/c1", "section", ["§ 1", "Words", 1, 10, 1, "2001-01-01", 2001, 0, null, 3]),
-          t("1:9", "usc/1/c9", "section", ["§ 9", "Other", 1, 10, 1, "2001-01-01", 2001, 0, null, 4]),
+          t("1:1", "usc/1/c1", "section", [
+            "§ 1",
+            "Words",
+            1,
+            10,
+            1,
+            "2001-01-01",
+            2001,
+            0,
+            null,
+            3,
+          ]),
+          t("1:9", "usc/1/c9", "section", [
+            "§ 9",
+            "Other",
+            1,
+            10,
+            1,
+            "2001-01-01",
+            2001,
+            0,
+            null,
+            4,
+          ]),
         ],
         grandchildren_included: true,
         built: { finished_at: "2026-10-23T23:47:00Z" },
@@ -104,7 +189,21 @@ describe("atlas tuples", () => {
     const ch = parseAtlasTuple(t("usc/42/c21", "usc/42", "chapter"))!;
     expect(shortName("usc", ch)).toBe("Chapter 21");
     expect(fullName("usc", ch)).toBe("Chapter 21 · Civil Rights");
-    const app = parseAtlasTuple(["cfr:21:Appendix B to Part 101", "cfr/21/p/101", "appendix", "Appendix B to Part 101", "—Graphic Enhancements", 1, 9, 0, null, null, 0, null, 7])!;
+    const app = parseAtlasTuple([
+      "cfr:21:Appendix B to Part 101",
+      "cfr/21/p/101",
+      "appendix",
+      "Appendix B to Part 101",
+      "—Graphic Enhancements",
+      1,
+      9,
+      0,
+      null,
+      null,
+      0,
+      null,
+      7,
+    ])!;
     expect(fullName("cfr", app)).toBe("Appendix B to Part 101 · Graphic Enhancements");
   });
 
@@ -173,7 +272,10 @@ describe("lineage payload", () => {
       fr: {
         total: 3,
         undated: 0,
-        months: [["2023-03", "Rule", 1], ["bad", "Rule", 1]],
+        months: [
+          ["2023-03", "Rule", 1],
+          ["bad", "Rule", 1],
+        ],
         docs: [
           ["1", "2023-03-24", "Rule", "88 FR 1", "T", "https://www.federalregister.gov/d/1"],
           ["2", "2023-03-25", "Rule", "88 FR 2", "T", "http://evil.example/x"],
@@ -181,8 +283,27 @@ describe("lineage payload", () => {
         ],
         complete: true,
       },
-      versions: { sections: 1, removed: 0, dates: [["2023-03-24", 1]], lanes: [], selection: "all" },
-      statutes: [["21:371", "21 U.S.C. 371", "Regulations", null, "https://uscode.house.gov/x", [["pl-75-717", "Pub. L. 75–717", "1938-06-25", ["source_credit"], "FDCA"], ["bad id", "x", null, [], null]], 2]],
+      versions: {
+        sections: 1,
+        removed: 0,
+        dates: [["2023-03-24", 1]],
+        lanes: [],
+        selection: "all",
+      },
+      statutes: [
+        [
+          "21:371",
+          "21 U.S.C. 371",
+          "Regulations",
+          null,
+          "https://uscode.house.gov/x",
+          [
+            ["pl-75-717", "Pub. L. 75–717", "1938-06-25", ["source_credit"], "FDCA"],
+            ["bad id", "x", null, [], null],
+          ],
+          2,
+        ],
+      ],
       missing: ["9:999", "bad"],
       empty: false,
     });
@@ -220,8 +341,19 @@ describe("bill flow", () => {
       "both",
       "law",
     ]);
-    expect(stagePath(row({ chambers: 1, law: true }))).toEqual(["intro", "not_reported", "passed", "one_only", "law"]);
-    expect(stagePath(row({ introduced: false, chambers: 1 }))).toEqual(["intro_nr", "not_reported", "passed", "one_only"]);
+    expect(stagePath(row({ chambers: 1, law: true }))).toEqual([
+      "intro",
+      "not_reported",
+      "passed",
+      "one_only",
+      "law",
+    ]);
+    expect(stagePath(row({ introduced: false, chambers: 1 }))).toEqual([
+      "intro_nr",
+      "not_reported",
+      "passed",
+      "one_only",
+    ]);
   });
 
   it("conserves bills through every node and lays out without overlap", () => {
@@ -241,7 +373,8 @@ describe("bill flow", () => {
       const outflow = f.links.filter((l) => l.source === n.id).reduce((a, l) => a + l.value, 0);
       if (n.column > 0) expect(inflow).toBe(n.value);
       expect(outflow).toBeLessThanOrEqual(n.value);
-      if (["intro", "reported", "not_reported", "passed", "both"].includes(n.id)) expect(outflow).toBe(n.value);
+      if (["intro", "reported", "not_reported", "passed", "both"].includes(n.id))
+        expect(outflow).toBe(n.value);
     }
     expect(f.nodes.find((n) => n.id === "law")!.value).toBe(6);
     expect(f.withLawNumber).toBe(5);
@@ -272,7 +405,11 @@ describe("bill flow", () => {
     expect(d.policies).toEqual(["Health", ""]);
     expect(d.publicLaws).toEqual({ 117: 362 });
     const tab = congressTable(d.rows, d.publicLaws, "all");
-    expect(tab.find((x) => x.congress === 117)).toMatchObject({ total: 3, law: 3, publicLaws: 362 });
+    expect(tab.find((x) => x.congress === 117)).toMatchObject({
+      total: 3,
+      law: 3,
+      publicLaws: 362,
+    });
     expect(tab.find((x) => x.congress === 118)).toMatchObject({ total: 4, law: 0 });
   });
 });
@@ -326,8 +463,24 @@ describe("calendar", () => {
       status: "ok",
       agency: "cpsc",
       year: 2024,
-      series: [["cpsc_recalls", "CPSC recalls", "recalls", "2024-01-03", "2024-12-30", 3, 0, "CPSC", "https://www.cpsc.gov/Recalls", ["agency_safety_cpsc_recalls_api"]]],
-      days: [["cpsc_recalls", "2024-01-03", 2], ["other", "2024-01-03", 1]],
+      series: [
+        [
+          "cpsc_recalls",
+          "CPSC recalls",
+          "recalls",
+          "2024-01-03",
+          "2024-12-30",
+          3,
+          0,
+          "CPSC",
+          "https://www.cpsc.gov/Recalls",
+          ["agency_safety_cpsc_recalls_api"],
+        ],
+      ],
+      days: [
+        ["cpsc_recalls", "2024-01-03", 2],
+        ["other", "2024-01-03", 1],
+      ],
       months: [["cpsc_recalls", "2024-01", 2]],
     });
     if (c.status !== "ok") throw new Error(c.status);

@@ -14,7 +14,10 @@ const runtime =
   );
 const { PGlite } = await import(pathToFileURL(runtime).href);
 const CONTRACT = await fs.readFile(path.resolve("database/contracts/lawviz-v1.sql"), "utf8");
-const SCHEDULE = await fs.readFile(path.resolve("database/contracts/lawviz-v1-schedule.sql"), "utf8");
+const SCHEDULE = await fs.readFile(
+  path.resolve("database/contracts/lawviz-v1-schedule.sql"),
+  "utf8",
+);
 
 const MOCK = `
 create role anon; create role authenticated; create role service_role;
@@ -27,7 +30,11 @@ const nextYear = `${Number(today.slice(0, 4)) + 1}-01-02`;
 
 async function seed(db) {
   let ord = 0;
-  const rec = (dataset, id, { title = null, item = null, detail = null, filters = null, text = null, url = null } = {}) =>
+  const rec = (
+    dataset,
+    id,
+    { title = null, item = null, detail = null, filters = null, text = null, url = null } = {},
+  ) =>
     db.query(
       "insert into public.corpus_records(dataset,id,title,source_url,ordinal,item,detail,text,filters) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
       [dataset, id, title, url, ++ord, item, detail, text, filters],
@@ -63,13 +70,20 @@ async function seed(db) {
   });
   await rec("us_code_titles", "50a", {
     title: "Title 50 Appendix. War and National Defense",
-    detail: { usc_title: { label: "Title 50 Appendix", name: "War and National Defense", outline: [] } },
+    detail: {
+      usc_title: { label: "Title 50 Appendix", name: "War and National Defense", outline: [] },
+    },
   });
   const usc = (id, container, text, extra = {}) =>
     rec("us_code_sections", id, {
       title: `x ${id}`,
       text,
-      item: { cells: { citation: `${id.split(":")[0]} U.S.C. § ${id.split(":")[1]}`, heading: `Heading ${id}` } },
+      item: {
+        cells: {
+          citation: `${id.split(":")[0]} U.S.C. § ${id.split(":")[1]}`,
+          heading: `Heading ${id}`,
+        },
+      },
       filters: { kind: ["section"], status: ["none"], container, ...extra },
     });
   await usc("1:1", ["1:0", "1:1"], "a".repeat(100));
@@ -79,7 +93,10 @@ async function seed(db) {
   // 650 sections in one chapter nested under a subtitle (binned in the atlas)
   for (let i = 1; i <= 650; i++) await usc(`26:${i}`, ["26:0", "26:1", "26:2"], "x".repeat(i % 7));
   const law = (id, enacted) =>
-    rec("public_laws_enacted", id, { title: `Law ${id}`, detail: { law: { label: `Pub. L. ${id}`, enacted, congress: 1, kind: "Public law" } } });
+    rec("public_laws_enacted", id, {
+      title: `Law ${id}`,
+      detail: { law: { label: `Pub. L. ${id}`, enacted, congress: 1, kind: "Public law" } },
+    });
   await law("pl-1-1", "1950-01-01");
   await law("pl-1-2", "2001-06-30");
   await law("pl-1-3", "0001-01-01"); // impossible date: not recorded
@@ -103,33 +120,73 @@ async function seed(db) {
   ];
   await rec("ecfr_sections_full", "cfr:21:101.1", {
     title: "21 CFR 101.1 Principal display panel.",
-    item: { cells: { kind: "section", part: "101", identifier: "101.1", characters: 1000, reserved: false, title_number: "21" } },
+    item: {
+      cells: {
+        kind: "section",
+        part: "101",
+        identifier: "101.1",
+        characters: 1000,
+        reserved: false,
+        title_number: "21",
+      },
+    },
     filters: { title: ["21"], part: ["101"], chapter: ["I"], kind: ["section"] },
   });
   await rec("ecfr_sections_full", "cfr:21:101.2", {
     title: "21 CFR 101.2 Information panel.",
-    item: { cells: { kind: "section", part: "101", identifier: "101.2", characters: 3000, reserved: false, title_number: "21" } },
+    item: {
+      cells: {
+        kind: "section",
+        part: "101",
+        identifier: "101.2",
+        characters: 3000,
+        reserved: false,
+        title_number: "21",
+      },
+    },
     filters: { title: ["21"], part: ["101"], chapter: ["I"], kind: ["section"] },
   });
   await rec("ecfr_sections_full", "cfr:21:101.3", {
     title: "21 CFR 101.3 [Reserved]",
-    item: { cells: { kind: "section", part: "101", identifier: "101.3", characters: 0, reserved: true, title_number: "21" } },
+    item: {
+      cells: {
+        kind: "section",
+        part: "101",
+        identifier: "101.3",
+        characters: 0,
+        reserved: true,
+        title_number: "21",
+      },
+    },
     filters: { title: ["21"], part: ["101"], chapter: ["I"], kind: ["section"] },
   });
   await rec("ecfr_sections_full", "cfr:21:7.1", {
     title: "21 CFR 7.1 Scope.",
-    item: { cells: { kind: "section", part: "7", identifier: "7.1", characters: 500, title_number: "21" } },
+    item: {
+      cells: { kind: "section", part: "7", identifier: "7.1", characters: 500, title_number: "21" },
+    },
     filters: { title: ["21"], part: ["7"], chapter: ["I"], kind: ["section"] },
   });
   await rec("ecfr_sections_full", "cfr:21:part-101", {
     title: "21 CFR Part 101—Food Labeling",
-    item: { cells: { kind: "part", part: "101", identifier: "101", title_number: "21", sections: 3, as_of: "2026-10-21" } },
+    item: {
+      cells: {
+        kind: "part",
+        part: "101",
+        identifier: "101",
+        title_number: "21",
+        sections: 3,
+        as_of: "2026-10-21",
+      },
+    },
     detail: { path: path21 },
     filters: { title: ["21"], part: ["101"], chapter: ["I"], kind: ["part"] },
   });
   await rec("ecfr_sections_full", "cfr:21:part-2", {
     title: "21 CFR Part 2 [Reserved]",
-    item: { cells: { kind: "part", part: "2", identifier: "2", title_number: "21", reserved: true } },
+    item: {
+      cells: { kind: "part", part: "2", identifier: "2", title_number: "21", reserved: true },
+    },
     detail: { path: path21 },
     filters: { title: ["21"], part: ["2"], chapter: ["I"], kind: ["part"] },
   });
@@ -142,8 +199,12 @@ async function seed(db) {
     });
   const v = (date, substantive, fr = []) => ({ date, amendment_date: date, substantive, fr });
   await ver("cfr:21:101.1", "101", "2023-03-24", [
-    v("2016-12-19", true, [{ citation: "81 FR 91716", url: "https://www.federalregister.gov/d/2016-29997" }]),
-    v("2023-03-24", true, [{ citation: "88 FR 17710", url: "https://www.federalregister.gov/d/2023-05418" }]),
+    v("2016-12-19", true, [
+      { citation: "81 FR 91716", url: "https://www.federalregister.gov/d/2016-29997" },
+    ]),
+    v("2023-03-24", true, [
+      { citation: "88 FR 17710", url: "https://www.federalregister.gov/d/2023-05418" },
+    ]),
     v("2023-03-24", false),
   ]);
   await ver("cfr:21:101.2", "101", "2019-01-01", [v("2019-01-01", true)]);
@@ -165,29 +226,67 @@ async function seed(db) {
   const bill = (id, congress, type, policy, milestone, lawNum) =>
     rec("congress_bills", id, {
       item: { cells: { policy_area: policy } },
-      filters: { congress: [String(congress)], type: [type], policy_area: policy ? [policy] : [], milestone, law: lawNum ? [lawNum] : [] },
+      filters: {
+        congress: [String(congress)],
+        type: [type],
+        policy_area: policy ? [policy] : [],
+        milestone,
+        law: lawNum ? [lawNum] : [],
+      },
     });
   await bill("117-hr-1", 117, "hr", "Health", ["introduced"]);
   await bill("117-hr-2", 117, "hr", "Health", ["introduced", "reported", "passed_house"]);
-  await bill("117-hr-3", 117, "hr", "Health", ["introduced", "reported", "passed_house", "passed_senate", "to_president", "became_law"], "117-9");
-  await bill("117-s-4", 117, "s", "", ["introduced", "passed_senate", "passed_house", "became_law"], "117-10");
+  await bill(
+    "117-hr-3",
+    117,
+    "hr",
+    "Health",
+    ["introduced", "reported", "passed_house", "passed_senate", "to_president", "became_law"],
+    "117-9",
+  );
+  await bill(
+    "117-s-4",
+    117,
+    "s",
+    "",
+    ["introduced", "passed_senate", "passed_house", "became_law"],
+    "117-10",
+  );
   await bill("117-s-5", 117, "s", "Taxation", ["passed_senate"]); // introduction not recorded
   await bill("107-hr-6", 107, "hr", "Health", ["introduced"]); // outside 108–119
-  await rec("public_laws_enacted", "stat-135-1", { detail: { law: { congress: 117, kind: "Public law", enacted: "2021-03-11" } } });
-  await rec("public_laws_enacted", "stat-135-2", { detail: { law: { congress: 117, kind: "Public law", enacted: "2021-03-12" } } });
+  await rec("public_laws_enacted", "stat-135-1", {
+    detail: { law: { congress: 117, kind: "Public law", enacted: "2021-03-11" } },
+  });
+  await rec("public_laws_enacted", "stat-135-2", {
+    detail: { law: { congress: 117, kind: "Public law", enacted: "2021-03-12" } },
+  });
   // ---------------------------------------------------------------- calendar sources
   await rec("agency_safety_cpsc_recalls_api", "c1", { item: { cells: { date: "2022-07-01" } } });
   await rec("agency_safety_cpsc_recalls_api", "c2", { item: { cells: { date: "2022-07-01" } } });
   await rec("agency_safety_cpsc_recalls_api", "c3", { item: { cells: { date: "2022-07-09" } } });
-  await rec("agency_safety_openfda_drug_enforcement", "d1", { filters: { report_date: "2022-07-06" } });
-  await rec("agency_safety_openfda_food_enforcement", "f1", { filters: { report_date: "2022-07-06" } });
+  await rec("agency_safety_openfda_drug_enforcement", "d1", {
+    filters: { report_date: "2022-07-06" },
+  });
+  await rec("agency_safety_openfda_food_enforcement", "f1", {
+    filters: { report_date: "2022-07-06" },
+  });
   await rec("sec_enforcement_actions", "s1", { item: { cells: { date: "2021-12-31" } } });
-  await rec("ftc_hsr_early_terminations", "h1", { item: { cells: { date: "2022-01-03" } }, filters: { kind: ["notice"] } });
-  await rec("ftc_hsr_early_terminations", "h2", { item: { cells: { date: "2022-01-03" } }, filters: { kind: ["fiscal_year"] } });
+  await rec("ftc_hsr_early_terminations", "h1", {
+    item: { cells: { date: "2022-01-03" } },
+    filters: { kind: ["notice"] },
+  });
+  await rec("ftc_hsr_early_terminations", "h2", {
+    item: { cells: { date: "2022-01-03" } },
+    filters: { kind: ["fiscal_year"] },
+  });
   await rec("doj_press_releases_2022", "doj-pr:a", { item: { cells: { date: "2022-03-01" } } });
   await rec("doj_press_releases_2022", "doj-pr:b", { item: { cells: { date: "Not recorded" } } });
-  await rec("doj_press_releases", "doj-index:component:x", { item: { cells: { date: "2022-03-01" } } });
-  await db.query("insert into public.corpus_datasets(id, ready) values ('doj_press_releases_2022', true), ('doj_press_releases', true)");
+  await rec("doj_press_releases", "doj-index:component:x", {
+    item: { cells: { date: "2022-03-01" } },
+  });
+  await db.query(
+    "insert into public.corpus_datasets(id, ready) values ('doj_press_releases_2022', true), ('doj_press_releases', true)",
+  );
 }
 
 async function fresh() {
@@ -204,8 +303,15 @@ test("contract text avoids the statement forms the lead's SQL tool cannot run", 
   assert.doesNotMatch(CONTRACT, /^\s*drop\s/im);
   assert.doesNotMatch(SCHEDULE, /;\s*(delete|drop|truncate)\b/i);
   for (const m of CONTRACT.matchAll(/create or replace function (public\.lawviz_[a-z0-9_]+)\(/g)) {
-    const body = CONTRACT.slice(m.index, CONTRACT.indexOf("$$", CONTRACT.indexOf("$$", m.index) + 2));
-    assert.match(body, /security definer set search_path = ''/, `${m[1]} must be security definer with empty search_path`);
+    const body = CONTRACT.slice(
+      m.index,
+      CONTRACT.indexOf("$$", CONTRACT.indexOf("$$", m.index) + 2),
+    );
+    assert.match(
+      body,
+      /security definer set search_path = ''/,
+      `${m[1]} must be security definer with empty search_path`,
+    );
   }
 });
 
@@ -221,10 +327,21 @@ test("applies twice (idempotent) and grants only service_role", async () => {
     "public.lawviz_status_v1()",
   ]) {
     for (const role of ["anon", "authenticated"])
-      assert.equal((await one(db, `select has_function_privilege('${role}', '${fn}', 'execute') ok`)).ok, false, `${role} ${fn}`);
-    assert.equal((await one(db, `select has_function_privilege('service_role', '${fn}', 'execute') ok`)).ok, true, fn);
+      assert.equal(
+        (await one(db, `select has_function_privilege('${role}', '${fn}', 'execute') ok`)).ok,
+        false,
+        `${role} ${fn}`,
+      );
+    assert.equal(
+      (await one(db, `select has_function_privilege('service_role', '${fn}', 'execute') ok`)).ok,
+      true,
+      fn,
+    );
   }
-  assert.equal((await one(db, "select has_schema_privilege('anon', 'lawviz', 'usage') ok")).ok, false);
+  assert.equal(
+    (await one(db, "select has_schema_privilege('anon', 'lawviz', 'usage') ok")).ok,
+    false,
+  );
   await db.close();
 });
 
@@ -232,7 +349,8 @@ test("U.S. Code atlas: exact recency, medians, groups and totals", async () => {
   const db = await fresh();
   const r = (await one(db, "select public.lawviz_refresh_v1('t1', 'usc') r")).r;
   assert.equal(r.families[0].detail.sections, 654);
-  const node = async (id) => one(db, "select * from lawviz.atlas_nodes where corpus='usc' and id=$1", [id]);
+  const node = async (id) =>
+    one(db, "select * from lawviz.atlas_nodes where corpus='usc' and id=$1", [id]);
   const s1 = await node("1:1");
   assert.equal(s1.parent, "usc/1/c1");
   assert.equal(s1.num, "§ 1");
@@ -272,26 +390,43 @@ test("U.S. Code atlas: exact recency, medians, groups and totals", async () => {
   assert.equal(root.children, 3);
   // refreshing again replaces, never duplicates
   await one(db, "select public.lawviz_refresh_v1('t2', 'usc')");
-  assert.equal((await one(db, "select count(*)::int n from lawviz.atlas_nodes where corpus='usc'")).n, 654 + 4 + 3 + 1);
+  assert.equal(
+    (await one(db, "select count(*)::int n from lawviz.atlas_nodes where corpus='usc'")).n,
+    654 + 4 + 3 + 1,
+  );
   await db.close();
 });
 
 test("atlas RPC: focus, path, grandchildren, bins and ranges", async () => {
   const db = await fresh();
   await one(db, "select public.lawviz_refresh_v1('t1', 'all')");
-  const atlas = async (...a) => (await one(db, "select public.lawviz_atlas_v1($1,$2,$3,$4) r", [a[0], a[1] ?? null, a[2] ?? null, a[3] ?? null])).r;
+  const atlas = async (...a) =>
+    (
+      await one(db, "select public.lawviz_atlas_v1($1,$2,$3,$4) r", [
+        a[0],
+        a[1] ?? null,
+        a[2] ?? null,
+        a[3] ?? null,
+      ])
+    ).r;
   const root = await atlas("usc");
   assert.equal(root.status, "ok");
   assert.equal(root.children.length, 3);
   assert.equal(root.grandchildren_included, true);
   assert.equal(root.grandchildren.length, 3 + 1); // title 1: 3 groups, title 26: 1 chapter
   const t1 = await atlas("usc", "usc/1");
-  assert.deepEqual(t1.path.map((p) => p[0]), ["usc"]);
+  assert.deepEqual(
+    t1.path.map((p) => p[0]),
+    ["usc"],
+  );
   assert.equal(t1.grandchildren.length, 4);
   const ch = await atlas("usc", "usc/26/c2");
   assert.equal(ch.binned, true);
   assert.ok(ch.children.length <= 48 && ch.children.length > 20);
-  assert.equal(ch.children.reduce((a, c) => a + c[5], 0), 650);
+  assert.equal(
+    ch.children.reduce((a, c) => a + c[5], 0),
+    650,
+  );
   const bin = ch.children[0];
   assert.equal(bin[2], "range");
   const range = await atlas("usc", "usc/26/c2", bin[12], bin[13]);
@@ -310,7 +445,8 @@ test("atlas RPC: focus, path, grandchildren, bins and ranges", async () => {
 test("CFR atlas: parts with and without records, reserved, version recency", async () => {
   const db = await fresh();
   await one(db, "select public.lawviz_refresh_v1('t1', 'cfr')");
-  const node = async (id) => one(db, "select * from lawviz.atlas_nodes where corpus='cfr' and id=$1", [id]);
+  const node = async (id) =>
+    one(db, "select * from lawviz.atlas_nodes where corpus='cfr' and id=$1", [id]);
   const s = await node("cfr:21:101.1");
   assert.equal(s.parent, "cfr/21/p/101");
   assert.equal(s.num, "§ 101.1");
@@ -342,30 +478,59 @@ test("CFR atlas: parts with and without records, reserved, version recency", asy
 
 test("part lineage: exact CFR pair, version lanes, statutes and missing ids", async () => {
   const db = await fresh();
-  const lin = async (t, p, usc) => (await one(db, "select public.lawviz_part_lineage_v1($1,$2,$3) r", [t, p, usc])).r;
+  const lin = async (t, p, usc) =>
+    (await one(db, "select public.lawviz_part_lineage_v1($1,$2,$3) r", [t, p, usc])).r;
   const r = await lin("21", "101", ["1:1", "1:3", "9:999"]);
   assert.equal(r.status, "ok");
   assert.equal(r.part_record.title, "21 CFR Part 101—Food Labeling");
   assert.equal(r.fr.total, 3);
   assert.equal(r.fr.undated, 1);
   assert.equal(r.fr.docs.length, 2);
-  assert.deepEqual(r.fr.months, [["2022-07", "Proposed Rule", 1], ["2023-03", "Rule", 1]]);
+  assert.deepEqual(r.fr.months, [
+    ["2022-07", "Proposed Rule", 1],
+    ["2023-03", "Rule", 1],
+  ]);
   assert.equal(r.fr.complete, true);
   assert.equal(r.versions.sections, 3);
   assert.equal(r.versions.selection, "all");
   // substantive dates only, distinct per section and day
-  assert.deepEqual(r.versions.dates, [["2016-12-19", 1], ["2018-02-02", 1], ["2019-01-01", 1], ["2023-03-24", 1], ["2024-01-01", 1]]);
+  assert.deepEqual(r.versions.dates, [
+    ["2016-12-19", 1],
+    ["2018-02-02", 1],
+    ["2019-01-01", 1],
+    ["2023-03-24", 1],
+    ["2024-01-01", 1],
+  ]);
   const lane = r.versions.lanes.find((l) => l[0] === "cfr:21:101.1");
   assert.equal(lane[4], 2);
-  assert.deepEqual(lane[5][1], ["2023-03-24", [["88 FR 17710", "https://www.federalregister.gov/d/2023-05418"]]]);
-  assert.deepEqual(r.statutes.map((s) => s[0]), ["1:1", "1:3"]);
+  assert.deepEqual(lane[5][1], [
+    "2023-03-24",
+    [["88 FR 17710", "https://www.federalregister.gov/d/2023-05418"]],
+  ]);
+  assert.deepEqual(
+    r.statutes.map((s) => s[0]),
+    ["1:1", "1:3"],
+  );
   const laws11 = r.statutes[0][5];
-  assert.deepEqual(laws11.map((l) => l[0]), ["pl-1-1", "pl-1-2"], "only Code-change kinds, oldest first");
+  assert.deepEqual(
+    laws11.map((l) => l[0]),
+    ["pl-1-1", "pl-1-2"],
+    "only Code-change kinds, oldest first",
+  );
   assert.deepEqual(r.missing, ["9:999"]);
   assert.equal((await lin("21", "7", [])).fr.total, 1);
   assert.equal((await lin("99", "1", [])).status, "invalid");
   assert.equal((await lin("21", "101", ["x"])).status, "invalid");
-  assert.equal((await lin("21", "101", Array.from({ length: 25 }, (_, i) => `1:${i}`))).status, "invalid");
+  assert.equal(
+    (
+      await lin(
+        "21",
+        "101",
+        Array.from({ length: 25 }, (_, i) => `1:${i}`),
+      )
+    ).status,
+    "invalid",
+  );
   const none = await lin("21", "999", []);
   assert.equal(none.empty, true);
   assert.equal(none.part_record, null);
@@ -380,8 +545,14 @@ test("bill flow: recorded milestones only, 108th–119th Congress", async () => 
   const total = r.rows.reduce((a, x) => a + x[7], 0);
   assert.equal(total, 5, "the 107th Congress bill is outside the range");
   const law = r.rows.filter((x) => x[6]);
-  assert.equal(law.reduce((a, x) => a + x[7], 0), 2);
-  assert.equal(law.reduce((a, x) => a + x[8], 0), 2);
+  assert.equal(
+    law.reduce((a, x) => a + x[7], 0),
+    2,
+  );
+  assert.equal(
+    law.reduce((a, x) => a + x[8], 0),
+    2,
+  );
   const noIntro = r.rows.find((x) => x[3] === false);
   assert.equal(noIntro[2], "Taxation");
   assert.ok(r.policy_areas.includes(""), "a missing policy area is kept as not recorded");
@@ -392,16 +563,31 @@ test("bill flow: recorded milestones only, 108th–119th Congress", async () => 
 test("calendar: coverage windows, zero vs not recorded, undated counts", async () => {
   const db = await fresh();
   await one(db, "select public.lawviz_refresh_v1('t1', 'calendar')");
-  const cal = async (a, y) => (await one(db, "select public.lawviz_calendar_v1($1,$2) r", [a, y])).r;
+  const cal = async (a, y) =>
+    (await one(db, "select public.lawviz_calendar_v1($1,$2) r", [a, y])).r;
   const all = await cal("all", 2022);
   assert.equal(all.status, "ok");
   const ids = all.series.map((s) => s[0]);
-  assert.deepEqual(ids, ["fr_all", "cpsc_recalls", "fda_all", "sec_actions", "ftc_hsr", "doj_press"]);
+  assert.deepEqual(ids, [
+    "fr_all",
+    "cpsc_recalls",
+    "fda_all",
+    "sec_actions",
+    "ftc_hsr",
+    "doj_press",
+  ]);
   const days = (s) => all.days.filter((d) => d[0] === s).map((d) => [d[1], d[2]]);
-  assert.deepEqual(days("cpsc_recalls"), [["2022-07-01", 2], ["2022-07-09", 1]]);
+  assert.deepEqual(days("cpsc_recalls"), [
+    ["2022-07-01", 2],
+    ["2022-07-09", 1],
+  ]);
   assert.deepEqual(days("fda_all"), [["2022-07-06", 2]]);
   assert.deepEqual(days("ftc_hsr"), [["2022-01-03", 1]], "only notices are counted");
-  assert.deepEqual(days("doj_press"), [["2022-03-01", 1]], "the index dataset is not a press-release year");
+  assert.deepEqual(
+    days("doj_press"),
+    [["2022-03-01", 1]],
+    "the index dataset is not a press-release year",
+  );
   const doj = all.series.find((s) => s[0] === "doj_press");
   assert.equal(doj[6], 1, "undated releases are counted apart");
   assert.deepEqual(doj[9], ["doj_press_releases_2022"]);
@@ -410,11 +596,17 @@ test("calendar: coverage windows, zero vs not recorded, undated counts", async (
   assert.equal(cpsc[4], "2022-07-09");
   assert.equal(cpsc[5], 3);
   const fda = await cal("fda", 2022);
-  assert.deepEqual(fda.series.map((s) => s[0]), ["fr_199", "fda_drug", "fda_device", "fda_food"]);
+  assert.deepEqual(
+    fda.series.map((s) => s[0]),
+    ["fr_199", "fda_drug", "fda_device", "fda_food"],
+  );
   const device = fda.series.find((s) => s[0] === "fda_device");
   assert.equal(device[3], null, "a series with no dated record has no coverage window");
   const frFda = fda.days.filter((d) => d[0] === "fr_199");
-  assert.deepEqual(frFda.map((d) => [d[1], d[2]]), [["2022-07-01", 1]]);
+  assert.deepEqual(
+    frFda.map((d) => [d[1], d[2]]),
+    [["2022-07-01", 1]],
+  );
   assert.equal((await cal("xyz", 2022)).status, "invalid");
   assert.ok(all.months.some((m) => m[0] === "sec_actions" && m[1] === "2021-12" && m[2] === 1));
   await db.close();
@@ -424,7 +616,10 @@ test("status reports each family's latest build", async () => {
   const db = await fresh();
   await one(db, "select public.lawviz_refresh_v1('n20261023', 'all')");
   const s = (await one(db, "select public.lawviz_status_v1() r")).r;
-  assert.deepEqual(s.families.map((f) => f.family), ["bills", "calendar", "cfr", "usc"]);
+  assert.deepEqual(
+    s.families.map((f) => f.family),
+    ["bills", "calendar", "cfr", "usc"],
+  );
   assert.ok(s.families.every((f) => f.build === "n20261023" && f.finished_at));
   await assert.rejects(() => db.query("select public.lawviz_refresh_v1('Bad Build')"));
   await db.close();

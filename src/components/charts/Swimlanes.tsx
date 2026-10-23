@@ -57,7 +57,14 @@ const HEAD = 18;
 const AXIS = 22;
 
 /** One drawn mark: a day of events, or a month bar. */
-export type SwimMark = { x: number; key: string; events: SwimEvent[]; n: number; month: boolean; x1: number };
+export type SwimMark = {
+  x: number;
+  key: string;
+  events: SwimEvent[];
+  n: number;
+  month: boolean;
+  x1: number;
+};
 
 /** Events of a lane merged by day and placed on the scale (pure; tested). */
 export function laneMarks(
@@ -82,7 +89,14 @@ export function laneMarks(
         continue;
       }
       const x0 = x(Math.max(ms, domain[0]));
-      marks.push({ x: x0, x1: x(Math.min(end, domain[1])), key: b.month, events: [], n: b.n, month: true });
+      marks.push({
+        x: x0,
+        x1: x(Math.min(end, domain[1])),
+        key: b.month,
+        events: [],
+        n: b.n,
+        month: true,
+      });
     }
     marks.sort((a, b) => a.x - b.x);
     return { marks, before, after };
@@ -121,7 +135,8 @@ const fmtMonth = (ym: string) =>
     timeZone: "UTC",
   });
 
-type Row = { kind: "head"; group: SwimGroup; y: number } | { kind: "lane"; lane: number; y: number };
+type Row =
+  { kind: "head"; group: SwimGroup; y: number } | { kind: "lane"; lane: number; y: number };
 
 export function Swimlanes({
   groups,
@@ -159,7 +174,12 @@ export function Swimlanes({
   const bodyH = rows.reduce((a, r) => a + (r.kind === "head" ? HEAD : laneHeight), 0);
   const height = bodyH + AXIS + 2;
   const laneY = useMemo(
-    () => new Map(rows.filter((r) => r.kind === "lane").map((r) => [(r as { lane: number }).lane, r.y] as const)),
+    () =>
+      new Map(
+        rows
+          .filter((r) => r.kind === "lane")
+          .map((r) => [(r as { lane: number }).lane, r.y] as const),
+      ),
     [rows],
   );
   const order = rows.filter((r) => r.kind === "lane").map((r) => (r as { lane: number }).lane);
@@ -176,7 +196,10 @@ export function Swimlanes({
     () => (width ? linearScale([d0, d1], [plotX0, plotX1]) : null),
     [width, d0, d1, plotX0, plotX1],
   );
-  const laid = useMemo(() => (x ? lanes.map((l) => laneMarks(l, x, [d0, d1])) : []), [lanes, x, d0, d1]);
+  const laid = useMemo(
+    () => (x ? lanes.map((l) => laneMarks(l, x, [d0, d1])) : []),
+    [lanes, x, d0, d1],
+  );
   const label = (n: number, li: number) => unitLabel(n, lanes[li]!);
   const describe = (li: number, mi: number) => {
     const lane = lanes[li]!;
@@ -228,7 +251,10 @@ export function Swimlanes({
         break;
       }
       case "ArrowRight":
-        next = { lane: cur.lane, mark: active ? Math.min(Math.max(0, count(cur.lane) - 1), cur.mark + 1) : 0 };
+        next = {
+          lane: cur.lane,
+          mark: active ? Math.min(Math.max(0, count(cur.lane) - 1), cur.mark + 1) : 0,
+        };
         break;
       case "ArrowLeft":
         next = { lane: cur.lane, mark: Math.max(0, cur.mark - 1) };
@@ -266,10 +292,17 @@ export function Swimlanes({
       return {
         x: m.x,
         y,
-        content: { title: fmtMonth(m.key), subtitle: lane.label, rows: [{ key: "n", label: "", value: label(m.n, active.lane) }] },
+        content: {
+          title: fmtMonth(m.key),
+          subtitle: lane.label,
+          rows: [{ key: "n", label: "", value: label(m.n, active.lane) }],
+        },
       };
     const shown = m.events.slice(0, 5);
-    const foot = [m.events.length > shown.length ? `and ${m.events.length - shown.length} more` : null, note?.(m.events, lane) ?? null]
+    const foot = [
+      m.events.length > shown.length ? `and ${m.events.length - shown.length} more` : null,
+      note?.(m.events, lane) ?? null,
+    ]
       .filter(Boolean)
       .join(" · ");
     return {
@@ -285,11 +318,19 @@ export function Swimlanes({
   })();
   const y0 = new Date(d0).getUTCFullYear();
   const y1 = new Date(d1).getUTCFullYear();
-  const step = Math.max(1, Math.ceil(niceStep(y0, y1, width ? Math.max(2, Math.floor((plotX1 - plotX0) / 64)) : 6)));
+  const step = Math.max(
+    1,
+    Math.ceil(niceStep(y0, y1, width ? Math.max(2, Math.floor((plotX1 - plotX0) / 64)) : 6)),
+  );
   const ticks: number[] = [];
-  for (let yv = Math.ceil(y0 / step) * step; yv <= y1; yv += step) if (Date.UTC(yv, 0, 1) >= d0) ticks.push(yv);
+  for (let yv = Math.ceil(y0 / step) * step; yv <= y1; yv += step)
+    if (Date.UTC(yv, 0, 1) >= d0) ticks.push(yv);
   return (
-    <div ref={ref} className={cn("relative w-full min-w-0", className)} style={{ ...chartTokens, height }}>
+    <div
+      ref={ref}
+      className={cn("relative w-full min-w-0", className)}
+      style={{ ...chartTokens, height }}
+    >
       <div
         role="group"
         aria-roledescription="timeline"
@@ -301,25 +342,50 @@ export function Swimlanes({
         className="h-full w-full rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
       >
         {width && x ? (
-          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden className="block font-sans">
+          <svg
+            width={width}
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
+            aria-hidden
+            className="block font-sans"
+          >
             {ticks.map((yv) => {
               const tx = x(Date.UTC(yv, 0, 1));
               return (
                 <g key={yv}>
                   <line x1={tx} x2={tx} y1={0} y2={bodyH} stroke="var(--chart-grid)" />
-                  <text x={tx} y={bodyH + 14} textAnchor="middle" fontSize={10} fill="var(--chart-axis)">
+                  <text
+                    x={tx}
+                    y={bodyH + 14}
+                    textAnchor="middle"
+                    fontSize={10}
+                    fill="var(--chart-axis)"
+                  >
                     {yv}
                   </text>
                 </g>
               );
             })}
-            <line x1={plotX0} x2={plotX1} y1={bodyH + 0.5} y2={bodyH + 0.5} stroke="var(--chart-grid)" />
+            <line
+              x1={plotX0}
+              x2={plotX1}
+              y1={bodyH + 0.5}
+              y2={bodyH + 0.5}
+              stroke="var(--chart-grid)"
+            />
             {rows.map((r) => {
               if (r.kind === "head")
                 return (
                   <g key={`h-${r.group.id}`}>
                     <circle cx={5} cy={r.y + HEAD / 2 + 1} r={4} fill={seriesVar(r.group.slot)} />
-                    <text x={14} y={r.y + HEAD / 2 + 1} dy="0.32em" fontSize={10.5} fontWeight={600} fill="var(--chart-ink)">
+                    <text
+                      x={14}
+                      y={r.y + HEAD / 2 + 1}
+                      dy="0.32em"
+                      fontSize={10.5}
+                      fontWeight={600}
+                      fill="var(--chart-ink)"
+                    >
                       {r.group.label}
                     </text>
                   </g>
@@ -331,15 +397,32 @@ export function Swimlanes({
               const info = laid[li]!;
               const maxN = Math.max(1, ...info.marks.filter((m) => m.month).map((m) => m.n));
               const room = labelW - 4;
-              const shown = textWidth(lane.label, 10.5) > room ? `${lane.label.slice(0, Math.max(3, Math.floor(room / 5.9) - 1))}…` : lane.label;
+              const shown =
+                textWidth(lane.label, 10.5) > room
+                  ? `${lane.label.slice(0, Math.max(3, Math.floor(room / 5.9) - 1))}…`
+                  : lane.label;
               return (
                 <g key={`l-${lane.id}`}>
                   <text x={14} y={cy} dy="0.32em" fontSize={10.5} fill="var(--chart-ink)">
                     {shown}
                   </text>
-                  <line x1={plotX0} x2={plotX1} y1={cy} y2={cy} stroke="var(--chart-grid)" strokeOpacity={0.6} />
+                  <line
+                    x1={plotX0}
+                    x2={plotX1}
+                    y1={cy}
+                    y2={cy}
+                    stroke="var(--chart-grid)"
+                    strokeOpacity={0.6}
+                  />
                   {info.before ? (
-                    <text x={plotX0 - 3} y={cy} dy="0.32em" textAnchor="end" fontSize={9} fill="var(--chart-axis)">
+                    <text
+                      x={plotX0 - 3}
+                      y={cy}
+                      dy="0.32em"
+                      textAnchor="end"
+                      fontSize={9}
+                      fill="var(--chart-axis)"
+                    >
                       {`◂${info.before.toLocaleString("en-US")}`}
                     </text>
                   ) : null}
@@ -388,11 +471,14 @@ export function Swimlanes({
                       fill="transparent"
                       style={{ cursor: onOpen ? "pointer" : "default" }}
                       onPointerMove={(e) => {
-                        const box = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
+                        const box = (
+                          e.currentTarget.ownerSVGElement ?? e.currentTarget
+                        ).getBoundingClientRect();
                         const k = nearest(li, e.clientX - box.left, 12);
                         if (k < 0) {
                           if (active?.lane === li) setActive(null);
-                        } else if (active?.lane !== li || active.mark !== k) go({ lane: li, mark: k });
+                        } else if (active?.lane !== li || active.mark !== k)
+                          go({ lane: li, mark: k });
                       }}
                       onPointerLeave={() => setActive(null)}
                       onClick={() => {
@@ -411,7 +497,9 @@ export function Swimlanes({
       <p id={liveId} aria-live="polite" className="sr-only">
         {announce}
       </p>
-      {tip && width ? <ChartTooltip content={tip.content} x={tip.x} y={tip.y} containerWidth={width} /> : null}
+      {tip && width ? (
+        <ChartTooltip content={tip.content} x={tip.x} y={tip.y} containerWidth={width} />
+      ) : null}
     </div>
   );
 }

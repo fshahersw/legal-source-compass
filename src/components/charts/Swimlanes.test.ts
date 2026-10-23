@@ -34,7 +34,13 @@ describe("laneMarks", () => {
 
   it("places monthly bars over their month and counts bars outside the axis", () => {
     const r = laneMarks(
-      { bars: [{ month: "2016-12", n: 4 }, { month: "2020-02", n: 9 }, { month: "2027-03", n: 1 }] },
+      {
+        bars: [
+          { month: "2016-12", n: 4 },
+          { month: "2020-02", n: 9 },
+          { month: "2027-03", n: 1 },
+        ],
+      },
       x,
       domain,
     );
@@ -55,7 +61,12 @@ describe("Swimlanes render", () => {
           { id: "fr", label: "Federal Register", slot: 1 },
         ],
         lanes: [
-          { id: "s1", group: "law", label: "21 U.S.C. 371", events: [{ id: "l", date: "2018-04-01", label: "Pub. L. 115-1" }] },
+          {
+            id: "s1",
+            group: "law",
+            label: "21 U.S.C. 371",
+            events: [{ id: "l", date: "2018-04-01", label: "Pub. L. 115-1" }],
+          },
           { id: "f1", group: "fr", label: "Rules", bars: [{ month: "2019-01", n: 3 }] },
           { id: "f2", group: "fr", label: "Notices", events: [], emptyText: "No notices" },
         ],

@@ -11,7 +11,13 @@ import {
   parseAuthorityRows,
   type AuthorityRow,
 } from "@/lib/external/ecfrAuthorities";
-import { CFR_PART, CFR_TITLE, SECTIONS_DATASET, parseNotes, partRecordId } from "@/lib/external/ecfrFull";
+import {
+  CFR_PART,
+  CFR_TITLE,
+  SECTIONS_DATASET,
+  parseNotes,
+  partRecordId,
+} from "@/lib/external/ecfrFull";
 import { restGet, rpcPostOptional } from "@/lib/external/rest.server";
 import { isNodeId, parseAtlasView, parseBuilt, type AtlasView } from "./atlas";
 import { parseBillFlow, type BillFlowData } from "./billFlow";
@@ -69,7 +75,10 @@ export type PartLineage = {
 
 const lineageInput = z.object({
   title: z.string().regex(CFR_TITLE),
-  part: z.string().regex(CFR_PART).regex(/^[0-9A-Za-z][0-9A-Za-z .-]{0,59}$/),
+  part: z
+    .string()
+    .regex(CFR_PART)
+    .regex(/^[0-9A-Za-z][0-9A-Za-z .-]{0,59}$/),
 });
 
 function ptoaCites(rows: AuthorityRow[]): LineageAuthority[] {

@@ -39,7 +39,14 @@ export type IcicleCell = {
   y0: number;
   y1: number;
 };
-export type IciclePlaceholder = { parent: number; x0: number; x1: number; y0: number; y1: number; text: string };
+export type IciclePlaceholder = {
+  parent: number;
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+  text: string;
+};
 
 const GAP_X = 3;
 
@@ -55,7 +62,9 @@ export function icicleLayout(
   const w = Math.max(0, width - GAP_X * (third ? 2 : 1));
   const xs = [0, w * fr[0]! + GAP_X, w * (fr[0]! + fr[1]!) + 2 * GAP_X];
   const ws = fr.map((f) => w * f);
-  const cells: IcicleCell[] = [{ d: root, depth: 0, parent: -1, x0: 0, x1: ws[0]!, y0: 0, y1: height }];
+  const cells: IcicleCell[] = [
+    { d: root, depth: 0, parent: -1, x0: 0, x1: ws[0]!, y0: 0, y1: height },
+  ];
   const placeholders: IciclePlaceholder[] = [];
   const total = kids.reduce((a, k) => a + k.value, 0);
   let y = 0;
@@ -73,13 +82,28 @@ export function icicleLayout(
       const gt = gk.reduce((a, k) => a + k.value, 0);
       if (!gk.length) {
         if (p.d.placeholder)
-          placeholders.push({ parent: pi, x0: xs[2]!, x1: xs[2]! + ws[2]!, y0: p.y0, y1: p.y1, text: p.d.placeholder });
+          placeholders.push({
+            parent: pi,
+            x0: xs[2]!,
+            x1: xs[2]! + ws[2]!,
+            y0: p.y0,
+            y1: p.y1,
+            text: p.d.placeholder,
+          });
         continue;
       }
       let gy = p.y0;
       for (const g of gk) {
         const h = gt > 0 ? (g.value / gt) * (p.y1 - p.y0) : 0;
-        cells.push({ d: g, depth: 2, parent: pi, x0: xs[2]!, x1: xs[2]! + ws[2]!, y0: gy, y1: gy + h });
+        cells.push({
+          d: g,
+          depth: 2,
+          parent: pi,
+          x0: xs[2]!,
+          x1: xs[2]! + ws[2]!,
+          y0: gy,
+          y1: gy + h,
+        });
         gy += h;
       }
     }
@@ -257,12 +281,16 @@ export function Icicle({
                   height={height}
                   fill="transparent"
                   onPointerMove={(e) => {
-                    const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
+                    const rect = (
+                      e.currentTarget.ownerSVGElement ?? e.currentTarget
+                    ).getBoundingClientRect();
                     const i = pick(depth, e.clientY - rect.top);
                     if (i !== active) go(i);
                   }}
                   onClick={(e) => {
-                    const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
+                    const rect = (
+                      e.currentTarget.ownerSVGElement ?? e.currentTarget
+                    ).getBoundingClientRect();
                     const i = pick(depth, e.clientY - rect.top);
                     if (i !== null) select(i);
                   }}
@@ -287,7 +315,13 @@ export function Icicle({
                     />
                   ) : null}
                   {text ? (
-                    <text x={p.x0 + 6} y={p.y0 + Math.min(h / 2, 12)} dy="0.32em" fontSize={10} fill="var(--chart-axis)">
+                    <text
+                      x={p.x0 + 6}
+                      y={p.y0 + Math.min(h / 2, 12)}
+                      dy="0.32em"
+                      fontSize={10}
+                      fill="var(--chart-axis)"
+                    >
                       {text}
                     </text>
                   ) : null}
@@ -319,7 +353,9 @@ export function Icicle({
                       dy="0.32em"
                       fontSize={fs}
                       fontWeight={c.depth === 0 ? 600 : 400}
-                      fill={c.d.fill && c.d.lightInk ? "var(--primary-foreground)" : "var(--chart-ink)"}
+                      fill={
+                        c.d.fill && c.d.lightInk ? "var(--primary-foreground)" : "var(--chart-ink)"
+                      }
                     >
                       {text}
                     </text>

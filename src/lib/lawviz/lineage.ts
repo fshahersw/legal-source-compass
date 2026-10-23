@@ -80,8 +80,7 @@ const obj = (v: unknown) =>
 const arr = (v: unknown) => (Array.isArray(v) ? (v as unknown[]) : []);
 const str = (v: unknown, max = 400) =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
-const nat = (v: unknown) =>
-  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
+const nat = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null);
 const iso = (v: unknown) => (typeof v === "string" && ISO.test(v) ? v : null);
 
 /** An https URL on one of the allowed hosts, else null. */

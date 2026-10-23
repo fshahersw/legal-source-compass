@@ -50,8 +50,7 @@ const obj = (v: unknown) =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 const str = (v: unknown, max = 300) =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
-const nat = (v: unknown) =>
-  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
+const nat = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null);
 const httpsUrl = (v: unknown) => {
   const s = str(v, 400);
   if (!s) return null;
@@ -65,8 +64,7 @@ const httpsUrl = (v: unknown) => {
 export function parseCalendar(raw: unknown, builtAt: string | null = null): CalendarData {
   const r = obj(raw);
   if (!r) return { status: "unavailable", builtAt };
-  if (r["status"] === "empty" || r["status"] === "invalid")
-    return { status: r["status"], builtAt };
+  if (r["status"] === "empty" || r["status"] === "invalid") return { status: r["status"], builtAt };
   if (r["status"] !== "ok" || !isAgency(r["agency"]) || typeof r["year"] !== "number")
     return { status: "unavailable", builtAt };
   let dropped = 0;
@@ -92,7 +90,9 @@ export function parseCalendar(raw: unknown, builtAt: string | null = null): Cale
       sourceLabel: str(a[7], 120) ?? "Source",
       sourceUrl: httpsUrl(a[8]),
       datasets: Array.isArray(a[9])
-        ? (a[9] as unknown[]).filter((d): d is string => typeof d === "string" && /^[a-z0-9_]{2,80}$/.test(d))
+        ? (a[9] as unknown[]).filter(
+            (d): d is string => typeof d === "string" && /^[a-z0-9_]{2,80}$/.test(d),
+          )
         : [],
     });
   }
@@ -101,7 +101,13 @@ export function parseCalendar(raw: unknown, builtAt: string | null = null): Cale
   for (const x of Array.isArray(r["days"]) ? (r["days"] as unknown[]) : []) {
     const a = Array.isArray(x) ? (x as unknown[]) : [];
     const n = nat(a[2]);
-    if (typeof a[0] !== "string" || !ids.has(a[0]) || typeof a[1] !== "string" || !ISO.test(a[1]) || !n) {
+    if (
+      typeof a[0] !== "string" ||
+      !ids.has(a[0]) ||
+      typeof a[1] !== "string" ||
+      !ISO.test(a[1]) ||
+      !n
+    ) {
       dropped++;
       continue;
     }
@@ -111,13 +117,28 @@ export function parseCalendar(raw: unknown, builtAt: string | null = null): Cale
   for (const x of Array.isArray(r["months"]) ? (r["months"] as unknown[]) : []) {
     const a = Array.isArray(x) ? (x as unknown[]) : [];
     const n = nat(a[2]);
-    if (typeof a[0] !== "string" || !ids.has(a[0]) || typeof a[1] !== "string" || !MONTH.test(a[1]) || !n) {
+    if (
+      typeof a[0] !== "string" ||
+      !ids.has(a[0]) ||
+      typeof a[1] !== "string" ||
+      !MONTH.test(a[1]) ||
+      !n
+    ) {
       dropped++;
       continue;
     }
     (months[a[0]] ??= {})[a[1]] = n;
   }
-  return { status: "ok", agency: r["agency"], year: r["year"], series, days, months, builtAt, dropped };
+  return {
+    status: "ok",
+    agency: r["agency"],
+    year: r["year"],
+    series,
+    days,
+    months,
+    builtAt,
+    dropped,
+  };
 }
 
 // ------------------------------------------------------------------------------------------------ day grid
@@ -131,7 +152,8 @@ export type DayCell = {
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
-export const isoDay = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+export const isoDay = (d: Date) =>
+  `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 
 /** Every day of `year` in week columns (weeks start on Monday; week 0 holds January 1). */
 export function yearGrid(
@@ -145,7 +167,8 @@ export function yearGrid(
   for (let d = new Date(jan1); d.getUTCFullYear() === year; d.setUTCDate(d.getUTCDate() + 1)) {
     const date = isoDay(d);
     const dayOfYear = Math.round((d.getTime() - jan1.getTime()) / 86_400_000);
-    const covered = series.first !== null && series.last !== null && date >= series.first && date <= series.last;
+    const covered =
+      series.first !== null && series.last !== null && date >= series.first && date <= series.last;
     out.push({
       date,
       weekday: (d.getUTCDay() + 6) % 7,
@@ -179,7 +202,9 @@ export function classOf(value: number, breaks: readonly number[]): number {
 export function breakLabels(breaks: readonly number[]): string[] {
   return breaks.map((b, i) => {
     const lo = i === 0 ? 1 : breaks[i - 1]! + 1;
-    return lo === b ? b.toLocaleString("en-US") : `${lo.toLocaleString("en-US")}–${b.toLocaleString("en-US")}`;
+    return lo === b
+      ? b.toLocaleString("en-US")
+      : `${lo.toLocaleString("en-US")}–${b.toLocaleString("en-US")}`;
   });
 }
 
@@ -223,7 +248,20 @@ export function yearsOf(series: readonly Series[]): number[] {
 }
 
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+export const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
 
 export function longDay(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`);

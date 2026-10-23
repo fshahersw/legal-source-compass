@@ -7,6 +7,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { Fact } from "@/components/uscode/UsCodeText";
+import { LawAtlas } from "@/components/lawviz/LawAtlas";
 import { pageHead } from "@/lib/corpus/head";
 import {
   listUsCodeReleasePoints,
@@ -179,6 +180,9 @@ function UsCodeIndex() {
               },
             }))}
           />
+          <div className="mt-6">
+            <LawAtlas corpus="usc" />
+          </div>
           <ReleasePoints />
         </>
       ) : null}

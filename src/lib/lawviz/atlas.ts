@@ -75,8 +75,7 @@ const obj = (v: unknown) =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 const str = (v: unknown, max = 400) =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
-const nat = (v: unknown) =>
-  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
+const nat = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null);
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Node ids exactly as the refresh writes them. */
@@ -89,9 +88,23 @@ export const isNodeId = (id: string) => NODE_ID.test(id);
 /** One compact tuple (see lawviz.node_tuple) -> node, or null when anything is malformed. */
 export function parseAtlasTuple(raw: unknown): AtlasNode | null {
   if (!Array.isArray(raw) || raw.length < 13) return null;
-  const [id, parent, kind, num, label, sections, chars, recorded, last, median, children, status, ord] =
-    raw as unknown[];
-  const k = typeof kind === "string" && KINDS.includes(kind as AtlasKind) ? (kind as AtlasKind) : null;
+  const [
+    id,
+    parent,
+    kind,
+    num,
+    label,
+    sections,
+    chars,
+    recorded,
+    last,
+    median,
+    children,
+    status,
+    ord,
+  ] = raw as unknown[];
+  const k =
+    typeof kind === "string" && KINDS.includes(kind as AtlasKind) ? (kind as AtlasKind) : null;
   const sid = str(id, 300);
   if (!k || !sid) return null;
   const s = nat(sections);
@@ -105,7 +118,7 @@ export function parseAtlasTuple(raw: unknown): AtlasNode | null {
     typeof median === "number" && Number.isInteger(median) && median >= 1789 && median <= 2100
       ? median
       : null;
-  if ((r > 0) !== (lastChange !== null) || (r > 0) !== (medianYear !== null)) return null;
+  if (r > 0 !== (lastChange !== null) || r > 0 !== (medianYear !== null)) return null;
   const par = parent === null ? null : str(parent, 300);
   if (parent !== null && !par) return null;
   let range: AtlasNode["range"] = null;
@@ -181,8 +194,7 @@ export function parseAtlasView(raw: unknown, corpus: AtlasCorpus): AtlasView {
     grandchildren: grandOk,
     grandchildrenTotal: nat(r["grandchildren_total"]) ?? grandOk.length,
     grandchildrenIncluded: r["grandchildren_included"] === true,
-    range:
-      rg && typeof rg[0] === "number" && typeof rg[1] === "number" ? [rg[0], rg[1]] : null,
+    range: rg && typeof rg[0] === "number" && typeof rg[1] === "number" ? [rg[0], rg[1]] : null,
     builtAt,
     dropped:
       path.dropped +
@@ -221,10 +233,13 @@ export function fullName(corpus: AtlasCorpus, n: AtlasNode): string {
 /** Title key of a node ("42", "5a" for the U.S. Code; "21" for the CFR). */
 export function titleOf(corpus: AtlasCorpus, id: string): string | null {
   if (corpus === "usc") {
-    const m = /^usc\/((?:[1-9]|[1-4]\d|5[0-4])a?)(?:\/|$)/.exec(id) ?? /^((?:[1-9]|[1-4]\d|5[0-4])a?):/.exec(id);
+    const m =
+      /^usc\/((?:[1-9]|[1-4]\d|5[0-4])a?)(?:\/|$)/.exec(id) ??
+      /^((?:[1-9]|[1-4]\d|5[0-4])a?):/.exec(id);
     return m ? m[1]! : null;
   }
-  const m = /^cfr\/((?:[1-9]|[1-4]\d|50))(?:\/|$)/.exec(id) ?? /^cfr:((?:[1-9]|[1-4]\d|50)):/.exec(id);
+  const m =
+    /^cfr\/((?:[1-9]|[1-4]\d|50))(?:\/|$)/.exec(id) ?? /^cfr:((?:[1-9]|[1-4]\d|50)):/.exec(id);
   return m ? m[1]! : null;
 }
 

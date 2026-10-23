@@ -37,8 +37,7 @@ export const LAST_CONGRESS = 119;
 
 const obj = (v: unknown) =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
-const nat = (v: unknown) =>
-  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
+const nat = (v: unknown) => (typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null);
 
 export function parseBillFlow(raw: unknown, builtAt: string | null = null): BillFlowData {
   const r = obj(raw);
@@ -131,11 +130,29 @@ export type StageLink = { source: StageId; target: StageId; value: number };
 
 const NODE_DEFS: Omit<StageNode, "value">[] = [
   { id: "intro", column: 0, label: "Introduced", reached: true, terminal: false },
-  { id: "intro_nr", column: 0, label: "Introduction not recorded", reached: false, terminal: false },
+  {
+    id: "intro_nr",
+    column: 0,
+    label: "Introduction not recorded",
+    reached: false,
+    terminal: false,
+  },
   { id: "reported", column: 1, label: "Reported by committee", reached: true, terminal: false },
-  { id: "not_reported", column: 1, label: "No committee report recorded", reached: false, terminal: false },
+  {
+    id: "not_reported",
+    column: 1,
+    label: "No committee report recorded",
+    reached: false,
+    terminal: false,
+  },
   { id: "passed", column: 2, label: "Passed one or both chambers", reached: true, terminal: false },
-  { id: "no_passage", column: 2, label: "No chamber passage recorded", reached: false, terminal: true },
+  {
+    id: "no_passage",
+    column: 2,
+    label: "No chamber passage recorded",
+    reached: false,
+    terminal: true,
+  },
   { id: "both", column: 3, label: "Passed both chambers", reached: true, terminal: false },
   { id: "one_only", column: 3, label: "Passed one chamber only", reached: false, terminal: false },
   { id: "law", column: 4, label: "Became law", reached: true, terminal: true },
@@ -147,7 +164,10 @@ export const STAGE_LABEL: Record<StageId, string> = Object.fromEntries(
 
 /** The path of one row through the five columns. */
 export function stagePath(r: BillRow): StageId[] {
-  const out: StageId[] = [r.introduced ? "intro" : "intro_nr", r.reported ? "reported" : "not_reported"];
+  const out: StageId[] = [
+    r.introduced ? "intro" : "intro_nr",
+    r.reported ? "reported" : "not_reported",
+  ];
   if (r.chambers === 0) {
     out.push("no_passage");
     // A law with no chamber passage recorded cannot be drawn without inventing a stage; it stays at this node and is
@@ -185,7 +205,9 @@ export function stageFlow(rows: readonly BillRow[]): StageFlow {
       link.set(k, (link.get(k) ?? 0) + r.n);
     }
   }
-  const nodes = NODE_DEFS.map((d) => ({ ...d, value: value.get(d.id) ?? 0 })).filter((n) => n.value > 0);
+  const nodes = NODE_DEFS.map((d) => ({ ...d, value: value.get(d.id) ?? 0 })).filter(
+    (n) => n.value > 0,
+  );
   const terminalOf = new Set(nodes.map((n) => n.id));
   for (const k of link.keys()) terminalOf.delete(k.split(">")[0] as StageId);
   const links = [...link.entries()]
@@ -195,8 +217,10 @@ export function stageFlow(rows: readonly BillRow[]): StageFlow {
     })
     .sort(
       (a, b) =>
-        NODE_DEFS.findIndex((d) => d.id === a.source) - NODE_DEFS.findIndex((d) => d.id === b.source) ||
-        NODE_DEFS.findIndex((d) => d.id === a.target) - NODE_DEFS.findIndex((d) => d.id === b.target),
+        NODE_DEFS.findIndex((d) => d.id === a.source) -
+          NODE_DEFS.findIndex((d) => d.id === b.source) ||
+        NODE_DEFS.findIndex((d) => d.id === a.target) -
+          NODE_DEFS.findIndex((d) => d.id === b.target),
     );
   return {
     nodes: nodes.map((n) => ({ ...n, terminal: terminalOf.has(n.id) })),
@@ -209,7 +233,13 @@ export function stageFlow(rows: readonly BillRow[]): StageFlow {
 
 // ------------------------------------------------------------------------------------------------ layout
 export type LaidNode = StageNode & { x0: number; x1: number; y0: number; y1: number };
-export type LaidLink = StageLink & { width: number; x0: number; x1: number; y0: number; y1: number };
+export type LaidLink = StageLink & {
+  width: number;
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+};
 
 /**
  * Fixed-order layout: five columns, the "reached" node on top of each column, heights proportional to bills, ribbons
@@ -311,7 +341,10 @@ export function congressTable(
 }
 
 export const ordinal = (n: number) => {
-  const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
+  const s =
+    n % 100 >= 11 && n % 100 <= 13
+      ? "th"
+      : (({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th");
   return `${n}${s}`;
 };
 

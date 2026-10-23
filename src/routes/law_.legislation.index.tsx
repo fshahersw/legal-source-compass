@@ -5,6 +5,7 @@ import {
   type LegislationSearchParams,
 } from "@/components/legislation/LegislationSearch";
 import { LegislationTabs } from "@/components/legislation/LegislationTabs";
+import { BillFlow } from "@/components/lawviz/BillFlow";
 import { pageHead } from "@/lib/corpus/head";
 import { BILL_TYPES, CONGRESS, SESSION, STATE } from "@/lib/external/legislation";
 
@@ -54,6 +55,11 @@ function LegislationIndexPage() {
     >
       <LegislationTabs active="bills" />
       <LegislationSearch search={search} />
+      {search.scope !== "state" ? (
+        <div className="mt-6">
+          <BillFlow />
+        </div>
+      ) : null}
       <p className="mt-4 max-w-[90ch] text-[11px] leading-4 text-muted-foreground">
         Federal measures come from the U.S. Government Publishing Office's Bill Status files (public
         domain); status is derived only from published action codes. State bills come from Open
