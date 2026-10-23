@@ -119,6 +119,7 @@ for (const suite of [
   { directory: "scripts/state_regs", modules: ["test_state_regs"] },
   { directory: "scripts/citations_v2", modules: ["test_citations_v2", "test_run_batch"] },
   { directory: "scripts/api_law/edgar", modules: ["test_edgar_text"] },
+  { directory: "scripts/safety_v2", modules: ["test_safety_v2"] },
 ]) {
   const result = spawnSync(
     python.command,

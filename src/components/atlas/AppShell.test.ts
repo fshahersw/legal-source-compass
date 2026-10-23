@@ -213,6 +213,7 @@ describe("AppShell section tabs", () => {
       "/safety?view=neiss",
       "/safety?view=reports",
       "/safety/signals",
+      "/safety/products",
       "/safety?view=list",
     ]);
   });

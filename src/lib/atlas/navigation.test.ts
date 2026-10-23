@@ -106,6 +106,7 @@ describe("section tabs", () => {
         "Injuries (NEISS)",
         "Consumer reports",
         "Signals",
+        "Products & devices",
         "Collections",
       ],
     ],
@@ -268,6 +269,9 @@ const PAGES: [string, SearchParams, NavigationSection | null, string | null][] =
   ["/safety", { agency: "FDA", ds: "agency_safety_openfda_drugsfda" }, "safety", "Collections"],
   ["/safety/signals", undefined, "safety", "Signals"],
   ["/safety/signals", { view: "neiss" }, "safety", "Signals"],
+  ["/safety/products", undefined, "safety", "Products & devices"],
+  ["/safety/products/faers:docetaxel", { tab: "terms" }, "safety", "Products & devices"],
+  ["/safety/companies", { name: "ACME LLC" }, "safety", "Products & devices"],
   ["/law/monitoring", undefined, "safety", "Regulatory intelligence"],
   ["/law/monitoring", { view: "analytics" }, "safety", "Regulatory intelligence"],
   // Companies

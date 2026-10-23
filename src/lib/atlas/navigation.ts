@@ -329,6 +329,12 @@ const SECTIONS: readonly SectionSpec[] = [
         owns: (p) => at(p, "/safety/signals"),
       },
       {
+        id: "products",
+        to: "/safety/products",
+        label: "Products & devices",
+        owns: (p) => at(p, "/safety/products") || at(p, "/safety/companies"),
+      },
+      {
         id: "collections",
         to: "/safety",
         search: { view: "list" },

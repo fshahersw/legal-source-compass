@@ -416,6 +416,13 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
         ],
       },
       {
+        to: "/safety/products",
+        label: "Products & devices",
+        description:
+          "Monthly FDA adverse-event and device reports, reactions, recalls and complaints for MDL-named products, drugs and devices.",
+        counts: [{ dataset: "safety_mdl_products", label: "MDL product groups" }],
+      },
+      {
         to: "/safety",
         search: { view: "list" },
         label: "Collections",
