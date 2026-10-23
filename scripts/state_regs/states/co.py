@@ -62,6 +62,7 @@ def index(ctx) -> list[dict]:
     d = parsing.doc(r.body, r.final_url)
     nodes: list[dict] = []
     depts: dict[str, dict] = {}
+    seen_agencies: set[tuple[str, str]] = set()
     for a in d.iter("a"):
         h = a.get("href") or ""
         if "NumericalCCRDocList.do" not in h:
@@ -69,8 +70,9 @@ def index(ctx) -> list[dict]:
         q = parse_qs(urlparse(h).query)
         did, dname = (q.get("deptID") or [""])[0], (q.get("deptName") or [""])[0]
         aid, aname = (q.get("agencyID") or [""])[0], (q.get("agencyName") or [""])[0]
-        if not (did and aid):
-            continue
+        if not (did and aid) or (did, aid) in seen_agencies:
+            continue  # the department list links each agency more than once
+        seen_agencies.add((did, aid))
         if did not in depts:
             depts[did] = model.node(STATE, f"dept-{did}", level="department", num=dname.split(" ", 1)[0], heading=re.sub(r"^[\d,]+\s+", "", dname),
                                     agency=re.sub(r"^[\d,]+\s+", "", dname), source_url=f"{HOST}/CCR/NumericalDeptList.do", ordinal=len(nodes))

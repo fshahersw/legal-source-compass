@@ -2,7 +2,8 @@
 build reports (what was acquired and checked). Writes private/build/w1025_regs/coverage.json (the matrix, for the docs and
 the handoff) and codes.json (rows for public.state_reg_load_codes_v1).
 
-  python3 -I -B scripts/state_regs/coverage.py
+  python3 -I -B scripts/state_regs/coverage.py              coverage.json + codes.json
+  python3 -I -B scripts/state_regs/coverage.py --manifest   MANIFEST.json of every staged file
 """
 from __future__ import annotations
 
@@ -114,5 +115,33 @@ def main():
     print(json.dumps({"states": len(matrix), "acquisition": counts}))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and "--manifest" not in sys.argv:
     main()
+
+
+def build_manifest() -> dict:
+    """private/build/w1025_regs/MANIFEST.json: every staged file with sha256, bytes and row counts."""
+    import hashlib
+    import gzip as _gz
+    files = []
+    for dirpath, _dirs, names in os.walk(lib.BUILD):
+        for name in sorted(names):
+            if name == "MANIFEST.json":
+                continue
+            path = os.path.join(dirpath, name)
+            with open(path, "rb") as h:
+                data = h.read()
+            row = {"path": os.path.relpath(path, lib.ROOT), "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+            if name.endswith(".jsonl.gz"):
+                row["rows"] = sum(1 for line in _gz.decompress(data).splitlines() if line.strip())
+            files.append(row)
+    out = {"generated_at": lib.utc_now(), "about": "Staged outputs of the state administrative code stream (wave 1025, REGS). "
+           "Raw responses: private/acq/w1025_regs/manifest.jsonl (url, final_url, sha256, bytes, retrieved_at, status).",
+           "files": sorted(files, key=lambda f: f["path"])}
+    with open(os.path.join(lib.BUILD, "MANIFEST.json"), "w", encoding="utf-8") as h:
+        json.dump(out, h, indent=1)
+    return out
+
+
+if __name__ == "__main__" and "--manifest" in sys.argv:
+    print(json.dumps({"files": len(build_manifest()["files"])}))

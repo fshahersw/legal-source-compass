@@ -53,7 +53,7 @@ def look(st: str, kind: str, url: str | None) -> dict | None:
     out.update(result="ok" if r.status == 200 else f"http_{r.status}", status=r.status, final_url=r.final_url,
                content_type=r.content_type, bytes=entry["bytes"], sha256=entry["sha256"], retrieved_at=entry["retrieved_at"],
                title=lib.norm_ws(title.group(1))[:200] if title else None, currency_statements=cur[:4], terms_links=terms,
-               browser_check=bool(re.search(r"cf-chl|captcha|Just a moment|challenge-platform|Access Denied|Request Rejected|_Incapsula_Resource|Attention Required", text[:5000], re.I)))
+               browser_check=bool(re.search(r"cf-chl|g-recaptcha|hcaptcha\.com|Just a moment|challenge-platform|Access Denied|Request Rejected|_Incapsula_Resource|Attention Required", text[:5000], re.I)))
     return out
 
 
