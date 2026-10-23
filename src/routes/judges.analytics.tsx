@@ -22,7 +22,7 @@ function Page() {
       description="Experience, current MDL load, appointing party and tenure from FJC and JPML records, with a labelled disclosure review queue."
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Judicial profiles", to: "/judges" },
+        { label: "Analytics", to: "/analytics" },
         { label: "MDL judge analytics" },
       ]}
     >

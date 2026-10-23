@@ -30,7 +30,7 @@ function Page() {
       description="What the corpus records for one MDL number, joined by exact MDL number: report trajectory, court and judge, hearing sessions, Panel orders, terminated litigation, court page, companies, flags and peers."
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Courts", to: "/courts" },
+        { label: "Analytics", to: "/analytics" },
         { label: "Federal court analytics", to: "/courts/analytics" },
         { label: "MDL analytics", to: "/matters/analytics" },
         { label: `MDL ${raw}` },

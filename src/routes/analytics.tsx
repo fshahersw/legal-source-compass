@@ -17,7 +17,7 @@ function Page() {
     <AppShell
       title="Data visualizations"
       description="The insight of the day for each analytics section, with the main points and a link to its charts."
-      breadcrumbs={[{ label: "States & courts", to: "/" }, { label: "Data visualizations" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Analytics" }]}
     >
       <InsightsHub />
     </AppShell>

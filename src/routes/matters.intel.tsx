@@ -20,7 +20,7 @@ function Page() {
       description="Centralization trends, hearing outcomes, concentration and official court-page statements."
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Courts", to: "/courts" },
+        { label: "Analytics", to: "/analytics" },
         { label: "Federal court analytics", to: "/courts/analytics" },
         { label: "MDL intelligence" },
       ]}

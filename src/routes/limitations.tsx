@@ -40,7 +40,7 @@ function Page() {
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Law & regulation", to: "/law" },
-        { label: "Limitations research" },
+        { label: "Time limits" },
       ]}
       actions={
         <Link

@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Map as MapIcon,
-  Clock3,
+  BarChart3,
   Library,
   BookOpen,
   Search,
@@ -29,7 +29,7 @@ import {
   navigationSection,
 } from "@/lib/atlas/navigation";
 
-const navIcons = { map: MapIcon, book: BookOpen, clock: Clock3, library: Library };
+const navIcons = { map: MapIcon, book: BookOpen, chart: BarChart3, library: Library };
 const NAV = PRIMARY_NAVIGATION.map((item) => ({ ...item, icon: navIcons[item.icon] }));
 
 /**

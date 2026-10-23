@@ -21,7 +21,7 @@ function Page() {
       description="Product liability filings, civil caseloads, time to disposition and appeals by district and circuit, from the official U.S. Courts Judicial Business tables."
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Courts", to: "/courts" },
+        { label: "Analytics", to: "/analytics" },
         { label: "Federal court analytics" },
       ]}
       actions={
