@@ -1,0 +1,386 @@
+import { memo, useId, useMemo, useRef, useState } from "react";
+import type { GeoData } from "@/lib/corpus/geo";
+import { stateFromGeometry } from "@/lib/corpus/stateHub";
+import {
+  classIndex,
+  competitionRank,
+  quantileBreaks,
+  type MapFormat,
+} from "@/lib/external/mapMetricsModel";
+import { legendClasses, readout, shadeOf, type Readout } from "./mapView";
+
+export type MapArea = {
+  /** Values keyed by state FIPS (states) or five-digit FIPS (counties). */
+  values: Record<string, number>;
+  /** Sentence behind each state's number (numerator and denominator); optional. */
+  detail?: Record<string, string>;
+  format: MapFormat;
+  unit: string;
+  yearLabel: string;
+};
+
+type Tip = { x: number; y: number; read: Readout; id: string };
+const RANK_SCOPE_STATES = "states and DC";
+const RANK_SCOPE_COUNTIES = "counties";
+
+const fillFor = (shade: number | null, hatch: string) =>
+  shade == null ? `url(#${hatch})` : `color-mix(in srgb,var(--map-high) ${shade}%,var(--map-low))`;
+
+/** Counties are drawn as one memoised group so a hover over a state or the tooltip never repaints 3,000 paths. */
+const CountyPaths = memo(function CountyPaths({
+  shapes,
+  onPointer,
+  onLeave,
+  onPick,
+}: {
+  shapes: { id: string; d: string; fill: string }[];
+  onPointer: (e: React.MouseEvent<SVGGElement>) => void;
+  onLeave: () => void;
+  onPick: (id: string) => void;
+}) {
+  return (
+    <g
+      data-layer="counties"
+      onMouseMove={onPointer}
+      onMouseLeave={onLeave}
+      onClick={(e) => {
+        const id = (e.target as SVGElement).getAttribute("data-county");
+        if (id) onPick(id);
+      }}
+    >
+      {shapes.map((s) => (
+        <path
+          key={s.id}
+          d={s.d}
+          data-county={s.id}
+          style={{ fill: s.fill, stroke: "var(--surface)", strokeWidth: 0.25, cursor: "pointer" }}
+          vectorEffect="non-scaling-stroke"
+        />
+      ))}
+    </g>
+  );
+});
+
+/**
+ * Choropleth of one honest metric. States by default; with a county layer, counties shaded by their own quantile classes.
+ * Missing values are hatched and counted in the legend, never drawn as the lowest class. Every state is a focusable
+ * button; counties are reached by pointer, and the "show data" table beside the map lists every area for keyboard and
+ * screen-reader use.
+ */
+export function MetricMap({
+  geo,
+  title,
+  states,
+  counties,
+  countyNames,
+  selectedState,
+  onState,
+  onCounty,
+  onHoverState,
+  stateAction = "Open",
+}: {
+  geo: GeoData;
+  title: string;
+  states: MapArea;
+  /** When set, the county layer is shown instead of the state shading. */
+  counties: MapArea | null;
+  countyNames: Map<string, string>;
+  selectedState?: string | undefined;
+  onState: (fips: string) => void;
+  onCounty: (fips: string) => void;
+  onHoverState?: (usps: string | null) => void;
+  stateAction?: string;
+}) {
+  const hatch = useId().replace(/:/g, "");
+  const titleId = useId();
+  const box = useRef<HTMLDivElement>(null);
+  const [tip, setTip] = useState<Tip | null>(null);
+  const showCounties = counties != null;
+
+  // state shading and ranks (ranked over the 50 states and DC; the map draws no other area)
+  const stateIdentity = useMemo(
+    () =>
+      geo.states.flatMap((shape) => {
+        const id = stateFromGeometry(shape);
+        return id ? [{ shape, id }] : [];
+      }),
+    [geo],
+  );
+  const stateFips = useMemo(() => stateIdentity.map((s) => s.id.fips), [stateIdentity]);
+  const stateRank = useMemo(
+    () => competitionRank(states.values, stateFips),
+    [states.values, stateFips],
+  );
+  const stateClasses = useMemo(
+    () =>
+      legendClasses(
+        stateFips.flatMap((f) => (f in states.values ? [states.values[f]!] : [])),
+        states.format,
+      ),
+    [stateFips, states],
+  );
+  const stateBreaks = useMemo(() => stateClasses.map((c) => c.hi), [stateClasses]);
+
+  // county shading and national county ranks
+  const countyIds = useMemo(() => geo.counties.map((c) => c.id), [geo]);
+  const countyRank = useMemo(
+    () => (counties ? competitionRank(counties.values, countyIds) : {}),
+    [counties, countyIds],
+  );
+  const countyClasses = useMemo(
+    () =>
+      counties
+        ? legendClasses(
+            countyIds.flatMap((id) => (id in counties.values ? [counties.values[id]!] : [])),
+            counties.format,
+          )
+        : [],
+    [counties, countyIds],
+  );
+  const countyShapes = useMemo(() => {
+    if (!counties) return [];
+    const breaks = quantileBreaks(
+      countyIds.flatMap((id) => (id in counties.values ? [counties.values[id]!] : [])),
+      5,
+    );
+    return geo.counties.map((c) => {
+      const i = classIndex(counties.values[c.id], breaks);
+      return {
+        id: c.id,
+        d: c.d,
+        fill: fillFor(i == null ? null : shadeOf(i, breaks.length), hatch),
+      };
+    });
+  }, [geo, counties, countyIds, hatch]);
+
+  const active = showCounties ? counties : states;
+  const classes = showCounties ? countyClasses : stateClasses;
+  const missing = showCounties
+    ? geo.counties.filter((c) => !(c.id in counties.values)).length
+    : stateFips.filter((f) => !(f in states.values)).length;
+
+  function place(clientX: number, clientY: number) {
+    const rect = box.current?.getBoundingClientRect();
+    return rect ? { x: clientX - rect.left, y: clientY - rect.top } : { x: 0, y: 0 };
+  }
+  function stateRead(fips: string, name: string): Readout {
+    return readout({
+      name,
+      value: states.values[fips],
+      format: states.format,
+      unit: states.unit,
+      rank: stateRank[fips],
+      rankScope: RANK_SCOPE_STATES,
+      detail: states.detail?.[fips],
+    });
+  }
+  function countyRead(id: string): Readout {
+    const name = countyNames.get(id) ?? id;
+    return readout({
+      name,
+      value: counties?.values[id],
+      format: counties!.format,
+      unit: counties!.unit,
+      rank: countyRank[id],
+      rankScope: RANK_SCOPE_COUNTIES,
+    });
+  }
+
+  const shapes = stateIdentity.map(({ shape, id }) => {
+    const value = states.values[id.fips];
+    const idx = classIndex(value, stateBreaks);
+    const isSelected = selectedState === id.usps;
+    const read = stateRead(id.fips, id.name);
+    return { shape, id, value, idx, isSelected, read };
+  });
+
+  return (
+    <div
+      ref={box}
+      className="atlas-map relative isolate overflow-hidden rounded-lg border border-border"
+      data-testid="geography-map"
+      data-layer={showCounties ? "counties" : "states"}
+    >
+      <div className="research-band !py-2.5">
+        <span id={titleId} className="truncate text-xs font-medium">
+          {title}
+        </span>
+        <span className="shrink-0 text-[11px] text-[var(--navy-muted)]">
+          {active.yearLabel} · {active.unit}
+        </span>
+      </div>
+      <svg
+        viewBox="0 0 975 610"
+        className="h-auto min-h-52 w-full p-3"
+        role="group"
+        aria-labelledby={titleId}
+      >
+        <defs>
+          <pattern
+            id={hatch}
+            width="6"
+            height="6"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width="6" height="6" fill="var(--muted)" />
+            <line
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="6"
+              stroke="var(--muted-foreground)"
+              strokeOpacity="0.45"
+              strokeWidth="1.5"
+            />
+          </pattern>
+        </defs>
+        {showCounties ? (
+          <>
+            <CountyPaths
+              shapes={countyShapes}
+              onPointer={(e) => {
+                const id = (e.target as SVGElement).getAttribute("data-county");
+                if (!id) return setTip(null);
+                const p = place(e.clientX, e.clientY);
+                setTip((t) =>
+                  t?.id === id && Math.abs(t.x - p.x) + Math.abs(t.y - p.y) < 3
+                    ? t
+                    : { ...p, read: countyRead(id), id },
+                );
+              }}
+              onLeave={() => setTip(null)}
+              onPick={onCounty}
+            />
+            <path
+              d={geo.stateBorders}
+              className="pointer-events-none"
+              style={{ fill: "none", stroke: "var(--surface)", strokeWidth: 1.1 }}
+            />
+          </>
+        ) : (
+          shapes.map(({ shape, id, value, idx, isSelected, read }) => (
+            <path
+              key={id.fips}
+              d={shape.d}
+              data-state={id.usps}
+              data-fips={id.fips}
+              role="button"
+              tabIndex={0}
+              aria-label={`${stateAction} ${id.name}. ${read.value}${read.rank ? `. ${read.rank}` : ""}`}
+              aria-pressed={isSelected}
+              className="outline-none transition-[stroke] duration-150 focus-visible:[stroke:var(--map-focus)] focus-visible:[stroke-width:2.4]"
+              vectorEffect="non-scaling-stroke"
+              style={{
+                fill: fillFor(
+                  idx == null || value == null ? null : shadeOf(idx, stateBreaks.length),
+                  hatch,
+                ),
+                stroke: isSelected ? "var(--map-active)" : "var(--surface)",
+                strokeWidth: isSelected ? 2.4 : 0.9,
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                const p = place(e.clientX, e.clientY);
+                setTip({ ...p, read, id: id.fips });
+                onHoverState?.(id.usps);
+              }}
+              onMouseMove={(e) => {
+                const p = place(e.clientX, e.clientY);
+                setTip((t) => (t && t.id === id.fips ? { ...t, ...p } : t));
+              }}
+              onMouseLeave={() => {
+                setTip(null);
+                onHoverState?.(null);
+              }}
+              onFocus={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                const p = place(r.left + r.width / 2, r.top + r.height / 2);
+                setTip({ ...p, read, id: id.fips });
+                onHoverState?.(id.usps);
+              }}
+              onBlur={() => {
+                setTip(null);
+                onHoverState?.(null);
+              }}
+              onClick={() => onState(id.fips)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onState(id.fips);
+                }
+              }}
+            >
+              <title>{`${id.name}: ${read.value}`}</title>
+            </path>
+          ))
+        )}
+      </svg>
+      {tip ? (
+        <div
+          aria-hidden
+          data-testid="map-tooltip"
+          className="pointer-events-none absolute z-10 max-w-64 rounded-md border border-border bg-popover px-2.5 py-1.5 text-[11px] leading-4 text-popover-foreground shadow-md"
+          style={{
+            left: Math.min(Math.max(tip.x + 12, 4), (box.current?.clientWidth ?? 600) - 260),
+            top: Math.max(tip.y - 8, 28),
+          }}
+        >
+          <div className="font-semibold">{tip.read.name}</div>
+          <div className="font-mono tabular-nums">{tip.read.value}</div>
+          {tip.read.rank ? <div className="text-muted-foreground">{tip.read.rank}</div> : null}
+          {tip.read.detail ? (
+            <div className="mt-0.5 text-muted-foreground">{tip.read.detail}</div>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="map-footer flex min-h-10 flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-border bg-surface/80 px-3 py-2 text-[11px]">
+        <div aria-live="polite" aria-atomic="true" className="min-w-0 flex-1">
+          {tip ? (
+            <>
+              <span className="font-semibold">{tip.read.name}</span>
+              <span className="ml-2 text-muted-foreground">
+                {tip.read.value}
+                {tip.read.rank ? ` · ${tip.read.rank}` : ""}
+              </span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">
+              {showCounties
+                ? "Hover a county for its value; select one to open its page."
+                : "Select a state to open it. Tab moves between states."}
+            </span>
+          )}
+        </div>
+        <ul
+          data-testid="map-legend"
+          aria-label={`Legend: ${active.unit}, ${active.yearLabel}`}
+          className="m-0 flex list-none flex-wrap items-center gap-x-3 gap-y-1 p-0 text-muted-foreground"
+        >
+          {classes.map((c) => (
+            <li
+              key={c.index}
+              className="flex items-center gap-1.5"
+              title={`${c.count} ${showCounties ? "counties" : "areas"}`}
+            >
+              <span
+                aria-hidden
+                className="inline-block h-2.5 w-4 rounded-sm border border-border/60"
+                style={{
+                  background: `color-mix(in srgb,var(--map-high) ${c.shade}%,var(--map-low))`,
+                }}
+              />
+              <span className="font-mono tabular-nums">{c.label}</span>
+            </li>
+          ))}
+          <li className="flex items-center gap-1.5">
+            <svg width="16" height="10" aria-hidden>
+              <rect width="16" height="10" fill={`url(#${hatch})`} stroke="var(--border)" />
+            </svg>
+            Not recorded{missing ? ` (${missing})` : ""}
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+}
