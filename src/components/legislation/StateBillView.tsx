@@ -10,6 +10,17 @@ import { Capped, MilestoneTrack, Section, StatusChip } from "./parts";
 const RULE =
   "From Open States' own action classifications (introduction, passage by each chamber, executive signature or veto, became law); a stage Open States did not classify is not recorded, even if it happened.";
 
+const KIND_BUTTON = {
+  page: "Legislature page",
+  search: "Legislature bill search",
+  data: "Legislature data feed",
+};
+const KIND_LABEL = {
+  page: "bill page",
+  search: "search or status start page, not specific to this bill",
+  data: "machine data feed",
+};
+
 const host = (u: string) => {
   try {
     return new URL(u).hostname.replace(/^www\./, "");
@@ -35,7 +46,7 @@ export function StateBillView({ bill: b }: { bill: StateBill }) {
             <Button asChild size="sm">
               <a href={b.officialSources[0].url} target="_blank" rel="noreferrer">
                 <ExternalLink className="mr-1 size-3.5" />
-                Legislature page
+                {KIND_BUTTON[b.officialSources[0].kind ?? "page"]}
               </a>
             </Button>
           ) : null}
@@ -152,6 +163,7 @@ export function StateBillView({ bill: b }: { bill: StateBill }) {
                 {b.officialSources.map((s) => (
                   <li key={s.url}>
                     <SourceLink href={s.url}>{s.note || host(s.url)}</SourceLink>
+                    <span className="ml-1">({KIND_LABEL[s.kind ?? "page"]})</span>
                   </li>
                 ))}
               </ul>

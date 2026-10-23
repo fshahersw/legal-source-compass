@@ -329,14 +329,14 @@ def main() -> None:
     summary = {
         "source": "GovInfo bulk data, Bill Status XML (U.S. Government Publishing Office), per-type zips for the 108th-119th Congress, https://www.govinfo.gov/bulkdata/BILLSTATUS",
         "licence": RIGHTS,
-        "retrieved": "2026-10-23",
+        "retrieved": max(u["retrieved_at"] for u in state.values())[:10],
         "records": n,
         "scope": "Every measure GovInfo publishes in Bill Status for the 108th (2003) through 119th Congress: H.R., S., H.J.Res., S.J.Res., H.Con.Res., S.Con.Res., H.Res., S.Res.",
         "milestone_rules": bc.MILESTONE_RULES, "vitiation_rule": bc.VITIATION_RULE,
         "action_rule": "All published actions are kept; an action is dropped only when an earlier action of the same measure has the identical date, text and action code (a copy from another source system).",
         "summary_rule": SUMMARY_NOTE,
         "law_link_rule": "A resulting public law links to public_laws_enacted only when exactly one record there has the same Congress and law number and the number is not marked shared; otherwise the number and the GovInfo Link Service URL are shown.",
-        "report_link_rule": "Committee report citations link to the GovInfo Link Service by Congress, report type and number (https://www.govinfo.gov/link/crpt/{congress}/{hrpt|srpt}/{number}); Part/Book/Errata suffixes are shown as printed.",
+        "report_link_rule": "Committee report citations link to the GovInfo package page for the report (https://www.govinfo.gov/app/details/CRPT-{congress}{hrpt|srpt}{number}), with the GovInfo Link Service URL for the same report kept beside it; Part/Book/Errata suffixes are shown as printed.",
         "stats": dict(sorted(stats.items())), "per_congress_type": per_unit,
         "public_laws_enacted_lookup": "used" if lookup is not None else "not available",
     }

@@ -150,6 +150,13 @@ class BillStatusParse(unittest.TestCase):
         self.assertEqual([b["k"] for b in blocks], ["p", "p", "li", "p"])
         self.assertEqual(" ".join(b["x"] for b in blocks), plain_words(markup))
 
+    def test_cdata_wrapped_summary(self):
+        xml = V3.replace(b"<text>&lt;p&gt;Old text&lt;/p&gt;</text>", b"<cdata><text>&lt;p&gt;Old text&lt;/p&gt;</text></cdata>")
+        xml = xml.replace(b"<versionCode>49</versionCode>", b"<versionCode>01</versionCode>").replace(b"<actionDate>2024-05-16</actionDate><actionDesc>Public Law",
+                                                                                                         b"<actionDate>2020-01-01</actionDate><actionDesc>Public Law")
+        r = parse_bill(xml)
+        self.assertEqual(r["summary"]["blocks"], [{"k": "p", "x": "Old text"}])
+
     def test_latest_summary_rule(self):
         s = latest_summary([{"actionDate": "2024-01-01", "updateDate": "2024-01-02", "text": "<p>a</p>", "versionCode": "00"},
                             {"actionDate": "2024-01-01", "updateDate": "2024-03-01", "text": "<p>b</p>", "versionCode": "07"},
@@ -201,7 +208,8 @@ class BillsCommon(unittest.TestCase):
         self.assertEqual(bc.milestones({}, acts)["became_law"]["evidence"], "action text")
 
     def test_committee_report(self):
-        self.assertEqual(bc.committee_report("H. Rept. 118-138")["url"], "https://www.govinfo.gov/link/crpt/118/hrpt/138")
+        self.assertEqual(bc.committee_report("H. Rept. 118-138")["url"], "https://www.govinfo.gov/app/details/CRPT-118hrpt138")
+        self.assertEqual(bc.committee_report("H. Rept. 118-138")["linkService"], "https://www.govinfo.gov/link/crpt/118/hrpt/138")
         r = bc.committee_report("S. Rept. 117-12,Part 2")
         self.assertEqual((r["doc"], r["number"], r["suffix"]), ("srpt", 12, "Part 2"))
         self.assertIsNone(bc.committee_report("S. Exec. Rept. 117-1")["url"])
@@ -311,6 +319,18 @@ class OpenStates(unittest.TestCase):
                 {"url": "https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=1"}]
         self.assertEqual([s["url"] for s in oc.official_sources(srcs)],
                          ["https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=1"])
+        kinds = {u: oc.source_kind(u) for u in (
+            "https://legislation.nysenate.gov/api/3/bills/2023-2024/A1492?summary=&detail=",
+            "http://webservices.legis.ga.gov/GGAServices/Members/Service.svc?wsdl",
+            "https://www.nysenate.gov/legislation/bills/2025/A1492",
+            "https://status.rilegislature.gov/",
+            "https://alison.legislature.state.al.us/bill-search",
+            "https://nebraskalegislature.gov/bills/search_by_date.php?SessionDay=2025-01-08",
+            "https://bills.legmt.gov/#/laws/bill/2/LC4301?open_tab=sum",
+            "https://legislature.vermont.gov/bill/loadBillDetailedStatus/2026/123")}
+        self.assertEqual(list(kinds.values()), ["data", "data", "page", "search", "search", "search", "page", "data"])
+        ordered = oc.official_sources([{"url": "https://sdlegislature.gov/api/Bills/1"}, {"url": "https://sdlegislature.gov/Session/Bill/1"}])
+        self.assertEqual([s["kind"] for s in ordered], ["page", "data"])
         self.assertEqual(oc.record_id("CA", "20252026", "AB 1"), "ca-20252026-ab1")
         self.assertEqual(oc.record_id("AZ", "57th-2nd-regular", "HB 2001"), "az-57th-2nd-regular-hb2001")
         self.assertEqual(oc.ident_key("H.B. 10a"), "HB10A")
@@ -339,6 +359,22 @@ class OpenStates(unittest.TestCase):
                     fh.write("".join(json.dumps(x) + "\n" for x in items))
             _, chosen, _ = bsb.choose_sessions(src)
             self.assertEqual([(c["identifier"], c["role"]) for c in chosen[j]], [("2026", "current"), ("2025", "preceding")])
+
+
+class VerifierSecondPath(unittest.TestCase):
+    def test_regex_identity_ignores_nested_blocks(self):
+        import verify_legislation as vl
+
+        nested = V3.replace(b"<amendments><amendment>", b"<amendments><amendment><amendments><latestAction><actionDate>1999-01-01</actionDate></latestAction></amendments>")
+        ident = vl.regex_identity(nested.decode())
+        self.assertEqual((ident["congress"], ident["type"], ident["number"]), ("118", "hr", "3935"))
+        self.assertEqual(ident["introduced"], "2023-06-09")
+        self.assertIsNone(ident["latest"], "the fixture has no bill-level latestAction; nested ones must not be picked")
+        self.assertEqual(ident["laws"], ["118-63"])
+        self.assertEqual(len(ident["summaries"]), 2)
+        self.assertEqual(vl.strip_balanced("a<x>1<x>2</x>3</x>b<x/>c<x />d", "x"), "abcd")
+        old = vl.regex_identity(OLD.replace(b"<title>", b"<amendments /><laws /><latestAction><actionDate>2021-01-03</actionDate></latestAction><title>").decode())
+        self.assertEqual((old["number"], old["latest"], len(old["summaries"])), ("9", "2021-01-03", 1))
 
 
 class CongressApiNames(unittest.TestCase):

@@ -30,6 +30,7 @@ LABEL = "State legislation: bills of the current and preceding regular session (
 CHILD = {"actions": "bill_id", "sponsorships": "bill_id", "sources": "bill_id", "versions": "bill_id", "documents": "bill_id"}
 LINKS = {"version_links": ("version_id", "versions"), "document_links": ("document_id", "documents")}
 MAX_ACTIONS = 400
+KIND_LABEL = {"page": "bill page", "search": "bill search or status start page", "data": "data feed"}
 
 
 def read(path: Path):
@@ -170,7 +171,8 @@ def build_state(st: str, tmp: Path, sess: dict, chosen_ids: dict, org_class: dic
                              "classification": (latest.get("classification") if latest else None) or None} if (la_date or la_desc) else None,
             "actionCount": len(acts), "actions": compact, "actionsShown": len(compact), "milestones": ms,
             "status": status, "statusLabel": status_label, "sponsors": sponsors, "versions": versions, "documents": documents,
-            "sources": sources_all, "officialSources": official, "openStatesUrl": os_url,
+            "sources": sources_all, "officialSources": official, "sourceKind": official[0]["kind"] if official else None,
+            "openStatesUrl": os_url,
             "openStatesUpdated": b.get("updated_at"),
         }
         primary = [x["name"] for x in sponsors if x.get("primary")]
@@ -179,6 +181,7 @@ def build_state(st: str, tmp: Path, sess: dict, chosen_ids: dict, org_class: dic
         stats["records"] += 1
         stats[f"status_{status}"] += 1
         stats["official_source" if official else "no_official_source"] += 1
+        stats[f"source_kind_{official[0]['kind'] if official else 'none'}"] += 1
         for n in oc.MILESTONE_ORDER:
             if ms.get(n):
                 stats[f"milestone_{n}"] += 1
@@ -193,9 +196,10 @@ def build_state(st: str, tmp: Path, sess: dict, chosen_ids: dict, org_class: dic
                  ["First action", first or "Not recorded"],
                  ["Latest action", f"{la_date or 'Date not recorded'}: {la_desc or 'Not recorded'}"],
                  ["Status (from Open States action classifications)", status_label],
-                 ["Official source", source_url if official else "Not recorded (Open States page shown)"],
+                 ["Official source" + (f" ({KIND_LABEL[official[0]['kind']]})" if official else ""),
+                  source_url if official else "Not recorded (Open States page shown)"],
                  ["Source", "Open States public data (public domain dedication)"]]
-        links = ([{"url": o["url"], "label": "Official legislature page"} for o in official[:2]]
+        links = ([{"url": o["url"], "label": f"Legislature: {KIND_LABEL[o['kind']]}"} for o in official[:2]]
                  + [{"url": os_url, "label": "Open States bill page"}, {"url": f"/places/{st}", "label": f"{state_name} profile"}])
         text = " ".join(x for x in [b["identifier"], oc.ident_key(b["identifier"]), b.get("title") or "", state_name, st,
                                     s["name"], " ".join(subjects), " ".join(x["name"] for x in sponsors[:6] if x.get("name"))] if x)
@@ -218,9 +222,10 @@ def build_state(st: str, tmp: Path, sess: dict, chosen_ids: dict, org_class: dic
 
 def main(argv: list[str]) -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--month", default="2026-10")
+    ap.add_argument("--month", default=None, help="dump month YYYY-MM (default: the newest extracted month)")
     a = ap.parse_args(argv)
-    src = cm.ACQ / "openstates" / a.month
+    month = a.month or sorted(p.name for p in (cm.ACQ / "openstates").iterdir() if (p / "dump_manifest.json").exists())[-1]
+    src = cm.ACQ / "openstates" / month
     manifest = json.loads((src / "dump_manifest.json").read_text())
     sessions, chosen, session_stats = choose_sessions(src)
     chosen_ids = {x["id"]: x["role"] for v in chosen.values() for x in v}
@@ -264,7 +269,7 @@ def main(argv: list[str]) -> None:
                  "bytes": manifest["bytes_streamed"], "sha256": manifest["sha256"], "retrieved_at": manifest["retrieved_at"]},
         "records": n, "session_rule": oc.SELECTION_RULE, "sessions": sessions_out, "jurisdictions_without_sessions": missing,
         "milestone_rules": oc.MILESTONE_RULES, "outcome_rule": oc.OUTCOME_RULE,
-        "source_url_rule": "Each record's source URL is the first legislature URL Open States records for the bill (http(s), not Open States or a commercial host); the Open States bill page is a secondary link and is used as the source URL only when no legislature URL is recorded.",
+        "source_url_rule": oc.SOURCE_RULE + " Only http(s) URLs that are not Open States or a commercial host count; the Open States bill page is a secondary link and is the source URL only when no legislature URL is recorded.",
         "actions_rule": f"Action count is every action in the dump; the record lists the {MAX_ACTIONS} most recent actions at most.",
         "stats": dict(sorted(stats.items())), "per_state_session": per_session,
     }

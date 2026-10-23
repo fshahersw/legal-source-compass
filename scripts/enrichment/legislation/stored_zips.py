@@ -1,6 +1,7 @@
 """Read the Bill Status zips back from the private `corpus-originals` bucket (the local copies are deleted after upload).
 
   python3 -I -B stored_zips.py --reparse 117-hr 113-hr      re-parse units from their stored zip (parser changes)
+  python3 -I -B stored_zips.py --reparse all
 
 fetch(unit) streams the stored object to private/acq/legislation/billstatus_zips/, checks its SHA-256 and size against the
 download record in billstatus_state.json, and returns the path; the caller deletes it. Credentials are read by
@@ -83,6 +84,9 @@ def reparse(key: str) -> dict:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--reparse", nargs="+", required=True)
-    for k in ap.parse_args().reparse:
+    ap.add_argument("--reparse", nargs="+", required=True, help="units such as 117-hr, or 'all'")
+    keys = ap.parse_args().reparse
+    if keys == ["all"]:
+        keys = sorted(ab.load_state(), key=lambda k: (int(k.split("-")[0]), k))
+    for k in keys:
         print(json.dumps(reparse(k)), flush=True)

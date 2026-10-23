@@ -25,17 +25,19 @@ RESERVE = 260
 INDEX = cm.BUILD / "crs_list.json"
 
 
-def list_all() -> list[dict]:
-    first = api.get("/crsreport", offset=0, limit=LIMIT)
+def list_all(tag: str | None = None) -> list[dict]:
+    """Every list page; with `tag` (the refresh date) the pages are fetched again and stored beside the earlier ones."""
+    first = api.get("/crsreport", _tag=tag, offset=0, limit=LIMIT)
     total = int(first["pagination"]["count"])
     reports = list(first["CRSReports"])
     for offset in range(LIMIT, total, LIMIT):
-        page = api.get("/crsreport", offset=offset, limit=LIMIT)
+        page = api.get("/crsreport", _tag=tag, offset=offset, limit=LIMIT)
         reports.extend(page["CRSReports"])
     by_id: dict[str, dict] = {}
     for r in reports:
         by_id.setdefault(r["id"], r)
-    out = {"listed_count": total, "rows_read": len(reports), "unique_ids": len(by_id), "reports": sorted(by_id.values(), key=lambda r: r["id"])}
+    out = {"listed_count": total, "rows_read": len(reports), "unique_ids": len(by_id), "retrieved_at": cm.now_utc(),
+           "reports": sorted(by_id.values(), key=lambda r: r["id"])}
     cm.BUILD.mkdir(parents=True, exist_ok=True)
     INDEX.write_text(json.dumps(out))
     print(json.dumps({k: out[k] for k in ("listed_count", "rows_read", "unique_ids")} | {"requests_used": api.used()}))
@@ -46,32 +48,54 @@ def priority(r: dict) -> tuple:
     return (0 if r.get("status") == "Active" else 1, "".join(chr(255 - ord(c)) for c in (r.get("updateDate") or "")))
 
 
-def details(n: int) -> None:
+def stored_detail(rid: str) -> dict | None:
+    """The newest stored detail response for a report (untagged first fetch or a later dated refresh)."""
+    base = api.stored_name(f"/crsreport/{rid}", {"format": "json"})
+    best = None
+    for p in [base, *sorted(base.parent.glob(base.name.replace(".json.gz", "__at_*.json.gz")))]:
+        if p.exists():
+            d = json.loads(api.cm.gzip.decompress(p.read_bytes())).get("CRSReport") or {}
+            if best is None or (d.get("updateDate") or "") >= (best.get("updateDate") or ""):
+                best = d
+    return best
+
+
+def details(n: int, workers: int = 2) -> None:
+    """Two requests may be in flight at once (each start is still spaced by common.INTERVAL for api.congress.gov, so the
+    rate stays under 3,000 per hour); a response's latency no longer slows the pace below it."""
+    from concurrent.futures import ThreadPoolExecutor
+
     reports = json.loads(INDEX.read_text())["reports"]
-    done = 0
+    todo = []
     for r in sorted(reports, key=priority):
-        if done >= n:
-            break
         dest = api.stored_name(f"/crsreport/{r['id']}", {"format": "json"})
-        if dest.exists() or dest.with_suffix(".missing").exists():
+        if dest.with_suffix(".missing").exists():
             continue
-        if api.used() >= api.BUDGET - RESERVE:
-            print(json.dumps({"stopped": "budget reserve reached", "requests_used": api.used()}))
-            break
-        api.get(f"/crsreport/{r['id']}")
-        done += 1
-        if done % 250 == 0:
-            print(json.dumps({"details_fetched": done, "requests_used": api.used()}), flush=True)
-    print(json.dumps({"details_fetched": done, "requests_used": api.used()}))
+        if not dest.exists():
+            todo.append((r["id"], None))
+            continue
+        have = stored_detail(r["id"]) or {}
+        if (r.get("updateDate") or "") > (have.get("updateDate") or ""):  # updated since our copy: fetch it again
+            todo.append((r["id"], (r.get("updateDate") or "")[:10]))
+    room = max(0, api.BUDGET - RESERVE - api.used())
+    todo = todo[: min(n, room)]
+    done = 0
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for _ in pool.map(lambda x: api.get(f"/crsreport/{x[0]}", _tag=x[1]), todo):
+            done += 1
+            if done % 250 == 0:
+                print(json.dumps({"details_fetched": done, "requests_used": api.used()}), flush=True)
+    print(json.dumps({"details_fetched": done, "requests_used": api.used(), "stopped": "budget reserve" if len(todo) == room else None}))
 
 
 def main(argv: list[str]) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--refresh-date", help="re-read the list pages and store them under this date (weekly refresh)")
     ap.add_argument("--details", type=int, default=0)
     a = ap.parse_args(argv)
     if a.list:
-        list_all()
+        list_all(a.refresh_date)
     if a.details:
         details(a.details)
 

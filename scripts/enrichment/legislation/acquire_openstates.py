@@ -96,11 +96,18 @@ def select_candidates(sessions: list[dict]) -> dict[str, list[dict]]:
 
 def main(argv: list[str]) -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--month", default="2026-10")
+    ap.add_argument("--month", default=cm.now_utc()[:7], help="dump month YYYY-MM (default: the current month)")
+    ap.add_argument("--if-changed", action="store_true", help="skip when the dump's ETag equals the one already extracted")
     ap.add_argument("--stop-early", action="store_true", help="stop after the last needed table (no whole-file SHA-256)")
     a = ap.parse_args(argv)
     url = dump_url(a.month)
     out_dir = cm.ACQ / "openstates" / a.month
+    if a.if_changed and (out_dir / "dump_manifest.json").exists():
+        status, _, hdrs = cm.http_get(url, method="HEAD")
+        old = json.loads((out_dir / "dump_manifest.json").read_text())["headers"].get("ETag")
+        if status == 200 and hdrs.get("ETag") == old:
+            print(json.dumps({"unchanged": url, "etag": old}))
+            return
     out_dir.mkdir(parents=True, exist_ok=True)
     req = urllib.request.Request(url, headers={"User-Agent": cm.UA})
     resp = urllib.request.urlopen(req, timeout=600)

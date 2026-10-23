@@ -203,13 +203,17 @@ REPORT = re.compile(r"^(H|S)\.\s*Rept\.\s*(\d+)-(\d+)(?:\s*,\s*(.+))?$")
 
 
 def committee_report(citation_: str) -> dict:
-    """'H. Rept. 118-138' -> GovInfo Link Service URL for that report number (Part/Book/Errata suffixes kept as printed)."""
+    """'H. Rept. 118-138' -> the GovInfo package page CRPT-118hrpt138 (and the Link Service URL for the same report number;
+    the Link Service answers HTTP 400 for some reports GovInfo holds, so the package page is the primary link).
+    Part/Book/Errata suffixes are kept as printed; GovInfo files the parts within the report's package."""
     m = REPORT.match(citation_.strip())
     if not m:
         return {"citation": citation_, "url": None}
     chamber = "hrpt" if m.group(1) == "H" else "srpt"
-    out = {"citation": citation_, "congress": int(m.group(2)), "number": int(m.group(3)), "doc": chamber,
-           "url": f"https://www.govinfo.gov/link/crpt/{int(m.group(2))}/{chamber}/{int(m.group(3))}"}
+    c, n = int(m.group(2)), int(m.group(3))
+    out = {"citation": citation_, "congress": c, "number": n, "doc": chamber,
+           "url": f"https://www.govinfo.gov/app/details/CRPT-{c}{chamber}{n}",
+           "linkService": f"https://www.govinfo.gov/link/crpt/{c}/{chamber}/{n}"}
     if m.group(4):
         out["suffix"] = m.group(4).strip()
     return out

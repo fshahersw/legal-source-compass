@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 
 STATES = {
     "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado",
@@ -16,7 +17,7 @@ STATES = {
 }
 JURIS = re.compile(r"^ocd-jurisdiction/country:us/(?:state|district|territory):([a-z]{2})/government$")
 SPECIAL = re.compile(r"special|extraordinary|extra session|called session", re.I)
-TODAY = "2026-10-23"
+TODAY = datetime.now(timezone.utc).strftime("%Y-%m-%d")  # sessions that have not started by the build date are skipped
 
 SELECTION_RULE = (
     "For each jurisdiction, the current session is the most recent regular session that has bills in the dump and has "
@@ -99,8 +100,33 @@ def openstates_url(st: str, session_identifier: str, identifier: str) -> str:
     return f"https://openstates.org/{st.lower()}/bills/{quote(session_identifier, safe='')}/{quote(re.sub(r'\s+', '', identifier), safe='')}/"
 
 
+DATA_FEED = re.compile(r"(/api/|^api\.|^webservices\.|wsdl|\.svc\b|/bulkdata/|ftpdocument|\.json$|/leg-databases/|"
+                       r"^search-prod\.|/bill/load[a-z]+/)", re.I)
+SEARCH_PAGE = re.compile(r"(/bill-search/?$|search_by_date|advanced\.aspx|prefiledbills|billsearchlist|/bills?/?$)", re.I)
+SOURCE_KINDS = ("page", "search", "data")
+SOURCE_RULE = ("Open States lists the legislature URLs it read each bill from. Each is labelled 'page' (a page about this "
+               "bill), 'search' (the legislature's search or status start page, not specific to the bill) or 'data' (a "
+               "machine data feed such as an API, web service or file listing). The record's source URL is the first "
+               "'page', else the first 'search', else the first 'data' URL, in Open States' order.")
+
+
+def source_kind(url: str) -> str:
+    from urllib.parse import urlparse
+
+    p = urlparse(url)
+    host, path = (p.hostname or "").lower(), p.path or "/"
+    if DATA_FEED.search(host) or DATA_FEED.search(path) or DATA_FEED.search(p.query or ""):
+        return "data"
+    if SEARCH_PAGE.search(path):
+        return "search"
+    if path in ("", "/") and not p.query and not p.fragment:
+        return "search"
+    return "page"
+
+
 def official_sources(sources: list[dict]) -> list[dict]:
-    """Source URLs Open States recorded for the bill, http(s) only, excluding Open States itself and commercial hosts."""
+    """Source URLs Open States recorded for the bill, http(s) only, excluding Open States itself and commercial hosts,
+    each with its kind (see SOURCE_RULE), ordered page -> search -> data, keeping Open States' order within a kind."""
     from urllib.parse import urlparse
 
     out, seen = [], set()
@@ -112,8 +138,8 @@ def official_sources(sources: list[dict]) -> list[dict]:
         if url in seen:
             continue
         seen.add(url)
-        out.append({"url": url, "note": s.get("note") or None})
-    return out
+        out.append({"url": url, "note": s.get("note") or None, "kind": source_kind(url)})
+    return sorted(out, key=lambda s: SOURCE_KINDS.index(s["kind"]))
 
 
 def milestones(actions: list[dict], org_class: dict[str, str]) -> dict:

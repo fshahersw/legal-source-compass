@@ -758,7 +758,7 @@ export type StateBill = {
     date: string | null;
     links: { url: string; mediaType: string | null }[];
   }[];
-  officialSources: { url: string; note: string | null }[];
+  officialSources: { url: string; note: string | null; kind: "page" | "search" | "data" | null }[];
   openStatesUrl: string | null;
   sourceUrl: string | null;
 };
@@ -852,7 +852,12 @@ export function parseStateBill(id: string, raw: unknown, sourceUrl: unknown): St
     officialSources: arr(b["officialSources"])
       .map((o) => obj(o))
       .filter((o): o is Obj => !!o && !!httpUrl(o["url"]))
-      .map((o) => ({ url: httpUrl(o["url"])!, note: str(o["note"], 200) })),
+      .map((o) => ({
+        url: httpUrl(o["url"])!,
+        note: str(o["note"], 200),
+        kind:
+          o["kind"] === "page" || o["kind"] === "search" || o["kind"] === "data" ? o["kind"] : null,
+      })),
     openStatesUrl: httpUrl(b["openStatesUrl"]),
     sourceUrl: httpUrl(sourceUrl),
   };

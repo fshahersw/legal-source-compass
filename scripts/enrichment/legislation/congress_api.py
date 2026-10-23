@@ -42,20 +42,26 @@ def _bump() -> int:
         if n >= BUDGET:
             raise SystemExit(f"Congress.gov request budget of {BUDGET} reached")
         COUNT.parent.mkdir(parents=True, exist_ok=True)
-        COUNT.write_text(json.dumps({"requests": n + 1}))
+        tmp = COUNT.with_suffix(".part")
+        tmp.write_text(json.dumps({"requests": n + 1}))
+        tmp.replace(COUNT)  # atomic, so a concurrent read never sees a partly written file
         return n + 1
 
 
-def stored_name(path: str, params: dict) -> Path:
+def stored_name(path: str, params: dict, tag: str | None = None) -> Path:
+    """Stored response path; `tag` (e.g. a snapshot date) is added to the file name only, never sent to the API."""
     q = "&".join(f"{k}={v}" for k, v in sorted(params.items()) if k != "api_key")
     name = re.sub(r"[^A-Za-z0-9._-]+", "_", path.strip("/")) + ("__" + re.sub(r"[^A-Za-z0-9._=-]+", "_", q) if q else "")
+    if tag:
+        name += "__at_" + re.sub(r"[^0-9A-Za-z-]+", "_", tag)
     return STORE / (name + ".json.gz")
 
 
-def get(path: str, **params) -> dict | None:
-    """GET {BASE}{path}?format=json&...; returns parsed JSON, or None on 404. Stored responses are reused."""
+def get(path: str, _tag: str | None = None, **params) -> dict | None:
+    """GET {BASE}{path}?format=json&...; returns parsed JSON, or None on 404. Stored responses are reused; a refresh passes
+    a new `_tag` so the new response is stored beside the earlier one."""
     params = {"format": "json", **{k: str(v) for k, v in params.items()}}
-    dest = stored_name(path, params)
+    dest = stored_name(path, params, _tag)
     if dest.exists():
         return json.loads(cm.gzip.decompress(dest.read_bytes()))
     missing = dest.with_suffix(".missing")

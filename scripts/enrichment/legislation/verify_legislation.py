@@ -66,10 +66,36 @@ def first(pattern: str, text: str) -> str | None:
     return m.group(1).strip() if m else None
 
 
+def strip_balanced(text: str, tag: str) -> str:
+    """Remove every <tag>...</tag> block, matching nested blocks of the same tag (e.g. <amendments> inside amendments)."""
+    out, depth, start, pos = [], 0, 0, 0
+    for m in re.finditer(rf"<(/?){tag}(\s[^>]*?)?(/?)>", text):
+        if m.group(3):  # <tag/>
+            if depth == 0:
+                out.append(text[pos:m.start()])
+                pos = m.end()
+            continue
+        if not m.group(1):
+            if depth == 0:
+                out.append(text[pos:m.start()])
+                start = m.start()
+            depth += 1
+        else:
+            depth -= 1
+            if depth == 0:
+                pos = m.end()
+            depth = max(depth, 0)
+    if depth == 0:
+        out.append(text[pos:])
+    else:
+        out.append(text[pos:start])
+    return "".join(out)
+
+
 def bill_block(xml: str) -> str:
     """The <bill> element without its <amendments> (amendments carry their own sponsors, actions and votes)."""
     b = xml[xml.find("<bill>"):xml.rfind("</bill>")]
-    return re.sub(r"<amendments>.*?</amendments>", "", b, flags=re.S)
+    return strip_balanced(b, "amendments")
 
 
 NESTED = ("relatedBills", "actions", "committees", "recordedVotes", "cosponsors", "sponsors", "notes", "cboCostEstimates",
@@ -80,7 +106,7 @@ def regex_identity(xml: str) -> dict:
     b = bill_block(xml)
     top = b
     for tag in NESTED:  # keep only the bill's own top-level elements for the identity fields
-        top = re.sub(rf"<{tag}>.*?</{tag}>", "", top, flags=re.S)
+        top = strip_balanced(top, tag)
     congress = first(r"<congress>(\d+)</congress>", top)
     btype = first(r"<(?:type|billType)>([A-Za-z]+)</(?:type|billType)>", top)
     number = first(r"<(?:number|billNumber)>(\d+)</(?:number|billNumber)>", top)
@@ -88,9 +114,15 @@ def regex_identity(xml: str) -> dict:
     la = first(r"<latestAction>\s*<actionDate>(\d{4}-\d{2}-\d{2})", top)
     laws_block = first(r"<laws>(.*?)</laws>", b) or ""
     laws = re.findall(r"<number>([^<]+)</number>", laws_block)
-    summaries = re.findall(r"<summary>.*?<actionDate>([^<]*)</actionDate>.*?<updateDate>([^<]*)</updateDate>.*?<text>(.*?)</text>", first(r"<summaries>(.*)</summaries>", b) or "", re.S)
-    if not summaries:
-        summaries = re.findall(r"<item>.*?<actionDate>([^<]*)</actionDate>.*?<updateDate>([^<]*)</updateDate>.*?<text>(.*?)</text>", first(r"<billSummaries>(.*)</billSummaries>", b) or "", re.S)
+    block = first(r"<summaries>(.*)</summaries>", b) or ""
+    items = re.findall(r"<summary>(.*?)</summary>", block, re.S) or re.findall(r"<item>(.*?)</item>", block, re.S)
+    summaries = []
+    for it in items:
+        text = first(r"<text>(.*?)</text>", it)
+        if text:
+            summaries.append(((first(r"<actionDate>([^<]*)</actionDate>", it) or "")[:10],
+                              first(r"<updateDate>([^<]*)</updateDate>", it) or "",
+                              first(r"<versionCode>([^<]*)</versionCode>", it) or "", text))
     return {"congress": congress, "type": (btype or "").lower(), "number": number, "introduced": intro, "latest": la,
             "laws": laws, "summaries": summaries}
 
@@ -136,8 +168,13 @@ def federal_counts(from_storage: bool) -> None:
                     if sorted(ident["laws"]) != sorted(laws):
                         failures.append({"unit": key, "id": rid, "field": "laws", "xml": ident["laws"], "build": laws})
                     if ident["summaries"]:
-                        best = max(ident["summaries"], key=lambda s: (s[0], s[1]))
-                        want = re.sub(r"\s+", " ", plain_words(html.unescape(best[2]))).strip()
+                        # the documented rule: greatest action date, then update date, then version code
+                        best = max(ident["summaries"], key=lambda s: (s[0], s[1], s[2]))
+                        raw = best[3].strip()
+                        cdata = re.fullmatch(r"<!\[CDATA\[(.*)\]\]>", raw, re.S)
+                        # CDATA holds the HTML as is; otherwise the HTML is XML-escaped inside <text>
+                        markup = cdata.group(1) if cdata else html.unescape(raw)
+                        want = re.sub(r"\s+", " ", plain_words(markup)).strip()
                         have = re.sub(r"\s+", " ", words).strip()
                         second["summaries"] += 1
                         if want.replace(" ", "") != have.replace(" ", ""):
@@ -262,7 +299,7 @@ def federal_links(n: int) -> None:
 # ------------------------------------------------------------------ state counts and the official-page sample
 
 def state_counts() -> None:
-    src = cm.ACQ / "openstates" / "2026-10"
+    src = cm.ACQ / "openstates" / json.loads((cm.BUILD / "state_bills.meta.json").read_text())["inputs"][0]["extracts"].rsplit("/", 1)[-1]
     man = json.loads((src / "dump_manifest.json").read_text())
     dump_counts = man["bills_per_session_in_dump"]
     sessions = {}
@@ -296,15 +333,16 @@ def state_counts() -> None:
 def page_text(url: str) -> tuple[int, str]:
     host = urllib.parse.urlparse(url).netloc
     cm.wait_host(host, 1.0)
+    safe_url = urllib.parse.quote(url, safe=":/?&=%#+,;@!$'()*~[]")  # Open States records some URLs with raw spaces
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": cm.UA, "Accept": "text/html,application/xhtml+xml,*/*"})
+        req = urllib.request.Request(safe_url, headers={"User-Agent": cm.UA, "Accept": "text/html,application/xhtml+xml,*/*"})
         with urllib.request.urlopen(req, timeout=60) as resp:
             body = resp.read(4_000_000)
             ctype = resp.headers.get("Content-Type", "")
             status = resp.status
     except urllib.error.HTTPError as e:
         return e.code, ""
-    except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+    except (urllib.error.URLError, TimeoutError, ConnectionError, ValueError, OSError) as e:
         return 0, type(e).__name__
     if "pdf" in ctype.lower():
         return status, "<pdf>"
@@ -317,13 +355,26 @@ def squash(s: str) -> str:
     return re.sub(r"[^a-z0-9]+", "", s.lower())
 
 
-def ident_on_page(identifier: str, text: str) -> bool:
+LONG = {"h": "house", "s": "senate", "a": "assembly", "l": "legislative", "hb": "housebill", "sb": "senatebill",
+        "ab": "assemblybill", "lb": "legislativebill", "hf": "housefile", "sf": "senatefile", "hr": "houseresolution",
+        "sr": "senateresolution", "hjr": "housejointresolution", "sjr": "senatejointresolution",
+        "hcr": "houseconcurrentresolution", "scr": "senateconcurrentresolution", "ar": "assemblyresolution"}
+
+
+def ident_on_page(identifier: str, text: str) -> str | None:
+    """How the bill number appears on the page: 'abbreviation' (HB 1001, HB1001, H.B. 1001), 'long form' (House Bill
+    1001) or None."""
     m = re.match(r"^([A-Za-z.\s]+?)\s*0*(\d+)\s*([A-Za-z]?)$", identifier.strip())
     flat = squash(text)
     if not m:
-        return squash(identifier) in flat
+        return "exact" if squash(identifier) in flat else None
     letters, num, suffix = squash(m.group(1)), m.group(2), squash(m.group(3))
-    return bool(re.search(rf"{re.escape(letters)}0*{num}{re.escape(suffix)}(?!\d)", flat))
+    if re.search(rf"{re.escape(letters)}0*{num}{re.escape(suffix)}(?!\d)", flat):
+        return "abbreviation"
+    long = LONG.get(letters)
+    if long and re.search(rf"{long}\w{{0,12}}?0*{num}{re.escape(suffix)}(?!\d)", flat):
+        return "long form"
+    return None
 
 
 def title_on_page(title: str, text: str) -> float:
@@ -338,44 +389,72 @@ def state_sample(n: int) -> None:
     by_state = defaultdict(list)
     for r in rows("state_bills"):
         b = r["detail"]["bill"]
-        by_state[b["state"]].append((r["id"], b["identifier"], b["title"], r["source_url"]))
+        by_state[b["state"]].append((r["id"], b["identifier"], b["title"], r["source_url"], b.get("sourceKind")))
     rng = random.Random(SEED)
     states = sorted(by_state)
     rng.shuffle(states)
-    per = max(1, n // len(states)) if len(states) >= n else 1
     picks = []
     i = 0
     while len(picks) < n:
         st = states[i % len(states)]
         picks.append((st, *rng.choice(by_state[st])))
         i += 1
-    results, failures, blocked = [], [], []
-    for st, rid, ident, title, url in picks:
+    results, failures, unchecked, partial = [], [], [], []
+    for st, rid, ident, title, url, kind in picks:
+        res = {"state": st, "id": rid, "identifier": ident, "url": url, "source_kind": kind}
+        if kind == "search":
+            res["result"] = "source is the legislature's search or status start page (no bill page recorded); not checkable"
+            unchecked.append(res)
+            results.append(res)
+            continue
         status, text = page_text(url)
-        host = urllib.parse.urlparse(url).netloc
-        res = {"state": st, "id": rid, "identifier": ident, "url": url, "status": status}
-        if status in (401, 403, 429, 503) or status == 0:
-            res["result"] = "blocked or unreachable (not bypassed)"
-            blocked.append(res)
-        elif status != 200:
+        if 500 <= status < 600:
+            time.sleep(5)
+            status, text = page_text(url)
+        res["status"] = status
+        if status in (301, 302, 303, 307, 308, 401, 403, 429, 503) or status == 0:
+            res["result"] = "blocked, redirect-gated or unreachable from here (not bypassed)"
+            res["error"] = text if status == 0 else None
+            unchecked.append(res)
+        elif status in (404, 410):
             res["result"] = "page not found"
+            failures.append(res)
+        elif status != 200:
+            res["result"] = f"server error HTTP {status}"
             failures.append(res)
         elif text == "<pdf>":
             res["result"] = "source is a PDF; not text-checked"
-            blocked.append(res)
+            unchecked.append(res)
         else:
+            visible = re.sub(r"\s+", " ", text).strip()
+            res["visible_chars"] = len(visible)
             res["identifier_found"] = ident_on_page(ident, text)
             res["title_share"] = round(title_on_page(title or "", text), 2)
-            res["result"] = "ok" if res["identifier_found"] and res["title_share"] >= 0.8 else "mismatch"
-            if res["result"] != "ok":
-                res["host"] = host
+            script_page = (len(visible) < 3000 or "enable javascript" in visible.lower() or "Html.ActionLink" in visible)
+            if res["identifier_found"] and res["title_share"] >= 0.8:
+                res["result"] = "ok"
+            elif res["identifier_found"]:
+                res["result"] = "identifier found; the page shows a shortened or different title (e.g. a digest)"
+                res["sample_text"] = visible[:300]
+                partial.append(res)
+            elif script_page:
+                # the page's bill data is filled in by scripts after load; a plain request sees only the page frame
+                res["result"] = "page renders its bill data with scripts; not checkable without a browser"
+                res["sample_text"] = visible[:200]
+                unchecked.append(res)
+            else:
+                res["result"] = "mismatch"
+                res["sample_text"] = visible[:300]
                 failures.append(res)
         results.append(res)
         print(json.dumps({k: res.get(k) for k in ("state", "identifier", "status", "result", "title_share")}), flush=True)
+    ok = sum(1 for r in results if r["result"] == "ok")
     save("state_sample", {"check": f"{n} random state bills vs their official legislature page", "checked": len(results),
-                          "states": len({r['state'] for r in results}), "failures": len(failures),
-                          "blocked_or_unchecked": len(blocked), "failure_detail": failures, "blocked_detail": blocked,
-                          "results": results, "seed": SEED, "per_state": per})
+                          "states": len({r['state'] for r in results}), "ok": ok, "failures": len(failures),
+                          "explained": len(partial), "unchecked": len(unchecked), "failure_detail": failures,
+                          "explained_detail": partial, "unchecked_detail": unchecked,
+                          "unchecked_hosts": sorted({urllib.parse.urlparse(r["url"]).netloc for r in unchecked}),
+                          "results": results, "seed": SEED})
 
 
 # ------------------------------------------------------------------ CRS

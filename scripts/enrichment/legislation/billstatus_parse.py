@@ -250,7 +250,7 @@ def parse_bill(data: bytes) -> dict:
     for s in _items(bill, "summaries/summary") + _items(bill, "summaries/billSummaries/item"):
         summaries.append({k: v for k, v in {"versionCode": _t(s, "versionCode"), "actionDate": _date(_t(s, "actionDate")),
                                             "actionDesc": _t(s, "actionDesc"), "updateDate": _t(s, "updateDate"),
-                                            "text": (s.find("text").text if s.find("text") is not None else None)}.items() if v})
+                                            "text": summary_text(s)}.items() if v})
     out["summaryCount"] = len(summaries)
     out["summary"] = latest_summary(summaries)
 
@@ -267,6 +267,14 @@ def parse_bill(data: bytes) -> dict:
                                                "url": _t(v, "url"), "fullActionName": _t(v, "fullActionName")}.items() if val}
                         for v in _items(bill, "recordedVotes/recordedVote")]
     return out
+
+
+def summary_text(s) -> str | None:
+    """The summary's <text>; some files wrap it as <cdata><text>...</text></cdata>."""
+    node = s.find("text")
+    if node is None:
+        node = s.find("cdata/text")
+    return node.text if node is not None and node.text else None
 
 
 def latest_summary(summaries: list[dict]) -> dict | None:

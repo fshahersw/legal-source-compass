@@ -32,10 +32,9 @@ FORMAT_HOSTS = ("https://www.congress.gov/",)
 
 
 def detail(rid: str) -> dict | None:
-    p = api.stored_name(f"/crsreport/{rid}", {"format": "json"})
-    if not p.exists():
-        return None
-    return json.loads(gzip.decompress(p.read_bytes())).get("CRSReport")
+    from acquire_crs import stored_detail
+
+    return stored_detail(rid)
 
 
 def related(items: list[dict], known: set[str]) -> list[dict]:
@@ -121,7 +120,7 @@ def main() -> None:
     summary = {
         "source": "Congress.gov API v3 (Library of Congress), https://api.congress.gov/v3/crsreport and /crsreport/{id}",
         "licence": "Congress.gov data: government work (dc.rights 'Text is government work'); CRS products are public works of the Congressional Research Service",
-        "retrieved": "2026-10-23", "records": len(rows), "listed_count": lst["listed_count"],
+        "retrieved": lst.get("retrieved_at", "")[:10] or None, "records": len(rows), "listed_count": lst["listed_count"],
         "scope": "Every CRS product the Congress.gov API lists (reports, In Focus and other resources, Insight posts, testimony, infographics); metadata and official links only, no report text or summaries.",
         "detail_rule": "Authors, topics, formats (official PDF/HTML links on congress.gov) and related legislation come from the /crsreport/{id} detail. Details were fetched for Active products first, newest update first, within the stream's 8,000-request budget; the rest show 'Not recorded' (detail_fetched = no) until a later refresh.",
         "version_rule": "'version' is the current version number as the API lists it.",
