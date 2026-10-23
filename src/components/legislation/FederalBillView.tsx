@@ -1,10 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Copy, ExternalLink, Landmark } from "lucide-react";
 import { toast } from "sonner";
 import { Segmented, SourceLink } from "@/components/enforcement/parts";
 import { Button } from "@/components/ui/button";
-import type { CrsHit, FederalBill } from "@/lib/external/legislation";
+import { BIOGUIDE } from "@/lib/external/congressMembers";
+import { getKnownMembers } from "@/lib/external/congressMembers.functions";
+import type { CrsHit, FederalBill, Person } from "@/lib/external/legislation";
 import { fmtDay, fmtN, NR } from "./format";
 import { Capped, MilestoneTrack, Section, StatusChip } from "./parts";
 
@@ -416,13 +420,53 @@ function Crs({ items, failed }: { items: CrsHit[]; failed: boolean }) {
   );
 }
 
+/** Bioguide ids of the bill's sponsors and cosponsors that have a member page (an exact id match; nothing else is linked). */
+function useLinkedMembers(b: FederalBill): ReadonlySet<string> {
+  const ids = useMemo(
+    () =>
+      [
+        ...new Set(
+          [...b.sponsors, ...b.cosponsors]
+            .map((p) => p.bioguide)
+            .filter((id): id is string => !!id && BIOGUIDE.test(id)),
+        ),
+      ].slice(0, 600),
+    [b],
+  );
+  const fn = useServerFn(getKnownMembers);
+  const q = useQuery({
+    queryKey: ["known-members", b.id],
+    queryFn: () => fn({ data: { ids } }),
+    enabled: ids.length > 0,
+    staleTime: 30 * 60 * 1000,
+    retry: 1,
+  });
+  return useMemo(() => new Set(q.data ?? []), [q.data]);
+}
+
+/** A sponsor's printed name, linked to the member page only when its Bioguide ID has a member record. */
+function PersonName({ p, linked }: { p: Person; linked: ReadonlySet<string> }) {
+  return p.bioguide && linked.has(p.bioguide) ? (
+    <Link
+      to="/law/legislation/members/$bioguide"
+      params={{ bioguide: p.bioguide }}
+      className="text-primary hover:underline"
+    >
+      {p.name}
+    </Link>
+  ) : (
+    <>{p.name}</>
+  );
+}
+
 function Sponsors({ bill: b }: { bill: FederalBill }) {
+  const linked = useLinkedMembers(b);
   return (
     <Section title="Sponsor and cosponsors" aside={`${fmtN(b.cosponsorCount)} cosponsors`}>
       {b.sponsors.length ? (
         b.sponsors.map((s) => (
           <p key={s.name} className="m-0 text-[13px] font-medium">
-            {s.name}
+            <PersonName p={s} linked={linked} />
             {s.byRequest ? (
               <span className="ml-1 text-[11px] font-normal text-muted-foreground">
                 (by request)
@@ -446,7 +490,9 @@ function Sponsors({ bill: b }: { bill: FederalBill }) {
             className="space-y-0.5"
             render={(c) => (
               <li key={`${c.name}-${c.date}`} className="text-[12px]">
-                <span className={c.withdrawn ? "line-through" : undefined}>{c.name}</span>
+                <span className={c.withdrawn ? "line-through" : undefined}>
+                  <PersonName p={c} linked={linked} />
+                </span>
                 <span className="ml-1 text-[10.5px] text-muted-foreground">
                   {fmtDay(c.date)}
                   {c.original ? " · original" : ""}

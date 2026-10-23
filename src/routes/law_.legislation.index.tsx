@@ -4,6 +4,7 @@ import {
   LegislationSearch,
   type LegislationSearchParams,
 } from "@/components/legislation/LegislationSearch";
+import { LegislationTabs } from "@/components/legislation/LegislationTabs";
 import { pageHead } from "@/lib/corpus/head";
 import { BILL_TYPES, CONGRESS, SESSION, STATE } from "@/lib/external/legislation";
 
@@ -51,12 +52,15 @@ function LegislationIndexPage() {
       title="Legislation"
       description="Bills and resolutions in Congress since 2003 and in every state legislature's current and preceding regular session, with sponsors, actions, status and the official pages."
     >
+      <LegislationTabs active="bills" />
       <LegislationSearch search={search} />
       <p className="mt-4 max-w-[90ch] text-[11px] leading-4 text-muted-foreground">
         Federal measures come from the U.S. Government Publishing Office's Bill Status files (public
         domain); status is derived only from published action codes. State bills come from Open
         States public data (public domain dedication), which collects them from each legislature's
-        website; each bill links to the legislature's own page.
+        website; each bill links to the legislature's own page. Members of Congress and committees
+        come from the Congress.gov API; a bill's sponsor links to the member's page only on an exact
+        Bioguide ID match.
       </p>
     </AppShell>
   );

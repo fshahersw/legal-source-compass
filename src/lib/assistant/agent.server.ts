@@ -49,6 +49,8 @@ const STEP_LABELS: Record<string, string> = {
   ftc_hsr_notices: "Looking up HSR early termination notices",
   search_bills: "Searching bills",
   get_bill: "Reading a bill",
+  lookup_member: "Looking up a member of Congress",
+  lookup_committee: "Looking up a committee",
   search_sec_filings: "Searching SEC filings",
   search_fda: "Querying FDA data",
   search_court_filings: "Searching court filings",
