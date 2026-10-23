@@ -13,7 +13,7 @@
       "https://www.azd.uscourts.gov/judges/judges-orders"
     ],
     "skip_link_entries": true,
-    "entry_href_regex": "/judge-orders/[a-z]+-[a-z][a-z-]*$",
+    "entry_href_regex": "/judge-orders/[a-z%0-9]+-[a-z][a-z%0-9-]*$",
     "exclude_href_regex": "/judge-orders/(all-judges|standard-|courtroom-technology)",
     "no_sublistings": true,
     "page_doc_regex": "/content/"
@@ -94,9 +94,13 @@
     "no_sublistings": true
   },
   "nyed": {
+    "note": "Each listing shows 16 judges and a 'Show more' link to the next page (?page=1, ...).",
     "listing_urls": [
       "https://www.nyed.uscourts.gov/district-judges",
-      "https://www.nyed.uscourts.gov/magistrate-judges"
+      "https://www.nyed.uscourts.gov/district-judges?page=1",
+      "https://www.nyed.uscourts.gov/district-judges?page=2",
+      "https://www.nyed.uscourts.gov/magistrate-judges",
+      "https://www.nyed.uscourts.gov/magistrate-judges?page=1"
     ],
     "no_sublistings": true
   },
@@ -140,7 +144,7 @@
       "https://www.txs.uscourts.gov/page/district-magistrate-judges-procedures-schedules"
     ],
     "skip_link_entries": true,
-    "entry_href_regex": "/(content|page)/(chief-)?(senior-)?united-states-(district|magistrate)-judge-[a-z0-9-]+$",
+    "entry_href_regex": "/(content|page)/(chief-)?(senior-)?united-states-(district|magistrate)-judge-[a-z0-9%-]+$",
     "entry_main_only": true,
     "row_docs": true,
     "no_sublistings": true,
@@ -152,7 +156,7 @@
       "https://www.txs.uscourts.gov/page/bankruptcy-judges-procedures-schedules"
     ],
     "skip_link_entries": true,
-    "entry_href_regex": "/(content|page)/(chief-)?united-states-bankruptcy-judge-[a-z0-9-]+$",
+    "entry_href_regex": "/(content|page)/(chief-)?united-states-bankruptcy-judge-[a-z0-9%-]+$",
     "entry_main_only": true,
     "row_docs": true,
     "no_sublistings": true,
@@ -411,5 +415,20 @@
     "skip_link_entries": true,
     "no_text_fallback": true,
     "no_sublistings": true
+  },
+  "ncmd": {
+    "note": "The judges page lists every judge with a title; the links on it lead to court-location pages, not to judge pages.",
+    "listing_urls": [
+      "https://www.ncmd.uscourts.gov/judges-middle-district-north-carolina"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "dcd": {
+    "note": "The chief judge is linked from the Judges page as 'Chief Judge' (no name in the link text); the district and senior judges have their own listings.",
+    "extra_entry_urls": [
+      "https://www.dcd.uscourts.gov/content/chief-judge-james-e-boasberg"
+    ]
   }
 }

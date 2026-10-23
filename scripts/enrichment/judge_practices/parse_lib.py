@@ -336,6 +336,8 @@ def person_like(name: str | None, *, allow_single: bool = False) -> bool:
         return False
     # a middle name may be an ordinary word ("M. Page Kelley", "Denise Page Hood"); the first and last words never are page labels
     edge = toks if len(toks) <= 2 else [toks[0], toks[-1]]
+    if len(toks) >= 3 and re.fullmatch(r"[A-Za-z]\.?", toks[-2]):
+        edge = edge[:-1] if edge[-1] is toks[-1] else edge  # "Robert C. Chambers": after a middle initial the last word is a surname, whatever it spells
     if any(t.lower().strip(".,") in GENERIC_NAMES for t in edge) or any(t in FUNCTION_WORDS for t in toks):  # "A" is an initial; only lower case "a" is a word
         return False
     if re.search(r"\b(?:united states|court|district|bankruptcy|office|clerk|division|department|probation|pretrial|services|committee|library)\b", name, re.I):
@@ -383,11 +385,15 @@ def strip_name(text: str) -> str:
         t = named
     t = HON.sub("", t)
     t = LEAD_ROLE.sub("", t)
+    t = HON.sub("", t)
     t = TRAIL_ROLE.sub("", t)
     t = PAREN.sub("", t)
     t = re.sub(r"\s*[,;]\s*$", "", t)
     t = re.sub(r"\s+(?:(?:circuit|district|magistrate|bankruptcy|senior|chief|u\.?\s?s\.?|united\s+states)\s+)+judge.*$", "", t, flags=re.I)
     for _ in range(3):
+        tail = GENERIC_TAIL.search(t)
+        if tail and re.search(r"(?:^|\s)[A-Z]\.?$", t[: tail.start()]):
+            break  # "Robert C. Chambers": a word after a middle initial is the surname
         t2 = GENERIC_TAIL.sub("", t)
         if t2 == t:
             break
@@ -500,13 +506,13 @@ def judge_entries(body: bytes | BeautifulSoup, base_url: str, *, strict: bool = 
 PERSON_NAME = re.compile(
     r"^(?:[A-Z][A-Za-z'’À-ſ.\-]*)(?:\s+(?:[A-Z][A-Za-z'’À-ſ.\-]*|[A-Z]\.|de|van|von|del|la|di|da|le|bin|ibn))"
     r"{1,5}(?:,?\s*(?:Jr\.?|Sr\.?|II|III|IV))?$")
-PERSON_STOP = re.compile(r"(?:motions?|hearings?|appearances?|conference|pointers?|liens?|discovery|procedures?|orders?|notices?|plans?|chapter|"
+PERSON_STOP = re.compile(r"\b(?:motions?|hearings?|appearances?|conference|pointers?|liens?|discovery|procedures?|orders?|notices?|plans?|chapter|"
                          r"claims?|cases?|trial|practices?|guidelines?|checklist|template|sample|requests?|applications?|petitions?|local|general|"
                          r"standing|reporting|debtors?|creditors?|filings?|fees?|exhibits?|witness|jury|calendar|protocol|policies|technology|"
-                         r"clerk|chambers|court|office|staff|department|division|district|bankruptcy|united|states|center|bar\b|committee|"
+                         r"clerk|chambers|court|office|staff|department|division|district|bankruptcy|united|states|center|bar|committee|"
                          r"school|university|library|probation|pretrial|services|program|trustee|attorney|counsel|marshal|reporter|interpreter|"
                          r"judges?|judicial|opinions?|rules?|forms?|home|about|contact|news|jury|fees?|search|login|map|faq|policy|"
-                         r"directory|information|calendar|schedule|biograph|hours|locations?|employment|careers?|vacanc|privacy|accessibility)", re.I)
+                         r"directory|information|calendar|schedule|biograph\w*|hours|locations?|employment|careers?|vacanc\w*|privacy|accessibility)\b", re.I)
 JUDGE_CONTEXT = re.compile(r"judges?\b|judicial|magistrate|chambers", re.I)
 
 
@@ -520,6 +526,24 @@ def is_person_name(text: str) -> bool:
     return bool(PERSON_NAME.match(t))
 
 
+NAME_THEN_ROLE = re.compile(
+    r"^((?:[A-ZÀ-ÖØ-Þ][\w'’.\-]*\s+){1,4}?[A-ZÀ-ÖØ-Þ][\w'’\-]+(?:,?\s+(?:Jr|Sr|II|III|IV)\.?)?)\s+"
+    r"((?:(?:Chief|Senior|Visiting|Part-Time|U\.S\.|United States|Recalled)\s+)*(?:(?:District|Magistrate|Bankruptcy)\s+)?Judge)\b")
+
+
+def trim_long_judge_text(text: str) -> str | None:
+    """A judge link whose text runs on past the name and title ("Joan M. Azrack District Judge Brooklyn: (718) ..."): "Joan M. Azrack District Judge"."""
+    t = clean(text)
+    if len(t) > 400:
+        return None
+    m = NAME_THEN_ROLE.match(t)
+    if not m or PERSON_STOP.search(m.group(1)):
+        return None
+    if not re.search(r"\(\d{3}\)|\d{3}[-.]\d{4}|:|\bplease\b|\bconsult\b|\bchambers\b|\bcourtroom\b|\bsecretary\b|\bdeputy\b", t[m.end():], re.I):
+        return None  # nothing but the name and title: the text is kept as printed
+    return f"{m.group(1)} {m.group(2)}"
+
+
 def _entries_from(links: list[Link], strict: bool = True) -> list[Entry]:
     def role_of(ln: Link) -> str | None:
         return role_phrase(ln.text) or (role_phrase(ln.block) if ln.block and len(ln.block) < 400 else None)
@@ -529,11 +553,12 @@ def _entries_from(links: list[Link], strict: bool = True) -> list[Entry]:
         for ln in pool:
             if is_home(ln.href) or FILE_EXT.search(ln.href):
                 continue  # the home page, or a document (a PDF named for a judge is a document, not the judge's page)
-            if not looks_like_judge_link(ln.text):
+            text = trim_long_judge_text(ln.text) or ln.text  # a link whose text runs on into telephone numbers keeps only the name and title
+            if not looks_like_judge_link(text):
                 continue
-            if re.search(r"\bclerk\b|\bchief deputy\b|\bcourt executive\b", ln.text, re.I):
+            if re.search(r"\bclerk\b|\bchief deputy\b|\bcourt executive\b", text, re.I):
                 continue
-            e = Entry(name_text=ln.text, url=ln.href, heading=ln.heading, headings=ln.headings, role_text=role_of(ln), block=ln.block)
+            e = Entry(name_text=text, url=ln.href, heading=ln.heading, headings=ln.headings, role_text=role_phrase(text) or role_of(ln), block=ln.block)
             seen.setdefault(ln.href, e)
         return list(seen.values())
 
@@ -1028,7 +1053,7 @@ def regex_entries(links: list[Link], regex: str, exclude: str | None = None, mai
     return list(seen.values())
 
 
-LAST_FIRST = re.compile(r"^([A-Z][A-Za-z'’\-]+(?:\s+(?:van|von|de|del|la|di|da|le|[A-Z][A-Za-z'’\-]+))?),\s+([A-Z][A-Za-z'’.\- ]+?)(?:,?\s+(Jr\.?|Sr\.?|II|III|IV))?$")
+LAST_FIRST = re.compile(r"^([A-ZÀ-ÖØ-Þ][\w'’\-]+(?:\s+(?:van|von|de|del|la|di|da|le|[A-ZÀ-ÖØ-Þ][\w'’\-]+))?),\s+([A-ZÀ-ÖØ-Þ][\w'’.\- ]+?)(?:,?\s+(Jr\.?|Sr\.?|II|III|IV))?$")
 
 
 def reorder_last_first(name: str) -> str:
@@ -1091,6 +1116,7 @@ def _judge_name(text: str, split: bool) -> str | None:
     if not 6 <= len(text) <= 110 or (text.endswith((".", ";")) and not re.search(r"\b[A-Z]\.$|Jr\.$|Sr\.$", text)):
         return None
     match_text = re.sub(r"\s*\([^)]*\)\s*$", "", text) if split else text  # "(Recall Status)" after a name
+    match_text = re.sub(r"\s*,\s*(?:jr|sr|ii|iii|iv)\.?\s*(?=,)", "", match_text, flags=re.I)  # "William L. Osteen, Jr. , District Judge"
     for rx in _JUDGE_LINE:
         m = rx.match(match_text)
         if not m:

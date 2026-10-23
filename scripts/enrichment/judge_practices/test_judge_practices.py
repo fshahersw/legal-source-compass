@@ -270,6 +270,36 @@ class Fetching(unittest.TestCase):
         self.assertNotEqual(a, fl.page_path("https://www.nysd.uscourts.gov/judges?x=1"))
 
 
+class SurnamesThatSpellWords(unittest.TestCase):
+    """Real surnames that contain or spell page words (Laplante, Casey, Feeney, Chambers) are names; page labels are not."""
+
+    def test_stop_words_match_whole_words_only(self):
+        for name in ("Joseph N. Laplante", "Patrick Casey Pitts", "Mary Feeney", "Lienau Smith", "Robert C. Chambers"):
+            self.assertTrue(pl.person_like(pl.strip_name(name)), name)
+        for label in ("Case Information", "Chambers Procedures", "Court Forms", "Local Rules"):
+            self.assertFalse(pl.is_person_name(label), label)
+        self.assertEqual(pl.strip_name("Robert C. Chambers"), "Robert C. Chambers")
+        self.assertEqual(pl.strip_name("Judge Smith Chambers"), "Smith")
+
+    def test_accented_last_first_and_honorific_after_the_title(self):
+        self.assertEqual(pl.reorder_last_first("Márquez, Rosemary"), "Rosemary Márquez")
+        self.assertEqual(pl.strip_name("Chief Judge Honorable Laura Taylor Swain"), "Laura Taylor Swain")
+        self.assertEqual(pl.resolve_name(["Márquez, Rosemary"])[1], "Rosemary Márquez")
+
+    def test_link_text_that_runs_on_into_telephone_numbers_keeps_the_name_and_title(self):
+        t = pl.trim_long_judge_text
+        self.assertEqual(t("Carol Bagley Amon District Judge Secretary: (718) 613-2410 Courtroom Deputy: Jane Roe"), "Carol Bagley Amon District Judge")
+        self.assertEqual(t("Joan M. Azrack District Judge Brooklyn: (718) 613-2530 Central Islip: (631) 712-5600"), "Joan M. Azrack District Judge")
+        self.assertIsNone(t("Hon. Alison J. Nathan Circuit Judge Sitting by Designation"))  # nothing but name and title: kept as printed
+        self.assertIsNone(t("Judge Information and Procedures for Attorneys"))
+        es = pl.judge_entries(b"<html><body><main><h1>Judges</h1><ul>"
+                              b"<li><a href='/district-judge-carol-amon'>Carol Bagley Amon District Judge Secretary: (718) 613-2410 Courtroom Deputy: Jane Roe</a></li>"
+                              b"<li><a href='/district-judge-frederic-block'>Frederic Block District Judge Chambers: (718) 613-2420 Courtroom Deputy: Joe Doe</a></li>"
+                              b"</ul></main></body></html>", "https://www.nyed.uscourts.gov/district-judges")
+        self.assertEqual([e.name_text for e in es], ["Carol Bagley Amon District Judge", "Frederic Block District Judge"])
+        self.assertNotIn("718", str([e.name_text for e in es]))  # no telephone number is carried
+
+
 class CaseSpecificFilings(unittest.TestCase):
     """A judge's page may link the judge's decisions in particular cases; those are not rules or practices."""
 
