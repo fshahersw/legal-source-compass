@@ -20,6 +20,8 @@ import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { compact, title as litigationTitle } from "@/components/mdl/intelFormat";
 import { LeadershipList } from "@/components/mdl/LeadershipList";
+import { MdlCaseYears, MdlMonthlyPendingCard } from "@/components/mdl/MdlTrendCards";
+import { ProfileTrend } from "@/components/trends/ProfileTrend";
 import { CourtOrderLink } from "@/components/mdl/PacerLabel";
 import { getMdlLens, type MdlLens as Lens } from "@/lib/external/mdlLens.functions";
 import { getCourtStatsDistrict } from "@/lib/external/courtStats.functions";
@@ -1546,62 +1548,14 @@ export function MdlLens({ mdl }: { mdl: number }) {
       </section>
 
       <div className="grid gap-3 lg:grid-cols-3">
-        <Card
-          title="Trajectory"
-          subtitle="Actions in each JPML monthly “Distribution of Pending MDL Dockets by Actions Pending” report"
-          className="lg:col-span-2"
-        >
-          {m.series.length > 1 ? (
-            <div className="h-60">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={m.series} margin={{ top: 4, right: 8, bottom: 0, left: -6 }}>
-                  <CartesianGrid stroke="var(--border)" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={axis}
-                    tickFormatter={(d: string) => d.slice(0, 7)}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis tick={axis} tickFormatter={axisNumber} width={44} />
-                  <Tooltip
-                    contentStyle={{ fontSize: 11 }}
-                    labelFormatter={(d) => `JPML report of ${String(d)}`}
-                    formatter={(v, name) => [count(Number(v), "action"), name]}
-                  />
-                  <Legend
-                    verticalAlign="top"
-                    align="right"
-                    height={22}
-                    iconType="plainline"
-                    wrapperStyle={{ fontSize: 11 }}
-                  />
-                  <Line
-                    name="Pending actions"
-                    dataKey="pending"
-                    stroke={FDA_COLORS[0]}
-                    dot={false}
-                    strokeWidth={2}
-                    isAnimationActive={false}
-                  />
-                  <Line
-                    name="Total historical actions (pending + closed)"
-                    dataKey="total"
-                    stroke={FDA_COLORS[2]}
-                    dot={false}
-                    strokeDasharray="4 3"
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-[11px] text-muted-foreground">
-              Fewer than two monthly reports are recorded.
-            </p>
-          )}
-        </Card>
+        <div className="grid min-w-0 items-start gap-3 sm:grid-cols-2 lg:col-span-2">
+          <MdlMonthlyPendingCard mdl={m.mdl} series={m.series} />
+          <ProfileTrend kind="mdl-fy-pending" id={m.mdl} />
+        </div>
         <PeersCard mdl={m.mdl} type={m.type} />
       </div>
+
+      <MdlCaseYears mdl={m.mdl} />
 
       <div className="grid gap-3 lg:grid-cols-3">
         {lens.court ? (

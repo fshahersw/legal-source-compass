@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { yearSpan } from "@/components/courts/clb/clbRestFormat";
 import { Kpi, SourceLink } from "@/components/enforcement/parts";
-import { ChartFrame, CollapsibleSection } from "@/components/courts/clb/ClbParts";
-import { YearBarLine } from "@/components/courts/clb/ClbRestCharts";
+import { CollapsibleSection } from "@/components/courts/clb/ClbParts";
 import {
   CourtName,
   MiniTable,
@@ -14,6 +13,7 @@ import {
 import { fmtInt, NOT_RECORDED } from "@/components/courts/clb/clbFormat";
 import { JUDGE_ID } from "@/lib/external/judgeCourtListener.functions";
 import { getClbJudgePanels, type JudgePanels } from "@/lib/external/clbAppellate.functions";
+import { JudgeClYearCard } from "../JudgeTrendCards";
 
 /**
  * Panels a judge is recorded on in CourtListener's opinion clusters, with the judges they sat with most (dataset
@@ -121,14 +121,15 @@ function Body({ p }: { p: JudgePanels }) {
         </div>
       </CollapsibleSection>
       {rows.length > 1 ? (
-        <CollapsibleSection title="By year" summary={`${rows.length} years`}>
-          <ChartFrame
-            caption="Recorded panels by year filed"
-            label={`Bar chart of opinion clusters listing ${p.name} on the panel, by year filed.`}
-            height="h-36"
-          >
-            <YearBarLine rows={rows} barName="Panels" />
-          </ChartFrame>
+        <CollapsibleSection title="By year" summary={`${rows.length} years`} defaultOpen>
+          <div className="max-w-md">
+            <JudgeClYearCard
+              kind="panels"
+              personId={p.personId}
+              rows={p.byYear.map((y) => ({ yr: y.yr, n: y.panels }))}
+              total={p.panels}
+            />
+          </div>
         </CollapsibleSection>
       ) : null}
       <p className="px-3 pb-3 text-[11px] leading-4 text-muted-foreground">

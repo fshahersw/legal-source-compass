@@ -12,6 +12,7 @@ import {
 } from "@/components/courts/clb/ClbRestParts";
 import { fmtInt, NOT_RECORDED } from "@/components/courts/clb/clbFormat";
 import { JUDGE_ID } from "@/lib/external/judgeCourtListener.functions";
+import { JudgeDisclosureItemsCard } from "../JudgeTrendCards";
 import {
   getClbJudgeDisclosures,
   SECTIONS,
@@ -114,6 +115,11 @@ function Body({ d }: { d: JudgeDisclosures }) {
           summary={`${d.years.length} year${d.years.length === 1 ? "" : "s"}`}
           defaultOpen={!conflict}
         >
+          {!conflict && d.years.length > 1 ? (
+            <div className="mb-3 max-w-xl">
+              <JudgeDisclosureItemsCard personId={d.personId} years={d.years} />
+            </div>
+          ) : null}
           <MiniTable<DisclosureYear>
             caption="Reports and listed items by report year"
             rows={[...d.years].reverse()}

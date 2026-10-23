@@ -6,8 +6,9 @@ import {
   type Crosswalk,
   type CrosswalkTier,
   type JudgeActivity,
-  type YearCount,
 } from "@/lib/external/judgeCourtListener.functions";
+import { TrendGrid } from "@/components/trends/ProfileTrend";
+import { JudgeClYearCard } from "./JudgeTrendCards";
 
 const TIER_TEXT: Record<CrosswalkTier, string> = {
   exact_id: "Exact identifier: the FJC id on this record equals the CourtListener person's FJC id",
@@ -152,14 +153,26 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
           No assigned dockets or authored opinions for this person in CourtListener's collection.
         </p>
       )}
-      {d?.byYear.length || o?.byYear.length ? (
-        <div
-          className={`grid gap-4 border-t border-border/70 px-4 py-3 ${d?.byYear.length && o?.byYear.length ? "md:grid-cols-2" : ""}`}
-        >
-          {d?.byYear.length ? (
-            <YearBars title="Assigned dockets by filing year" rows={d.byYear} />
-          ) : null}
-          {o?.byYear.length ? <YearBars title="Opinions authored by year" rows={o.byYear} /> : null}
+      {c.clPersonId !== null && (d?.byYear.length || o?.byYear.length) ? (
+        <div className="border-t border-border/70 p-3">
+          <TrendGrid columns={2} className="xl:grid-cols-2">
+            {d?.byYear.length ? (
+              <JudgeClYearCard
+                kind="dockets"
+                personId={c.clPersonId}
+                rows={d.byYear}
+                total={d.assigned}
+              />
+            ) : null}
+            {o?.byYear.length ? (
+              <JudgeClYearCard
+                kind="opinions"
+                personId={c.clPersonId}
+                rows={o.byYear}
+                total={o.authored}
+              />
+            ) : null}
+          </TrendGrid>
         </div>
       ) : null}
       {d?.courts.length || o?.courts.length ? (
@@ -256,47 +269,6 @@ function Review({ c }: { c: Crosswalk }) {
         {TIER_TEXT[c.tier]}. It is not treated as the same person, and no figures are shown.
       </p>
     </section>
-  );
-}
-
-function YearBars({ title, rows }: { title: string; rows: YearCount[] }) {
-  const max = Math.max(...rows.map((r) => r.n), 1);
-  const first = rows[0]!.yr;
-  const last = rows[rows.length - 1]!.yr;
-  const peak = rows.reduce((a, b) => (b.n > a.n ? b : a));
-  return (
-    <figure className="min-w-0">
-      <figcaption className="mb-1 flex items-baseline justify-between text-[11px] text-muted-foreground">
-        <span>{title}</span>
-        <span>
-          peak {peak.yr}: {fmt(peak.n)}
-        </span>
-      </figcaption>
-      <div
-        className="flex h-14 items-end gap-px"
-        role="img"
-        aria-label={`${title}, ${first} to ${last}; peak ${peak.yr} with ${peak.n}`}
-      >
-        {rows.map((r) => (
-          <div
-            key={r.yr}
-            title={`${r.yr}: ${fmt(r.n)}`}
-            className="min-w-[2px] flex-1 rounded-t-sm bg-primary/70"
-            style={{ height: `${Math.max(4, Math.round((100 * r.n) / max))}%` }}
-          />
-        ))}
-      </div>
-      <div className="mt-0.5 flex justify-between font-mono text-[10px] text-muted-foreground">
-        <span>{first}</span>
-        <span
-          title={
-            last === 2026 ? "2026 is partial: the snapshot runs through Sept 30, 2026" : undefined
-          }
-        >
-          {last === 2026 ? "2026 (partial)" : last}
-        </span>
-      </div>
-    </figure>
   );
 }
 

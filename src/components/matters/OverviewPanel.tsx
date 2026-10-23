@@ -10,6 +10,7 @@ import {
   td,
   th,
 } from "@/components/matters/common";
+import { ProfileTrend, TrendGrid } from "@/components/trends/ProfileTrend";
 import { evidenceKindLabel } from "@/lib/matters/cases";
 import { entryTypeLabel } from "@/lib/matters/entries";
 import { orNotRecorded } from "@/lib/matters/overview";
@@ -139,6 +140,8 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
   const cases = o.cases;
   const counsel = o.counsel;
+  // The trend cards read by exact MDL number; a number that is not a plain 1-5 digit one gets no card.
+  const trendId = /^[1-9]\d{0,4}$/.test(o.mdl) ? o.mdl : null;
 
   return (
     <div className="space-y-4">
@@ -177,21 +180,23 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
             </p>
           )}
         </Panel>
+        {trendId ? <ProfileTrend kind="mdl-monthly-pending" id={trendId} /> : null}
       </div>
 
-      {cases &&
-      (Object.keys(cases.byCourt).length > 1 || Object.keys(cases.byFiledYear).length > 1) ? (
+      {trendId ? (
+        <TrendGrid>
+          <ProfileTrend kind="matter-docket-entries" id={trendId} />
+          <ProfileTrend kind="mdl-members-years" id={trendId} />
+          <ProfileTrend kind="mdl-fy-pending" id={trendId} />
+        </TrendGrid>
+      ) : null}
+
+      {cases && Object.keys(cases.byCourt).length > 1 ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <BarList
             title="Sample cases by court"
             rows={asRows(cases.byCourt)}
             limit={8}
-            unit="dockets in this matter's saved sample"
-          />
-          <BarList
-            title="Sample cases by filing year"
-            rows={asRows(cases.byFiledYear).sort((a, b) => b.label.localeCompare(a.label))}
-            limit={10}
             unit="dockets in this matter's saved sample"
           />
         </div>

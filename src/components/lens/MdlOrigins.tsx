@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  getMdlHierarchy,
-  type MdlHierarchy,
-  type YearN,
-} from "@/lib/external/mdlNetwork.functions";
+import { getMdlHierarchy, type MdlHierarchy } from "@/lib/external/mdlNetwork.functions";
 
 const n = (v: number | null | undefined) =>
   v === null || v === undefined ? "Not recorded" : v.toLocaleString("en-US");
@@ -40,33 +36,6 @@ function Bars({
         </li>
       ))}
     </ul>
-  );
-}
-
-function YearColumns({ rows, label }: { rows: YearN[]; label: string }) {
-  const max = Math.max(1, ...rows.map((r) => r.n));
-  return (
-    <div>
-      <p className="m-0 mb-1 text-[11px] text-muted-foreground">{label}</p>
-      <div
-        className="flex h-20 items-end gap-1"
-        role="img"
-        aria-label={`${label}: ${rows.map((r) => `${r.year} ${r.n}`).join(", ")}`}
-      >
-        {rows.map((r) => (
-          <div key={r.year} className="flex min-w-0 flex-1 flex-col items-center gap-0.5">
-            <span className="font-mono text-[10px] tabular-nums text-muted-foreground">{r.n}</span>
-            <span
-              className="w-full rounded-sm bg-primary/60"
-              style={{ height: `${Math.max(2, (56 * r.n) / max)}px` }}
-            />
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {String(r.year).slice(2)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -217,9 +186,6 @@ function Body({ h }: { h: MdlHierarchy }) {
               />
             </div>
           ) : null}
-          {h.membersByYear.length ? (
-            <YearColumns rows={h.membersByYear} label="Member actions by filing year" />
-          ) : null}
         </div>
         <div className="min-w-0 space-y-3">
           {origin ? (
@@ -265,9 +231,6 @@ function Body({ h }: { h: MdlHierarchy }) {
                   </button>
                 ) : null}
               </div>
-              {origin.byYear.length ? (
-                <YearColumns rows={origin.byYear} label="Transferred-in dockets by filing year" />
-              ) : null}
             </>
           ) : (
             <p className="m-0 text-[11.5px] text-muted-foreground">
