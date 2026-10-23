@@ -32,6 +32,11 @@ def one_line(text: str) -> str:
     return _WS.sub(" ", text.replace("\n", " ")).strip()
 
 
+def _flat(value: str) -> str:
+    """Source line breaks inside HTML text are whitespace (only <br> and block ends break lines)."""
+    return value.replace("\r", " ").replace("\n", " ")
+
+
 def el_text(el) -> str:
     """Text of an lxml element: descendants' text in order, <br> as a line break, tables row by row."""
     parts: list[str] = []
@@ -49,15 +54,15 @@ def el_text(el) -> str:
         elif tag in ("td", "th"):
             parts.append(" ")
         if node.text and tag not in ("script", "style"):
-            parts.append(node.text)
+            parts.append(_flat(node.text))
         for child in node:
             walk(child)
         if tag in ("p", "div", "tr", "table", "li", "h1", "h2", "h3", "h4", "h5", "h6"):
             parts.append("\n")
         if node.tail:
-            parts.append(node.tail)
+            parts.append(_flat(node.tail))
 
-    text = el.text or ""
+    text = _flat(el.text or "")
     parts.append(text)
     for child in el:
         walk(child)
