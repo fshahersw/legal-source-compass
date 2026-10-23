@@ -206,3 +206,24 @@ export async function corpusGet(pathAndQuery, { range } = {}) {
     return JSON.parse(text);
   }
 }
+
+/**
+ * Every record id of a corpus dataset (read-only, keyset paging on ordinal), cached in <cacheDir>/<dataset>.ids.json so a
+ * rebuild does not re-read it. Used for exact-link checks (a link is written only to an id that is held).
+ */
+export async function knownIds(dataset, cacheDir) {
+  const file = path.join(cacheDir, `${dataset}.ids.json`);
+  if (fs.existsSync(file)) return new Set(JSON.parse(fs.readFileSync(file, "utf8")).ids);
+  const ids = [];
+  let after = null;
+  for (;;) {
+    const rows = await corpusGet(
+      `corpus_records?select=id,ordinal&dataset=eq.${dataset}&order=ordinal.asc&limit=1000${after === null ? "" : `&ordinal=gt.${after}`}`,
+    );
+    for (const r of rows) ids.push(r.id);
+    if (rows.length < 1000) break;
+    after = rows[rows.length - 1].ordinal;
+  }
+  writeJson(file, { dataset, read_at: nowIso(), count: ids.length, ids });
+  return new Set(ids);
+}
