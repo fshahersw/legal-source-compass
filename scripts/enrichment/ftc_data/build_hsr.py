@@ -26,6 +26,15 @@ NOTICE_COLUMNS = [("transaction_number", "Transaction"), ("date", "Granted"), ("
 FILINGS_COLUMNS = [("period", "Period"), ("transactions_reported", "Transactions reported"), ("filings_received", "Filings received"), ("second_requests", "Second requests"), ("et_granted", "Early termination granted"), ("count", "Monthly count")]
 
 
+def api_meta_count(path=None):
+    """meta.count the API reported when the pages were read (from the fetch log), or None when there is no log."""
+    path = path or os.path.join(B.ACQ, "hsr", "_pass_log.json")
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as handle:
+        return json.load(handle).get("meta_count")
+
+
 def load_api_pages(directory=None):
     pages = []
     for path in sorted(glob.glob(os.path.join(directory or os.path.join(B.ACQ, "hsr", "pages"), "*.json.gz"))):
@@ -128,7 +137,7 @@ def build_notices(pages=None, entries=None, filing_fy_rows=None):
     summary = {
         "label": "FTC HSR early termination notices", "rows": len(rows), "notices": len(notices), "empty_records_excluded": len(empty), "terms": B.GOV_TERMS + " " + B.API_TERMS,
         "method": "FTC HSR Early Termination Notices API (https://api.ftc.gov/v0/hsr-early-termination-notices), read directly; every page stored unchanged; the key travels in a request header so no recorded URL contains it",
-        "coverage": {"first_notice_date": first_date, "last_notice_date": last_date, "meta_count_reported_by_api": None},
+        "coverage": {"first_notice_date": first_date, "last_notice_date": last_date, "meta_count_reported_by_api": api_meta_count()},
         "passes": stats, "title_differs_from_fields": len(differs), "formulas": H.FORMULAS,
         "caveats": [
             "A notice records that the FTC and DOJ granted early termination of the HSR waiting period for one transaction. It does not say the transaction closed, or that no enforcement followed.",

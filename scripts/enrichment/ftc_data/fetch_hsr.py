@@ -111,7 +111,7 @@ def main():
         if shift:
             jobs.append((0, shift))
         off = shift
-        while off < total + 50:
+        while off < total:
             jobs.append((off, 50))
             off += 50
         try:

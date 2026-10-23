@@ -33,13 +33,40 @@ def url(window, offset, robo=None):
     return BASE + "?" + urllib.parse.urlencode(q)
 
 
+PROBES = os.path.join(fh.ACQ, "dnc", "probes.jsonl")
+_log_path = PROBES
+_cache = None  # {url: bool}, loaded from the probe log by use_probe_log(); None keeps every probe in memory only
+
+
+def use_probe_log(path=PROBES):
+    """Keep every answered probe in a log, so a stopped or rate-limited run resumes without repeating a request."""
+    global _cache, _log_path
+    _cache = {}
+    _log_path = path
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                rec = json.loads(line)
+                _cache[rec["url"]] = rec["has_record"]
+    return len(_cache)
+
+
 def has_record(fetcher, window, offset, robo, stats):
-    resp = fetcher.get(url(window, offset, robo))
+    target = url(window, offset, robo)
+    if _cache is not None and target in _cache:
+        return _cache[target]
+    t0 = time.time()
+    resp = fetcher.get(target)
     stats["requests"] += 1
     if resp.status != 200:
         raise fh.FetchError(f"HTTP {resp.status} at offset {offset}")
-    data = json.loads(resp.body).get("data")
-    return bool(data)
+    found = bool(json.loads(resp.body).get("data"))
+    if _cache is not None:
+        _cache[target] = found
+        os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+        with open(_log_path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"url": target, "has_record": found, "seconds": round(time.time() - t0, 1), "at": fh.now_utc()}) + "\n")
+    return found
 
 
 def count_window(fetcher, window, robo=None, stats=None, upper=None):
@@ -82,6 +109,7 @@ def main():
     ap.add_argument("--out", default=OUT)
     args = ap.parse_args()
     fetcher = fh.Fetcher(interval_override={"api.ftc.gov": float(os.environ.get("FTC_API_INTERVAL", "2.0"))})
+    print("probes already answered:", use_probe_log(), flush=True)
     if args.day:
         stats = {"requests": 0}
         n = count_window(fetcher, day_window(args.day), None, stats)

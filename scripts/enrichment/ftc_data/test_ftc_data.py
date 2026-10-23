@@ -527,6 +527,23 @@ class CountApiTests(unittest.TestCase):
             count_api.count_window(plain, {}, True)
             self.assertLessEqual(bounded.calls, plain.calls)
 
+    def test_a_probe_log_lets_a_stopped_run_resume_without_repeating_a_request(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "probes.jsonl")
+            try:
+                self.assertEqual(count_api.use_probe_log(path), 0)
+                first = self.Fake(1234)
+                self.assertEqual(count_api.count_window(first, count_api.day_window("2026-09-16")), 1234)
+                self.assertGreater(first.calls, 10)
+                self.assertEqual(count_api.use_probe_log(path), first.calls)  # every probe was logged
+                second = self.Fake(1234)
+                self.assertEqual(count_api.count_window(second, count_api.day_window("2026-09-16")), 1234)
+                self.assertEqual(second.calls, 0)
+            finally:
+                count_api._cache = None
+
     def test_month_window_ends_on_the_last_day(self):
         self.assertEqual(count_api.month_window("2024-02"), {"created_date_from": '"2024-02-01"', "created_date_to": '"2024-02-29"'})
 
