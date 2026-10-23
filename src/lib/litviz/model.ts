@@ -134,7 +134,10 @@ const humanize = (id: string) => {
 };
 
 /** Metadata of a series id; an id this file does not know (a SAFETY series) is described from its first row. */
-export function seriesMeta(id: string, row?: Pick<SeriesRow, "unit" | "basis" | "source_dataset">): SeriesMeta {
+export function seriesMeta(
+  id: string,
+  row?: Pick<SeriesRow, "unit" | "basis" | "source_dataset">,
+): SeriesMeta {
   const known = (SERIES as Record<string, Omit<SeriesMeta, "id">>)[id];
   if (known) return { id, ...known };
   const basis = row?.basis ?? "";
@@ -217,7 +220,10 @@ export function dayLabel(iso: string | null | undefined): string {
 }
 
 /** The months a row's value covers: [t0, t1) in month-index units. */
-export function rowSpan(row: Pick<SeriesRow, "month">, grain: SeriesGrain): [number, number] | null {
+export function rowSpan(
+  row: Pick<SeriesRow, "month">,
+  grain: SeriesGrain,
+): [number, number] | null {
   const i = monthIndex(row.month);
   if (i === null) return null;
   if (grain === "fiscal_year") return [i - 11, i + 1];
@@ -248,7 +254,8 @@ export function parseSeriesRows(raw: unknown): SeriesRow[] {
     const o = r as Record<string, unknown>;
     const series = str(o["series"]);
     const month = str(o["month"]);
-    if (!series || !/^[A-Za-z0-9_:.-]{1,80}$/.test(series) || !month || monthIndex(month) === null) continue;
+    if (!series || !/^[A-Za-z0-9_:.-]{1,80}$/.test(series) || !month || monthIndex(month) === null)
+      continue;
     const value =
       typeof o["value"] === "string" && /^-?\d+(\.\d+)?$/.test(o["value"])
         ? Number(o["value"])
@@ -276,7 +283,9 @@ export function bySeries(rows: readonly SeriesRow[]): Map<string, SeriesRow[]> {
 }
 
 /** Calendar-year roll-up of a monthly flow: sum per year, partial when any month is partial. */
-export function yearlyFlow(rows: readonly SeriesRow[]): { year: number; value: number; partial: boolean }[] {
+export function yearlyFlow(
+  rows: readonly SeriesRow[],
+): { year: number; value: number; partial: boolean }[] {
   const m = new Map<number, { value: number; partial: boolean }>();
   for (const r of rows) {
     const i = monthIndex(r.month);
@@ -317,11 +326,7 @@ export type ProductRef = {
 };
 
 export type MdlStatus =
-  | "pending"
-  | "terminated"
-  | "no_longer_listed"
-  | "listed_after_closing_date"
-  | "historical";
+  "pending" | "terminated" | "no_longer_listed" | "listed_after_closing_date" | "historical";
 
 export const STATUS_LABEL: Record<MdlStatus, string> = {
   pending: "Pending",

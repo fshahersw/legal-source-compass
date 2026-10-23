@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { MdlAnalytics, mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
+import { CitationGridOverview } from "@/components/litviz/CitationMap";
+import { MdlLanesOverview } from "@/components/litviz/MdlLanesOverview";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/matters/analytics")({
@@ -27,6 +29,13 @@ function Page() {
       ]}
     >
       <DailyInsightCard section="mdl" className="mb-3" />
+      <section aria-labelledby="mdl-lanes-heading" className="mb-6 space-y-3">
+        <h2 id="mdl-lanes-heading" className="sr-only">
+          MDL lifecycle lanes and citations
+        </h2>
+        <MdlLanesOverview />
+        <CitationGridOverview />
+      </section>
       <MdlAnalytics />
     </AppShell>
   );

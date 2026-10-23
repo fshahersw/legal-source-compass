@@ -71,7 +71,11 @@ export function parseMeta(raw: unknown): MdlMeta | null {
 }
 
 /** Parse the litviz_mdl_series_v1 payload; null when it does not have the shape (or the MDL has no record). */
-export function parseMdlDetail(raw: unknown, basis: MdlDetail["basis"], notices: string[] = []): MdlDetail | null {
+export function parseMdlDetail(
+  raw: unknown,
+  basis: MdlDetail["basis"],
+  notices: string[] = [],
+): MdlDetail | null {
   const o = obj(raw);
   const mdl = text(o?.["mdl"]);
   if (!o || !mdl || !/^[1-9][0-9]{0,5}$/.test(mdl)) return null;
@@ -100,7 +104,10 @@ const isActivity = (r: SeriesRow) => seriesMeta(r.series, r).group === "activity
  * The timeline rows: SAFETY's rows when its RPC returned any (they replace the FDA product series of the same MDL and
  * any litigation series they also carry), plus the litviz litigation rows.
  */
-export function mergeSignalRows(own: readonly SeriesRow[], safety: readonly SeriesRow[] | null): {
+export function mergeSignalRows(
+  own: readonly SeriesRow[],
+  safety: readonly SeriesRow[] | null,
+): {
   rows: SeriesRow[];
   agencySource: ProductSignals["agencySource"];
 } {
@@ -113,10 +120,16 @@ export function mergeSignalRows(own: readonly SeriesRow[], safety: readonly Seri
     };
   }
   const agency = own.filter(isAgency);
-  return { rows: [...agency, ...activity], agencySource: agency.length ? "fda_product_series" : null };
+  return {
+    rows: [...agency, ...activity],
+    agencySource: agency.length ? "fda_product_series" : null,
+  };
 }
 
-export function productSignals(detail: MdlDetail, safety: readonly SeriesRow[] | null): ProductSignals {
+export function productSignals(
+  detail: MdlDetail,
+  safety: readonly SeriesRow[] | null,
+): ProductSignals {
   const { rows, agencySource } = mergeSignalRows(detail.rows, safety);
   return {
     mdl: detail.mdl,
@@ -134,7 +147,11 @@ export function productSignals(detail: MdlDetail, safety: readonly SeriesRow[] |
 export function signalGroups(rows: readonly SeriesRow[]): { agency: string[]; activity: string[] } {
   const ids = [...bySeries(rows).keys()];
   return {
-    agency: ids.filter((id) => seriesMeta(id).group === "product" || !["activity", "lifecycle", "national"].includes(seriesMeta(id).group)),
+    agency: ids.filter(
+      (id) =>
+        seriesMeta(id).group === "product" ||
+        !["activity", "lifecycle", "national"].includes(seriesMeta(id).group),
+    ),
     activity: ids.filter((id) => seriesMeta(id).group === "activity"),
   };
 }

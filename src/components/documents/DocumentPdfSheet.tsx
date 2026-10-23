@@ -25,6 +25,7 @@ import {
 } from "@/lib/documents/documents";
 import { documentQuery } from "./documentQueries";
 import { TargetLink, TextStatusTag } from "./DocumentParts";
+import { FilingCitationContext } from "@/components/litviz/CitationMap";
 
 export type OpenDocument = { doc: DocSummary; page: number | null; pages?: number[] };
 
@@ -119,6 +120,10 @@ function Details({ doc }: { doc: DocSummary }) {
             {cites.length > 24 ? (
               <span className="text-muted-foreground">and {cites.length - 24} more</span>
             ) : null}
+          </dd>
+          <dt className="text-muted-foreground">Citation context</dt>
+          <dd>
+            <FilingCitationContext document={d.id} />
           </dd>
         </>
       ) : null}

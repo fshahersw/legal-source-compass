@@ -5,7 +5,8 @@
  */
 
 export type CourtLevelType = "root" | "court" | "circuit" | "judges" | "states" | "state";
-export type CourtNodeType = "court" | "circuit" | "judges" | "judge" | "states" | "state" | "other_courts";
+export type CourtNodeType =
+  "court" | "circuit" | "judges" | "judge" | "states" | "state" | "other_courts";
 
 export type CourtFact = { value: number; period: string; level: string };
 
@@ -51,7 +52,15 @@ export const COURT_METRICS = [
 export type CourtMetricId = (typeof COURT_METRICS)[number]["id"];
 export const COURT_METRIC_IDS: string[] = COURT_METRICS.map((m) => m.id);
 
-const TYPES = new Set<CourtNodeType>(["court", "circuit", "judges", "judge", "states", "state", "other_courts"]);
+const TYPES = new Set<CourtNodeType>([
+  "court",
+  "circuit",
+  "judges",
+  "judge",
+  "states",
+  "state",
+  "other_courts",
+]);
 const obj = (v: unknown): Record<string, unknown> | null =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
 const text = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
@@ -94,7 +103,11 @@ export function parseCourtLevel(raw: unknown): CourtLevel | null {
         metrics,
         judge:
           j && pending !== null
-            ? { pendingMdls: pending, actionsPending: num(j["actions_pending"]), asOf: text(j["as_of"]) }
+            ? {
+                pendingMdls: pending,
+                actionsPending: num(j["actions_pending"]),
+                asOf: text(j["as_of"]),
+              }
             : null,
       },
     ];
@@ -120,7 +133,9 @@ export function parseCourtLevel(raw: unknown): CourtLevel | null {
 }
 
 /** The level that lists a node's children, or null for a leaf. */
-export function childLevel(n: Pick<CourtNode, "type" | "id" | "children">): { type: CourtLevelType; id: string | null } | null {
+export function childLevel(
+  n: Pick<CourtNode, "type" | "id" | "children">,
+): { type: CourtLevelType; id: string | null } | null {
   if (n.children <= 0) return null;
   switch (n.type) {
     case "court":

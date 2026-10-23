@@ -41,7 +41,8 @@ export const jtext = (v: unknown): string | null =>
         : null;
 const jstring = (v: unknown): string | null => (typeof v === "string" ? v : null);
 /** `min(x collate "C")`: smallest by code unit, ignoring nulls. */
-const minC = (a: string | null, b: string | null) => (a === null ? b : b === null ? a : a < b ? a : b);
+const minC = (a: string | null, b: string | null) =>
+  a === null ? b : b === null ? a : a < b ? a : b;
 
 const monthOf = (today: string) => today.slice(0, 7);
 const monthsBetween = (lo: string, hi: string): string[] => {
@@ -105,7 +106,10 @@ const FY_FIELDS = [
 ] as const;
 
 /** B. Fiscal-year history per MDL (jpml_statistics_extra records "mdl:N", item.fy_history.series[]). */
-export function fyRows(records: readonly RawRecord[], editions: Map<number, string | null>): MdlRow[] {
+export function fyRows(
+  records: readonly RawRecord[],
+  editions: Map<number, string | null>,
+): MdlRow[] {
   const out: MdlRow[] = [];
   for (const r of records) {
     const g = /^mdl:([1-9][0-9]{0,5})$/.exec(r.id);
@@ -118,7 +122,10 @@ export function fyRows(records: readonly RawRecord[], editions: Map<number, stri
       if (!o || !fyText || !YEAR.test(fyText)) continue;
       const fy = Number(fyText);
       const cur = lines.get(fy);
-      if (!cur || (jtext(cur["attribution"]) !== "verified" && jtext(o["attribution"]) === "verified"))
+      if (
+        !cur ||
+        (jtext(cur["attribution"]) !== "verified" && jtext(o["attribution"]) === "verified")
+      )
         lines.set(fy, o);
     }
     for (const [fy, o] of [...lines].sort((a, b) => a[0] - b[0])) {
@@ -280,7 +287,8 @@ export function filingRowsYearly(
   const curYear = Number(today.slice(0, 4));
   const m = new Map<string, Map<number, number>>();
   for (const c of byYear) {
-    if (!MDL.test(c.mdl) || !Number.isInteger(c.year) || c.year < 1968 || c.year > curYear) continue;
+    if (!MDL.test(c.mdl) || !Number.isInteger(c.year) || c.year < 1968 || c.year > curYear)
+      continue;
     const x = m.get(c.mdl) ?? new Map<number, number>();
     x.set(c.year, (x.get(c.year) ?? 0) + c.n);
     m.set(c.mdl, x);
@@ -347,7 +355,10 @@ export function productRows(records: readonly (RawRecord & { dataset: string })[
 // ------------------------------------------------------------------------------------------------ national
 
 /** National context rows (mdl "US"): actions pending at FY end and centralization motions granted per year. */
-export function nationalRows(editions: readonly RawRecord[], intel: readonly RawRecord[]): MdlRow[] {
+export function nationalRows(
+  editions: readonly RawRecord[],
+  intel: readonly RawRecord[],
+): MdlRow[] {
   const out: MdlRow[] = [];
   for (const r of editions) {
     const g = /^fy:([12][0-9]{3})$/.exec(r.id);
@@ -394,7 +405,11 @@ export type SourceRecords = {
   products: readonly (RawRecord & { dataset: string })[];
 };
 
-export type SourceRow = { mdl: string; scope: "reported" | "historical"; src: Record<string, unknown> };
+export type SourceRow = {
+  mdl: string;
+  scope: "reported" | "historical";
+  src: Record<string, unknown>;
+};
 
 /** jsonb_strip_nulls of a flat object of `->>` texts. */
 function pick(o: Record<string, unknown> | null, keys: readonly string[]): Record<string, unknown> {
@@ -445,8 +460,7 @@ export function sourceRows(s: SourceRecords): SourceRow[] {
     if (!MDL.test(r.id)) continue;
     const i = obj(r.item);
     const v = pick(i, M_TEXT);
-    for (const k of ["actions_pending", "total_actions"])
-      if (isNum(i?.[k])) v[k] = i![k];
+    for (const k of ["actions_pending", "total_actions"]) if (isNum(i?.[k])) v[k] = i![k];
     put(r.id, "m", v);
     reported.add(r.id);
   }
@@ -512,10 +526,16 @@ export function sourceRows(s: SourceRecords): SourceRow[] {
       term.set(mdl, { year, district });
   }
   for (const [mdl, t] of term)
-    put(mdl, "t", t.district === null ? { termination_year: t.year } : { termination_year: t.year, district: t.district });
+    put(
+      mdl,
+      "t",
+      t.district === null
+        ? { termination_year: t.year }
+        : { termination_year: t.year, district: t.district },
+    );
   const products = new Map<string, Record<string, unknown>[]>();
-  for (const r of [...s.products].sort(
-    (a, b) => (a.dataset < b.dataset ? -1 : a.dataset > b.dataset ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  for (const r of [...s.products].sort((a, b) =>
+    a.dataset < b.dataset ? -1 : a.dataset > b.dataset ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
   )) {
     if (!(r.dataset in PRODUCT_DATASETS)) continue;
     const i = obj(r.item);

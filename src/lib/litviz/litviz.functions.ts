@@ -57,22 +57,22 @@ export const getMdlLanes = createServerFn({ method: "GET" })
 
 export const getMdlLane = createServerFn({ method: "GET" })
   .inputValidator((d: { mdl: string }) => z.object({ mdl: mdlId }).parse(d))
-  .handler(({ data }): Promise<MdlDetail | null> => readMdlDetail(data.mdl).catch(fail("MDL lane")));
+  .handler(({ data }): Promise<MdlDetail | null> =>
+    readMdlDetail(data.mdl).catch(fail("MDL lane")),
+  );
 
 export const getProductSignals = createServerFn({ method: "GET" })
   .inputValidator((d: { mdl: string }) => z.object({ mdl: mdlId }).parse(d))
-  .handler(
-    ({ data }): Promise<ProductSignals | null> =>
-      readProductSignals(data.mdl).catch(fail("product signal timeline")),
+  .handler(({ data }): Promise<ProductSignals | null> =>
+    readProductSignals(data.mdl).catch(fail("product signal timeline")),
   );
 
 export const getCitationMap = createServerFn({ method: "GET" })
   .inputValidator((d: { mdl: string; limit?: number }) =>
     z.object({ mdl: mdlId, limit: z.number().int().min(5).max(60).default(30) }).parse(d),
   )
-  .handler(
-    ({ data }): Promise<Available<CitationMap>> =>
-      readCitationMap(`${data.mdl}|${data.limit}`).catch(fail("citation map")),
+  .handler(({ data }): Promise<Available<CitationMap>> =>
+    readCitationMap(`${data.mdl}|${data.limit}`).catch(fail("citation map")),
   );
 
 export const getCitationGrid = createServerFn({ method: "GET" })
@@ -93,25 +93,22 @@ export const getFilingCitations = createServerFn({ method: "GET" })
   .inputValidator((d: { document: string }) =>
     z.object({ document: z.string().regex(/^d_[0-9a-f]{24}$/) }).parse(d),
   )
-  .handler(
-    ({ data }): Promise<Available<FilingCitations>> =>
-      readFilingCitations(data.document).catch(fail("filing's citations")),
+  .handler(({ data }): Promise<Available<FilingCitations>> =>
+    readFilingCitations(data.document).catch(fail("filing's citations")),
   );
 
-export const courtLevelInput = z
-  .discriminatedUnion("type", [
-    z.object({ type: z.literal("root"), id: z.null().default(null) }),
-    z.object({ type: z.literal("states"), id: z.null().default(null) }),
-    z.object({
-      type: z.enum(["court", "circuit", "judges"]),
-      id: z.string().regex(/^[A-Za-z0-9_-]{1,40}$/),
-    }),
-    z.object({ type: z.literal("state"), id: z.string().regex(/^[A-Z]{2}$/) }),
-  ]);
+export const courtLevelInput = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("root"), id: z.null().default(null) }),
+  z.object({ type: z.literal("states"), id: z.null().default(null) }),
+  z.object({
+    type: z.enum(["court", "circuit", "judges"]),
+    id: z.string().regex(/^[A-Za-z0-9_-]{1,40}$/),
+  }),
+  z.object({ type: z.literal("state"), id: z.string().regex(/^[A-Z]{2}$/) }),
+]);
 
 export const getCourtLevel = createServerFn({ method: "GET" })
   .inputValidator((d: { type: string; id?: string | null }) => courtLevelInput.parse(d))
-  .handler(
-    ({ data }): Promise<CourtLevel & { basis: "precomputed" | "live" }> =>
-      readCourtLevel(data.type, data.id).catch(fail("court hierarchy")),
+  .handler(({ data }): Promise<CourtLevel & { basis: "precomputed" | "live" }> =>
+    readCourtLevel(data.type, data.id).catch(fail("court hierarchy")),
   );

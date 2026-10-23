@@ -70,7 +70,11 @@ function memo<T>(ttl: number, fn: (key: string) => Promise<T>): (key: string) =>
   };
 }
 
-async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+async function mapLimit<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (t: T) => Promise<R>,
+): Promise<R[]> {
   const out = new Array<R>(items.length);
   let next = 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -128,7 +132,10 @@ async function readProducts(filter = ""): Promise<(RawRecord & { dataset: string
     ).then((rows) =>
       rows.map(({ id, source_url, ...item }) => ({ id, source_url, item, dataset })),
     );
-  const [a, b] = await Promise.all([read("fda_faers_product_series"), read("fda_device_event_series")]);
+  const [a, b] = await Promise.all([
+    read("fda_faers_product_series"),
+    read("fda_device_event_series"),
+  ]);
   return [...a, ...b];
 }
 
@@ -151,7 +158,11 @@ const fjcNoteMemo = memo(LIVE_TTL, async () => {
 
 /** Docket entries projected to MDL, date and docket link (both docket datasets; shared by every live read). */
 const docketMemo = memo(LIVE_TTL, async () => {
-  const read = async (dataset: string, dateField: string, urlSelect: string): Promise<DocketEntry[]> => {
+  const read = async (
+    dataset: string,
+    dateField: string,
+    urlSelect: string,
+  ): Promise<DocketEntry[]> => {
     const first = await restGet<{ m: unknown; d: unknown; u: unknown }[]>(
       `corpus_records?select=m:item->cells->>mdl&dataset=eq.${dataset}&order=id.asc&limit=1`,
       { count: true },
@@ -191,7 +202,9 @@ const filingsMemo = memo(LIVE_TTL, async (mdl: string) => {
 
 function filingYears(mdl: string, f: ForEntity | null) {
   return (f?.by_year ?? []).flatMap((p) =>
-    Array.isArray(p) && Number.isInteger(p[0]) && Number.isInteger(p[1]) ? [{ mdl, year: p[0], n: p[1] }] : [],
+    Array.isArray(p) && Number.isInteger(p[0]) && Number.isInteger(p[1])
+      ? [{ mdl, year: p[0], n: p[1] }]
+      : [],
   );
 }
 
@@ -210,7 +223,9 @@ async function liveLanes(scope: "reported" | "historical"): Promise<LanesPayload
     readProducts(),
   ]);
   const reported = new Set(
-    [...mdls, ...history, ...analytics].map((r) => r.id).filter((id) => /^[1-9][0-9]{0,5}$/.test(id)),
+    [...mdls, ...history, ...analytics]
+      .map((r) => r.id)
+      .filter((id) => /^[1-9][0-9]{0,5}$/.test(id)),
   );
   let fy: Rec[];
   let terminated: Rec[] = [];
@@ -244,7 +259,9 @@ async function liveLanes(scope: "reported" | "historical"): Promise<LanesPayload
     (s) => s.scope === scope,
   );
   const inScope = new Set(sources.map((s) => s.mdl));
-  const filings = await mapLimit([...inScope], 8, async (mdl) => filingYears(mdl, await filingsMemo(mdl)));
+  const filings = await mapLimit([...inScope], 8, async (mdl) =>
+    filingYears(mdl, await filingsMemo(mdl)),
+  );
   const rows: MdlRow[] = [
     ...jpmlMonthlyRows(history),
     ...fyRows(fy, fyEditionUrls(editions)),
@@ -263,7 +280,9 @@ async function liveLanes(scope: "reported" | "historical"): Promise<LanesPayload
       national: parseSeriesRows(national),
     },
     "live",
-    ["Computed from the published records on request; the precomputed lanes are not published yet."],
+    [
+      "Computed from the published records on request; the precomputed lanes are not published yet.",
+    ],
   );
 }
 
@@ -285,7 +304,9 @@ export const readLanes = (scope: "reported" | "historical") => lanesMemo(scope);
 async function liveDetail(mdl: string): Promise<MdlDetail | null> {
   const today = todayIso();
   const one = (dataset: string, id: string, select = "id,source_url,item") =>
-    readAll<Rec>(`corpus_records?select=${select}&dataset=eq.${dataset}&id=eq.${enc(id)}&order=id.asc`);
+    readAll<Rec>(
+      `corpus_records?select=${select}&dataset=eq.${dataset}&id=eq.${enc(id)}&order=id.asc`,
+    );
   const [mdls, history, analytics, fy, fjc, terminated, products, editions, through, filings] =
     await Promise.all([
       one("mdls", mdl),
@@ -309,7 +330,9 @@ async function liveDetail(mdl: string): Promise<MdlDetail | null> {
   const activity = sw.length
     ? []
     : await readEntries("mdl_docket_activity", "published_at", "source_url");
-  const src = sourceRows({ mdls, history, analytics, fy, terminated, products }).find((s) => s.mdl === mdl);
+  const src = sourceRows({ mdls, history, analytics, fy, terminated, products }).find(
+    (s) => s.mdl === mdl,
+  );
   const rows: MdlRow[] = [
     ...jpmlMonthlyRows(history),
     ...fyRows(fy, fyEditionUrls(editions)),
@@ -319,7 +342,9 @@ async function liveDetail(mdl: string): Promise<MdlDetail | null> {
     ...productRows(products),
   ].filter((r) => r.mdl === mdl);
   if (!src && !rows.length) return null;
-  const dated = rows.filter((r) => r.series === "docket_entries").reduce((s, r) => s + (r.value ?? 0), 0);
+  const dated = rows
+    .filter((r) => r.series === "docket_entries")
+    .reduce((s, r) => s + (r.value ?? 0), 0);
   const entries = sw.length ? sw : activity;
   return parseMdlDetail(
     {
@@ -330,7 +355,11 @@ async function liveDetail(mdl: string): Promise<MdlDetail | null> {
       src: src?.src ?? null,
       rows,
       meta: {
-        docket_dataset: entries.length ? (sw.length ? "sw_docket_entries_v1" : "mdl_docket_activity") : null,
+        docket_dataset: entries.length
+          ? sw.length
+            ? "sw_docket_entries_v1"
+            : "mdl_docket_activity"
+          : null,
         docket_total: entries.length,
         docket_undated: entries.length - dated,
         filings: filings?.total ?? 0,
@@ -381,7 +410,11 @@ export async function readProductSignals(mdl: string): Promise<ProductSignals | 
 const NOT_BUILT = "The citation map is not published yet.";
 
 async function viaAdapters<T>(
-  pick: (a: (typeof CITATION_ADAPTERS)[number]) => { rpc: string; body: Record<string, unknown>; parse: (raw: unknown) => T | null },
+  pick: (a: (typeof CITATION_ADAPTERS)[number]) => {
+    rpc: string;
+    body: Record<string, unknown>;
+    parse: (raw: unknown) => T | null;
+  },
 ): Promise<Available<T>> {
   for (const adapter of CITATION_ADAPTERS) {
     const { rpc, body, parse } = pick(adapter);
@@ -430,7 +463,13 @@ type EntityJson = {
   keys: Record<string, unknown> | null;
   href: string | null;
 };
-type FactJson = { metric_id: string; entity_type: string; entity_id: string; period: string; value: number | null };
+type FactJson = {
+  metric_id: string;
+  entity_type: string;
+  entity_id: string;
+  period: string;
+  value: number | null;
+};
 type EntityDetail = { entity: EntityJson | null; facts: FactJson[]; children: EntityJson[] };
 
 const entityMemo = memo(LIVE_TTL, async (key: string): Promise<EntityDetail> => {
@@ -457,15 +496,24 @@ const catalogMemo = memo(LIVE_TTL, async () => {
 /** Latest complete fact per entity for a metric and entity type (insights_latest_v1), keyed by entity id. */
 const latestMemo = memo(LIVE_TTL, async (key: string) => {
   const [metric, type] = key.split("|") as [string, string];
-  const r = await rpcPostOptional<FactJson[]>("insights_latest_v1", { p_metric: metric, p_entity_type: type });
+  const r = await rpcPostOptional<FactJson[]>("insights_latest_v1", {
+    p_metric: metric,
+    p_entity_type: type,
+  });
   return new Map((r ?? []).map((f) => [f.entity_id, f] as const));
 });
 
-async function factsFor(refs: { type: string; id: string }[]): Promise<Map<string, Record<string, CourtFact>>> {
+async function factsFor(
+  refs: { type: string; id: string }[],
+): Promise<Map<string, Record<string, CourtFact>>> {
   const catalog = await catalogMemo("all");
   const types = [...new Set(refs.map((r) => r.type))];
-  const combos = catalog.flatMap((m) => types.filter((t) => m.entity_types.includes(t)).map((t) => [m.id, t] as const));
-  const maps = await Promise.all(combos.map(([m, t]) => latestMemo(`${m}|${t}`).then((map) => [m, t, map] as const)));
+  const combos = catalog.flatMap((m) =>
+    types.filter((t) => m.entity_types.includes(t)).map((t) => [m.id, t] as const),
+  );
+  const maps = await Promise.all(
+    combos.map(([m, t]) => latestMemo(`${m}|${t}`).then((map) => [m, t, map] as const)),
+  );
   const out = new Map<string, Record<string, CourtFact>>();
   for (const ref of refs) {
     const rec: Record<string, CourtFact> = {};
@@ -490,7 +538,10 @@ const judgeMdlsMemo = memo(LIVE_TTL, async () => {
   const rows = await readAll<{ p: string | null; k: string | null; a: unknown; o: string | null }>(
     "corpus_records?select=p:item->>judge_profile_id,k:item->>judge_match_kind,a:item->actions_pending,o:item->>as_of&dataset=eq.mdls&order=id.asc",
   );
-  const m = new Map<string, { pendingMdls: number; actionsPending: number | null; asOf: string | null }>();
+  const m = new Map<
+    string,
+    { pendingMdls: number; actionsPending: number | null; asOf: string | null }
+  >();
   for (const r of rows) {
     if (!r.p || r.k !== "exact") continue;
     const cur = m.get(r.p) ?? { pendingMdls: 0, actionsPending: null, asOf: null };
@@ -503,7 +554,8 @@ const judgeMdlsMemo = memo(LIVE_TTL, async () => {
 });
 
 const APPELLATE = new Set(["S", "TS", "SA", "TA"]);
-const courtType = (e: EntityJson) => (typeof e.keys?.["court_type"] === "string" ? (e.keys["court_type"] as string) : null);
+const courtType = (e: EntityJson) =>
+  typeof e.keys?.["court_type"] === "string" ? (e.keys["court_type"] as string) : null;
 const node = (
   type: CourtNode["type"],
   e: Pick<EntityJson, "id" | "label" | "href">,
@@ -519,7 +571,8 @@ const node = (
   judge: null,
   ...extra,
 });
-const byLabel = (a: CourtNode, b: CourtNode) => (a.label < b.label ? -1 : a.label > b.label ? 1 : a.id < b.id ? -1 : 1);
+const byLabel = (a: CourtNode, b: CourtNode) =>
+  a.label < b.label ? -1 : a.label > b.label ? 1 : a.id < b.id ? -1 : 1;
 const circuitOrder = (id: string) => {
   const m = /^ca([0-9]+)$/.exec(id);
   return m ? Number(m[1]) : id === "cadc" ? 12 : 13;
@@ -530,7 +583,8 @@ async function judgeNodes(courtId: string): Promise<CourtNode[]> {
   return e.children
     .filter((c) => c.type === "judge")
     .map((c) => {
-      const profile = typeof c.keys?.["judge_profile"] === "string" ? (c.keys["judge_profile"] as string) : null;
+      const profile =
+        typeof c.keys?.["judge_profile"] === "string" ? (c.keys["judge_profile"] as string) : null;
       return node("judge", c, { judge: (profile && mdls.get(profile)) || null });
     })
     .sort(byLabel);
@@ -565,12 +619,25 @@ async function liveCourtLevel(type: CourtLevelType, id: string | null): Promise<
           metrics: facts.get("court:scotus") ?? {},
         }),
       );
-    nodes.push(node("states", { id: "US", label: "State court systems", href: null }, { children: states.length }));
+    nodes.push(
+      node(
+        "states",
+        { id: "US", label: "State court systems", href: null },
+        { children: states.length },
+      ),
+    );
   } else if (type === "court" && id === "scotus") {
     const [nation, scotus] = await Promise.all([entity("nation", "US"), entity("court", "scotus")]);
     const circuits = nation.children.filter((c) => c.type === "circuit");
-    const details = await Promise.all(circuits.map((c) => Promise.all([entity("circuit", c.id), entity("court", c.id)])));
-    const facts = await factsFor(circuits.flatMap((c) => [{ type: "circuit", id: c.id }, { type: "court", id: c.id }]));
+    const details = await Promise.all(
+      circuits.map((c) => Promise.all([entity("circuit", c.id), entity("court", c.id)])),
+    );
+    const facts = await factsFor(
+      circuits.flatMap((c) => [
+        { type: "circuit", id: c.id },
+        { type: "court", id: c.id },
+      ]),
+    );
     nodes = circuits
       .map((c, i) => {
         const [circ, court] = details[i]!;
@@ -583,7 +650,10 @@ async function liveCourtLevel(type: CourtLevelType, id: string | null): Promise<
       })
       .sort((a, b) => circuitOrder(a.id) - circuitOrder(b.id));
     const justices = scotus.children.filter((x) => x.type === "judge").length;
-    if (justices) nodes.push(node("judges", { id: "scotus", label: "Justices", href: null }, { children: justices }));
+    if (justices)
+      nodes.push(
+        node("judges", { id: "scotus", label: "Justices", href: null }, { children: justices }),
+      );
   } else if (type === "circuit" && id) {
     const [circ, court] = await Promise.all([entity("circuit", id), entity("court", id)]);
     const districts = circ.children.filter((x) => x.type === "court");
@@ -602,7 +672,13 @@ async function liveCourtLevel(type: CourtLevelType, id: string | null): Promise<
       .sort(byLabel);
     const judges = court.children.filter((x) => x.type === "judge").length;
     if (judges)
-      nodes.push(node("judges", { id, label: "Judges of the court of appeals", href: null }, { children: judges }));
+      nodes.push(
+        node(
+          "judges",
+          { id, label: "Judges of the court of appeals", href: null },
+          { children: judges },
+        ),
+      );
   } else if ((type === "court" || type === "judges") && id) {
     nodes = await judgeNodes(id);
   } else if (type === "states") {
@@ -613,7 +689,9 @@ async function liveCourtLevel(type: CourtLevelType, id: string | null): Promise<
     const appellate = courts.filter((c) => APPELLATE.has(courtType(c) ?? ""));
     const facts = await factsFor(appellate.map((c) => ({ type: "court", id: c.id })));
     nodes = appellate
-      .map((c) => node("court", c, { courtType: courtType(c), metrics: facts.get(`court:${c.id}`) ?? {} }))
+      .map((c) =>
+        node("court", c, { courtType: courtType(c), metrics: facts.get(`court:${c.id}`) ?? {} }),
+      )
       .sort((a, b) => {
         const ra = a.courtType === "S" || a.courtType === "TS" ? 0 : 1;
         const rb = b.courtType === "S" || b.courtType === "TS" ? 0 : 1;
@@ -637,19 +715,28 @@ async function stateSystems(nation: EntityDetail): Promise<CourtNode[]> {
   return states
     .map((s, i) =>
       node("state", s, {
-        children: details[i]!.children.filter((c) => c.type === "court" && APPELLATE.has(courtType(c) ?? "")).length,
+        children: details[i]!.children.filter(
+          (c) => c.type === "court" && APPELLATE.has(courtType(c) ?? ""),
+        ).length,
       }),
     )
     .filter((n) => n.children > 0)
     .sort(byLabel);
 }
 
-const courtMemo = memo(RPC_TTL, async (key: string): Promise<CourtLevel & { basis: "precomputed" | "live" }> => {
-  const [type, id] = key.split("|") as [CourtLevelType, string];
-  const raw = await rpcPostOptional<unknown>("litviz_court_children_v1", { p_type: type, p_id: id || null });
-  const parsed = raw ? parseCourtLevel(raw) : null;
-  if (parsed) return { ...parsed, basis: "precomputed" };
-  return { ...(await liveCourtLevel(type, id || null)), basis: "live" };
-});
+const courtMemo = memo(
+  RPC_TTL,
+  async (key: string): Promise<CourtLevel & { basis: "precomputed" | "live" }> => {
+    const [type, id] = key.split("|") as [CourtLevelType, string];
+    const raw = await rpcPostOptional<unknown>("litviz_court_children_v1", {
+      p_type: type,
+      p_id: id || null,
+    });
+    const parsed = raw ? parseCourtLevel(raw) : null;
+    if (parsed) return { ...parsed, basis: "precomputed" };
+    return { ...(await liveCourtLevel(type, id || null)), basis: "live" };
+  },
+);
 
-export const readCourtLevel = (type: CourtLevelType, id: string | null) => courtMemo(`${type}|${id ?? ""}`);
+export const readCourtLevel = (type: CourtLevelType, id: string | null) =>
+  courtMemo(`${type}|${id ?? ""}`);

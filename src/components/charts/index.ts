@@ -27,3 +27,7 @@ export type { SurvivalGroup } from "./SurvivalCurve";
 export { DistributionStrip } from "./DistributionStrip";
 export * from "./format";
 export * from "./series";
+export { LaneRows, LaneTracks, LaneAxis, laneTicks, laneDomain, readTrack, placeMarkerLabels } from "./Lanes";
+export type { LaneTrack, LanePoint, LaneBin, LaneMarker, LaneRowSpec } from "./Lanes";
+export { TreeExplorer, flattenTree } from "./TreeExplorer";
+export type { TreeItem, TreeChildren } from "./TreeExplorer";

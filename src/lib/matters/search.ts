@@ -7,6 +7,7 @@ export const MATTER_TABS = [
   "documents",
   "parties",
   "evidence",
+  "lifecycle",
 ] as const;
 export type MatterTab = (typeof MATTER_TABS)[number];
 
@@ -17,6 +18,7 @@ export const MATTER_TAB_LABELS: Record<MatterTab, string> = {
   documents: "Documents",
   parties: "Parties & counsel",
   evidence: "Evidence & sources",
+  lifecycle: "Lifecycle & signals",
 };
 
 /** URL state of a matter page: which tab, an optional docket-entry filter, and an open document viewer. */

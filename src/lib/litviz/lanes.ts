@@ -87,7 +87,8 @@ export function rollupForLanes(rows: readonly MdlRow[], today: string): CompactR
       out.push([r.mdl, r.series, r.month, r.value, r.basis]);
       continue;
     }
-    if (r.series !== "docket_entries" && r.series !== "filings" && r.series !== "filings_year") continue;
+    if (r.series !== "docket_entries" && r.series !== "filings" && r.series !== "filings_year")
+      continue;
     const series = r.series === "filings_year" ? "filings" : r.series;
     const key = `${r.mdl}|${series}|${r.month.slice(0, 4)}`;
     const cur0 = flows.get(key) ?? { value: 0, partial: false };
@@ -118,7 +119,9 @@ function toRun(entries: [number, number | null][]): Run | null {
 
 /** Points of the pending-actions line from the two runs. A point joins the previous one only when they are neighbours
  * in the source's cadence (consecutive fiscal years, or at most about a month apart); a missing period stays a gap. */
-export function pendingPoints(l: Pick<LaneSummary, "pendingMonthly" | "pendingFy">): PendingPoint[] {
+export function pendingPoints(
+  l: Pick<LaneSummary, "pendingMonthly" | "pendingFy">,
+): PendingPoint[] {
   const pts: { t: number; v: number; fy: boolean }[] = [];
   l.pendingMonthly?.values.forEach((v, i) => {
     if (v !== null) pts.push({ t: l.pendingMonthly!.start + i, v, fy: false });
@@ -160,7 +163,11 @@ export function laneSummary(mdl: string, src: MdlSource, rows: readonly CompactR
     if (series === "jpml_pending") {
       const t = monthIndex(period);
       if (t !== null) monthly.push([t, v]);
-    } else if (series === "jpml_fy_pending" && !isUnverifiedBasis(basis) && /^[12][0-9]{3}-09$/.test(period))
+    } else if (
+      series === "jpml_fy_pending" &&
+      !isUnverifiedBasis(basis) &&
+      /^[12][0-9]{3}-09$/.test(period)
+    )
       fy.push([Number(period.slice(0, 4)), v]);
   }
   const act = rows.find((r) => r[1] === "docket_entries_12m");
@@ -179,7 +186,8 @@ export function laneSummary(mdl: string, src: MdlSource, rows: readonly CompactR
 export function parseLanesSource(raw: unknown): LanesSource | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  const scope = o["scope"] === "historical" ? "historical" : o["scope"] === "reported" ? "reported" : null;
+  const scope =
+    o["scope"] === "historical" ? "historical" : o["scope"] === "reported" ? "reported" : null;
   if (!scope || !Array.isArray(o["mdls"]) || !Array.isArray(o["rows"])) return null;
   const mdls = (o["mdls"] as unknown[]).flatMap((m) => {
     const x = m && typeof m === "object" ? (m as Record<string, unknown>) : null;
@@ -188,7 +196,11 @@ export function parseLanesSource(raw: unknown): LanesSource | null {
     return id && MDL.test(id) && src ? [{ mdl: id, src }] : [];
   });
   const rows = (o["rows"] as unknown[]).flatMap((r): CompactRow[] =>
-    Array.isArray(r) && r.length === 5 && typeof r[0] === "string" && typeof r[1] === "string" && typeof r[2] === "string"
+    Array.isArray(r) &&
+    r.length === 5 &&
+    typeof r[0] === "string" &&
+    typeof r[1] === "string" &&
+    typeof r[2] === "string"
       ? [[r[0], r[1], r[2], toNum(r[3]), typeof r[4] === "string" ? r[4] : ""]]
       : [],
   );
@@ -286,7 +298,12 @@ export function laneFacets(lanes: readonly LaneSummary[]): {
     for (const l of lanes) m.set(f(l), (m.get(f(l)) ?? 0) + 1);
     return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   };
-  return { court: count(courtKey), judge: count(judgeKey), type: count(typeKey), status: count((l) => l.status) };
+  return {
+    court: count(courtKey),
+    judge: count(judgeKey),
+    type: count(typeKey),
+    status: count((l) => l.status),
+  };
 }
 
 // ------------------------------------------------------------------------------------------------ transport
@@ -339,37 +356,33 @@ const yearIn = (a: unknown): YearRun | null =>
 export function toWire(p: LanesPayload): LanesWire {
   return {
     ...p,
-    lanes: p.lanes.map(
-      (l): WireLane => [
-        l.mdl,
-        l.title,
-        l.status,
-        l.type,
-        l.massTort === null ? null : l.massTort ? 1 : 0,
-        l.court.id,
-        l.court.label,
-        l.judge.name,
-        l.judge.href,
-        l.dates.motionFiled,
-        l.dates.centralized,
-        l.dates.closed,
-        l.dates.closedYear,
-        l.dates.closedSourceUrl,
-        l.products,
-        runOut(l.pendingMonthly),
-        runOut(l.pendingFy),
-        yearOut(l.docket),
-        yearOut(l.filings),
-        l.activity12,
-      ],
-    ),
+    lanes: p.lanes.map((l): WireLane => [
+      l.mdl,
+      l.title,
+      l.status,
+      l.type,
+      l.massTort === null ? null : l.massTort ? 1 : 0,
+      l.court.id,
+      l.court.label,
+      l.judge.name,
+      l.judge.href,
+      l.dates.motionFiled,
+      l.dates.centralized,
+      l.dates.closed,
+      l.dates.closedYear,
+      l.dates.closedSourceUrl,
+      l.products,
+      runOut(l.pendingMonthly),
+      runOut(l.pendingFy),
+      yearOut(l.docket),
+      yearOut(l.filings),
+      l.activity12,
+    ]),
   };
 }
 
 /** Latest, peak and start of a lane from its runs and dates. */
-export function finishLane(
-  core: Omit<LaneSummary, "latest" | "peak" | "start">,
-): LaneSummary {
+export function finishLane(core: Omit<LaneSummary, "latest" | "peak" | "start">): LaneSummary {
   const pts = pendingPoints(core);
   const last = pts[pts.length - 1];
   let peak: PendingPoint | undefined;
@@ -417,8 +430,7 @@ export function fromWire(w: LanesWire): LanesPayload {
  * neither is recorded. The historical scope is served one decade at a time to stay inside the view budget. */
 export function laneDecade(l: Pick<LaneSummary, "dates" | "pendingFy">): number | null {
   const y =
-    l.dates.closedYear ??
-    (l.pendingFy ? l.pendingFy.start + l.pendingFy.values.length - 1 : null);
+    l.dates.closedYear ?? (l.pendingFy ? l.pendingFy.start + l.pendingFy.values.length - 1 : null);
   return y === null ? null : Math.floor(y / 10) * 10;
 }
 

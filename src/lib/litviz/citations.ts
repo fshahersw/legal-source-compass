@@ -9,12 +9,7 @@
 import { linkTarget } from "@/lib/documents/documents";
 
 export type AuthorityClass =
-  | "scotus"
-  | "federal_appellate"
-  | "state_high"
-  | "other_court"
-  | "usc"
-  | "cfr";
+  "scotus" | "federal_appellate" | "state_high" | "other_court" | "usc" | "cfr";
 
 /** Grid clusters, in display order. */
 export const CLASS_ORDER: AuthorityClass[] = [
@@ -70,7 +65,13 @@ export type CitationMap = {
 
 export type CitationGrid = {
   refreshed: string | null;
-  mdls: { mdl: string; title: string | null; filings: number | null; withText: number | null; citing: number | null }[];
+  mdls: {
+    mdl: string;
+    title: string | null;
+    filings: number | null;
+    withText: number | null;
+    citing: number | null;
+  }[];
   authorities: (Authority & { filings: number })[];
   /** [authority key, mdl, filings citing]. */
   cells: [string, string, number][];
@@ -113,7 +114,8 @@ function parseAuthority(raw: unknown): Authority | null {
   if (!o || !m) return null;
   const toType = m[1] as Authority["toType"];
   const toId = m[2]!;
-  const kind = o["kind"] === "usc" || o["kind"] === "cfr" || o["kind"] === "case" ? o["kind"] : null;
+  const kind =
+    o["kind"] === "usc" || o["kind"] === "cfr" || o["kind"] === "case" ? o["kind"] : null;
   const cls = text(o["class"]);
   const year = int(o["year"]);
   return {
@@ -150,7 +152,9 @@ export function parseCitationMap(raw: unknown): CitationMap | null {
   const authorities = (o["authorities"] as unknown[]).flatMap((a) => {
     const p = parseAuthority(a);
     const filings = int(obj(a)?.["filings"]);
-    return p && filings !== null ? [{ ...p, filings, mentions: int(obj(a)?.["mentions"]) ?? filings }] : [];
+    return p && filings !== null
+      ? [{ ...p, filings, mentions: int(obj(a)?.["mentions"]) ?? filings }]
+      : [];
   });
   const keys = new Set(authorities.map((a) => a.key));
   const edges = (Array.isArray(o["edges"]) ? (o["edges"] as unknown[]) : []).flatMap(
@@ -239,7 +243,9 @@ export function parseFilingCitations(raw: unknown): FilingCitations | null {
 }
 
 /** Authorities grouped into the grid's clusters (class order), each cluster by filings citing, then label. */
-export function clusterAuthorities<T extends Authority & { filings: number }>(list: readonly T[]): {
+export function clusterAuthorities<T extends Authority & { filings: number }>(
+  list: readonly T[],
+): {
   cls: AuthorityClass;
   items: T[];
 }[] {
@@ -296,24 +302,40 @@ export function compareMdls(
 /** One citation backend: RPC names and parsers to the shapes above. A missing RPC makes the server try the next. */
 export type CitationAdapter = {
   id: string;
-  map: { rpc: string; args: (mdl: string, limit: number) => Record<string, unknown>; parse: (raw: unknown) => CitationMap | null };
+  map: {
+    rpc: string;
+    args: (mdl: string, limit: number) => Record<string, unknown>;
+    parse: (raw: unknown) => CitationMap | null;
+  };
   grid: {
     rpc: string;
     args: (mdls: string[] | null, limit: number) => Record<string, unknown>;
     parse: (raw: unknown) => CitationGrid | null;
   };
-  filing: { rpc: string; args: (document: string) => Record<string, unknown>; parse: (raw: unknown) => FilingCitations | null };
+  filing: {
+    rpc: string;
+    args: (document: string) => Record<string, unknown>;
+    parse: (raw: unknown) => FilingCitations | null;
+  };
 };
 
 export const LITVIZ_CITATIONS: CitationAdapter = {
   id: "litviz-v1",
-  map: { rpc: "litviz_citations_v1", args: (mdl, limit) => ({ p_mdl: mdl, p_limit: limit }), parse: parseCitationMap },
+  map: {
+    rpc: "litviz_citations_v1",
+    args: (mdl, limit) => ({ p_mdl: mdl, p_limit: limit }),
+    parse: parseCitationMap,
+  },
   grid: {
     rpc: "litviz_citation_grid_v1",
     args: (mdls, limit) => ({ p_mdls: mdls, p_limit: limit }),
     parse: parseCitationGrid,
   },
-  filing: { rpc: "litviz_filing_citations_v1", args: (document) => ({ p_document: document }), parse: parseFilingCitations },
+  filing: {
+    rpc: "litviz_filing_citations_v1",
+    args: (document) => ({ p_document: document }),
+    parse: parseFilingCitations,
+  },
 };
 
 /** Tried in order. Worker CITE's citations v2 adapter goes first once its RPCs are applied (see the handoff). */

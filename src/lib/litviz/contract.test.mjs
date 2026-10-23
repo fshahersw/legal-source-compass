@@ -87,7 +87,9 @@ const RECORDS = [
       series: [{ month: "2024-10", pending: 4, source_url: "https://example.gov/oct.pdf" }],
     },
   }),
-  rec("jpml_pending_history_mdls", "bad", { history: { series: [{ month: "2024-10", pending: 1 }] } }),
+  rec("jpml_pending_history_mdls", "bad", {
+    history: { series: [{ month: "2024-10", pending: 1 }] },
+  }),
   rec("mdls", "2001", {
     title: "IN RE: Widget Products Liability Litigation",
     status: "pending",
@@ -110,19 +112,50 @@ const RECORDS = [
     judge_match_kind: "middle_initial",
     actions_pending: 9,
   }),
-  rec("mdl_analytics", "2001", { title: "Widget", analytics: { mass_tort: true, type: "Products Liability" } }),
+  rec("mdl_analytics", "2001", {
+    title: "Widget",
+    analytics: { mass_tort: true, type: "Products Liability" },
+  }),
   rec("mdl_analytics", "summary:overview", { overview: {} }),
   // B. fiscal-year editions and per-MDL history (verified, unverified, the 15-month FY1992)
-  rec("jpml_statistics_extra", "fy:1992", { fy_stats: { pending: 37253 } }, { source_url: "https://example.gov/fy1992.pdf" }),
-  rec("jpml_statistics_extra", "fy:2017", { fy_stats: { pending: 120000 } }, { source_url: "https://example.gov/fy2017.pdf" }),
-  rec("jpml_statistics_extra", "fy:2018", { fy_stats: {} }, { source_url: "https://example.gov/fy2018.pdf" }),
+  rec(
+    "jpml_statistics_extra",
+    "fy:1992",
+    { fy_stats: { pending: 37253 } },
+    { source_url: "https://example.gov/fy1992.pdf" },
+  ),
+  rec(
+    "jpml_statistics_extra",
+    "fy:2017",
+    { fy_stats: { pending: 120000 } },
+    { source_url: "https://example.gov/fy2017.pdf" },
+  ),
+  rec(
+    "jpml_statistics_extra",
+    "fy:2018",
+    { fy_stats: {} },
+    { source_url: "https://example.gov/fy2018.pdf" },
+  ),
   rec("jpml_statistics_extra", "mdl:2001", {
     title: "Widget PL",
     fy_history: {
       judge: "Lovelace, A.",
       series: [
-        { fy: 2017, pending: 10, closed: 1, remanded: 0, attribution: "verified", district: "New York Southern" },
-        { fy: 2018, pending: 20, closed: 2, attribution: "unverified", district: "New York Southern" },
+        {
+          fy: 2017,
+          pending: 10,
+          closed: 1,
+          remanded: 0,
+          attribution: "verified",
+          district: "New York Southern",
+        },
+        {
+          fy: 2018,
+          pending: 20,
+          closed: 2,
+          attribution: "unverified",
+          district: "New York Southern",
+        },
         { fy: 2018, pending: 21, attribution: "verified", district: "Second Part" },
         { fy: "x", pending: 5 },
       ],
@@ -131,22 +164,47 @@ const RECORDS = [
   rec("jpml_statistics_extra", "mdl:1500", {
     title: "Old Asbestos PL",
     fy_history: {
-      series: [{ fy: 1992, pending: 33000, closed: 400, remanded: 3, attribution: "verified", district: "Pennsylvania Eastern" }],
+      series: [
+        {
+          fy: 1992,
+          pending: 33000,
+          closed: 400,
+          remanded: 3,
+          attribution: "verified",
+          district: "Pennsylvania Eastern",
+        },
+      ],
     },
   }),
   // C. FJC, partial FY after the snapshot
   rec(
     "fjc_civil_mdls",
     "mdl:2001",
-    { profile: { by_fy: [{ fy: 2025, cases: 30 }, { fy: 2026, cases: 12 }, { fy: 2027, cases: "n/a" }] } },
+    {
+      profile: {
+        by_fy: [
+          { fy: 2025, cases: 30 },
+          { fy: 2026, cases: 12 },
+          { fy: 2027, cases: "n/a" },
+        ],
+      },
+    },
     { source_url: "https://www.fjc.gov/research/idb" },
   ),
   rec("fjc_civil_mdls", "mdl:0", { profile: { by_fy: [{ fy: 2025, cases: 1 }] } }),
   // terminated-litigation tables (historical scope)
-  rec("mdl_terminated_history", "1500:a", { history: { mdl: 1500, termination_year: 1999, district_name: "Pennsylvania Eastern" } }),
-  rec("mdl_terminated_history", "1500:b", { history: { mdl: 1500, termination_year: 2004, district_name: "Ohio Northern" } }),
-  rec("mdl_terminated_history", "1501:a", { history: { mdl: 1501, termination_year: 2010, district_name: "Texas Western" } }),
-  rec("mdl_terminated_history", "1501:b", { history: { mdl: 1501, termination_year: 2010, district_name: "Alabama Middle" } }),
+  rec("mdl_terminated_history", "1500:a", {
+    history: { mdl: 1500, termination_year: 1999, district_name: "Pennsylvania Eastern" },
+  }),
+  rec("mdl_terminated_history", "1500:b", {
+    history: { mdl: 1500, termination_year: 2004, district_name: "Ohio Northern" },
+  }),
+  rec("mdl_terminated_history", "1501:a", {
+    history: { mdl: 1501, termination_year: 2010, district_name: "Texas Western" },
+  }),
+  rec("mdl_terminated_history", "1501:b", {
+    history: { mdl: 1501, termination_year: 2010, district_name: "Alabama Middle" },
+  }),
   // D. docket entries (sw covers 2001; activity used only for 2003)
   ...[
     ["e1", "2026-07-03"],
@@ -157,13 +215,37 @@ const RECORDS = [
     ["e6", "2026-10-02"],
   ].map(([id, date]) =>
     rec("sw_docket_entries_v1", id, {
-      cells: { mdl: "2001", date_filed: date, source_url: "https://www.courtlistener.com/docket/9/" },
+      cells: {
+        mdl: "2001",
+        date_filed: date,
+        source_url: "https://www.courtlistener.com/docket/9/",
+      },
     }),
   ),
-  rec("mdl_docket_activity", "a1", { cells: { mdl: "2001", published_at: "2026-01-02" } }, { source_url: "https://cl/a" }),
-  rec("mdl_docket_activity", "a2", { cells: { mdl: "2003", published_at: "2025-11-20" } }, { source_url: "https://cl/b" }),
-  rec("mdl_docket_activity", "a3", { cells: { mdl: "2003", published_at: "" } }, { source_url: "https://cl/b" }),
-  rec("mdl_docket_activity", "a4", { cells: { mdl: "2003", published_at: "2026-01-15" } }, { source_url: "https://cl/a" }),
+  rec(
+    "mdl_docket_activity",
+    "a1",
+    { cells: { mdl: "2001", published_at: "2026-01-02" } },
+    { source_url: "https://cl/a" },
+  ),
+  rec(
+    "mdl_docket_activity",
+    "a2",
+    { cells: { mdl: "2003", published_at: "2025-11-20" } },
+    { source_url: "https://cl/b" },
+  ),
+  rec(
+    "mdl_docket_activity",
+    "a3",
+    { cells: { mdl: "2003", published_at: "" } },
+    { source_url: "https://cl/b" },
+  ),
+  rec(
+    "mdl_docket_activity",
+    "a4",
+    { cells: { mdl: "2003", published_at: "2026-01-15" } },
+    { source_url: "https://cl/a" },
+  ),
   // F/G. FDA product series naming the MDL; the national row names none
   rec(
     "fda_faers_product_series",
@@ -180,10 +262,20 @@ const RECORDS = [
     { source_url: "https://api.fda.gov/drug/event.json?search=x" },
   ),
   rec("fda_device_event_series", "national", { mdl: null, series: [{ year: 2025, reports: 1 }] }),
-  rec("mdl_intel_jpml_stats", "year:2025", { kind: "year", stats: { year: 2025, motions_granted: 18 } }, { source_url: "https://example.gov/cy2025.pdf" }),
+  rec(
+    "mdl_intel_jpml_stats",
+    "year:2025",
+    { kind: "year", stats: { year: 2025, motions_granted: 18 } },
+    { source_url: "https://example.gov/cy2025.pdf" },
+  ),
   rec("mdl_intel_jpml_stats", "summary", { kind: "summary" }),
   rec("us_code_sections", "28:1407", {}, { title: "28 U.S.C. § 1407 Multidistrict litigation" }),
-  rec("federal_regulations_parts", "cfr:21:314", {}, { title: "Applications for FDA Approval to Market a New Drug" }),
+  rec(
+    "federal_regulations_parts",
+    "cfr:21:314",
+    {},
+    { title: "Applications for FDA Approval to Market a New Drug" },
+  ),
 ];
 
 const DOCS = [
@@ -213,7 +305,11 @@ async function setup() {
     );
   await db.query("insert into public.corpus_datasets (id, metadata) values ($1, $2)", [
     "fjc_civil_mdls",
-    JSON.stringify({ summary: { snapshot: "cv88on.zip, last modified 2026-08-26; filing dates through 2026-06-30" } }),
+    JSON.stringify({
+      summary: {
+        snapshot: "cv88on.zip, last modified 2026-08-26; filing dates through 2026-06-30",
+      },
+    }),
   ]);
   for (const [id, nat, mdl, date, status] of DOCS)
     await db.query(
@@ -276,7 +372,13 @@ const norm = (rows) =>
     .map((r) => ({ ...r, value: r.value === null ? null : Number(r.value) }))
     .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
-const of = (dataset) => RECORDS.filter((r) => r.dataset === dataset).map((r) => ({ id: r.id, source_url: r.source_url ?? null, item: r.item, dataset }));
+const of = (dataset) =>
+  RECORDS.filter((r) => r.dataset === dataset).map((r) => ({
+    id: r.id,
+    source_url: r.source_url ?? null,
+    item: r.item,
+    dataset,
+  }));
 
 function tsSeriesRows() {
   const editions = of("jpml_statistics_extra");
@@ -318,7 +420,9 @@ test("series rows: the SQL and the TypeScript twin agree row for row", async () 
 });
 
 test("label fields: the SQL and the TypeScript twin agree", async () => {
-  const sqlRows = (await db.query("select mdl, scope, src from litviz.source_rows() order by mdl::integer")).rows;
+  const sqlRows = (
+    await db.query("select mdl, scope, src from litviz.source_rows() order by mdl::integer")
+  ).rows;
   const tsRows = derive.sourceRows({
     mdls: of("mdls"),
     history: of("jpml_pending_history_mdls"),
@@ -338,8 +442,11 @@ test("label fields: the SQL and the TypeScript twin agree", async () => {
 });
 
 test("series rules on the fixture: gaps stay gaps, partial and unverified are marked, zero-fill stays in span", async () => {
-  const rows = (await db.query("select * from litviz.series_rows($1::date) where mdl = '2001'", [TODAY])).rows;
-  const get = (series) => rows.filter((r) => r.series === series).map((r) => [r.month, Number(r.value), r.basis]);
+  const rows = (
+    await db.query("select * from litviz.series_rows($1::date) where mdl = '2001'", [TODAY])
+  ).rows;
+  const get = (series) =>
+    rows.filter((r) => r.series === series).map((r) => [r.month, Number(r.value), r.basis]);
   assert.deepEqual(
     get("jpml_pending").map((r) => r[0]),
     ["2024-10", "2024-11", "2025-01"],
@@ -350,7 +457,10 @@ test("series rules on the fixture: gaps stay gaps, partial and unverified are ma
     ["2026-09", 1, "master_docket:collected_entries"],
     ["2026-10", 1, "master_docket:collected_entries:partial_month"],
   ]);
-  assert.ok(rows.every((r) => r.source_dataset !== "mdl_docket_activity"), "sw covers 2001: activity is not added");
+  assert.ok(
+    rows.every((r) => r.source_dataset !== "mdl_docket_activity"),
+    "sw covers 2001: activity is not added",
+  );
   assert.deepEqual(
     get("jpml_fy_pending").map((r) => [r[0], r[1], r[2]]),
     [
@@ -359,15 +469,18 @@ test("series rules on the fixture: gaps stay gaps, partial and unverified are ma
     ],
     "one line per fiscal year, the verified one preferred",
   );
-  assert.deepEqual(get("fjc_idb_cases").map((r) => r[2]), [
-    "fjc_idb:historical_association",
-    "fjc_idb:historical_association:partial",
-  ]);
-  assert.deepEqual(get("filings").map((r) => [r[0], r[1]]), [
-    ["2026-08", 2],
-    ["2026-09", 0],
-    ["2026-10", 1],
-  ]);
+  assert.deepEqual(
+    get("fjc_idb_cases").map((r) => r[2]),
+    ["fjc_idb:historical_association", "fjc_idb:historical_association:partial"],
+  );
+  assert.deepEqual(
+    get("filings").map((r) => [r[0], r[1]]),
+    [
+      ["2026-08", 2],
+      ["2026-09", 0],
+      ["2026-10", 1],
+    ],
+  );
 });
 
 test("refresh builds every table and the read RPCs return bounded, typed payloads", async () => {
@@ -377,13 +490,30 @@ test("refresh builds every table and the read RPCs return bounded, typed payload
   assert.ok(counts.series_rows > 20 && counts.mdls >= 4, JSON.stringify(counts));
 
   const lanes = await json("select public.litviz_mdl_lanes_v1('reported') as v");
-  assert.deepEqual(lanes.mdls.map((m) => m.mdl), ["2001", "2002", "2003"]);
+  assert.deepEqual(
+    lanes.mdls.map((m) => m.mdl),
+    ["2001", "2002", "2003"],
+  );
   const rows2001 = lanes.rows.filter((r) => r[0] === "2001");
-  assert.ok(rows2001.some((r) => r[1] === "docket_entries" && r[2] === "2026" && Number(r[3]) === 4 && r[4] === "partial"));
-  assert.ok(rows2001.some((r) => r[1] === "docket_entries_12m" && r[2] === "2025-10/2026-10" && Number(r[3]) === 3));
-  assert.ok(lanes.national.some((r) => r.series === "jpml_motions_granted" && Number(r.value) === 18));
+  assert.ok(
+    rows2001.some(
+      (r) =>
+        r[1] === "docket_entries" && r[2] === "2026" && Number(r[3]) === 4 && r[4] === "partial",
+    ),
+  );
+  assert.ok(
+    rows2001.some(
+      (r) => r[1] === "docket_entries_12m" && r[2] === "2025-10/2026-10" && Number(r[3]) === 3,
+    ),
+  );
+  assert.ok(
+    lanes.national.some((r) => r.series === "jpml_motions_granted" && Number(r.value) === 18),
+  );
   const hist = await json("select public.litviz_mdl_lanes_v1('historical') as v");
-  assert.deepEqual(hist.mdls.map((m) => m.mdl), ["1500", "1501"]);
+  assert.deepEqual(
+    hist.mdls.map((m) => m.mdl),
+    ["1500", "1501"],
+  );
 
   const one = await json("select public.litviz_mdl_series_v1('2001') as v");
   assert.equal(one.scope, "reported");
@@ -410,15 +540,26 @@ test("refresh builds every table and the read RPCs return bounded, typed payload
   assert.equal(cit.authorities[0].mentions, 4);
   assert.equal(cit.authorities[1].heading, "Multidistrict litigation");
   assert.deepEqual(cit.edges, [["law_unit|usc:28:1407", "record|caselaw/111", 2]]);
-  assert.ok(!JSON.stringify(cit).includes("caselaw/222"), "the closed document's citation is excluded");
+  assert.ok(
+    !JSON.stringify(cit).includes("caselaw/222"),
+    "the closed document's citation is excluded",
+  );
 
   const grid = await json("select public.litviz_citation_grid_v1(null, 30) as v");
-  assert.deepEqual(grid.mdls.map((m) => m.mdl), ["2001", "2003"]);
+  assert.deepEqual(
+    grid.mdls.map((m) => m.mdl),
+    ["2001", "2003"],
+  );
   assert.ok(grid.cells.some((c) => c[0] === "record|caselaw/222" && c[1] === "2003" && c[2] === 1));
   const pair = await json("select public.litviz_citation_grid_v1(array['2003'], 5) as v");
-  assert.deepEqual(pair.authorities.map((a) => a.key), ["record|caselaw/222"]);
+  assert.deepEqual(
+    pair.authorities.map((a) => a.key),
+    ["record|caselaw/222"],
+  );
 
-  const filing = await json("select public.litviz_filing_citations_v1('d_000000000000000000000002') as v");
+  const filing = await json(
+    "select public.litviz_filing_citations_v1('d_000000000000000000000002') as v",
+  );
   assert.deepEqual(
     filing.authorities.map((a) => [a.key, a.mentions, a.mdl_filings, a.all_filings]),
     [
@@ -427,43 +568,72 @@ test("refresh builds every table and the read RPCs return bounded, typed payload
       ["record|caselaw/111", 1, 2, 2],
     ],
   );
-  assert.equal(await json("select public.litviz_filing_citations_v1('d_000000000000000000000004') as v"), null);
+  assert.equal(
+    await json("select public.litviz_filing_citations_v1('d_000000000000000000000004') as v"),
+    null,
+  );
 });
 
 test("court hierarchy: levels, latest complete facts, exact-profile judge MDLs, state systems", async () => {
   const root = await json("select public.litviz_court_children_v1('root') as v");
-  assert.deepEqual(root.nodes.map((n) => [n.type, n.id, n.children]), [
-    ["court", "scotus", 2],
-    ["states", "US", 1],
-  ]);
+  assert.deepEqual(
+    root.nodes.map((n) => [n.type, n.id, n.children]),
+    [
+      ["court", "scotus", 2],
+      ["states", "US", 1],
+    ],
+  );
   const circuits = await json("select public.litviz_court_children_v1('court', 'scotus') as v");
-  assert.deepEqual(circuits.nodes.map((n) => [n.type, n.id]), [
-    ["circuit", "ca2"],
-    ["circuit", "cadc"],
-    ["judges", "scotus"],
-  ]);
+  assert.deepEqual(
+    circuits.nodes.map((n) => [n.type, n.id]),
+    [
+      ["circuit", "ca2"],
+      ["circuit", "cadc"],
+      ["judges", "scotus"],
+    ],
+  );
   const ca2 = circuits.nodes[0];
-  assert.deepEqual(ca2.metrics.usc_civil_pending, [3000, "2026-06-30", "circuit"], "circuit-level fact preferred");
+  assert.deepEqual(
+    ca2.metrics.usc_civil_pending,
+    [3000, "2026-06-30", "circuit"],
+    "circuit-level fact preferred",
+  );
   assert.deepEqual(ca2.metrics.caselaw_opinion_clusters, [800, "2025", "court"]);
   assert.equal(ca2.children, 3, "two district courts and the appellate judges group");
   const districts = await json("select public.litviz_court_children_v1('circuit', 'ca2') as v");
-  assert.deepEqual(districts.nodes.map((n) => n.id), ["nyed", "nysd", "ca2"]);
+  assert.deepEqual(
+    districts.nodes.map((n) => n.id),
+    ["nyed", "nysd", "ca2"],
+  );
   const nysd = districts.nodes.find((n) => n.id === "nysd");
-  assert.deepEqual(nysd.metrics.usc_civil_pending, [1200, "2026-06-30", "court"], "partial period skipped");
+  assert.deepEqual(
+    nysd.metrics.usc_civil_pending,
+    [1200, "2026-06-30", "court"],
+    "partial period skipped",
+  );
   assert.equal(districts.catalog.usc_civil_pending.label, "Civil cases pending");
   const judges = await json("select public.litviz_court_children_v1('court', 'nysd') as v");
-  assert.deepEqual(judges.nodes.map((n) => [n.id, n.judge ?? null]), [
-    ["j1", { pending_mdls: 1, actions_pending: 150, as_of: "2026-10-01" }],
-    ["j2", null],
-  ]);
+  assert.deepEqual(
+    judges.nodes.map((n) => [n.id, n.judge ?? null]),
+    [
+      ["j1", { pending_mdls: 1, actions_pending: 150, as_of: "2026-10-01" }],
+      ["j2", null],
+    ],
+  );
   const states = await json("select public.litviz_court_children_v1('states') as v");
-  assert.deepEqual(states.nodes.map((n) => [n.id, n.children]), [["NY", 2]]);
+  assert.deepEqual(
+    states.nodes.map((n) => [n.id, n.children]),
+    [["NY", 2]],
+  );
   const ny = await json("select public.litviz_court_children_v1('state', 'NY') as v");
-  assert.deepEqual(ny.nodes.map((n) => [n.type, n.id, n.children]), [
-    ["court", "ny", 0],
-    ["court", "nyappdiv", 0],
-    ["other_courts", "NY", 1],
-  ]);
+  assert.deepEqual(
+    ny.nodes.map((n) => [n.type, n.id, n.children]),
+    [
+      ["court", "ny", 0],
+      ["court", "nyappdiv", 0],
+      ["other_courts", "NY", 1],
+    ],
+  );
   assert.deepEqual(ny.nodes[0].metrics.caselaw_opinion_clusters, [300, "2025", "court"]);
 });
 
@@ -491,7 +661,10 @@ test("inputs are validated with 22023 and nothing is executable by public roles"
     assert.equal(g.anon, false, g.proname);
     assert.equal(g.auth, false, g.proname);
     assert.equal(g.svc, true, g.proname);
-    assert.ok((g.proconfig ?? []).some((c) => c === "search_path=\"\"" || c === "search_path="), g.proname);
+    assert.ok(
+      (g.proconfig ?? []).some((c) => c === 'search_path=""' || c === "search_path="),
+      g.proname,
+    );
     if (g.proname.startsWith("litviz_")) assert.equal(g.prosecdef, true, g.proname);
   }
 });

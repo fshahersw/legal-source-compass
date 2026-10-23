@@ -62,14 +62,31 @@ describe("model", () => {
   });
 
   it("describes a series it does not know from its row, never inventing a unit", () => {
-    const m = seriesMeta("fda_recalls_class_i", { unit: "recalls", basis: "monthly", source_dataset: "x" });
-    expect(m).toMatchObject({ label: "Fda recalls class i", unit: "recalls", grain: "month", group: "product" });
+    const m = seriesMeta("fda_recalls_class_i", {
+      unit: "recalls",
+      basis: "monthly",
+      source_dataset: "x",
+    });
+    expect(m).toMatchObject({
+      label: "Fda recalls class i",
+      unit: "recalls",
+      grain: "month",
+      group: "product",
+    });
     expect(seriesMeta("faers_reports").grain).toBe("calendar_year");
   });
 
   it("parses rows defensively: bad months and series ids are dropped, unsafe links removed", () => {
     const rows = parseSeriesRows([
-      { series: "a", month: "2024-01", value: "12", unit: "x", source_dataset: "d", source_url: "javascript:x", basis: "b" },
+      {
+        series: "a",
+        month: "2024-01",
+        value: "12",
+        unit: "x",
+        source_dataset: "d",
+        source_url: "javascript:x",
+        basis: "b",
+      },
       { series: "a b", month: "2024-01", value: 1 },
       { series: "a", month: "2024-1", value: 1 },
       { series: "a", month: "2024-02", value: null, source_url: "/litigation/documents?mdl=1" },
@@ -81,7 +98,11 @@ describe("model", () => {
 
   it("rolls monthly flows to calendar years, carrying the partial mark", () => {
     expect(
-      yearlyFlow([row("x", "2025-12", 2), row("x", "2026-01", 3), row("x", "2026-02", 1, "a:partial_month")]),
+      yearlyFlow([
+        row("x", "2025-12", 2),
+        row("x", "2026-01", 3),
+        row("x", "2026-02", 1, "a:partial_month"),
+      ]),
     ).toEqual([
       { year: 2025, value: 2, partial: false },
       { year: 2026, value: 4, partial: true },
@@ -90,14 +111,38 @@ describe("model", () => {
 
   it("labels an MDL from its records in order of authority and links a judge only on an exact match", () => {
     const a = mdlAttributes("2001", {
-      m: { title: "M", cl_court_id: "nysd", court_name: "S.D. New York", judge_name_as_printed: "A", judge_profile_id: "0123456789abcdef0123456789abcdef", judge_match_kind: "middle_initial" },
-      h: { title: "H", district: "NYS", date_filed: "2023-01-05", date_transferred: "2023-04-02", exit_status: "pending" },
+      m: {
+        title: "M",
+        cl_court_id: "nysd",
+        court_name: "S.D. New York",
+        judge_name_as_printed: "A",
+        judge_profile_id: "0123456789abcdef0123456789abcdef",
+        judge_match_kind: "middle_initial",
+      },
+      h: {
+        title: "H",
+        district: "NYS",
+        date_filed: "2023-01-05",
+        date_transferred: "2023-04-02",
+        exit_status: "pending",
+      },
     });
-    expect(a).toMatchObject({ title: "M", status: "pending", court: { id: "nysd", label: "S.D. New York" } });
+    expect(a).toMatchObject({
+      title: "M",
+      status: "pending",
+      court: { id: "nysd", label: "S.D. New York" },
+    });
     expect(a.judge).toEqual({ name: "A", href: null });
     expect(a.dates.centralized).toBe("2023-04-02");
-    const h = mdlAttributes("1500", { x: { caption: "Old PL", district: "Ohio Northern" }, t: { termination_year: 2004 } });
-    expect(h).toMatchObject({ status: "historical", title: "Old PL", court: { label: "Ohio Northern" } });
+    const h = mdlAttributes("1500", {
+      x: { caption: "Old PL", district: "Ohio Northern" },
+      t: { termination_year: 2004 },
+    });
+    expect(h).toMatchObject({
+      status: "historical",
+      title: "Old PL",
+      court: { label: "Ohio Northern" },
+    });
     expect(h.dates.closedYear).toBe(2004);
     expect(mdlAttributes("7", {}).title).toBe("MDL No. 7");
   });
@@ -105,9 +150,11 @@ describe("model", () => {
 
 describe("derive (fallback-only paths)", () => {
   it("reads the FJC extract date from its published note", () => {
-    expect(fjcThrough("cv88on.zip, last modified 2026-08-26 on fjc.gov; filing dates through 2026-06-30")).toBe(
-      "2026-06-30",
-    );
+    expect(
+      fjcThrough(
+        "cv88on.zip, last modified 2026-08-26 on fjc.gov; filing dates through 2026-06-30",
+      ),
+    ).toBe("2026-06-30");
     expect(fjcThrough("no date")).toBeNull();
   });
 
@@ -147,9 +194,21 @@ describe("derive (fallback-only paths)", () => {
 
   it("takes product series only from records that name the MDL", () => {
     const rows = productRows([
-      { dataset: "fda_device_event_series", id: "national", item: { mdl: null, series: [{ year: 2025, reports: 1 }] } },
-      { dataset: "fda_faers_product_series", id: "9", item: { mdl: 9, series: [{ year: 2025, reports: 4 }] } },
-      { dataset: "agency_safety_openfda_drug_enforcement", id: "x", item: { mdl: 9, series: [{ year: 2025, reports: 4 }] } },
+      {
+        dataset: "fda_device_event_series",
+        id: "national",
+        item: { mdl: null, series: [{ year: 2025, reports: 1 }] },
+      },
+      {
+        dataset: "fda_faers_product_series",
+        id: "9",
+        item: { mdl: 9, series: [{ year: 2025, reports: 4 }] },
+      },
+      {
+        dataset: "agency_safety_openfda_drug_enforcement",
+        id: "x",
+        item: { mdl: 9, series: [{ year: 2025, reports: 4 }] },
+      },
     ]);
     expect(rows.map((r) => [r.mdl, r.series, r.value])).toEqual([["9", "faers_reports", 4]]);
   });
@@ -160,13 +219,40 @@ const SRC = {
   today: "2026-10-23",
   refreshed: "2026-10-23T06:17:00Z",
   mdls: [
-    { mdl: "2001", src: { m: { title: "Widget", cl_court_id: "nysd", court_name: "S.D. New York", litigation_type: "Products Liability", date_transferred: "2023-04-02" } } },
-    { mdl: "2002", src: { h: { title: "Gadget", exit_status: "terminated", date_closed: "2025-07-08", district: "NYS" } } },
+    {
+      mdl: "2001",
+      src: {
+        m: {
+          title: "Widget",
+          cl_court_id: "nysd",
+          court_name: "S.D. New York",
+          litigation_type: "Products Liability",
+          date_transferred: "2023-04-02",
+        },
+      },
+    },
+    {
+      mdl: "2002",
+      src: {
+        h: {
+          title: "Gadget",
+          exit_status: "terminated",
+          date_closed: "2025-07-08",
+          district: "NYS",
+        },
+      },
+    },
     { mdl: "bad", src: {} },
   ],
   rows: [
     ["2001", "jpml_fy_pending", "2023-09", 10, "jpml_fy_statistical_analysis"],
-    ["2001", "jpml_fy_pending", "2024-09", 90, "jpml_fy_statistical_analysis:attribution_unverified"],
+    [
+      "2001",
+      "jpml_fy_pending",
+      "2024-09",
+      90,
+      "jpml_fy_statistical_analysis:attribution_unverified",
+    ],
     ["2001", "jpml_pending", "2024-10", 100, "jpml_monthly_report"],
     ["2001", "jpml_pending", "2024-11", 120, "jpml_monthly_report"],
     ["2001", "jpml_pending", "2025-01", 150, "jpml_monthly_report"],
@@ -176,7 +262,17 @@ const SRC = {
     ["2002", "jpml_pending", "2024-10", 4, "jpml_monthly_report"],
     ["2002", "x", "2024", "bad", ""],
   ],
-  national: [{ series: "jpml_motions_granted", month: "2025-01", value: 18, unit: "motions", source_dataset: "d", source_url: null, basis: "calendar_year_total" }],
+  national: [
+    {
+      series: "jpml_motions_granted",
+      month: "2025-01",
+      value: 18,
+      unit: "motions",
+      source_dataset: "d",
+      source_url: null,
+      basis: "calendar_year_total",
+    },
+  ],
 };
 
 describe("lanes", () => {
@@ -208,7 +304,10 @@ describe("lanes", () => {
   });
 
   it("joins a fiscal-year end to the next month's report", () => {
-    const pts = pendingPoints({ pendingFy: { start: 2024, values: [5] }, pendingMonthly: { start: 2024 * 12 + 9, values: [6] } });
+    const pts = pendingPoints({
+      pendingFy: { start: 2024, values: [5] },
+      pendingMonthly: { start: 2024 * 12 + 9, values: [6] },
+    });
     expect(pts.map((x) => x[2])).toEqual([0, 1]);
   });
 
@@ -261,7 +360,9 @@ describe("lanes", () => {
           { mdl: "11", src: { x: { caption: "B" } } },
           { mdl: "12", src: { t: { termination_year: 1999 } } },
         ],
-        rows: [["11", "jpml_fy_pending", "1994-09", 3, "jpml_fy_statistical_analysis"]] as CompactRow[],
+        rows: [
+          ["11", "jpml_fy_pending", "1994-09", 3, "jpml_fy_statistical_analysis"],
+        ] as CompactRow[],
       })!,
       "precomputed",
     );
@@ -292,7 +393,11 @@ describe("citations", () => {
       mdl: "2001",
       meta: { filings: 4, with_text: 3, citing: 2, cites_unresolved: 1, cites_ambiguous: 0 },
       distinct_authorities: 3,
-      authorities: [AUTH("record|caselaw/111", 2), AUTH("law_unit|usc:28:1407", 2), { key: "nope", filings: 1 }],
+      authorities: [
+        AUTH("record|caselaw/111", 2),
+        AUTH("law_unit|usc:28:1407", 2),
+        { key: "nope", filings: 1 },
+      ],
       edges: [
         ["law_unit|usc:28:1407", "record|caselaw/111", 2],
         ["record|caselaw/111", "record|caselaw/999", 3],
@@ -310,7 +415,11 @@ describe("citations", () => {
         { mdl: "1", citing: 10, title: "A" },
         { mdl: "2", citing: 4, title: "B" },
       ],
-      authorities: [AUTH("record|caselaw/1", 6), AUTH("law_unit|usc:28:1407", 5), AUTH("record|caselaw/2", 1)],
+      authorities: [
+        AUTH("record|caselaw/1", 6),
+        AUTH("law_unit|usc:28:1407", 5),
+        AUTH("record|caselaw/2", 1),
+      ],
       cells: [
         ["record|caselaw/1", "1", 5],
         ["record|caselaw/1", "2", 1],
@@ -338,9 +447,22 @@ describe("citations", () => {
       mdl: "2001",
       text_status: "text_layer",
       mdl_citing: 2,
-      authorities: [{ ...AUTH("record|caselaw/111", 0), mentions: 3, first_page: 2, mdl_filings: 2, all_filings: 5 }],
+      authorities: [
+        {
+          ...AUTH("record|caselaw/111", 0),
+          mentions: 3,
+          first_page: 2,
+          mdl_filings: 2,
+          all_filings: 5,
+        },
+      ],
     })!;
-    expect(f.authorities[0]).toMatchObject({ mentions: 3, firstPage: 2, mdlFilings: 2, allFilings: 5 });
+    expect(f.authorities[0]).toMatchObject({
+      mentions: 3,
+      firstPage: 2,
+      mdlFilings: 2,
+      allFilings: 5,
+    });
   });
 });
 
@@ -349,12 +471,33 @@ describe("court tree", () => {
     type: "circuit",
     id: "ca2",
     nodes: [
-      { type: "court", id: "nysd", label: "S.D.N.Y.", href: "/courts/nysd", children: 46, metrics: { usc_civil_pending: [13326, "2026-06-30", "court"] } },
-      { type: "court", id: "vtd", label: "D. Vt.", href: "//evil", children: 5, metrics: { usc_civil_pending: [396, "2025-06-30", "court"] } },
+      {
+        type: "court",
+        id: "nysd",
+        label: "S.D.N.Y.",
+        href: "/courts/nysd",
+        children: 46,
+        metrics: { usc_civil_pending: [13326, "2026-06-30", "court"] },
+      },
+      {
+        type: "court",
+        id: "vtd",
+        label: "D. Vt.",
+        href: "//evil",
+        children: 5,
+        metrics: { usc_civil_pending: [396, "2025-06-30", "court"] },
+      },
       { type: "judges", id: "ca2", label: "Judges", children: 28 },
       { type: "planet", id: "x", label: "x" },
     ],
-    catalog: { usc_civil_pending: { label: "Civil cases pending", unit: "cases", format: "count", source_links: [{ label: "U.S. Courts", url: "https://www.uscourts.gov" }] } },
+    catalog: {
+      usc_civil_pending: {
+        label: "Civil cases pending",
+        unit: "cases",
+        format: "count",
+        source_links: [{ label: "U.S. Courts", url: "https://www.uscourts.gov" }],
+      },
+    },
   })!;
 
   it("parses nodes, refusing unknown types and unsafe links", () => {
@@ -382,8 +525,15 @@ describe("product signals", () => {
     {
       mdl: "3081",
       today: "2026-10-23",
-      src: { m: { title: "Ports", date_transferred: "2023-08-08" }, products: [{ dataset: "fda_device_event_series", id: "3081", product: "Ports" }] },
-      rows: [row("maude_reports", "2024-01", 40, "calendar_year_total"), row("docket_entries", "2024-02", 3), row("jpml_pending", "2024-10", 9)],
+      src: {
+        m: { title: "Ports", date_transferred: "2023-08-08" },
+        products: [{ dataset: "fda_device_event_series", id: "3081", product: "Ports" }],
+      },
+      rows: [
+        row("maude_reports", "2024-01", 40, "calendar_year_total"),
+        row("docket_entries", "2024-02", 3),
+        row("jpml_pending", "2024-10", 9),
+      ],
     },
     "precomputed",
   )!;
