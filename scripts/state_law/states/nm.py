@@ -11,6 +11,11 @@ Parsing (`nm-chapter-pdf/1`): `pdftotext -layout`; `ARTICLE n` + name lines are 
 line at the left margin `37-1-8. Actions against sureties; injuries to person or reputation.` whose number belongs to
 the chapter (inside an ANNOTATIONS block only after a blank line); indented lines start text paragraphs, unindented
 lines continue them; `History:` starts the history (to the next blank line); `ANNOTATIONS` ends the section's text.
+A catchline that is only a marker ("Recompiled.", "Repealed.") is a status entry (Recompiled -> renumbered).
+
+nmonesource.com answered HTTP 403 on 2026-10-23 after a few requests (recorded, not retried). The project's retained
+chapter PDFs (captured 2026-10-06: 81 unannotated `nmsa-unanno` + 84 annotated) are re-parsed with
+`--option source=retained`; chapter number and name then come from each PDF's own "CHAPTER n" header.
 """
 from __future__ import annotations
 
@@ -155,9 +160,81 @@ def list_items(nav_html: str):
     return out
 
 
+CHAPTER_HEAD = re.compile(r"^CHAPTER\s+(\d+[A-Z]?)$")
+
+
+def chapter_header(lines: list[str]):
+    """(chapter number, chapter name) from the PDF's own centred header: "CHAPTER 46B" then the name line(s)."""
+    for i, raw in enumerate(lines[:12]):
+        m = CHAPTER_HEAD.match(sb.one_line(raw))
+        if m:
+            name = []
+            for nxt in lines[i + 1:i + 4]:
+                t = sb.one_line(nxt)
+                if not t or not nxt.startswith(" ") or ARTICLE.match(t):
+                    break
+                name.append(t)
+            return m.group(1), " ".join(name) or None
+    return None, None
+
+
+def _emit(ctx, fetched, sections, chapter, name):
+    counts: dict[str, int] = {}
+    for s in sections:
+        counts[s["number"]] = counts.get(s["number"], 0) + 1
+    seen: dict[str, int] = {}
+    for s in sections:
+        status = sb.status_kwargs(s["heading"], s["text"])
+        if status is None:
+            ctx.log(f"NMSA {s['number']}: no text and no marker; skipped")
+            continue
+        heading = s["heading"]
+        if status["status"] != "in_force" and status["status_marker"] == heading:
+            heading = None
+        index_ = None
+        if counts[s["number"]] > 1:
+            seen[s["number"]] = seen.get(s["number"], 0) + 1
+            index_ = seen[s["number"]]
+        path = [{"level": "chapter", "label": "Chapter", "number": chapter, "heading": name}]
+        if s["article"]:
+            label, num, head = s["article"]
+            path.append({"level": label.lower(), "label": label, "number": num, "heading": head})
+        ctx.section(code="NMSA", number=s["number"], heading=heading, text=s["text"], path=path, source=fetched,
+                    history=s["history"], version_index=index_, **status)
+        if not ctx.want_more():
+            return False
+    return True
+
+
+def _acquire_retained(ctx, only):
+    """Re-parse the retained chapter PDFs (captured 2026-10-06; nmonesource.com answered 403 on 2026-10-23). The
+    unannotated compilation (`nmsa-unanno`) is preferred; an annotated chapter PDF is used only for a chapter that has
+    no unannotated capture (its ANNOTATIONS blocks are dropped as in the live path). No currency line was retained,
+    so the edition states none."""
+    ctx.edition(edition_label="New Mexico Statutes Annotated 1978", currency_statement=None, currency_source_url=None)
+    done: set[str] = set()
+    for collection in ("nmsa-unanno", "nmsa"):
+        urls = [u for u in ctx.retained.urls(f"{SITE}/nmos/{collection}/en/") if u.endswith("/1/document.do")]
+        ctx.log(f"{len(urls)} retained {collection} chapter PDFs")
+        for url in urls:
+            fetched = ctx.get(url, method="publisher_bulk")
+            lines = pdf_lines(fetched.body)
+            chapter, name = chapter_header(lines)
+            if chapter is None:
+                ctx.log(f"{url}: no CHAPTER header printed; skipped")
+                continue
+            if chapter in done or (only and chapter not in only):
+                continue
+            done.add(chapter)
+            if not _emit(ctx, fetched, parse_chapter(lines, chapter), chapter, name):
+                return
+
+
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
+    if getattr(ctx, "retained", None) is not None:
+        return _acquire_retained(ctx, only)
     first = ctx.get(NAV)
     page = lib.norm_ws(lib.html_text(first.body))
     m = re.search(r"Website last modified: \d{1,2}/\d{1,2}/\d{4}", page)
@@ -175,28 +252,5 @@ def acquire(ctx):
     ctx.log(f"{len(items)} chapters listed")
     for item, chapter, name in items:
         fetched = ctx.get(f"{SITE}/nmos/nmsa/en/{item}/1/document.do", method="publisher_bulk")
-        sections = parse_chapter(pdf_lines(fetched.body), chapter)
-        counts: dict[str, int] = {}
-        for s in sections:
-            counts[s["number"]] = counts.get(s["number"], 0) + 1
-        seen: dict[str, int] = {}
-        for s in sections:
-            status = sb.status_kwargs(s["heading"], s["text"])
-            if status is None:
-                ctx.log(f"NMSA {s['number']}: no text and no marker; skipped")
-                continue
-            heading = s["heading"]
-            if status["status"] != "in_force" and status["status_marker"] == heading:
-                heading = None
-            index_ = None
-            if counts[s["number"]] > 1:
-                seen[s["number"]] = seen.get(s["number"], 0) + 1
-                index_ = seen[s["number"]]
-            path = [{"level": "chapter", "label": "Chapter", "number": chapter, "heading": name}]
-            if s["article"]:
-                label, num, head = s["article"]
-                path.append({"level": label.lower(), "label": label, "number": num, "heading": head})
-            ctx.section(code="NMSA", number=s["number"], heading=heading, text=s["text"], path=path, source=fetched,
-                        history=s["history"], version_index=index_, **status)
-            if not ctx.want_more():
-                return
+        if not _emit(ctx, fetched, parse_chapter(pdf_lines(fetched.body), chapter), chapter, name):
+            return

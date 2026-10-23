@@ -182,11 +182,11 @@ class FakeCtx:
 # --- status from the publisher's own markers (stricter than lib.classify_status; see module docstring) ----------
 
 _MARKER = re.compile(
-    r"^[\[(]?\s*(repealed|reserved|expired|renumbered|redesignated|transferred|terminated)"
+    r"^[\[(]?\s*(repealed|reserved|expired|renumbered|redesignated|recompiled|transferred|terminated)"
     r"(?=$|[\s.,:;\])\-—]*(?:$|by\b|and\b|eff\.?|effective\b|as\b|to\b|from\b|for\b|pursuant\b|under\b|in\b|on\b|"
     r"\d|[\[(]|L\.|Laws\b|P\.?L\.?|S\.?L\.?|Acts?\b|ch\.?|c\.|section|sec\.|§))", re.I)
-_MAP = {"redesignated": "renumbered", "terminated": "expired"}
-_TRAILING = re.compile(r"(\((repealed|reserved|expired|renumbered|redesignated|transferred|terminated)\b[^()]*\))\.?\s*$",
+_MAP = {"redesignated": "renumbered", "recompiled": "renumbered", "terminated": "expired"}
+_TRAILING = re.compile(r"(\((repealed|reserved|expired|renumbered|redesignated|recompiled|transferred|terminated)\b[^()]*\))\.?\s*$",
                        re.I)
 
 
