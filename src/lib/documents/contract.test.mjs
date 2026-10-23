@@ -396,6 +396,22 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
         "MDL No. 3166",
       );
       assert.equal(
+        (
+          await e(
+            "Case: 2:18-md-02846-EAS-KAJ Doc #: 904 Filed: 07/07/25 Page: 3 of 3 PAGEID #: 9643",
+          )
+        ).docket,
+        "2:18-md-02846",
+      );
+      assert.equal(
+        (await e("CASE 0:22-md-03031-JRT-JFD Doc. 1609 Filed 07/16/26 Page 13 of 48")).of,
+        48,
+      );
+      const fl = await e(
+        "Case 9:20-md-02924-RLR Document 7361 Entered on FLSD Docket 10/25/2024 Page 7 of 9",
+      );
+      assert.deepEqual([fl.filed, fl.date_kind], ["2024-10-25", "entered"]);
+      assert.equal(
         await e("Case 1:23-cv-00818 Document 1 Filed 02/30/24 Page 1 of 5"),
         null,
         "impossible date",

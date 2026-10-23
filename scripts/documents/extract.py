@@ -32,9 +32,9 @@ KINDS = ("case_citation", "usc", "cfr", "state_code", "mdl_number", "docket_numb
 
 ECF_RE = re.compile(
     js(
-        r"Case:?\s*(MDL\s+No\.\s*\d{1,5}|\d{1,2}:\d{2}-[A-Za-z]{2,4}-\d{1,6}(?:-[A-Za-z0-9]{1,6}){0,4})\s+Document:?\s*#?:?\s*"
-        r"(\d{1,6}(?:-\d{1,3})?)\s+Filed:?\s*(\d{1,2})/(\d{1,2})/(\d{4}|\d{2})\s+Page:?\s*(\d{1,5})\s+of\s+(\d{1,5})"
-        r"(?:\s+PageI[Dd]\s*#?:?\s*\d{1,9})?"
+        r"Case:?\s*(MDL\s+No\.\s*\d{1,5}|\d{1,2}:\d{2}-[A-Za-z]{2,4}-\d{1,6}(?:-[A-Za-z0-9]{1,6}){0,4})\s+(?:Document|Doc\.?)\s*#?:?\s*"
+        r"(\d{1,6}(?:-\d{1,3})?)\s+(?:Filed:?|Entered\s+on\s+[A-Za-z]{2,6}\s+Docket:?)\s*(\d{1,2})/(\d{1,2})/(\d{4}|\d{2})\s+Page:?\s*"
+        r"(\d{1,5})\s+of\s+(\d{1,5})(?:\s+Page\s?ID\s*#?:?\s*\d{1,9})?"
     ),
     re.I,
 )
@@ -42,7 +42,7 @@ ECF_RE = re.compile(
 MDL_RE = re.compile(
     js(
         r"(?<![A-Za-z0-9_])(?:MDL|M\.D\.L\.|Multi-?\s?[Dd]istrict\s+Litigation)"
-        r"(?:\s*[-–]\s*|\s+)(?:(?:Docket\s+)?No\.?\s*:?\s*|Number\s+)?(?P<n>\d{1,5})(?![0-9A-Za-z_:/])(?!\s*[-–]\s*\d)(?![.,]\d)"
+        r"(?:\s*[-–]\s*|\s+)(?:(?:Docket\s+)?No\.?\s*:?\s*|Number\s+)?(?P<n>\d{1,5})(?![0-9A-Za-z_:/])(?!\s*[-–]\s*[0-9A-Za-z])(?![.,]\d)"
     )
 )
 DOCKET_TYPES = r"(?:cv|cr|md|mc|ml|bk|ap|mj|po|sw|gj|dp|ms|cb|ad)"
@@ -68,14 +68,20 @@ DATE_NUM = re.compile(r"(?<![0-9/.-])(?P<mon>\d{1,2})/(?P<day>\d{1,2})/(?P<year>
 DATE_ISO = re.compile(r"(?<![0-9/.-])(?P<year>\d{4})-(?P<mon>\d{2})-(?P<day>\d{2})(?![0-9-])")
 
 MULT = {"thousand": Decimal(1_000), "million": Decimal(1_000_000), "billion": Decimal(1_000_000_000),
-        "trillion": Decimal(1_000_000_000_000)}
+        "trillion": Decimal(1_000_000_000_000), "k": Decimal(1_000), "m": Decimal(1_000_000), "mm": Decimal(1_000_000),
+        "b": Decimal(1_000_000_000), "bn": Decimal(1_000_000_000)}
+# "$5 million", "$2.5M", "$40K"; a number followed by any other letters ("$2.5Mil") is not taken.
 DOLLAR_RE = re.compile(
     js(
-        r"(?<![A-Za-z0-9_$])\$\s?(?P<num>\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d+)?)(?![0-9,]*\d)"
-        r"(?:\s?(?P<mult>thousand|million|billion|trillion)(?![A-Za-z]))?"
+        r"(?<![A-Za-z0-9_$])\$\s?(?P<num>\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d+)?)(?![0-9,]*\d)(?! [0-9])"
+        r"(?!\s+plus\s+(?:thousand|million|billion|trillion))"
+        r"(?:\s?(?P<mult>thousand|million|billion|trillion)(?![A-Za-z])|\s?(?P<abbr>MM|BN)(?![A-Za-z0-9])|(?P<abbr1>[KMB])(?![A-Za-z0-9]))?"
+        r"(?![A-Za-z])(?!\s[KMB](?![A-Za-z]))"
     ),
     re.I,
 )
+# A dash-joined section ("1395w–26", "86.1845–04") the shared parser reads as a range whose end is below its start.
+_DASH_JOIN = re.compile(r"^\s*[-–—]\s*$")
 
 # Abbreviations whose period does not end a sentence (legal text is full of them).
 ABBREV = {
@@ -150,6 +156,32 @@ def sentence_bounds(text: str, start: int, end: int) -> tuple[int, int]:
     return s, e
 
 
+_DASH_USC = re.compile(r"(?P<a>\d{1,6}[A-Za-z]{1,4})[-–—](?P<b>\d{1,4}[A-Za-z]{0,4})(?:\([A-Za-z0-9]{1,5}\))*$")
+_DASH_CFR = re.compile(r"\.(?P<a>\d{1,6}[A-Za-z]{0,4})[-–—](?P<b>\d{1,4})(?:\([A-Za-z0-9]{1,5}\))*$")
+# A section number split by a text-layer space before its last character ("§ 1301.7 l(a)" for § 1301.71(a),
+# "§ 1681 e(a)" for § 1681e(a)): the parser would read a shorter, different section, so the citation is not taken.
+_SPLIT_SECTION = re.compile(r" [A-Za-z0-9]\(")
+
+
+def _lead(s: str) -> int:
+    m = re.match(r"\d+", s)
+    return int(m.group(0)) if m else -1
+
+
+def _dash_joined(c: dict, item_text: str) -> str | None:
+    """A section number written with an en dash ("§ 1395w–26", "§ 86.1845–04") that the shared parser reads as a range
+    whose end lies below its start: an impossible range, so the dash joins one section number. None otherwise."""
+    if c["kind"] == "usc" and c.get("sectionEnd"):
+        m = _DASH_USC.search(item_text)
+        if m and m.group("a") == c["section"] and m.group("b") == c["sectionEnd"] and _lead(m.group("b")) < _lead(m.group("a")):
+            return f"{m.group('a')}-{m.group('b')}"
+    if c["kind"] == "cfr" and c.get("section") and not c.get("sectionEnd"):
+        m = _DASH_CFR.search(item_text)
+        if m and m.group("a") == c["section"] and int(m.group("b")) < c["part"]:
+            return f"{m.group('a')}-{m.group('b')}"
+    return None
+
+
 def docket_key(office: str, yy: str, typ: str, num: str) -> str:
     n = num.lstrip("0") or "0"
     return f"{int(office)}:{yy[-2:]}-{typ.lower()}-{n if len(n) >= 5 else n.zfill(5)}"
@@ -174,8 +206,19 @@ def extract_page(text: str) -> list[dict]:
                              {"group": c["group"], **({"pin": pin} if pin else {})}))
         elif c["kind"] in ("usc", "cfr"):
             s, e = c["item_start"], c["item_end"]
+            if c.get("section") and _SPLIT_SECTION.match(text, e):
+                taken.append((c["start"], c["end"]))
+                continue
             value = {k: c[k] for k in ("title", "part", "section", "sectionEnd", "pin") if c.get(k) is not None}
-            rows.append(_row(text, s, e, c["kind"], c["normalized"], c["key"], value or None))
+            norm, key = c["normalized"], c["key"]
+            joined = _dash_joined(c, text[s:e])
+            if joined:
+                value = {k: v for k, v in value.items() if k != "sectionEnd"} | {"section": joined, "dash_joined": True}
+                if c["kind"] == "usc":
+                    norm, key = f"{c['title']} U.S.C. § {joined}", f"usc:{c['title']}:{joined}"
+                else:
+                    norm, key = f"{c['title']} C.F.R. § {c['part']}.{joined}", f"cfr:{c['title']}:{c['part']}.{joined}"
+            rows.append(_row(text, s, e, c["kind"], norm, key, value or None))
         taken.append((c["start"], c["end"]))  # statutes at large, public laws, Fed. Reg. pages hold their span too
 
     def free(s: int, e: int, spans: list[tuple[int, int]]) -> bool:
@@ -235,7 +278,7 @@ def extract_page(text: str) -> list[dict]:
             base = Decimal(m.group("num").replace(",", ""))
         except InvalidOperation:
             continue
-        mult = (m.group("mult") or "").lower()
+        mult = (m.group("mult") or m.group("abbr") or m.group("abbr1") or "").lower()
         amount = base * MULT[mult] if mult else base
         if amount == amount.to_integral_value():
             amount_json: int | float = int(amount)

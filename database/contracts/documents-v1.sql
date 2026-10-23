@@ -180,25 +180,28 @@ language sql immutable parallel safe set search_path = '' as $$
 $$;
 
 -- The CM/ECF header a court prints on every page ("Case 3:16-md-02738-MAS-RLS Document 33091 Filed 06/26/24 Page 1 of
--- 3 PageID: 123"): case, document number, filed date (MM/DD/YY or MM/DD/YYYY, a two-digit year read as 20yy and refused
--- when later than p_today), page and page count. Null when the page carries no complete header or the date is impossible.
+-- 3 PageID: 123"; also "Doc #: 904 Filed: 07/07/25 Page: 3 of 3", "Doc. 1609 Filed", "Document 7361 Entered on FLSD
+-- Docket 10/25/2024"): case, document number, the date (MM/DD/YY or MM/DD/YYYY, a two-digit year read as 20yy and refused
+-- when later than p_today) and whether the header calls it filed or entered, page and page count. Null when the page
+-- carries no complete header or the date is impossible.
 create or replace function documents.ecf_header(p text, p_today date) returns jsonb
 language plpgsql immutable parallel safe set search_path = '' as $$
 declare m text[]; y integer; d date;
 begin
   if p is null then return null; end if;
   m := regexp_match(left(p, 20000),
-    'Case:?\s*(MDL\s+No\.\s*[0-9]{1,5}|[0-9]{1,2}:[0-9]{2}-[A-Za-z]{2,4}-[0-9]{1,6}(?:-[A-Za-z0-9]{1,6}){0,4})\s+Document:?\s*#?:?\s*([0-9]{1,6}(?:-[0-9]{1,3})?)\s+Filed:?\s*([0-9]{1,2})/([0-9]{1,2})/([0-9]{4}|[0-9]{2})\s+Page:?\s*([0-9]{1,5})\s+of\s+([0-9]{1,5})',
+    'Case:?\s*(MDL\s+No\.\s*[0-9]{1,5}|[0-9]{1,2}:[0-9]{2}-[A-Za-z]{2,4}-[0-9]{1,6}(?:-[A-Za-z0-9]{1,6}){0,4})\s+(?:Document|Doc\.?)\s*#?:?\s*([0-9]{1,6}(?:-[0-9]{1,3})?)\s+(Filed:?|Entered\s+on\s+[A-Za-z]{2,6}\s+Docket:?)\s*([0-9]{1,2})/([0-9]{1,2})/([0-9]{4}|[0-9]{2})\s+Page:?\s*([0-9]{1,5})\s+of\s+([0-9]{1,5})',
     'i');
   if m is null then return null; end if;
-  y := case when length(m[5]) = 4 then m[5]::integer else 2000 + m[5]::integer end;
+  y := case when length(m[6]) = 4 then m[6]::integer else 2000 + m[6]::integer end;
   begin
-    d := make_date(y, m[3]::integer, m[4]::integer);
+    d := make_date(y, m[4]::integer, m[5]::integer);
   exception when others then
     return null;
   end;
   if d > p_today or d < date '1990-01-01' then return null; end if;
-  return jsonb_build_object('case', m[1], 'document', m[2], 'filed', d, 'page', m[6]::integer, 'of', m[7]::integer,
+  return jsonb_build_object('case', m[1], 'document', m[2], 'filed', d,
+    'date_kind', case when m[3] ~* '^entered' then 'entered' else 'filed' end, 'page', m[7]::integer, 'of', m[8]::integer,
     'docket', documents.docket_key(m[1]));
 end $$;
 
@@ -434,7 +437,8 @@ begin
     coalesce(nullif(left(m.listing ->> 'doc_number', 40), ''), m.ecf ->> 'document') as document_number,
     coalesce(m.pub_date::date, (m.ecf ->> 'filed')::date) as filed_date,
     case when m.pub_date is not null then m.pub_date_basis
-         when m.ecf ->> 'filed' is not null then 'ECF header printed on page ' || (m.ecf ->> 'at_page') end as date_basis,
+         when m.ecf ->> 'filed' is not null then 'ECF header printed on page ' || (m.ecf ->> 'at_page')
+           || case when m.ecf ->> 'date_kind' = 'entered' then ' (date entered on the docket)' else '' end end as date_basis,
     case when m.raw_title is null or documents.withheld_label(m.raw_title) then null else left(btrim(m.raw_title), 500) end as title,
     case when m.raw_title is null then null
          when documents.withheld_label(m.raw_title) then null

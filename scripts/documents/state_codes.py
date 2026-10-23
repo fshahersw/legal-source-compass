@@ -11,7 +11,8 @@ import re
 
 from citations import js, squash
 
-SEC = r"(?P<sec>[0-9][0-9A-Za-z]*(?:[.:/-][0-9A-Za-z]+)*(?:\([0-9A-Za-z]{1,5}\))*)"
+# atomic: a section that cannot be taken whole is not taken shorter
+SEC = r"(?P<sec>(?>[0-9][0-9A-Za-z]*(?:[.:/\-–][0-9A-Za-z]+)*(?:\([0-9A-Za-z]{1,5}\))*))"
 SIGN = r"\s*(?:§§?|[Ss]ec(?:tion)?s?\.?)\s*"
 OPT_SIGN = r"\s*(?:§§?|[Ss]ec(?:tion)?s?\.?)?\s*"
 ANN = r"(?:\s+Ann\.)?"
@@ -28,6 +29,7 @@ FORMS: list[tuple[str, str]] = [
     ("CO", r"(?:Colo\.\s+Rev\.\s+Stat\." + ANN + r"|C\.R\.S\.)" + SIGN),
     ("CT", r"Conn\.\s+Gen\.\s+Stat\." + ANN + SIGN),
     ("DE", r"Del\.\s+Code" + ANN + r"\s+tit\.\s*\d{1,2},?" + SIGN),
+    ("DE", r"\d{1,2}\s+Del\.\s+(?:C\.|Code" + ANN + r")" + SIGN),
     ("DC", r"D\.C\.\s+Code" + ANN + SIGN),
     ("FL", r"Fla\.\s+Stat\." + ANN + SIGN),
     ("GA", r"(?:O\.C\.G\.A\.|Ga\.\s+Code" + ANN + r")" + SIGN),
@@ -42,17 +44,17 @@ FORMS: list[tuple[str, str]] = [
     ("LA", r"La\.\s+Civ\.\s+Code" + ANN + r"\s+(?:art\.|arts\.|Art\.)\s*"),
     ("ME", r"(?:Me\.\s+Rev\.\s+Stat\." + ANN + r"\s+tit\.\s*\d{1,2}(?:-[A-Z])?,?|\d{1,2}(?:-[A-Z])?\s+M\.R\.S\.(?:A\.)?)" + SIGN),
     ("MD", r"Md\.\s+Code" + ANN + r",\s*(?:" + WORD + r"\s+){1,6}" + r"(?=§)" + SIGN),
-    ("MA", r"(?:Mass\.\s+Gen\.\s+Laws(?:\s+Ann\.)?|M\.G\.L\.(?:A\.)?|G\.\s?L\.)\s+(?:ch\.|c\.)\s*\d{1,3}[A-Z]{0,2},?" + SIGN),
+    ("MA", r"(?:Mass\.\s+Gen\.\s+Laws(?:\s+Ann\.)?|M\.G\.L\.(?:A\.)?|G\.\s?L\.)\s+(?:[Cc]h\.\s*|c\.\s*)?\d{1,3}[A-Z]{0,2},?" + SIGN),
     ("MI", r"Mich\.\s+Comp\.\s+Laws" + ANN + SIGN),
     ("MN", r"Minn\.\s+Stat\." + ANN + SIGN),
     ("MS", r"Miss\.\s+Code" + ANN + SIGN),
-    ("MO", r"Mo\.\s+Rev\.\s+Stat\." + SIGN),
+    ("MO", r"Mo\.\s+(?:Rev\.\s+)?Stat\." + ANN + SIGN),
     ("MT", r"Mont\.\s+Code" + ANN + SIGN),
     ("NE", r"Neb\.\s+Rev\.\s+Stat\." + ANN + SIGN),
     ("NV", r"(?:Nev\.\s+Rev\.\s+Stat\." + ANN + r"|NRS)" + OPT_SIGN),
     ("NH", r"N\.H\.\s+Rev\.\s+Stat\." + ANN + SIGN),
     ("NJ", r"(?:N\.J\.S\.A\.|N\.J\.\s+Stat\." + ANN + r")" + OPT_SIGN),
-    ("NM", r"N\.M\.\s+Stat\." + ANN + SIGN),
+    ("NM", r"N\.M\.\s+Stat\." + ANN + OPT_SIGN),
     ("NY", r"N\.Y\.\s+(?:" + WORD + r"\s+){0,4}(?:Law|L\.)" + r"(?:\s+Ann\.)?" + SIGN),
     ("NY", r"(?:N\.Y\.\s*)?C\.P\.L\.R\.\s*(?:§§?\s*|[Rr]ule\s+)?"),
     ("NC", r"N\.C\.\s+Gen\.\s+Stat\." + ANN + SIGN),
@@ -71,11 +73,25 @@ FORMS: list[tuple[str, str]] = [
     ("VA", r"Va\.\s+Code" + ANN + SIGN),
     ("WA", r"(?:Wash\.\s+Rev\.\s+Code" + ANN + r"|RCW)" + OPT_SIGN),
     ("WV", r"W\.\s?Va\.\s+Code" + ANN + SIGN),
-    ("WI", r"Wis\.\s+Stat\." + ANN + SIGN),
+    ("WI", r"Wis\.\s+Stat\." + ANN + OPT_SIGN),
     ("WY", r"Wyo\.\s+Stat\." + ANN + SIGN),
 ]
 
-_FORMS = [(usps, re.compile(js(r"(?<![A-Za-z0-9_.])(?P<code>" + form + r")" + SEC + r"(?![A-Za-z0-9_])(?!\s+Supp\.)"))) for usps, form in FORMS]
+# States whose section number is chapter.section with exactly one dot (src/lib/law/exactCitationPath.ts DOTTED_PATH_STATES):
+# a second ".4" is a footnote marker glued to the citation, so such a match is not taken at all.
+DOTTED = {"FL", "IA", "KY", "MI", "MN", "MO", "NV", "OH", "OR", "WI"}
+SEC_DOTTED = r"(?P<sec>(?>[0-9]{1,4}[A-Z]?\.[0-9]{1,5}[A-Za-z]?(?:\([0-9A-Za-z]{1,5}\))*))(?!\.?[0-9])"
+
+
+def _compile(usps: str, form: str) -> re.Pattern:
+    sec = SEC_DOTTED if usps in DOTTED else SEC
+    # Not taken when the number runs on in a way that hides the real section: a hyphen at a line break ("13-11-\n19"),
+    # an OCR not-sign or soft hyphen ("87¬301"), Nebraska's comma-numbered sections ("25-21, 187.12").
+    tail = r"(?![A-Za-z0-9_])(?!\s+Supp\.)(?![-–]\s)(?![¬\u00ad])" + (r"(?!,\s?[0-9])" if usps == "NE" else "")
+    return re.compile(js(r"(?<![A-Za-z0-9_.])(?P<code>" + form + r")" + sec + tail))
+
+
+_FORMS = [(usps, _compile(usps, form)) for usps, form in FORMS]
 _SIGN_TAIL = re.compile(js(r"\s*(?:§§?|[Ss]ec(?:tion)?s?\.?|art\.|arts\.|Art\.|[Rr]ule)?\s*$"))
 
 
@@ -84,15 +100,17 @@ def state_code_citations(text: str) -> list[dict]:
     found = []
     for usps, rx in _FORMS:
         for m in rx.finditer(text):
-            sec = m.group("sec")
+            sec = m.group("sec").replace("–", "-")  # an en dash inside a section number is a typeset hyphen
             code = squash(_SIGN_TAIL.sub("", m.group("code"))).rstrip(",")
             if usps == "IL":
                 code = squash(m.group("code")).rstrip("/")
                 normalized = f"{code}/{sec}"
             elif usps == "LA" and re.search(r"Civ\.\s*Code", code):
-                normalized = f"{code} art. {sec}"
-            else:
+                normalized = f"{code} {'arts.' if re.search(r'arts\.', m.group('code')) else 'art.'} {sec}"
+            elif "§" in m.group("code"):
                 normalized = f"{code} § {sec}"
+            else:  # written without a section sign ("RCW 4.16.080", "Wis. Stat. 100.18"): kept that way
+                normalized = f"{code} {sec}"
             found.append(
                 {
                     "kind": "state_code",

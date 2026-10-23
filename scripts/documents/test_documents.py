@@ -125,12 +125,66 @@ class EdgeCases(unittest.TestCase):
     def test_no_extractions_in_plain_prose(self):
         self.assertEqual(extract_page("The parties met and conferred about the schedule for discovery."), [])
 
+    def test_header_variants_are_page_furniture(self):
+        for header in (
+            "Case: 2:18-md-02846-EAS-KAJ Doc #: 904 Filed: 07/07/25 Page: 3 of 3 PAGEID #: 9643",
+            "CASE 0:22-md-03031-JRT-JFD Doc. 1609 Filed 07/16/26 Page 13 of 48",
+            "Case 9:20-md-02924-RLR Document 7361 Entered on FLSD Docket 10/25/2024 Page 7 of 9",
+        ):
+            rows = extract_page("Signed on June 1, 2020.\n" + header)
+            self.assertEqual([r["kind"] for r in rows], ["date"], header)
+
+    def test_dash_joined_section_numbers(self):
+        rows = extract_page("Under 42 U.S.C. § 1395w–26(b)(3) and 40 C.F.R. § 86.1845–04, but 42 U.S.C. §§ 1981–1983 is a range.")
+        usc = kinds(rows, "usc")
+        self.assertEqual([r["key"] for r in usc], ["usc:42:1395w-26", "usc:42:1981:1983"])
+        self.assertEqual(usc[0]["normalized"], "42 U.S.C. § 1395w-26")
+        self.assertTrue(usc[0]["value"]["dash_joined"])
+        cfr = kinds(rows, "cfr")
+        self.assertEqual(cfr[0]["key"], "cfr:40:86.1845-04")
+        self.assertEqual(cfr[0]["matched"], "40 C.F.R. § 86.1845–04")
+
+    def test_amount_abbreviations(self):
+        rows = kinds(extract_page("A $2.5M increase, a $40K fee, a $3 MM reserve, $4 M later and $7Mil."), "dollar_amount")
+        self.assertEqual(
+            [(r["matched"], r["value"]["amount"]) for r in rows],
+            [("$2.5M", 2500000), ("$40K", 40000), ("$3 MM", 3000000)],
+            "a lone letter after a space is ambiguous and not taken",
+        )
+
+    def test_dotted_state_sections_refuse_glued_footnotes(self):
+        cites = state_code_citations("Minn. Stat. § 604.01.4 The statute; Minn. Stat. § 604.02, subd. 1; RCW 4.16.080.")
+        self.assertEqual([c["normalized"] for c in cites], ["Minn. Stat. § 604.02", "RCW 4.16.080"])
+
+    def test_state_sections_that_run_on_are_not_shortened(self):
+        text = (
+            "Utah Code Ann. § 13-11-\n19(4)(a); Neb. Rev. Stat. § 87¬301; Neb. Rev. Stat. § 25-21, 187.12; "
+            "N.J. Stat. Ann. § 2A:58C–5c; Neb. Rev. Stat. § 59-1601."
+        )
+        cites = state_code_citations(text)
+        self.assertEqual([c["section"] for c in cites], ["2A:58C-5c", "59-1601"])
+        self.assertEqual(text[cites[0]["start"]:cites[0]["end"]], "N.J. Stat. Ann. § 2A:58C–5c")  # matched text stays exact
+        self.assertEqual(cites[0]["key"], "state:NJ:N.J. Stat. Ann.:2A:58C-5c")
+
+    def test_sections_split_by_a_text_layer_space_are_not_taken(self):
+        text = "(citing 21 C.F.R. 1301.7 l(a)); 15 U.S.C. § 1681 e(a); 28 U.S.C. § 1332 (a); 21 C.F.R. § 1301.74(b)."
+        rows = extract_page(text)
+        self.assertEqual([r["key"] for r in rows if r["kind"] in ("usc", "cfr")], ["usc:28:1332", "cfr:21:1301.74"])
+        self.assertEqual([r["kind"] for r in rows if r["start"] < text.index(";")], [])  # nothing else takes the span
+
+    def test_amounts_that_read_wrong_are_not_taken(self):
+        rows = kinds(extract_page("($720 plus million recovered); a hold of $1 1.00; fees of $5.00 $5.00"), "dollar_amount")
+        self.assertEqual([r["matched"] for r in rows], ["$5.00", "$5.00"])
+
     def test_cents_and_bare_numbers(self):
         rows = extract_page("Costs of $12.50 and 1,000 widgets; USD 5 is not written with a dollar sign.")
         self.assertEqual([(r["matched"], r["value"]["amount"]) for r in rows if r["kind"] == "dollar_amount"], [("$12.50", 12.5)])
 
     def test_mdl_forms_and_non_matches(self):
-        rows = extract_page("MDL 2804; MDL-3092; Multidistrict Litigation No. 2846; the MDL Court; MDL 3:17-md-2804; mdl 12.")
+        rows = extract_page(
+            "MDL 2804; MDL-3092; Multidistrict Litigation No. 2846; the MDL Court; MDL 3:17-md-2804; mdl 12; "
+            "MDL No. 23-md-3083-ADB; No. MDL 15-02641-PHX; MDL No.: 3:15-MD-02672-CRB."
+        )
         self.assertEqual([r["key"] for r in kinds(rows, "mdl_number")], ["mdl:2804", "mdl:3092", "mdl:2846"])
 
     def test_date_forms(self):
