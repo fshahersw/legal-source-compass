@@ -114,6 +114,7 @@ class Fetcher:
         self._lock = threading.Lock()
         self._key = None
         self.api_remaining = None
+        self.rate = {}
         self.requests = 0
         self.retries = 0
         self.blocked_until = 0.0  # monotonic time before which no api request is sent
@@ -165,6 +166,8 @@ class Fetcher:
                     self.api_remaining = int(rh.get("X-Ratelimit-Remaining", self.api_remaining))
                 except (TypeError, ValueError):
                     pass
+                # What the gateway says about the key's allowance (a count and a header, no secret): kept for the run log.
+                self.rate = {"limit": rh.get("X-Ratelimit-Limit"), "remaining": rh.get("X-Ratelimit-Remaining"), "status": status}
             if status == 403 and host != API_HOST:
                 raise BotWall(f"HTTP 403 (bot wall) for {url}")
             if status == 429 or status >= 500:

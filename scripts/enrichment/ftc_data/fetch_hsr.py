@@ -103,7 +103,7 @@ def main():
     fetcher = new_fetcher()
     first = json.loads(fetcher.get(page_url(0, 1)).body)
     total = int(first["meta"]["count"])
-    print("meta.count", total, "stored distinct before", len(stored_ids()), flush=True)
+    print("meta.count", total, "stored distinct before", len(stored_ids()), "gateway allowance", json.dumps(fetcher.rate), flush=True)
     log = {"meta_count": total, "mode": "stable" if stable else "shifted", "passes": []}
     plan = [("S", 0, STABLE_SORT)] if stable else [(str(k), shift, "") for k, shift in enumerate(SHIFTS)]
     for label, shift, sort in plan:
@@ -114,8 +114,16 @@ def main():
         while off < total + 50:
             jobs.append((off, 50))
             off += 50
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            paths = list(pool.map(lambda j: fetch_page(fetcher, label, j[0], j[1], sort), jobs))
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                paths = list(pool.map(lambda j: fetch_page(fetcher, label, j[0], j[1], sort), jobs))
+        except fh.RateLimited as err:
+            # Stored pages stay; the run is resumable (a stored page is never fetched again). Say how far it got and why it stopped.
+            log["stopped"] = {"rate_limited": True, "retry_after_s": err.retry_after, "gateway_allowance": fetcher.rate, "distinct_stored": len(stored_ids())}
+            with open(os.path.join(DIR, "_pass_log.json"), "w", encoding="utf-8") as handle:
+                json.dump(log, handle, indent=1)
+            print(json.dumps(log["stopped"]))
+            sys.exit(3)
         distinct = len(stored_ids())
         log["passes"].append({"pass": label, "shift": shift, "pages": len(paths), "distinct_after_pass": distinct})
         print("pass", label, "shift", shift, "pages", len(paths), "distinct", distinct, "of", total, flush=True)

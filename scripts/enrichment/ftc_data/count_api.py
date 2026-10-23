@@ -96,14 +96,19 @@ def main():
             t0 = time.time()
             stats = {"requests": 0}
             w = month_window(month)
-            total = count_window(fetcher, w, None, stats)
-            y = count_window(fetcher, w, True, stats, upper=total)
-            n = count_window(fetcher, w, False, stats, upper=total - y)
+            try:
+                total = count_window(fetcher, w, None, stats)
+                y = count_window(fetcher, w, True, stats, upper=total)
+                n = count_window(fetcher, w, False, stats, upper=total - y)
+            except fh.RateLimited as err:
+                # A month is stored only when all three counts finished; the finished months stay in the file.
+                print(json.dumps({"stopped": month, "retry_after_s": err.retry_after, "allowance": fetcher.rate, "months_done": sorted(done)}))
+                sys.exit(3)
             done[month] = {"total": total, "robo_y": y, "robo_n": n, "requests": stats["requests"], "seconds": round(time.time() - t0), "counted_at": fh.now_utc(), "method": METHOD}
             os.makedirs(os.path.dirname(args.out), exist_ok=True)
             with open(args.out, "w", encoding="utf-8") as handle:
                 json.dump({"months": done}, handle, indent=1, sort_keys=True)
-            print(month, json.dumps(done[month]), flush=True)
+            print(month, json.dumps(done[month]), "allowance", json.dumps(fetcher.rate), flush=True)
 
 
 if __name__ == "__main__":
