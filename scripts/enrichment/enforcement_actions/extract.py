@@ -54,7 +54,8 @@ def sentence_spans(text):
             before = seg[start:m.start() + 1]
             token = re.search(r"([A-Za-z.]+)\.$", before)
             word = token.group(1).lower().rstrip(".") if token else ""
-            if word in _ABBREV or re.fullmatch(r"[a-z]", word or "x") or re.fullmatch(r"(?:[a-z]\.)+[a-z]", word):
+            # a period after a number or other non-letter ends the sentence ("... $425,000. As part of ...")
+            if word and (word in _ABBREV or re.fullmatch(r"[a-z]", word) or re.fullmatch(r"(?:[a-z]\.)+[a-z]", word)):
                 continue
             spans.append((base + start, base + m.start() + 1 + len(m.group(0)[1:].rstrip())))
             start = m.end()

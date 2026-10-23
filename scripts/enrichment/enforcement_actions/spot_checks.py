@@ -41,17 +41,21 @@ def main():
 
     # DOJ: releases with a resolution figure
     pages = os.path.join(ec.ACQ, "doj", "pages")
-    raw = {}
-    for fname in sorted(os.listdir(pages)):
-        for r in json.loads(gzip.open(os.path.join(pages, fname)).read()).get("results") or []:
-            raw[r["uuid"]] = (fname, r)
     index = v.load_build("doj_press_releases")
     overview = next(r for r in index["rows"] if r["id"] == "doj-index:overview")["item"]["overview"]
     cands = []
     for p in overview["partitions"][-6:]:
         b = v.load_build(p["dataset"])
-        cands += [r for r in b["rows"] if r["item"]["release"]["max_resolution_amount_usd"]]
-    for r in pick(cands, 6):
+        cands += pick([r for r in b["rows"] if r["item"]["release"]["max_resolution_amount_usd"]], 6)
+        del b
+    chosen = pick(cands, 6)
+    wanted = {r["item"]["release"]["uuid"] for r in chosen}
+    raw = {}
+    for fname in sorted(os.listdir(pages)):
+        for r in json.loads(gzip.open(os.path.join(pages, fname)).read()).get("results") or []:
+            if r.get("uuid") in wanted and (r["uuid"] not in raw or (r.get("changed") or "") > (raw[r["uuid"]][1].get("changed") or "")):
+                raw[r["uuid"]] = (fname, r)
+    for r in chosen:
         rel = r["item"]["release"]
         a = next(x for x in rel["amounts"] if x.get("value_usd") == rel["max_resolution_amount_usd"]) if any(x.get("value_usd") == rel["max_resolution_amount_usd"] for x in rel["amounts"]) else rel["amounts"][0]
         fname, rec = raw[rel["uuid"]]
@@ -81,7 +85,7 @@ def main():
         a = r["item"]["ftc_action"]
         row = cells[a["line"] - 1]
         add("ftc_enforcement_actions", r["id"], "ordered amount", f"{a['ordered_amount']:,.2f}",
-            f"civil_penalty_cases_fy2000-2026.xlsx row {a['line']}: {row[0]} / {row[1]} / {row[3]}", abs(float(row[3]) - a["ordered_amount"]) < 0.01 and row[1] == a["name"])
+            f"civil_penalty_cases_fy2000-2026.xlsx row {a['line']}: {row[0]} / {row[1]} / {row[3]}", abs(float(row[3]) - a["ordered_amount"]) < 0.01 and str(row[1]).strip() == a["name"])
     # FTC cases: docket / civil action numbers
     cases = v.load_build("ftc_cases")
     creader = ec.PackReader(os.path.join(ec.ACQ, "ftc", "cases"))

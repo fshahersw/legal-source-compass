@@ -17,6 +17,13 @@ class TextTests(unittest.TestCase):
         text = ex.html_to_text("<p>WASHINGTON &ndash; Acme&nbsp;Corp. paid.</p><p>Second&#039;s line</p><script>x()</script>")
         self.assertEqual(text, "WASHINGTON – Acme Corp. paid.\nSecond's line")
 
+    def test_sentence_ends_after_a_number(self):
+        text = "The victim suffered a loss of approximately $425,000. As part of her plea, she will forfeit $50,000."
+        amounts = ex.extract_amounts(text)
+        self.assertEqual(amounts[0]["sentence"], "The victim suffered a loss of approximately $425,000.")
+        self.assertEqual(amounts[0]["keyword"], "alleged loss or scheme")
+        self.assertEqual(amounts[1]["keyword"], "forfeiture")
+
     def test_long_sentence_window_is_a_word_bounded_span(self):
         text = ("word " * 120) + "paid $5 million " + ("more " * 120) + "end."
         pos = text.index("$5")
