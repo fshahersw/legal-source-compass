@@ -1,6 +1,6 @@
 # U.S. Courts statistical tables: coverage audit (2026-10-24)
 
-Generated 2026-10-24T06:23:18+00:00 by `scripts/enrichment/uscourts_tables/coverage.py` from the listing of https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables (crawled 2026-10-23, the years 2025-2026 re-crawled on 2026-10-24: no table was added), the stream's file store and parse reports, and the built datasets. Each listing row is one table of one publication for one period.
+Generated 2026-10-24T06:28:21+00:00 by `scripts/enrichment/uscourts_tables/coverage.py` from the listing of https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables (crawled 2026-10-23, the years 2025-2026 re-crawled on 2026-10-24: no table was added), the stream's file store and parse reports, and the built datasets. Each listing row is one table of one publication for one period.
 
 Columns: **Listed** rows in the listing; **Acquired** file stored (here or by the stream that publishes that publication); **Parsed** read into a table (here or by that stream); **Published** in a dataset of this stream. Not published splits into **Held** (the edition fails its own printed totals), **Duplicate** (another publication prints the same table for the same period and that one is published), **Other dataset** (published by another stream's dataset) and **Gap**.
 
@@ -1034,25 +1034,24 @@ By table number:
 
 | Table | Title | Listed | Acquired | Parsed | Published | Held | Dup. | Other | Gap | Published periods | Main reason for gaps |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|
-| Wire 1 | Wiretap - Jurisdictions with Statutes Authorizing the Interception of Wire, Oral, or Elect | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (19) |
+| Wire 1 | Wiretap - Jurisdictions with Statutes Authorizing the Interception of Wire, Oral, or Elect | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (29) |
 | Wire 2 | Wiretap - Intercept Orders Issued by Judges | 28 | 28 | 8 | 8 | 0 | 0 | 0 | 20 | 2018-12-31 to 2025-12-31 | PDF read by word positions but rejected by a gate: no match of the PDF's column headings to the reference columns (the letters over the columns are not those of the workbook headings) (14) |
 | Wire 3 | Wiretap - Major Offenses for Which Court-Authorized Intercepts Were Granted | 29 | 29 | 12 | 12 | 0 | 0 | 0 | 17 | 2007-12-31 to 2025-12-31 | PDF read by word positions but rejected by a gate: no match of the PDF's column headings to the reference columns (the letters over the columns are not those of the workbook headings) (8) |
 | Wire 4 | Wiretap - Interceptions of Wire, Oral, or Electronic Communications | 29 | 29 | 19 | 19 | 0 | 0 | 0 | 10 | 1997-12-31 to 2025-12-31 | PDF read by word positions but rejected by a gate: the heading 'NY ORGANIZED CRIME' is not a state or territory name (2) |
 | Wire 5 | Wiretap - Average Cost per Order | 29 | 29 | 23 | 23 | 0 | 0 | 0 | 6 | 1997-12-31 to 2025-12-31 | PDF read by word positions but rejected by a gate: the heading 'NY ORGANIZED CRIME' is not a state or territory name (2) |
 | Wire 6 | Wiretap - Types of Surveillance Used, Arrests, and Convictions for Intercepts Installed | 29 | 29 | 18 | 18 | 0 | 0 | 0 | 11 | 2004-12-31 to 2025-12-31 | PDF read by word positions but rejected by a gate: no match of the PDF's column headings to the reference columns (the letters over the columns are not those of the workbook headings) (3) |
-| Wire 7 | Wiretap - Authorized Intercepts Granted | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (19) |
-| Wire 8 | Wiretap - Supplementary Data for Intercepts Terminated in Prior Years as Reported | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (19) |
-| Wire 9 | Wiretap - Arrests and Convictions Resulting from Intercepts Installed | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (19) |
-| Wire 10 | Wiretap - Intercept Orders Issued by Federal Judges | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 3 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (3) |
-| Wire A1 | Wiretap - Intercepts of Wire, Oral, or Electronic Communications Authorized by U.S. Distri | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (15) |
-| Wire A2 | Wiretap - Detail of Supplementary Data for Intercepts Authorized by U.S. District Courts a | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 15 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (15) |
-| Wire B1 | Wiretap - Intercepts of Wire, Oral, or Electronic Communications Authorized by State Court | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (15) |
-| Wire B2 | Wiretap - Detail of Supplementary Data for Intercepts Authorized by State Courts and Termi | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 15 |  | PDF only, and no spreadsheet edition of this table parses as a court table to name its columns (15) |
+| Wire 7 | Wiretap - Authorized Intercepts Granted | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (29) |
+| Wire 8 | Wiretap - Supplementary Data for Intercepts Terminated in Prior Years as Reported | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (29) |
+| Wire 9 | Wiretap - Arrests and Convictions Resulting from Intercepts Installed | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (29) |
+| Wire 10 | Wiretap - Intercept Orders Issued by Federal Judges | 3 | 3 | 0 | 0 | 0 | 0 | 0 | 3 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (3) |
+| Wire A1 | Wiretap - Intercepts of Wire, Oral, or Electronic Communications Authorized by U.S. Distri | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (29) |
+| Wire A2 | Wiretap - Detail of Supplementary Data for Intercepts Authorized by U.S. District Courts a | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 15 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (15) |
+| Wire B1 | Wiretap - Intercepts of Wire, Oral, or Electronic Communications Authorized by State Court | 29 | 29 | 0 | 0 | 0 | 0 | 0 | 29 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (29) |
+| Wire B2 | Wiretap - Detail of Supplementary Data for Intercepts Authorized by State Courts and Termi | 15 | 15 | 0 | 0 | 0 | 0 | 0 | 15 |  | not a jurisdiction table (statutes, multi-year summary or order-by-order listing) (15) |
 
 Never parsed or not published, by reason:
 
-- 139 table-periods: PDF only, and no spreadsheet edition of this table parses as a court table to name its columns
-- 68 table-periods: not a jurisdiction table (statutes, multi-year summary or order-by-order listing)
+- 207 table-periods: not a jurisdiction table (statutes, multi-year summary or order-by-order listing)
 - 25 table-periods: PDF read by word positions but rejected by a gate: no match of the PDF's column headings to the reference columns (the letters over the columns are not those of the workbook headings)
 - 7 table-periods: PDF read by word positions but rejected by a gate: no table rows found in the text layer
 - 5 table-periods: PDF read by word positions but rejected by a gate: the heading 'NY ORGANIZED CRIME' is not a state or territory name

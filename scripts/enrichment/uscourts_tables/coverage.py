@@ -209,6 +209,8 @@ def compute(builds, report, inputs=None):
                 parse, why = "not_parsed", inputs["unreadable"][key]
             elif key in inputs["rejected"]:
                 parse, why = "not_parsed", inputs["rejected"][key]
+            elif code == "WIRETAP" and (inputs["wire"].get("not_read") or {}).get(key, "").startswith("not a jurisdiction table"):
+                parse, why = "not_parsed", inputs["wire"]["not_read"][key]  # Table 1, 7-10, A-1/B-1: no reader is meant for them
             elif key in inputs["pdf"]:
                 parse, why = "not_parsed", inputs["pdf"][key]
             elif key in (inputs["wire"].get("rejected") or {}):
