@@ -1,13 +1,39 @@
-import { hostOf, sourceLabel, type ImageCredit, type MarkImage } from "@/lib/visuals/common";
+import { Fragment } from "react";
+import {
+  creditSegments,
+  hostOf,
+  plainCredit,
+  sourceLabel,
+  type ImageCredit,
+  type MarkImage,
+} from "@/lib/visuals/common";
 import { cn } from "@/lib/utils";
 
 export const creditLinkClass =
   "underline decoration-dotted underline-offset-2 hover:text-foreground focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-ring";
 
+/** A recorded author or credit string with every URL in it shown as a short link labelled with its host. */
+export function CreditText({ value }: { value: string }) {
+  return (
+    <>
+      {creditSegments(value).map((seg, i) =>
+        seg.kind === "text" ? (
+          <Fragment key={i}>{seg.text}</Fragment>
+        ) : (
+          <a key={i} href={seg.href} target="_blank" rel="noreferrer" className={creditLinkClass}>
+            {seg.host}
+          </a>
+        ),
+      )}
+    </>
+  );
+}
+
 /**
  * Visible credit for an image, as recorded: who made it (the Library of Congress credit line where the archive gives
- * one, else the author), the licence (linked when the record has a licence link) and the image's own page. When the
- * record names no licence, only "Source: <site>" is shown.
+ * one, else the author, else the recorded credit), then the licence (linked when the record has a licence link) and
+ * the image's own page. Any URL inside the author or credit is a short link labelled with its host. When the record
+ * names no licence the second line is "Source: <site>", and nothing is said about an author nobody recorded.
  */
 export function OpenImageCredit({
   image,
@@ -26,29 +52,27 @@ export function OpenImageCredit({
       {sourceLabel(image)}
     </a>
   );
-  if (!image.license)
-    return (
-      <p
-        className={cn(
-          "m-0 leading-snug text-muted-foreground [overflow-wrap:anywhere]",
-          size,
-          className,
-        )}
-      >
-        Source: {source}
-      </p>
-    );
-  const who =
-    image.origin === "loc" && image.credit
-      ? image.credit
-      : `${label}: ${image.author ?? "Author not recorded"}`;
+  // The archive's own credit line stands alone; any other recorded author or credit follows "Photo:".
+  const archive = image.origin === "loc" && image.credit ? image.credit : null;
+  const recorded = archive ?? image.author ?? image.credit;
+  const who = recorded ?? (image.license ? "Author not recorded" : null);
+  const prefix = archive ? "" : `${label}: `;
   return (
     <div className={cn("space-y-0.5 leading-snug text-muted-foreground", size, className)}>
-      <p className="m-0 line-clamp-2 [overflow-wrap:anywhere]" title={who}>
-        {who}
-      </p>
+      {who ? (
+        <p className="m-0 line-clamp-2 [overflow-wrap:anywhere]" title={plainCredit(prefix + who)}>
+          {prefix}
+          <CreditText value={who} />
+        </p>
+      ) : null}
       <p className="m-0 [overflow-wrap:anywhere]">
-        <LicenceText license={image.license} url={image.licenseUrl} /> · {source}
+        {image.license ? (
+          <>
+            <LicenceText license={image.license} url={image.licenseUrl} /> · {source}
+          </>
+        ) : (
+          <>Source: {source}</>
+        )}
       </p>
     </div>
   );
@@ -109,9 +133,13 @@ export function MarkCredit({
       )}
     >
       {label}:{" "}
+      {mark.author ? (
+        <>
+          <CreditText value={mark.author} /> ·{" "}
+        </>
+      ) : null}
       {mark.license ? (
         <>
-          {mark.author ?? "Author not recorded"} ·{" "}
           <LicenceText license={mark.license} url={mark.licenseUrl} /> · {source}
         </>
       ) : (

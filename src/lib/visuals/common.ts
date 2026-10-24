@@ -192,6 +192,20 @@ export function isoDate(v: unknown): string | null {
 }
 
 /**
+ * Registry status wording that sits in a licence field without naming a licence ("Not assessed; ...", "Pending
+ * file-specific policy and visual review", "Not specified by logo registry", "... rights/credit not stated on
+ * profile"). It is a review status, not a licence, so the credit reads "Source: <site>" for it.
+ */
+const LICENCE_STATUS =
+  /^(?:not\s+(?:assessed|specified|stated|recorded)|pending|unknown|none$)|\bnot\s+stated\b/i;
+
+/** The licence text as a credit may print it: null when the field is empty or only a review status. */
+export function recordedLicence(license: string | null | undefined): string | null {
+  const s = license?.trim();
+  return s && !LICENCE_STATUS.test(s) ? s : null;
+}
+
+/**
  * Licence fields as recorded. All may be absent (the credit then names the source only); what is present must be well
  * formed: a known family, plain text, an https link, and a link flagged as a deed only on creativecommons.org or
  * commons.wikimedia.org.
@@ -214,11 +228,12 @@ export function parseLicence(
   const hasUrl = urlRaw !== undefined && urlRaw !== null && urlRaw !== "";
   const licenseUrl = hasUrl ? (deed ? httpsUrl(urlRaw, DEED_HOSTS) : httpsLink(urlRaw)) : null;
   if (!license.ok || (hasUrl && !licenseUrl) || (deed && !licenseUrl)) return null;
+  const named = recordedLicence(license.value);
   return {
-    license: license.value,
+    license: named,
     licenseFamily: family,
-    licenseUrl: license.value ? licenseUrl : null,
-    licenseUrlIsDeed: deed && !!license.value,
+    licenseUrl: named ? licenseUrl : null,
+    licenseUrlIsDeed: deed && !!named,
   };
 }
 
@@ -304,14 +319,15 @@ export function parseMarkImage(raw: unknown): MarkImage | null {
   const licenseUrl = hasLicenceUrl ? httpsLink(urlRaw) : null;
   if (!url || !width || !height || !mime || !MARK_MIMES.has(mime) || !sourcePage) return null;
   if (!license.ok || !author.ok || !rights.ok || (hasLicenceUrl && !licenseUrl)) return null;
+  const named = recordedLicence(license.value);
   return {
     url,
     width,
     height,
     mime,
     sourcePage,
-    license: license.value,
-    licenseUrl: license.value ? licenseUrl : null,
+    license: named,
+    licenseUrl: named ? licenseUrl : null,
     author: author.value,
     rightsStatus: rights.value,
   };
@@ -360,4 +376,51 @@ export function yearOf(v: string | null): string | null {
     if (m && /^(1[6-9]|20)\d{2}$/.test(m[1]!)) return m[1]!;
   }
   return null;
+}
+
+export type CreditSegment =
+  { kind: "text"; text: string } | { kind: "link"; href: string; host: string };
+
+const URL_IN_TEXT = /https?:\/\/[^\s<>"]+/gi;
+const TRAILING = /[.,;:!?)\]}'"]+$/;
+
+/**
+ * Splits a recorded author or credit string into text and links. Every http(s) URL in it becomes a link labelled with
+ * its host ("flickr.com"), never the raw address; trailing punctuation stays text. A URL that does not parse stays text.
+ */
+export function creditSegments(value: string): CreditSegment[] {
+  const out: CreditSegment[] = [];
+  let last = 0;
+  const push = (text: string) => {
+    if (!text) return;
+    const prev = out[out.length - 1];
+    if (prev?.kind === "text") prev.text += text;
+    else out.push({ kind: "text", text });
+  };
+  for (const m of value.matchAll(URL_IN_TEXT)) {
+    const start = m.index ?? 0;
+    const raw = m[0];
+    const url = raw.replace(TRAILING, "");
+    let parsed: URL | null = null;
+    try {
+      parsed = new URL(url);
+    } catch {
+      parsed = null;
+    }
+    push(value.slice(last, start));
+    if (parsed && (parsed.protocol === "https:" || parsed.protocol === "http:") && parsed.hostname)
+      out.push({ kind: "link", href: parsed.href, host: parsed.hostname.replace(/^www\./, "") });
+    else push(url);
+    push(raw.slice(url.length));
+    last = start + raw.length;
+  }
+  push(value.slice(last));
+  return out;
+}
+
+/** The same string with each URL replaced by its host, for a tooltip or an accessible name. */
+export function plainCredit(value: string): string {
+  return creditSegments(value)
+    .map((seg) => (seg.kind === "text" ? seg.text : seg.host))
+    .join("");
 }

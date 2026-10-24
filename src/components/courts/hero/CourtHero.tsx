@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { photoAlt, photoPlace, photoSource, photoSrcSet } from "@/lib/courts/photos";
+import { useImageFailed } from "@/components/visuals/failedImages";
 import { cn } from "@/lib/utils";
 import { resolveCourtMark } from "./courtMark";
 import { MarkCaption, MarkMedallion, PhotoCredit, SealPlate } from "./parts";
@@ -26,7 +27,10 @@ export function CourtHero({
   type?: string | null | undefined;
   recordedLinks?: readonly { url: string; label: string }[];
 }) {
-  const mark = resolveCourtMark(courtId, system, type, recordedLinks);
+  const resolved = resolveCourtMark(courtId, system, type, recordedLinks);
+  // A stored court image that cannot be served is not captioned as if it were drawn: the court-type emblem takes over.
+  const recordedFailed = useImageFailed(resolved.kind === "recorded" ? resolved.src : null);
+  const mark = recordedFailed ? resolveCourtMark(courtId, system, type) : resolved;
   const q = useQuery(courtPhotoQuery(courtId));
   const photo = q.data ?? null;
   const img = useImageLoaded(photo?.display.url ?? null);
