@@ -33,7 +33,16 @@ export const SEARCH_COUNT_COURTS = [
   "cafc",
 ] as const;
 
-export type CountPoint = { q: string; count: number; retrievedAt: string; searchUrl: string };
+/** Above this many results the search engine's count is an estimate (marked approximate in the data and on screen). */
+export const APPROX_ABOVE = 2000;
+export type CountPoint = {
+  q: string;
+  count: number;
+  /** True when the count is above APPROX_ABOVE (or the record marks it so). */
+  approximate: boolean;
+  retrievedAt: string;
+  searchUrl: string;
+};
 export type TopicShare = CountPoint & {
   slug: string;
   label: string;
@@ -54,6 +63,7 @@ export type YearPoint = CountPoint & {
   year: number;
   partial: boolean;
   total: number | null;
+  totalApproximate: boolean;
   sharePct: number | null;
 };
 export type TopicSeries = { slug: string; label: string; topicQuery: string; points: YearPoint[] };
@@ -66,7 +76,13 @@ function point(v: unknown): CountPoint | null {
   const url = str(o?.["search_url"], 2000);
   if (!q || n == null || !at || !STAMP.test(at) || !url || !url.startsWith(SEARCH_PAGE))
     return null;
-  return { q, count: n, retrievedAt: at, searchUrl: url };
+  return {
+    q,
+    count: n,
+    approximate: n > APPROX_ABOVE || o?.["approximate"] === true,
+    retrievedAt: at,
+    searchUrl: url,
+  };
 }
 
 /** count / whole x 100, to the stored three decimals; null when the whole is missing or zero. */
@@ -130,11 +146,26 @@ export function parseTopicSeries(raw: unknown): TopicSeries | null {
     const derived = total != null ? shareOf(pt.count, total) : null;
     if (derived != null && !agrees(o["share_pct"], derived)) return [];
     seen.add(y);
-    return [{ ...pt, year: y, partial: o["partial"] === true, total, sharePct: derived }];
+    return [
+      {
+        ...pt,
+        year: y,
+        partial: o["partial"] === true,
+        total,
+        totalApproximate: total != null && total > APPROX_ABOVE,
+        sharePct: derived,
+      },
+    ];
   });
   return points.length
     ? { slug, label, topicQuery: tq, points: points.sort((a, b) => a.year - b.year) }
     : null;
+}
+
+/** A count as text: "about N" when the engine's count is an estimate. */
+export function countText(n: number | null, approximate: boolean): string {
+  if (n == null) return "Not recorded";
+  return `${approximate ? "about " : ""}${n.toLocaleString("en-US")}`;
 }
 
 /** The record ids one court page reads. */

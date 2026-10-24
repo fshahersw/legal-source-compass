@@ -8,7 +8,7 @@ import { HowToRead } from "@/components/analysis/HowToRead";
 import { PanelError, PanelLoading, PanelShell } from "./ClbRestParts";
 import { fmtInt, NOT_RECORDED } from "./clbFormat";
 import { getClbSearchCounts, type CourtSearchCounts } from "./searchCounts.functions";
-import { SEARCH_COUNT_COURTS, type TopicSeries } from "./searchCounts";
+import { APPROX_ABOVE, countText, SEARCH_COUNT_COURTS, type TopicSeries } from "./searchCounts";
 
 const HELP =
   "https://wiki.free.law/c/courtlistener/help/search/advanced-search-and-query-techniques";
@@ -80,7 +80,7 @@ function Body({ d }: { d: CourtSearchCounts }) {
           rel="noreferrer"
           className="text-primary hover:underline"
         >
-          All {fmtInt(c.total.count)} opinions on CourtListener
+          {c.total.approximate ? "About" : "All"} {fmtInt(c.total.count)} opinions on CourtListener
         </a>
       }
     >
@@ -103,7 +103,14 @@ function Body({ d }: { d: CourtSearchCounts }) {
             "Each bar is the number of the court's opinions whose text matches the exact search, divided by all its opinions in the same years.",
             "A mention is any occurrence of the words; it does not say how the doctrine was applied.",
           ]}
-          footnotes={[`All opinions ${span}: ${fmtInt(c.total.count)} (query ${c.total.q}).`]}
+          footnotes={[
+            `All opinions ${span}: ${countText(c.total.count, c.total.approximate)} (query ${c.total.q}).`,
+            ...(c.total.approximate || c.topics.some((t) => t.approximate)
+              ? [
+                  `Counts above ${fmtInt(APPROX_ABOVE)} are the search engine's estimates ("about"); shares built on them are approximate. Published plus unpublished differed from the combined count by up to about 1% in this project's checks.`,
+                ]
+              : []),
+          ]}
           table={{
             caption: `Doctrine searches, ${c.court}, ${span}`,
             columns: [
@@ -128,7 +135,7 @@ function Body({ d }: { d: CourtSearchCounts }) {
                 >
                   {t.topicQuery}
                 </a>,
-                fmtInt(t.count),
+                countText(t.count, t.approximate),
                 pct3(t.sharePct),
                 pct3(t.pooledSharePct),
                 <span key="r" className="whitespace-nowrap">
@@ -146,7 +153,7 @@ function Body({ d }: { d: CourtSearchCounts }) {
               id: t.slug,
               label: t.label,
               value: t.sharePct,
-              note: `${fmtInt(t.count)} opinions${t.rank && t.rankOf ? ` · rank ${t.rank} of ${t.rankOf} courts` : ""}${t.pooledSharePct != null ? ` · ${pct3(t.pooledSharePct)} across the 14 courts` : ""}`,
+              note: `${countText(t.count, t.approximate)} opinions${t.rank && t.rankOf ? ` · rank ${t.rank} of ${t.rankOf} courts` : ""}${t.pooledSharePct != null ? ` · ${pct3(t.pooledSharePct)} across the 14 courts` : ""}`,
             }))}
             formatter={smallPct}
             unit="of opinions"
@@ -230,11 +237,12 @@ function NationalTrend({ series }: { series: TopicSeries[] }) {
         "Each year: opinions of every court whose text matches the search, divided by all opinions filed that year (published and unpublished).",
         "A share avoids reading growth of the collection as growth of the doctrine; the counts are in the table.",
       ]}
-      footnotes={
-        partial
+      footnotes={[
+        ...(partial
           ? [`${partial.year}* is partial: counted to ${day(partial.retrievedAt)}.`]
-          : undefined
-      }
+          : []),
+        `Yearly totals of all opinions are above ${fmtInt(APPROX_ABOVE)} and are the search engine's estimates ("about"), so each share is approximate; published plus unpublished differed from the combined count by -1.2% to +0.9% across these years.`,
+      ]}
       table={{
         caption: `Opinions mentioning ${s.label.toLowerCase()}, by year`,
         columns: [
@@ -255,9 +263,9 @@ function NationalTrend({ series }: { series: TopicSeries[] }) {
               rel="noreferrer"
               className="text-primary hover:underline"
             >
-              {fmtInt(p.count)}
+              {countText(p.count, p.approximate)}
             </a>,
-            fmtInt(p.total),
+            countText(p.total, p.totalApproximate),
             pct3(p.sharePct),
             <span key="d" className="whitespace-nowrap">
               {day(p.retrievedAt)}

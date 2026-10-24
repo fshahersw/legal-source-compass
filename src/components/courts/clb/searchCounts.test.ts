@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCourtCounts, parseTopicSeries, recordIds, shareOf } from "./searchCounts";
+import { countText, parseCourtCounts, parseTopicSeries, recordIds, shareOf } from "./searchCounts";
 
 const at = "2026-10-24T02:10:00Z";
 const page = (q: string) =>
@@ -132,6 +132,17 @@ describe("parseTopicSeries", () => {
       points: [{ ...series.points[1]!, total: null, share_pct: null }],
     })!;
     expect(s.points[0]).toMatchObject({ count: 30, total: null, sharePct: null });
+  });
+});
+
+describe("approximate counts", () => {
+  it("marks every count above 2,000 approximate, whatever the record says", () => {
+    const c = parseCourtCounts(COURT, "ca9")!;
+    expect(c.total.approximate).toBe(true);
+    expect(c.topics.find((t) => t.slug === "class_waiver")!.approximate).toBe(false);
+    expect(countText(200000, true)).toBe("about 200,000");
+    expect(countText(7, false)).toBe("7");
+    expect(countText(null, false)).toBe("Not recorded");
   });
 });
 
