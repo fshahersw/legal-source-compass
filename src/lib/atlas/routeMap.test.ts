@@ -189,6 +189,7 @@ const EXPECTED: Record<string, NavigationSection | null> = {
   "/auth": null,
   "/reset-password": null,
   "/prototypes": null,
+  "/prototypes/kit": null, // the design-kit gallery, a prototype that belongs to no section
 };
 
 describe("every route file has a place", () => {
