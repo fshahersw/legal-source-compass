@@ -19,6 +19,7 @@ import {
 import { chartTokens, seriesVar } from "../palette";
 
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${Math.round(v * 100)}%`;
+const COMPACT = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const TICK = "fill-muted-foreground text-[11px] tabular-nums";
 
 /** Width of the element in CSS pixels, following resizes; `fallback` until the first measurement. */
@@ -228,15 +229,23 @@ export function StackedBarsOverTime({
   const [box, W] = useWidth<HTMLDivElement>();
   const shown = keys.slice(0, 6);
   const { layers, max } = stackLayers(rows, shown);
-  const x = scaleBand<string>()
-    .domain(rows.map((r) => r.period))
-    .range([52, W - 14])
-    .padding(0.22);
   const y = scaleLinear()
     .domain([0, max || 1])
     .nice()
     .range([height - 26, 10]);
-  const every = Math.max(1, Math.ceil((rows.length * 44) / Math.max(1, W - 56)));
+  // Axis ticks in compact form for large totals (exact values stay in each bar's title and the table).
+  const tickText = (v: number) => (max >= 10_000 ? COMPACT.format(v) : format(v));
+  const ticks = y.ticks(4);
+  const left = Math.max(36, Math.max(...ticks.map((t) => tickText(t).length)) * 6.6 + 12);
+  const x = scaleBand<string>()
+    .domain(rows.map((r) => r.period))
+    .range([left, W - 14])
+    .padding(0.22);
+  const longest = Math.max(1, ...rows.map((r) => r.period.length + (r.partial ? 1 : 0)));
+  const every = Math.max(
+    1,
+    Math.ceil((rows.length * (longest * 6.4 + 10)) / Math.max(1, W - left - 14)),
+  );
   return (
     <figure ref={box} className="m-0 min-w-0">
       <svg
@@ -247,11 +256,17 @@ export function StackedBarsOverTime({
         role="img"
         aria-label="Stacked totals by period"
       >
-        {y.ticks(4).map((t) => (
+        {ticks.map((t) => (
           <g key={t}>
-            <line x1={52} x2={W - 4} y1={y(t)} y2={y(t)} style={{ stroke: "var(--chart-grid)" }} />
-            <text x={46} y={y(t)} dy="0.32em" textAnchor="end" className={TICK}>
-              {format(t)}
+            <line
+              x1={left}
+              x2={W - 4}
+              y1={y(t)}
+              y2={y(t)}
+              style={{ stroke: "var(--chart-grid)" }}
+            />
+            <text x={left - 6} y={y(t)} dy="0.32em" textAnchor="end" className={TICK}>
+              {tickText(t)}
             </text>
           </g>
         ))}
