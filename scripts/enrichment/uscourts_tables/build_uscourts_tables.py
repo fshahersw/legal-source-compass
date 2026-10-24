@@ -40,7 +40,9 @@ PUB_NAMES = {"JB": "Judicial Business of the United States Courts (12 months end
              "FJCS": "Federal Judicial Caseload Statistics (12 months ending March 31)",
              "BF": "Bankruptcy Filings statistics (quarterly)",
              "BAPCPA": "Bankruptcy Abuse Prevention and Consumer Protection Act report tables (12 months ending December 31)",
-             "WIRETAP": "Wiretap report tables (calendar year, January 1 through December 31)"}
+             "WIRETAP": "Wiretap report tables (calendar year, January 1 through December 31)",
+             "DNSW": "Report on applications for delayed-notice search warrants and extensions (12 months ending September 30)",
+             "FISC": "Director's report on the activities of the Foreign Intelligence Surveillance Courts (calendar year)"}
 DATASETS = {
     "district": ("uscourts_tables_district", "U.S. district courts - published statistical tables by court and period (U.S. Courts: Judicial Business, Statistical Tables, Caseload Statistics)"),
     "bankruptcy": ("uscourts_tables_bankruptcy", "U.S. bankruptcy courts - published statistical tables by district and period (U.S. Courts: Judicial Business, Statistical Tables, Bankruptcy Filings)"),
@@ -53,8 +55,20 @@ DATASETS = {
 FAMILIES = {
     "bapcpa": ("uscourts_bapcpa", "U.S. bankruptcy courts - BAPCPA report tables by district and period (U.S. Courts: Bankruptcy Abuse Prevention and Consumer Protection Act statistics)"),
     "wiretap": ("uscourts_wiretap", "Court-authorized intercepts - Wiretap report tables by jurisdiction and calendar year (U.S. Courts: Wiretap Reports)"),
+    "dnsw": ("uscourts_dnsw", "U.S. district courts - delayed-notice search warrant and extension applications by district and by offense, fiscal years (U.S. Courts: Delayed-Notice Search Warrant reports)"),
+    "fisc": ("uscourts_fisc", "Foreign Intelligence Surveillance Court - applications or certifications and orders by section of the statute, calendar years (U.S. Courts: Director's reports on the FISA courts)"),
 }
-FAMILY_OF_PUB = {"BAPCPA": "bapcpa", "WIRETAP": "wiretap"}
+FAMILY_OF_PUB = {"BAPCPA": "bapcpa", "WIRETAP": "wiretap", "DNSW": "dnsw", "FISC": "fisc"}
+# the page a family's tables are listed on (the caseload data-table listing for the others)
+FAMILY_PAGES = {
+    "dnsw": ("https://www.uscourts.gov/data-news/reports/statistical-reports/delayed-notice-search-warrant-report", "U.S. Courts Delayed-Notice Search Warrant reports"),
+    "fisc": ("https://www.uscourts.gov/data-news/reports/statistical-reports/directors-report-foreign-intelligence-surveillance-courts-activities",
+             "U.S. Courts Director's reports on the Foreign Intelligence Surveillance Courts"),
+}
+
+
+def family_page(family):
+    return FAMILY_PAGES.get(family, (LISTING_URL, "U.S. Courts caseload statistics data tables"))
 
 
 def dsid(kind, family="tables"):
@@ -75,6 +89,23 @@ FIPS_STATE = {
 LISTING_COLUMNS = [("court", "Court"), ("table", "Table"), ("title", "Table title"), ("first", "First period ends"), ("last", "Last period ends"), ("periods", "Periods")]
 ARCOMB = "arcomb"
 ARCOMB_TITLE = "U.S. Bankruptcy Court, Arkansas (Eastern and Western districts, reported as one court)"
+ARCOMB_LABEL = "Arkansas, E.D. and W.D. (one row in the table)"
+ARKANSAS = ("ared", "arwd")
+
+
+def arkansas_combined(eid, docs):
+    """What a bankruptcy table says about the two Arkansas courts, from the rows it prints: the combined row ("AR") covers the Eastern
+    and Western districts; each district's own row stops where the combined row begins. Nothing is split or assigned to one district.
+    Returns the payload fields to add ({} for any other court)."""
+    printed = [(("district", ARCOMB) in d["rows_by_entity"], any(("district", a) in d["rows_by_entity"] for a in ARKANSAS)) for d in docs]
+    if eid == ARCOMB:
+        return {"covers": list(ARKANSAS), "coversLabel": "E.D. and W.D. Arkansas"}
+    if eid in ARKANSAS and any(c for c, _ in printed):
+        first = next(i for i, (c, _) in enumerate(printed) if c)
+        last_own = max((i for i, (_, own) in enumerate(printed) if own), default=None)
+        return {"reportedWith": {"court": ARCOMB, "label": ARCOMB_LABEL, "from": docs[first]["norm"]["period_end"],
+                                 "lastOwn": docs[last_own]["norm"]["period_end"] if last_own is not None else None}}
+    return {}
 NOT_DUPLICATED = {
     "court_stats_district_nos / _district_times / _circuits / _national": "Judicial Business C, C-2A, C-3, C-5, C-6, C-11, X-1A, B, B-4, B-7 for FY2014-FY2025 (product-liability orientation); the same tables here add the Statistical Tables and Caseload Statistics periods and every other column.",
     "court_jb_districts / _circuits / _civil_nos / _bankruptcy": "Judicial Business C-4, C-4A, F-2, S-19, S-20 and T-1 for FY2005-FY2025; not re-published here for the periods those datasets hold.",
@@ -89,11 +120,16 @@ METHOD_RULES = [
     "Columns that only repeat the previous year's figure beside the current year are not stored as series; the percent-change column the publisher prints is.",
     "A change of column set, table title or footnote wording between consecutive periods of the same publication is recorded as a break at that period (breaks[]), and footnotes attached to a court's row or column heading are kept with the periods they apply to (marks[]).",
     "Bankruptcy courts are keyed by the id of their district; the combined Arkansas court is the record arcomb. Circuit rows are the roll-ups the publisher prints (the D.C. Circuit is the D.C. district row).",
+    "Arkansas has two district courts and, in the bankruptcy tables since the combined row began, one bankruptcy row ('AR', both districts): that row is kept as its own record (arcomb, 'Arkansas, E.D. and W.D.'), never split or assigned to one district, and the E.D. and W.D. records say from which period their figures are printed only in the combined row.",
+    "A row label that names no court is never given a court id: Judicial Business S-19 for FY2017 prints 'AK,E' and 'AK,W' in the Eighth Circuit block (every other edition prints AR,E and AR,W there; Alaska has one district, printed 'AK' in the same table) and 'AR' in the Ninth Circuit block (where the other editions print AZ). Those rows stay in their circuit block for the table's own roll-up test, and the courts are gaps in that period. 'IL,E', footnoted 'No longer a separate district', is the former Eastern District of Illinois (court id illinoised in the court directory).",
     "Where two publications print the same table for the same period end, the higher-priority one (Judicial Business, then Statistical Tables, Caseload Statistics, Bankruptcy Filings) that is not held is stored and the other is listed in the build report.",
     "Every table-period is reconciled against the totals it prints: the Total row over the circuit rows, each circuit over its districts, each district over its counties, each category row over the rows indented under it, and each Total column over the other columns of its heading group, on count columns only and with exact arithmetic (a printed dash counts as no cases). A relation counts as one of the table's printed totals when it holds in at least three of every four tests across the table's editions (for one column, and for one court or row when it has four tests or more).",
     "A table-period that breaks one of its printed totals is held: it is not published, and the period, its file and the failing figures are listed in the record (rec.held) and in the method record. A held period another publication prints for the same date is taken from that publication. Parts adding up to more than their total, and a court roll-up that differs in either direction, hold the period; a category or column total larger than its printed parts means the total also counts parts the table does not print, so it is counted (rec.exceedsParts) and does not hold the period; a failure the period's own footnote explains ('Totals include ...') is counted as explained.",
-    "Editions published only as PDF (before 2017 and 2018) are read for court-by-court tables only, from the PDF text layer, and a period is kept only if the table id and period match the listing, the court set equals the spreadsheet edition that names the columns, every row carries the full figure count, the years printed over the columns are in the reference order and every roll-up sum holds; otherwise the period is a gap. These periods are marked fmt 'pdf' in the record's sources and by a 'source' break where spreadsheets begin; their footnotes are not transcribed.",
-    "Bankruptcy Filings workbooks before 2009 are mainframe printouts whose column headings cannot be read without guessing; those periods are left out.",
+    "Editions published only as PDF are read from the PDF text layer by one of two readers. The row-count reader (court tables) keeps a period only if the table id and period match the listing, the court set equals the spreadsheet edition that names the columns, every row carries the full figure count, the years printed over the columns are in the reference order and every roll-up sum holds. The word-position reader (court and category tables, tables printed in halves, BAPCPA PDFs with a sort-code column) places every figure under its column by the positions of the words, names each column only when its own heading words and its group headings match one spreadsheet column, in order and in one way only (at most a quarter of the columns, printed under a heading no spreadsheet edition has, are left out), and keeps a period only if every row has a figure or a dash in every column, no court is printed twice, no whole-number column prints a figure with decimals, and every roll-up holds; an edition that lists fewer or other district courts than the spreadsheet editions is kept only when its Total and the circuit of every such court add up over the courts it prints. Every other PDF period is a gap. These periods are marked fmt 'pdf' in the record's sources; their footnotes are kept where the reader finds them under the table.",
+    "Bankruptcy Filings workbooks before 2009 are mainframe printouts (dot-leader labels, headings stacked over unmerged cells). Tables F-2 and F (2001-2008) are read by a separate printout reader that names a column only from its complete printed heading and keeps a period only when, in every row, the total equals business plus nonbusiness filings and each chapter's total equals its business plus nonbusiness filings (F-2), or the two years and the percent change agree (F); other printout tables are left out.",
+    "A category table whose rows the spreadsheet does not indent (C-4, BAP-2, B-1A, A-1 and others) has its row hierarchy read from its own printed sums: a row is the parent of the rows below it when, in at least three count columns, it equals their sum exactly; the same reading is used for every edition of that table. Two rows with the same label under the same parent and different figures cannot be told apart and are left out of that period.",
+    "Wiretap jurisdiction tables (Tables 2-6): a workbook edition is read when Federal Total equals the federal districts and each state its jurisdictions (by the table's own sums) and Federal Total plus the states equals Total; a PDF edition (1997-2015, states printed as headings without figures) when the Total equals FEDERAL plus every jurisdiction in each count column whose only text cells are the report's codes (NP, NR, NI). Columns of a PDF edition are named from the workbook editions by their headings, or, where the headings are printed rotated letter by letter, only when the letters over each column are those of the workbook heading. A jurisdiction printed twice in one state with different figures is left out of that period. Editions that print the jurisdictions without their state rows (2016, 2017) are not read.",
+    "Reports outside the caseload listing are read under their own checks: the Delayed-Notice Search Warrant tables (district table: applications = warrants + extensions and each = granted + granted as modified + denied, the Total over the circuits and each circuit over its districts; offense table: the Total over the offense rows and all = warrants + extensions in every row) and the Director's report on the FISA courts (Table 1: every column adds up to the total the report's Summary of Findings states, which is stored as the Total row). Every figure read from one of these PDFs is found again with a second text extraction. The 2006 interim period (March-September 2006) and the 2015 FISC period (June 8-December 31) are not full years and say so.",
     "Each period keeps the figure printed in its own edition. The next edition's prior-year column can show a revised figure (mostly for cases pending); it is not used to replace the earlier figure.",
     "A court the table prints twice with different figures in one period (a footnoted row and a plain row with the same label) is a gap for that period; neither row is chosen. Tables with sub-rows under each court (by nature of suit, by offense) keep the court rows only.",
 ]
@@ -326,10 +362,18 @@ def build_court_group(scope, docs, out, report, latest, family="tables", rec=Non
                 payload = with_rec(B.drop_empty(B.court_payload(scope, eid, docs, cols, info, title, nat_pair, circuit_id, circ, ("district", eid))))
                 if not payload:
                     continue
+                if scope == "bankruptcy":
+                    combined = arkansas_combined(eid, docs)
+                    if combined:
+                        payload.update(combined)
                 bk = TITLES["district_to_bankruptcy"].get(eid) if scope == "bankruptcy" else None
                 out[(family, scope)].append(court_record(dataset, eid, court_title, payload, docs, bankruptcy_court=bk, circuit_id=circuit_id, link_court=eid != "arcomb"))
-                latest[(family, scope, tkey)].setdefault("courts", {})[eid] = {k: v[-1] for k, v in payload["data"].items() if v and v[-1] is not None}
+                newest = {k: v[-1] for k, v in payload["data"].items() if v and v[-1] is not None}
+                if newest:  # a court the latest period does not print (E.D. and W.D. Arkansas since the combined row) is not listed as a blank
+                    latest[(family, scope, tkey)].setdefault("courts", {})[eid] = newest
                 latest[(family, scope, tkey)].update({"cols": cols, "end": docs[-1]["norm"]["period_end"], "title": title, "table": info["table"], "page": page})
+                if scope == "bankruptcy" and eid == "arcomb":
+                    latest[(family, scope, tkey)]["combined"] = {"arcomb": {"covers": list(ARKANSAS), "label": ARCOMB_LABEL}}
         for (kind, eid) in present:  # circuit roll-up rows the publisher prints
             if kind == "circuit":
                 circuit_title = TITLES["circuit_titles"].get(eid)
@@ -367,6 +411,8 @@ def latest_records(latest, out):
         used = [c for c in cols.values() if any(c["k"] in v for v in courts.values())]
         payload = {"v": 1, "kind": "latest", "scope": scope, "table": info["table"], "tableKey": tkey, "title": info["title"], "end": info["end"],
                    "cols": [{k: c[k] for k in ("k", "label", "unit", "dec", "le")} for c in used], "courts": courts}
+        if info.get("combined") and any(k in courts for k in info["combined"]):
+            payload["combined"] = {k: v for k, v in info["combined"].items() if k in courts}
         dataset = dsid(scope, family)
         rec = make_record(dataset, f"latest:{tkey}", f"Latest period, all courts - Table {info['table']}: {info['title']}", f"Period ending {info['end']} · {len(courts)} courts",
                           f"latest {info['table']} {info['title']}", {"court": "All courts", "table": info["table"], "title": info["title"], "first": info["end"], "last": info["end"], "periods": 1},
@@ -395,12 +441,12 @@ def listing_block(rows):
     return cw.listing(LISTING_COLUMNS, filters=[("table", "Table", {t: t for t in tables})])
 
 
-def finish(dataset, label, rows, inputs, verification, publications=None):
+def finish(dataset, label, rows, inputs, verification, publications=None, family="tables"):
     first = min((r["item"]["cells"]["first"] for r in rows if r["item"]["cells"].get("first")), default=None)
     last = max((r["item"]["cells"]["last"] for r in rows if r["item"]["cells"].get("last")), default=None)
     rows = sorted(rows, key=lambda r: r["id"])
     summary = {
-        "source": "U.S. Courts, Administrative Office: statistical tables at https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables",
+        "source": f"U.S. Courts, Administrative Office: {family_page(family)[1]} at {family_page(family)[0]}",
         "publications": [pub_text(p) for p in (publications or PUB_NAMES)],
         "records": len(rows), "first_period_end": first, "last_period_end": last,
         "rules": METHOD_RULES,
@@ -437,7 +483,7 @@ def main():
     if only:
         groups = {k: v for k, v in groups.items() if k[0] in only}
     report = {"circuit_conflicts": [], "unknown_courts": set(), "duplicate_periods": [], "groups": {}, "rollup_failures": {}, "entity_conflicts": [], "dropped_groups": [],
-              "held": [], "reconciliation": {}}
+              "held": [], "reconciliation": {}, "unmatched_labels": []}
     # One table key is one table. If a workbook position ("-s5") holds a different kind of sheet in a few editions, the scope with the
     # most periods is the table and the stray sheets are reported, not published under the same key.
     by_key = defaultdict(list)
@@ -499,6 +545,10 @@ def main():
         series_info.append({"tableKey": tkey, "scope": scope, "family": family, "chosen": chosen, "held": held, "dropped": dropped, "rec": rs})
         # rows a table prints twice with different figures are left out of that period; list them (court-level entities only)
         for d in chosen:
+            unmatched = sorted({r["entity_id"].split(":", 1)[1] for r in d["norm"]["rows"] if str(r.get("entity_id", "")).startswith("unmatched:")})
+            if unmatched:
+                report["unmatched_labels"].append({"table": tkey, "scope": scope, "period": d["norm"]["period_end"], "pub": d["norm"]["pub"], "labels": unmatched,
+                                                   "url": d["source"]["url"]})
             _, dup = B.row_index(d["norm"])
             dup = [f"{k}:{i}" for k, i in dup if k != "other"]
             if dup:
@@ -526,10 +576,11 @@ def main():
             continue
         catalog = catalog_of(fam_groups)
         target = (family, "national")
-        out[target].append(cw.record(dsid("national", family), "summary:catalog", "Table catalog", source_url=LISTING_URL, cells={"court": "All", "table": "Catalog", "title": f"{len(catalog)} tables",
+        page, page_label = family_page(family)
+        out[target].append(cw.record(dsid("national", family), "summary:catalog", "Table catalog", source_url=page, cells={"court": "All", "table": "Catalog", "title": f"{len(catalog)} tables",
                                      "first": min(c["firstEnd"] for c in catalog), "last": max(c["lastEnd"] for c in catalog), "periods": len(catalog)},
                                      facts=[["Tables", str(len(catalog))]], text="catalog of tables", filters={"table": ["catalog"], "scope": ["summary"]}, subtitle=f"{len(catalog)} tables",
-                                     links=[{"url": LISTING_URL, "label": "U.S. Courts caseload statistics data tables"}], extra={"catalog": {"tables": catalog}}))
+                                     links=[{"url": page, "label": page_label}], extra={"catalog": {"tables": catalog}}))
         per_scope = defaultdict(lambda: {"tables": 0, "periods_first": None, "periods_last": None})
         for c in catalog:
             for sc in c["scopes"]:
@@ -541,14 +592,15 @@ def main():
         method = {
             "rules": METHOD_RULES, "publications": {k: v for k, v in PUB_NAMES.items() if (family == "tables") == (k not in FAMILY_OF_PUB)},
             "scopes": dict(per_scope), "verification": verification, "held": held_here,
+            "unmatchedLabels": [u for u in report["unmatched_labels"] if family_of(groups[(u["table"], u["scope"])]) == family],
         }
         if family == "tables":
             method["not_duplicated"] = NOT_DUPLICATED
-        out[target].append(cw.record(dsid("national", family), "summary:method", "Method and coverage", source_url=LISTING_URL,
+        out[target].append(cw.record(dsid("national", family), "summary:method", "Method and coverage", source_url=page,
                                      cells={"court": "All", "table": "Method", "title": "How the tables are read", "first": min(c["firstEnd"] for c in catalog), "last": max(c["lastEnd"] for c in catalog), "periods": len(catalog)},
                                      facts=[["Rules", str(len(METHOD_RULES))], ["Tables", str(len(catalog))], ["Held table-periods", str(len(held_here))]], text="method coverage rules",
                                      filters={"table": ["method"], "scope": ["summary"]},
-                                     subtitle="Rules, publications and coverage", links=[{"url": LISTING_URL, "label": "U.S. Courts caseload statistics data tables"}], extra={"method": method}))
+                                     subtitle="Rules, publications and coverage", links=[{"url": page, "label": page_label}], extra={"method": method}))
     builds = {}
     for key in DATASETS:
         if key == "county" and "--county" not in sys.argv:
@@ -561,7 +613,7 @@ def main():
         rows = [r for (fam, _), rs in out.items() if fam == family for r in rs]
         if rows:
             builds[dataset] = finish(dataset, label, rows, sorted(used_sources[family].values(), key=lambda x: x["url"]), verification,
-                                     [p for p, f in FAMILY_OF_PUB.items() if f == family])
+                                     [p for p, f in FAMILY_OF_PUB.items() if f == family], family)
     try:
         import series_index as SI
     except ImportError:  # the index builder is optional for partial builds

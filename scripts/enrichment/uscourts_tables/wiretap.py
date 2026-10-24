@@ -44,7 +44,7 @@ import utx_parse as P  # noqa: E402
 
 BUILD = F.ROOT / "private" / "build" / "uscourts_tables"
 PARSED = BUILD / "parsed"
-WIRE_PARSER_VERSION = "wire-2026-10-24.3"
+WIRE_PARSER_VERSION = "wire-2026-10-25.3"
 TABLES = {"Wire 2", "Wire 3", "Wire 4", "Wire 5", "Wire 6"}
 STATES = {
     "ALABAMA", "ALASKA", "ARIZONA", "ARKANSAS", "CALIFORNIA", "COLORADO", "CONNECTICUT", "DELAWARE", "DISTRICT OF COLUMBIA", "FLORIDA", "GEORGIA",
@@ -108,15 +108,11 @@ def structure(rows, positions):
     state_sum = [0] * len(positions)
     i = end_fed + 1
     if i < len(rows) and key_of(rows[i]["label"]) not in STATES:
-        # editions that print the local jurisdictions without their state rows (2016, 2017): kept flat, as printed, only when
-        # Federal Total plus these rows equals Total and no label repeats (a label repeated in two states cannot be told apart)
-        for r in rows[i:]:
-            v = _vals(r, positions)
-            if v is None:
-                return None, f"text cell in a count column at '{r['label']}'"
-            state_sum = _add(state_sum, v)
-            out.append((r, [r["label"]]))
-        i = len(rows)
+        # editions that print the local jurisdictions without their state rows (2016, 2017) are not read: their county rows named
+        # like a state ("NEW YORK" for New York County, "UTAH" for Utah County) would take the series of the state rows the other
+        # editions print under the same label
+        return None, (f"this edition prints the local jurisdictions without their state rows ('{rows[i]['label']}' follows the federal "
+                      "districts), so a county named like a state cannot be told from the state rows of the other editions")
     while i < len(rows):
         head = rows[i]
         if key_of(head["label"]) not in STATES:
@@ -141,19 +137,27 @@ def structure(rows, positions):
             j += 1
         if matched is None:
             return None, f"the rows under '{head['label']}' do not add up to it"
+        # a jurisdiction printed with no orders ("SCRANTON 0" after Pennsylvania's rows) adds nothing to the sum, so the sum cannot
+        # place it; it is printed inside the block, before the next state, so it stays in the block
+        while matched + 1 < len(rows) and key_of(rows[matched + 1]["label"]) not in STATES and _vals(rows[matched + 1], positions) == [0] * len(positions):
+            matched += 1
         out.append((head, [head["label"]]))
         for r in rows[i + 1:matched + 1]:
             out.append((r, [head["label"], r["label"]]))
         i = matched + 1
     if _add(fv, state_sum) != tv:
         return None, "Federal Total plus the state rows does not equal Total"
-    seen = {}
+    # a label printed twice under the same parent with different figures (two DOUGLAS counties in the editions that print no state
+    # rows) cannot be told apart: both rows are left out of the period (the sums above were tested with them); neither is chosen
+    seen, twice = {}, set()
     for r, path in out:
         k = tuple(key_of(p) for p in path)
         if k in seen and seen[k] != r["values"]:
-            return None, f"'{' / '.join(path)}' is printed twice with different figures"
-        seen[k] = r["values"]
-    return out, None
+            twice.add(k)
+        seen.setdefault(k, r["values"])
+    kept = [(r, path) for r, path in out if tuple(key_of(p) for p in path) not in twice]
+    structure.dropped = sorted(" / ".join(k) for k in twice)
+    return kept, None
 
 
 def clean_positions(rows, positions):
@@ -167,21 +171,46 @@ def clean_positions(rows, positions):
     return out
 
 
+def lift_title(sheet):
+    """The 2016 and 2017 workbooks print the title in merged cells over the column headings, so every parsed column path starts with
+    "Table 4 / Summary of Interceptions ... / January 1 Through December 31,2016": that common start is the title, not a heading."""
+    paths = [c["path"] for c in sheet["columns"] if c["path"]]
+    if not paths or not re.match(r"Table \d", paths[0][0]):
+        return False
+    n = 0
+    while all(len(p) > n + 1 and p[n] == paths[0][n] for p in paths):
+        n += 1
+    if not n:
+        return False
+    prefix = paths[0][:n]
+    for c in sheet["columns"]:
+        c["path"] = c["path"][n:]
+    if not sheet.get("title_raw"):
+        sheet["title_raw"] = " ".join(prefix)
+    sheet["period_end_from_title"] = sheet.get("period_end_from_title") or P.parse_period_phrase(" ".join(prefix))[1]
+    return True
+
+
 def to_norm(sheet, entry):
     norm = N.normalize(sheet, entry)
     data = [r for r in norm["rows"] if not r["section"]]
     positions = clean_positions(data, R.additive_positions(norm))
     if not positions:
         return None, "no count column without text cells (such as NP, no prosecutor's report) to read the grouping from"
+    structure.dropped = []
     rows, why = structure(data, positions)
     if rows is None:
         return None, why
+    dropped = list(structure.dropped)
     new_rows = []
     for r, path in rows:
         clean = [P.strip_marks(P.norm_text(p)) for p in path]
         eid = "national" if clean == ["Total"] else "/".join(P.slug(p) for p in clean)
         new_rows.append({**r, "path": clean, "entity": "national" if eid == "national" else "category", "entity_id": eid, "indent": len(clean) - 1})
     norm["rows"] = new_rows
+    if dropped:
+        norm.setdefault("warnings", []).append(f"Printed twice with different figures and no state row to tell them apart, so left out of this period: {', '.join(dropped)}.")
+        norm["ambiguous_rows"] = [{"label": d} for d in dropped]
     norm["scope"] = "category"
     norm["problems"] = [p for p in norm["problems"] if "ambiguous" not in p]
     return norm, None
@@ -215,13 +244,16 @@ def main():
         if not sheets:
             report["rejected"][key] = "no sheet with data rows"
             continue
+        lifted = lift_title(sheets[0])
         norm, why = to_norm(sheets[0], entry)
+        if norm is not None and lifted:
+            norm.setdefault("warnings", []).append("The title is printed in merged cells over the column headings; it is read as the title.")
         if norm is None:
             report["rejected"][key] = why
             target.unlink(missing_ok=True)
             continue
         printed = (norm["printed_table_id"] or "").upper().replace(" ", "")
-        if printed and printed != entry["table"].upper().replace(" ", ""):
+        if printed and printed not in (entry["table"].upper().replace(" ", ""), re.sub(r"^WIRE", "", entry["table"].upper().replace(" ", ""))):
             report["rejected"][key] = f"title table {printed} != listing {entry['table']}"
             continue
         if sheets[0]["period_end_from_title"] and sheets[0]["period_end_from_title"] != entry["period_end"]:

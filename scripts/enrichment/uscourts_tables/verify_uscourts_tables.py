@@ -32,7 +32,7 @@ sys.path.insert(0, str(HERE))
 import fetchlib as F  # noqa: E402
 
 BUILD = F.ROOT / "private" / "build" / "uscourts_tables"
-COURT_DATASETS = ["uscourts_tables_district", "uscourts_tables_bankruptcy", "uscourts_tables_circuit", "uscourts_bapcpa"]
+COURT_DATASETS = ["uscourts_tables_district", "uscourts_tables_bankruptcy", "uscourts_tables_circuit", "uscourts_bapcpa", "uscourts_dnsw"]
 CATEGORY_DATASETS = ["uscourts_tables_national", "uscourts_bapcpa", "uscourts_wiretap"]
 # whole words, written independently of reconcile.py ("misdemeanor" is a count column)
 NON_ADDITIVE = re.compile(r"\b(?:percent|percentage|median|means?|averages?|avg|per|rates?|weighted|ratios?|months?|days?|times?|length|intervals?|index|shares?|judges?|judgeships?|costs?|dollars?)\b|%|\$", re.I)
@@ -72,6 +72,9 @@ def clean_keep_super(text):
 # ------------------------------------------------------------------------------------------------------------ source lookup
 def index_by_sha():
     index = json.loads((F.ACQ / "files_index.json").read_text())
+    reports = F.ACQ / "reports_index.json"  # the report publications outside the caseload listing (acquire_reports.py)
+    if reports.exists():
+        index = {**index, **{f"report|{k}": v for k, v in json.loads(reports.read_text()).items()}}
     return {e["sha256"]: e for e in index.values() if e.get("sha256")}
 
 
@@ -264,7 +267,7 @@ def tables_with_other_rows():
 def verify_sums():
     out = {"cells": 0, "match": 0, "mismatch": [], "incomplete": 0, "tables": 0, "skipped_tables_with_non_court_rows": []}
     non_court = tables_with_other_rows()
-    for ds in ("uscourts_tables_district", "uscourts_tables_bankruptcy", "uscourts_bapcpa"):
+    for ds in ("uscourts_tables_district", "uscourts_tables_bankruptcy", "uscourts_bapcpa", "uscourts_dnsw"):
         by_table = {}
         for row in load(ds)["rows"]:
             ust = row["item"].get("ust")
@@ -381,19 +384,27 @@ def verify_wiretap_sums():
                 if not present:
                     continue
                 total = next((r for r in rows if r["k"] == "national"), None)
-                fed = next((r for r in rows if r["path"] == ["Federal Total"]), None)
+                # the federal row of this period: "Federal Total" in the workbooks (and 2015), "FEDERAL" in the PDF reports before
+                fed = next((r for r in rows if r["path"] in (["Federal Total"], ["FEDERAL TOTAL"]) and v(r) is not None), None) or \
+                    next((r for r in rows if r["path"] == ["FEDERAL"] and v(r) is not None), None)
                 if total is None or fed is None or v(total) is None:
                     continue
                 groups = {}
                 for r in rows:
                     if len(r["path"]) == 2:
                         groups.setdefault(r["path"][0], []).append(r)
-                tops = [r for r in rows if len(r["path"]) == 1 and r["k"] not in ("national",) and r["path"] != ["Federal Total"]]
-                checks = [("Federal Total", v(fed) or 0, sum(v(r) or 0 for r in groups.get("Federal Total", [])))]
+                tops = [r for r in rows if len(r["path"]) == 1 and r["k"] not in ("national",) and r["path"][0].upper() not in ("FEDERAL TOTAL", "FEDERAL")]
+                checks = []
+                if groups.get(fed["path"][0]):
+                    checks.append((fed["label"], v(fed) or 0, sum(v(r) or 0 for r in groups[fed["path"][0]])))
                 for t in tops:
-                    if t["path"][0] in groups:
+                    if t["path"][0] in groups and v(t) is not None:
                         checks.append((t["label"], v(t) or 0, sum(v(r) or 0 for r in groups[t["path"][0]])))
-                checks.append(("Total", v(total), (v(fed) or 0) + sum(v(t) or 0 for t in tops)))
+                if any(v(t) is not None for t in tops):
+                    checks.append(("Total", v(total), (v(fed) or 0) + sum(v(t) or 0 for t in tops)))
+                else:  # an edition that prints its states as headings without figures: the Total is the federal row plus every jurisdiction
+                    local = [r for r in rows if len(r["path"]) == 2 and r["path"][0] != fed["path"][0]]
+                    checks.append(("Total", v(total), (v(fed) or 0) + sum(v(r) or 0 for r in local)))
                 for name, printed, summed in checks:
                     out["tests"] += 1
                     if printed == summed:

@@ -149,8 +149,10 @@ def court_tests(norm, positions, results):
                 parts_rows = [r for g in groups for r in g["rows"]]
             else:
                 parts_rows = [r for r in rows if r["entity"] == "district"]
-            # the Court of International Trade and the Federal Circuit rows some district tables print (V-1) are in the Total
-            parts_rows = parts_rows + [r for r in rows if r["entity"] == "other" and r["label"].strip().upper().rstrip(".") in SPECIAL_COURTS]
+            # the Court of International Trade and the Federal Circuit rows some district tables print (V-1) are in the Total, and so
+            # are the rows a table names in its own "total_includes" (the state judges' row of the delayed-notice warrant reports)
+            included = set(norm.get("total_includes") or ())
+            parts_rows = parts_rows + [r for r in rows if r["entity"] == "other" and (r["label"].strip().upper().rstrip(".") in SPECIAL_COURTS or r["entity_id"] in included)]
             _test(results, "national", "national", key, t, _sum(parts_rows, pos) if parts_rows else None)
 
 
@@ -195,12 +197,20 @@ def category_tests(norm, positions, results):
     children = defaultdict(list)
     by_path = {}
     for r in rows:
+        by_path.setdefault(tuple(r.get("path") or [r["label"]]), r)
+    for r in rows:
         path = tuple(r.get("path") or [r["label"]])
-        by_path.setdefault(path, r)
-        if len(path) > 1:
-            children[path[:-1]].append(r)
+        # a row's parent is its nearest ancestor that is a row with figures; section headings between them ("Contract Actions"
+        # inside "Federal Question") are path elements, not terms
+        for cut in range(len(path) - 1, 0, -1):
+            if path[:cut] in by_path:
+                children[path[:cut]].append(r)
+                break
     total = next((r for r in rows if r["entity"] == "national"), None)
     top = [r for r in rows if r is not total and len(r.get("path") or []) == 1]
+    if total is not None and children.get(tuple(total.get("path") or [total["label"]])):
+        # the Total row has rows of its own under it (a hierarchy read from the table's sums): the parent test covers it
+        top = []
     for pos in positions:
         key = norm["columns"][pos]["key"]
         for parent_path, kids in children.items():

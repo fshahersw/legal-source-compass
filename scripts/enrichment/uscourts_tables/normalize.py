@@ -9,7 +9,12 @@ Nothing is computed from values here.
 import re
 
 import entities as E
+import save_lookups as L
 import utx_parse as P
+
+# The court ids a row may carry: the 94 districts (bankruptcy courts are keyed by their district), former districts the directory
+# lists (save_lookups.HISTORICAL_DISTRICTS) and the combined Arkansas bankruptcy court.
+KNOWN_COURTS = set(L.pairs(L.DISTRICT_SUFFIX)) | set(L.HISTORICAL_DISTRICTS) | {"arcomb"}
 
 YEAR = re.compile(r"^(?:FY\s?)?((?:19|20)\d{2})$")
 PCT_WORDS = re.compile(r"percent|change|%|rate|share", re.I)
@@ -155,10 +160,18 @@ def classify_row(scope, label):
     if cid:
         return "circuit", cid
     did = "arcomb" if (scope == "bankruptcy" and clean.upper() == "AR") else E.district_id(clean, "d")
+    if did and did not in KNOWN_COURTS:
+        # A district code that names no court ("AK,E" and "AK,W" in the 8th Circuit block of Judicial Business S-19 FY2017, where
+        # every other edition prints AR,E and AR,W; "AR" outside a bankruptcy table, where Arkansas has two district courts): it
+        # stays a row of its circuit block, so the block's printed roll-up is still tested, but it is never given a court id.
+        return "district", f"unmatched:{clean}"
     return ("district", did) if did else ("other", P.slug(label))
 
 
-def normalize(sheet, entry):
+def normalize(sheet, entry, hierarchy_mode=None):
+    """hierarchy_mode for a category table: None reads the rows' paths from indentation unless the table repeats a label under the
+    same parent with different figures (then from its sums); "sums" reads them from the sums whenever the sums form a tree
+    (ingest.py decides this per table, so every edition of one table is read the same way); "indent" never uses the sums."""
     period_end = entry["period_end"]
     period_year = int(period_end[:4])
     printed_id, title, phrase = split_title(sheet["title_raw"])
@@ -231,11 +244,86 @@ def normalize(sheet, entry):
         # a row with figures ("Contract Actions, Total") is also the parent of the more deeply indented rows that follow it, so
         # the same child label under two parents ("Marine") stays two rows
         section_stack.append((indent, label))
+    hierarchy, ambiguous, warnings = "indent", [], []
+    want_sums = hierarchy_mode == "sums" or (hierarchy_mode is None and bool(repeated_entities(rows)))
+    if scope == "category" and want_sums:
+        resolved = rows_by_sums(sheet["rows"], columns)
+        if resolved is not None:
+            rows, ambiguous = resolved
+            hierarchy = "sums"
+            warnings.append("The row hierarchy was read from the table's own totals: each block row equals, in every count column, the "
+                            "sum of the rows printed under it (the table's indentation does not show its blocks).")
+            if ambiguous:
+                warnings.append(f"{len(ambiguous)} rows print the same label twice in one block with different figures and no heading "
+                                f"between them ({', '.join(sorted({a['label'] for a in ambiguous})[:4])}); they are left out of this period.")
     return {
+        **({"warnings": warnings} if warnings else {}),
         "pub": entry["pub"], "table": entry["table"], "table_key": table_slug(entry["table"]),
         "period_end": period_end, "months": months_of(phrase, None), "period_phrase": phrase,
         "title": title, "title_listing": entry["title"], "printed_table_id": printed_id,
         "scope": scope, "row_kinds": kinds, "label_header": sheet["label_header"],
         "columns": columns, "rows": rows, "notes": sheet["notes"], "note_marks": sheet.get("note_marks", {}), "sheet": sheet["sheet"],
-        "problems": problems,
+        "problems": problems, "hierarchy": hierarchy, "ambiguous_rows": ambiguous,
     }
+
+
+def category_rows(sheet_rows, columns, hierarchy_mode=None):
+    """(rows, hierarchy, ambiguous) for the rows of a category table read from another source than a workbook (a PDF text layer):
+    the same path rules as normalize(): indentation and section rows, or the table's printed sums (rows_by_sums) when the mode is
+    "sums" or, with no mode, when indentation leaves a label repeated under one parent with different figures."""
+    rows, stack = [], []
+    for r in sheet_rows:
+        label, indent = r["label"], r["indent"]
+        while stack and stack[-1][0] >= indent:
+            stack.pop()
+        if r["section"]:
+            stack.append((indent, label))
+            continue
+        path = [s[1] for s in stack] + [label]
+        key = "/".join(P.slug(p) for p in path)
+        entity = "national" if E.is_national(label) and not stack else "category"
+        rows.append({**r, "entity": entity, "entity_id": "national" if entity == "national" else key, "path": path})
+        stack.append((indent, label))
+    want_sums = hierarchy_mode == "sums" or (hierarchy_mode is None and bool(repeated_entities(rows)))
+    if want_sums:
+        resolved = rows_by_sums(sheet_rows, columns)
+        if resolved is not None:
+            return resolved[0], "sums", resolved[1]
+    return rows, "indent", []
+
+
+def repeated_entities(rows):
+    """Entity ids a category table prints more than once with different figures (labels repeated under the same parent)."""
+    first, repeated = {}, set()
+    for r in rows:
+        if r["entity_id"] in first and first[r["entity_id"]] != r["values"]:
+            repeated.add(r["entity_id"])
+        first.setdefault(r["entity_id"], r["values"])
+    return repeated
+
+
+def rows_by_sums(sheet_rows, columns):
+    """(rows, ambiguous) with each row's path taken from the table's printed sums (hierarchy.resolve), or None when the sums do not
+    form a tree. A path the table still prints twice with different figures (C-4 prints "Consumer Credit" twice in one block with no
+    heading between) cannot be told apart: those rows are left out of the period and listed in `ambiguous`; neither is chosen."""
+    import hierarchy as H
+    import reconcile as R
+
+    data = [r for r in sheet_rows]
+    # every count column is a test of the tree, the earlier years a multi-year table prints beside the current one included
+    positions = R.additive_positions({"columns": [{**c, "prior": False} for c in columns]})
+    parents = H.resolve(data, positions)
+    if parents is None:
+        return None
+    paths = H.paths(data, parents)
+    rows = []
+    for i, r in enumerate(data):
+        if i not in paths:
+            continue
+        path = paths[i]
+        key = "/".join(P.slug(p) for p in path)
+        entity = "national" if E.is_national(r["label"]) and len(path) == 1 else "category"
+        rows.append({**r, "entity": entity, "entity_id": "national" if entity == "national" else key, "path": path})
+    repeated = repeated_entities(rows)
+    ambiguous = [{"label": r["label"], "path": r["path"], "row": r.get("row")} for r in rows if r["entity_id"] in repeated]
+    return [r for r in rows if r["entity_id"] not in repeated], ambiguous

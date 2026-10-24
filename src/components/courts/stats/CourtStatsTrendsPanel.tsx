@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { RotateCw } from "lucide-react";
 import { Segmented, StateNote } from "@/components/enforcement/parts";
 import { HowToRead } from "@/components/analysis/HowToRead";
@@ -120,6 +121,7 @@ function Loaded({ trends }: { trends: CourtTrends }) {
     .sort()
     .at(-1);
   const subject = tables[0]?.courtLabel ?? trends.courtId;
+  const reported = trends.bankruptcy.find((t) => t.reportedWith)?.reportedWith ?? null;
   return (
     <section
       className="mb-5 rounded-lg border border-border bg-surface"
@@ -145,6 +147,23 @@ function Loaded({ trends }: { trends: CourtTrends }) {
           />
         ) : null}
       </div>
+      {reported ? (
+        <div className="px-3 pt-3">
+          <StateNote
+            action={
+              <Link
+                to="/courts/caseload"
+                search={{ tab: "bankruptcy", court: reported.court }}
+                className="rounded border border-border px-2 py-0.5 text-[11px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                Arkansas, E.D. and W.D. (one row)
+              </Link>
+            }
+          >
+            {`Bankruptcy filings: from the period ending ${reported.from} the U.S. Courts tables print the Eastern and Western districts of Arkansas in one row${reported.lastOwn ? `; this court\u2019s own row ends with the period ending ${reported.lastOwn}` : ""}. Later periods are shown for the combined row only, never split between the districts.`}
+          </StateNote>
+        </div>
+      ) : null}
       {charts.length ? (
         <div className="grid gap-3 p-3 md:grid-cols-2">
           {charts.map((c) => (

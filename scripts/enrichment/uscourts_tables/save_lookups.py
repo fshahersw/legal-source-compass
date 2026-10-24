@@ -41,6 +41,10 @@ ncwb=W.D. North Carolina;okwb=W.D. Oklahoma;pawb=W.D. Pennsylvania;tnwb=W.D. Ten
 wawb=W.D. Washington;wiwb=W.D. Wisconsin;nvb=D. Nevada;njb=D. New Jersey;rib=D. Rhode Island;wyb=D. Wyoming;nceb=E.D. North Carolina;
 flmb=M.D. Florida;txnb=N.D. Texas;alsb=S.D. Alabama;lawb=W.D. Louisiana"""
 
+# Former districts some tables still print (court_spine id -> name): Judicial Business S-19 prints "IL,E", footnoted "No longer a
+# separate district"; the directory's record for it is "District Court, E.D. Illinois" (id illinoised).
+HISTORICAL_DISTRICTS = {"illinoised": "E.D. Illinois (no longer a separate district)"}
+
 CIRCUIT_TITLE = {
     "cadc": "Court of Appeals for the D.C. Circuit", "ca1": "Court of Appeals for the First Circuit", "ca2": "Court of Appeals for the Second Circuit",
     "ca3": "Court of Appeals for the Third Circuit", "ca4": "Court of Appeals for the Fourth Circuit", "ca5": "Court of Appeals for the Fifth Circuit",
@@ -72,7 +76,9 @@ def build():
             district_to_bankruptcy[did] = ids[0]
     return {
         "districts": sorted(districts),
-        "district_titles": {k: f"U.S. District Court, {v}" for k, v in districts.items()},
+        "district_titles": {**{k: f"U.S. District Court, {v}" for k, v in districts.items()},
+                            **{k: f"U.S. District Court, {v}" for k, v in HISTORICAL_DISTRICTS.items()}},
+        "historical_districts": sorted(HISTORICAL_DISTRICTS),
         "bankruptcy": sorted(bankruptcy),
         "bankruptcy_titles": {k: f"U.S. Bankruptcy Court, {v}" for k, v in bankruptcy.items()},
         "district_to_bankruptcy": district_to_bankruptcy,
