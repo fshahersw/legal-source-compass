@@ -120,3 +120,57 @@ describe("patchSearch and tabSearch", () => {
     expect(normalizeCaseloadSearch({ q: 365 })).toEqual({ q: "365" });
   });
 });
+
+describe("published tables and bankruptcy tabs", () => {
+  it("keeps a series, its period choice, row, column and up to five compared courts", () => {
+    expect(
+      normalizeCaseloadSearch({
+        tab: "tables",
+        series: "f-2-three-months",
+        pub: "BF",
+        col: "predominant_nature_of_debt/business_filings/total",
+        court: "ca9",
+        cmp: "nysd,cacd,nysd,BAD,txsd,flsd,ilnd,mad",
+        q: "bankruptcy",
+        fpub: "BF",
+        fscope: "bankruptcy",
+        mdl: 2738,
+      }),
+    ).toEqual({
+      tab: "tables",
+      series: "f-2-three-months",
+      pub: "BF",
+      col: "predominant_nature_of_debt/business_filings/total",
+      court: "ca9",
+      cmp: "nysd,cacd,txsd,flsd,ilnd",
+      q: "bankruptcy",
+      fpub: "BF",
+      fscope: "bankruptcy",
+    });
+  });
+
+  it("drops malformed series keys, period choices, scopes and measures", () => {
+    expect(
+      normalizeCaseloadSearch({
+        tab: "tables",
+        series: "F 2",
+        pub: "jb",
+        fscope: "everywhere",
+        col: "A B",
+      }),
+    ).toEqual({ tab: "tables" });
+    expect(
+      normalizeCaseloadSearch({ tab: "bankruptcy", measure: "ch7", court: "azd", series: "c" }),
+    ).toEqual({ tab: "bankruptcy", measure: "ch7", court: "azd" });
+    expect(normalizeCaseloadSearch({ tab: "bankruptcy", measure: "everything" })).toEqual({
+      tab: "bankruptcy",
+    });
+  });
+
+  it("does not carry the published-table parameters into another tab", () => {
+    expect(patchSearch({ tab: "tables", series: "c", pub: "JB" }, { tab: "districts" })).toEqual(
+      {},
+    );
+    expect(tabSearch("bankruptcy")).toEqual({ tab: "bankruptcy" });
+  });
+});

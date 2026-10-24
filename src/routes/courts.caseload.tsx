@@ -20,8 +20,8 @@ export const Route = createFileRoute("/courts/caseload")({
   },
   head: () =>
     pageHead(
-      "Federal civil caseload",
-      "Federal civil cases filed, terminated and pending by district and nature of suit, FY1988 to FY2026, from the Federal Judicial Center Integrated Database, with the MDL docket numbers the data carries.",
+      "Federal caseload statistics",
+      "Federal civil cases by district and nature of suit from the Federal Judicial Center Integrated Database (FY1988 to FY2026), and every U.S. Courts published statistical table series (Judicial Business, Statistical Tables, Caseload Statistics, Bankruptcy Filings, BAPCPA and Wiretap reports) as trends by period, with quarterly bankruptcy filings through September 30, 2026.",
     ),
   component: Page,
 });
@@ -31,8 +31,8 @@ function Page() {
   const navigate = Route.useNavigate();
   return (
     <AppShell
-      title="Federal civil caseload"
-      description="Official federal civil case statistics by district court and nature of suit, FY1988 to FY2026, from the Federal Judicial Center Integrated Database. The newest fiscal year is partial and is never ranked."
+      title="Federal caseload statistics"
+      description="Federal civil cases by district and nature of suit from the Federal Judicial Center Integrated Database (FY1988 to FY2026; the newest fiscal year is partial and never ranked), and the U.S. Courts published statistical tables as trends by period, with quarterly bankruptcy filings."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Courts", to: "/courts" },
