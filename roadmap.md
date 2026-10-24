@@ -70,7 +70,7 @@
 - [x] Products & safety: one recalls change-since chart + latest-period dots; the four per-agency cards kept one click away ("Each agency's recalls by year")
 - [x] AI summary + Ask AI under every new lead chart pair (figures, source and period as context)
 - [x] Companies: method paragraph into "How companies are linked"; two duplicate KPI tiles folded into the summary line (listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md)
-- [ ] Litigation: stacked bars over time (filings by category)
+- [x] Litigation: federal civil filings by case type, FY2007–latest (five largest groups + national remainder, FJC IDB), with AI summary; stacked-bar axis ticks compact and year labels spaced to fit
 - [ ] Law: sunburst of code/CFR coverage
 - [ ] Companies / Insights: change-since chart for multi-series trends
 - [x] Court profiles: headline strip (cases filed, pending, pending MDLs, sitting judges) with AI summary; five sections (Court, Judges, Caseload, Cases & opinions, Rules & resources) behind a sticky index; sections with nothing for a court are hidden and dropped from the index; record scope note moved into "About this record" on every record page

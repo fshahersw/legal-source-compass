@@ -287,7 +287,8 @@ export function StackedBarsOverTime({
           )),
         )}
         {rows.map((r, j) =>
-          j % every === 0 || j === rows.length - 1 ? (
+          // The last period is always labelled; a regular label too close to it is skipped.
+          (j % every === 0 && rows.length - 1 - j >= every) || j === rows.length - 1 ? (
             <text
               key={r.period}
               x={(x(r.period) ?? 0) + x.bandwidth() / 2}
