@@ -1,7 +1,8 @@
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { RankBars, SmallMultiplesGrid, TimelineStrip } from "./context";
+import { bulletLayout } from "./axis";
+import { BulletBand, RankBars, SmallMultiplesGrid, TimelineStrip } from "./context";
 import { benchmark } from "./theme";
 
 const html = (node: ReactNode) => renderToStaticMarkup(node as never);
@@ -84,5 +85,42 @@ describe("context primitives", () => {
         }),
       ),
     ).toBe("");
+  });
+});
+
+describe("bullet band", () => {
+  it("places value, band and median on one track that includes zero", () => {
+    expect(bulletLayout(50, 0, 25, 100)).toEqual({ value: 50, min: 0, median: 25, max: 100 });
+    const p = bulletLayout(150, 20, 60, 100, false)!;
+    expect(p.value).toBe(100);
+    expect(p.min).toBe(0);
+    expect(bulletLayout(null, null, null, null)).toBeNull();
+  });
+
+  it("writes every number in text and marks a missing value Not recorded", () => {
+    const out = html(
+      createElement(BulletBand, {
+        rows: [
+          {
+            id: "a",
+            label: "Weighted filings per judgeship",
+            value: 612,
+            min: 120,
+            median: 495,
+            max: 1100,
+          },
+          { id: "b", label: "Months to disposition", value: null, min: 4, median: 8, max: 48 },
+        ],
+        format: fmt,
+        focusLabel: "N.D. Ill.",
+        ariaLabel: "Court against national",
+      }),
+    );
+    expect(out).toContain(
+      "Weighted filings per judgeship: 612; national median 495, range 120 to 1,100.",
+    );
+    expect(out).toContain("min 120 · median 495 · max 1,100");
+    expect(out).toContain("Months to disposition: Not recorded");
+    expect(out).toContain("N.D. Ill.");
   });
 });

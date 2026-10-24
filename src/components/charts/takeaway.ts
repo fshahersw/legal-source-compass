@@ -107,6 +107,12 @@ export type TrendTakeawayOptions = {
   flatBelow?: number;
   /** A peak counts as "since fallen" when the latest value is at least this much below it (percent). Default 10. */
   fallFromPeak?: number;
+  /**
+   * Longest span, in recorded periods, the change sentence compares across (default 10): a 50-year series is
+   * described by its last ten years ("rose 30% from 2015 to 2025"), not by a percentage from a tiny early base.
+   * Peaks and lows are always read over the whole series shown.
+   */
+  window?: number;
 };
 
 /**
@@ -136,15 +142,18 @@ export function trendTakeaway(
     ((s.peak.value - s.latest.value) / Math.abs(s.peak.value)) * 100 >= fallFromPeak
   )
     return `${subject} peaked at ${format(s.peak.value)} in ${s.peak.label}; ${format(s.latest.value)} in ${s.latest.label}`;
-  const p = s.change.percent;
+  const rec = recordedPoints(points);
+  const window = Math.max(1, options.window ?? 10);
+  const from = rec[Math.max(0, rec.length - 1 - window)]!;
+  const { absolute, percent: p } = changeBetween(from.value, s.latest.value);
   if (p === null) {
-    if (s.change.absolute === 0)
-      return `${subject} stood at ${format(s.latest.value)} in ${s.first.label} and ${s.latest.label}`;
-    return `${subject} ${s.change.absolute > 0 ? "rose" : "fell"} from ${format(s.first.value)} in ${s.first.label} to ${format(s.latest.value)} in ${s.latest.label}`;
+    if (absolute === 0)
+      return `${subject} stood at ${format(s.latest.value)} in ${from.label} and ${s.latest.label}`;
+    return `${subject} ${absolute > 0 ? "rose" : "fell"} from ${format(from.value)} in ${from.label} to ${format(s.latest.value)} in ${s.latest.label}`;
   }
   if (Math.abs(p) < flatBelow)
-    return `${subject} changed little from ${s.first.label} to ${s.latest.label} (${format(s.first.value)} to ${format(s.latest.value)})`;
-  return `${subject} ${p > 0 ? "rose" : "fell"} ${percentWords(p)} from ${s.first.label} to ${s.latest.label}, to ${format(s.latest.value)}`;
+    return `${subject} changed little from ${from.label} to ${s.latest.label} (${format(from.value)} to ${format(s.latest.value)})`;
+  return `${subject} ${p > 0 ? "rose" : "fell"} ${percentWords(p)} from ${from.label} to ${s.latest.label}, to ${format(s.latest.value)}`;
 }
 
 /** Change between the last two recorded complete points: "+4.4% vs FY2024" style building block. */

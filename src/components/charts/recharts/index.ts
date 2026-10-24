@@ -15,3 +15,6 @@ export type { ChartCardProps, KpiItem, TableSpec, ChartSource, ChartStatus } fro
 export * from "../takeaway";
 export * from "./charts";
 export * from "./context";
+export * from "./blocks";
+export { BlockCard } from "./BlockCard";
+export { tableCsv, csvFileName } from "../tableCsv";

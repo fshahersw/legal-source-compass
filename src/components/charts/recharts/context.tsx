@@ -7,6 +7,8 @@
  *   national or median line) in every panel, latest value and change on each panel. "How do these compare over time?"
  * - `TimelineStrip`: a compact column strip of a count over periods, the latest complete period in the accent, with
  *   first/last labels and the latest value. Replaces a bare count with its history.
+ * - `BulletBand`: the focus value as a marker over the benchmark's min–max band and median tick, one row per measure.
+ *   "Is this court busier or slower than its peers?"
  *
  * Benchmarks: pass `benchmark(label, value, format)` (theme.ts; a labelled reference) to RankBars, TrendLines or
  * TrendColumns.
@@ -27,7 +29,15 @@ import {
   YAxis,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import { niceAxis, plottedValues, tickText, categoryAxisWidth, fitText, labelWidth } from "./axis";
+import {
+  bulletLayout,
+  niceAxis,
+  plottedValues,
+  tickText,
+  categoryAxisWidth,
+  fitText,
+  labelWidth,
+} from "./axis";
 import type { ReferenceSpec } from "./charts";
 import {
   ACCENT,
@@ -499,5 +509,138 @@ export function TimelineStrip({
         <span>{points[points.length - 1]!.label}</span>
       </figcaption>
     </figure>
+  );
+}
+
+export type BulletRow = {
+  id: string;
+  /** Measure name ("Weighted filings per judgeship"). */
+  label: string;
+  value: number | null | undefined;
+  /** Benchmark distribution (national or peer): smallest, median and largest value. */
+  min: number | null | undefined;
+  median: number | null | undefined;
+  max: number | null | undefined;
+  /** Value text for this row (defaults to the chart's `format`). */
+  format?: ((v: number) => string) | undefined;
+  /** Short qualifier after the value ("rank 12 of 94"). */
+  note?: string | undefined;
+};
+
+/**
+ * Bullet chart against a benchmark band: for each measure, the focus value as an accent marker over the benchmark's
+ * min–max band with its median tick, all on one track. "Is this court busier or slower than its peers?" Values are
+ * written beside the label and the band's min · median · max under the track, so nothing is read off the marks.
+ */
+export function BulletBand({
+  rows,
+  format,
+  focusLabel = "This item",
+  benchmarkLabel = "National",
+  zero = true,
+  ariaLabel,
+  className,
+}: {
+  rows: readonly BulletRow[];
+  format: (v: number) => string;
+  focusLabel?: string | undefined;
+  benchmarkLabel?: string | undefined;
+  zero?: boolean | undefined;
+  ariaLabel: string;
+  className?: string | undefined;
+}) {
+  if (!rows.length)
+    return (
+      <p className={cn("text-xs text-muted-foreground", className)} role="status">
+        {NOT_RECORDED}: no measure to compare.
+      </p>
+    );
+  return (
+    <div className={className}>
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 pb-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="inline-block size-2.5 rounded-full"
+            style={{ background: ACCENT, boxShadow: "0 0 0 2px var(--surface)" }}
+          />
+          <span className="text-foreground">{focusLabel}</span>
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="inline-block h-2.5 w-5 rounded-sm bg-muted ring-1 ring-border"
+          />
+          {`${benchmarkLabel} range`}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span aria-hidden className="inline-block h-3 w-px bg-foreground/70" />
+          {`${benchmarkLabel} median`}
+        </span>
+      </p>
+      <ul className="space-y-3" aria-label={ariaLabel}>
+        {rows.map((r) => {
+          const f = r.format ?? format;
+          const pos = bulletLayout(r.value, r.min, r.median, r.max, zero);
+          const v = isNum(r.value) ? r.value : null;
+          const sr = `${r.label}: ${v === null ? NOT_RECORDED : f(v)}${isNum(r.median) ? `; ${benchmarkLabel.toLowerCase()} median ${f(r.median)}` : ""}${isNum(r.min) && isNum(r.max) ? `, range ${f(r.min)} to ${f(r.max)}` : ""}.`;
+          return (
+            <li key={r.id} className="min-w-0">
+              <span className="sr-only">{sr}</span>
+              <div aria-hidden className="flex items-baseline justify-between gap-3 text-xs">
+                <span className="min-w-0 truncate text-foreground" title={r.label}>
+                  {r.label}
+                </span>
+                <span className="shrink-0">
+                  <span className="text-sm font-semibold text-foreground">
+                    {v === null ? NOT_RECORDED : f(v)}
+                  </span>
+                  {r.note ? <span className="ml-1.5 text-muted-foreground">{r.note}</span> : null}
+                </span>
+              </div>
+              <div aria-hidden className="relative mt-1 h-4">
+                <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+                {pos && pos.min !== null && pos.max !== null ? (
+                  <div
+                    className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-sm bg-muted ring-1 ring-border"
+                    style={{ left: `${pos.min}%`, width: `${Math.max(0.5, pos.max - pos.min)}%` }}
+                  />
+                ) : null}
+                {pos && pos.median !== null ? (
+                  <div
+                    className="absolute top-0 h-4 w-px bg-foreground/70"
+                    style={{ left: `${pos.median}%` }}
+                  />
+                ) : null}
+                {pos && pos.value !== null ? (
+                  <div
+                    className="absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full"
+                    style={{
+                      left: `${pos.value}%`,
+                      background: ACCENT,
+                      boxShadow: "0 0 0 2px var(--surface)",
+                    }}
+                  />
+                ) : null}
+              </div>
+              {isNum(r.min) || isNum(r.median) || isNum(r.max) ? (
+                <p
+                  aria-hidden
+                  className="mt-0.5 text-[11px] leading-4 text-muted-foreground tabular-nums"
+                >
+                  {[
+                    isNum(r.min) ? `min ${f(r.min)}` : null,
+                    isNum(r.median) ? `median ${f(r.median)}` : null,
+                    isNum(r.max) ? `max ${f(r.max)}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

@@ -21,6 +21,7 @@ import {
   ArrowDown,
   ArrowRight,
   ArrowUp,
+  Download,
   ExternalLink,
   Info,
   LineChart,
@@ -32,6 +33,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { chartTokens } from "./palette";
+import { csvFileName, tableCsv } from "./tableCsv";
 
 export type ChartSource = { label: string; url: string };
 
@@ -327,6 +329,18 @@ function ViewToggle({
   );
 }
 
+function downloadCsv(table: TableSpec) {
+  const blob = new Blob([tableCsv(table)], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = csvFileName(table.caption);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function ChartCard({
   title,
   subtitle,
@@ -449,7 +463,23 @@ export function ChartCard({
             </div>
           ) : null}
           <div id={bodyId} className={cn("min-w-0", padded ? "px-4 pb-3 pt-2" : "")}>
-            {table && view === "table" ? <DataTableView table={table} /> : children}
+            {table && view === "table" ? (
+              <div className="space-y-1.5">
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => downloadCsv(table)}
+                    className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    <Download className="size-3.5" aria-hidden />
+                    Download CSV
+                  </button>
+                </div>
+                <DataTableView table={table} />
+              </div>
+            ) : (
+              children
+            )}
           </div>
           {footnotes?.length ? (
             <div className="space-y-0.5 px-4 pb-2 text-[11px] leading-4 text-muted-foreground">

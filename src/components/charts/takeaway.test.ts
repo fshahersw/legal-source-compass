@@ -79,6 +79,9 @@ describe("trendTakeaway", () => {
     expect(trendTakeaway("Filings", pts([0, 3]), fmt)).toBe(
       "Filings rose from 0 in 2014 to 3 in 2015",
     );
+    // a long series is described over its last ten recorded periods
+    const long = pts([1, 1, 5, 100, 100, 100, 100, 100, 100, 100, 100, 100, 120, 130, 125], 2000);
+    expect(trendTakeaway("Recalls", long, fmt)).toBe("Recalls rose 25% from 2004 to 2014, to 125");
   });
 });
 

@@ -119,3 +119,24 @@ export function tickIndices(count: number, available: number, widest: number): n
   for (let i = (count - 1) % step; i < count; i += step) out.push(i);
   return out;
 }
+
+/**
+ * Positions (0–100 %) of a value, a min–max band and a median on one bullet track. The track runs from the smallest
+ * to the largest of the four numbers (and zero when `zero`), so the marker is always inside it. Null when nothing is
+ * recorded.
+ */
+export function bulletLayout(
+  value: number | null | undefined,
+  min: number | null | undefined,
+  median: number | null | undefined,
+  max: number | null | undefined,
+  zero = true,
+): { value: number | null; min: number | null; median: number | null; max: number | null } | null {
+  const vals = [value, min, median, max].filter(isNum);
+  if (!vals.length) return null;
+  const lo = Math.min(...vals, ...(zero ? [0] : []));
+  const hi = Math.max(...vals);
+  const pos = (v: number | null | undefined) =>
+    isNum(v) ? (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100) : null;
+  return { value: pos(value), min: pos(min), median: pos(median), max: pos(max) };
+}
