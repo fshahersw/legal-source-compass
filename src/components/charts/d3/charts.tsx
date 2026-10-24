@@ -3,49 +3,123 @@
 import { useMemo, useState } from "react";
 import { scaleBand, scaleLinear, scalePoint } from "d3-scale";
 import { arc as d3arc, line as d3line } from "d3-shape";
-import { divergingDomain, rebase, stackLayers, sunburstLayout, type Series, type StackRow, type TreeNode } from "./maths";
+import { divergingDomain, rebase, spreadLabels, stackLayers, sunburstLayout, type Series, type StackRow, type TreeNode } from "./maths";
 import { chartTokens, seriesVar } from "../palette";
 
 const W = 640;
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${Math.round(v * 100)}%`;
 
-export function IndexChart({ series, height = 280 }: { series: readonly Series[]; height?: number }) {
+export function IndexChart({
+  series,
+  height = 280,
+  formatDate = (d: string) => d,
+  labelWidth = 150,
+}: {
+  series: readonly Series[];
+  height?: number;
+  formatDate?: (d: string) => string;
+  /** Room at the right for the end-of-line labels. */
+  labelWidth?: number;
+}) {
   const dates = series[0]?.points.map((p) => p.date) ?? [];
-  const [base, setBase] = useState(dates[0] ?? "");
+  const [baseIdx, setBaseIdx] = useState(0);
+  const base = dates[Math.min(baseIdx, Math.max(0, dates.length - 1))] ?? "";
   const data = useMemo(() => rebase(series.slice(0, 6), base), [series, base]);
   const vals = data.flatMap((s) => s.points.map((p) => p.value)).filter((v): v is number => v != null);
-  const x = scalePoint<string>().domain(dates).range([40, W - 90]);
-  const y = scaleLinear().domain([Math.min(0, ...vals), Math.max(0, ...vals)]).nice().range([height - 24, 12]);
+  const right = W - labelWidth;
+  const x = scalePoint<string>().domain(dates).range([44, right]);
+  const y = scaleLinear()
+    .domain([Math.min(0, ...vals), Math.max(0, ...vals)])
+    .nice()
+    .range([height - 28, 12]);
   const ln = d3line<{ date: string; value: number | null }>()
     .defined((p) => p.value != null)
     .x((p) => x(p.date) ?? 0)
     .y((p) => y(p.value ?? 0));
+  const ends = data.map((s) => [...s.points].reverse().find((p) => p.value != null) ?? null);
+  const labelY = spreadLabels(
+    ends.map((e) => (e ? y(e.value!) : 0)),
+    13,
+    12,
+    height - 28,
+  );
+  const pick = (clientX: number, el: Element) => {
+    const r = el.getBoundingClientRect();
+    const px = ((clientX - r.left) / r.width) * W;
+    let best = 0;
+    dates.forEach((d, i) => {
+      if (Math.abs((x(d) ?? 0) - px) < Math.abs((x(dates[best]!) ?? 0) - px)) best = i;
+    });
+    if (best !== baseIdx) setBaseIdx(best);
+  };
+  if (dates.length < 2 || !data.length) return null;
   return (
-    <svg style={chartTokens} viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label={`Change since ${base}`}
-      onMouseMove={(e) => {
-        const r = e.currentTarget.getBoundingClientRect();
-        const px = ((e.clientX - r.left) / r.width) * W;
-        const near = dates.reduce((a, d) => (Math.abs((x(d) ?? 0) - px) < Math.abs((x(a) ?? 0) - px) ? d : a), base);
-        if (near !== base) setBase(near);
-      }}>
-      {y.ticks(5).map((t) => (
-        <g key={t}>
-          <line x1={40} x2={W - 90} y1={y(t)} y2={y(t)} style={{ stroke: "var(--border)" }} strokeDasharray={t === 0 ? undefined : "2 3"} />
-          <text x={34} y={y(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px]">{pct(t)}</text>
-        </g>
-      ))}
-      <line x1={x(base)} x2={x(base)} y1={12} y2={height - 24} style={{ stroke: "var(--foreground)" }} opacity={0.4} />
-      <text x={x(base)} y={height - 8} textAnchor="middle" className="fill-foreground text-[10px] font-medium">{base}</text>
-      {data.map((s, i) => {
-        const last = [...s.points].reverse().find((p) => p.value != null);
-        return (
-          <g key={s.id}>
-            <path d={ln(s.points as never) ?? ""} fill="none" style={{ stroke: seriesVar(i) }} strokeWidth={2} />
-            {last && <text x={(x(last.date) ?? 0) + 6} y={y(last.value!)} dy="0.32em" style={{ fill: seriesVar(i) }} className="text-[10px] font-medium">{s.label} {pct(last.value!)}</text>}
+    <div>
+      <svg
+        style={chartTokens}
+        viewBox={`0 0 ${W} ${height}`}
+        className="w-full touch-pan-y"
+        role="img"
+        aria-label={`Change in each series since ${formatDate(base)}`}
+        onMouseMove={(e) => pick(e.clientX, e.currentTarget)}
+        onTouchMove={(e) => e.touches[0] && pick(e.touches[0].clientX, e.currentTarget)}
+      >
+        {y.ticks(5).map((t) => (
+          <g key={t}>
+            <line
+              x1={44}
+              x2={right}
+              y1={y(t)}
+              y2={y(t)}
+              style={{ stroke: t === 0 ? "var(--chart-axis)" : "var(--chart-grid)" }}
+              strokeDasharray={t === 0 ? undefined : "2 3"}
+            />
+            <text x={38} y={y(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px] tabular-nums">
+              {pct(t)}
+            </text>
           </g>
-        );
-      })}
-    </svg>
+        ))}
+        <text x={44} y={height - 8} className="fill-muted-foreground text-[10px]">{formatDate(dates[0]!)}</text>
+        <text x={right} y={height - 8} textAnchor="end" className="fill-muted-foreground text-[10px]">
+          {formatDate(dates[dates.length - 1]!)}
+        </text>
+        <line x1={x(base)} x2={x(base)} y1={12} y2={height - 28} style={{ stroke: "var(--chart-ink)" }} opacity={0.45} />
+        <rect x={(x(base) ?? 0) - 34} y={height - 20} width={68} height={16} rx={3} style={{ fill: "var(--chart-ink)" }} />
+        <text x={x(base)} y={height - 8} textAnchor="middle" style={{ fill: "var(--chart-surface)" }} className="text-[10px] font-medium">
+          {formatDate(base)}
+        </text>
+        {data.map((s, i) => {
+          const last = ends[i];
+          return (
+            <g key={s.id}>
+              <path d={ln(s.points as never) ?? ""} fill="none" style={{ stroke: seriesVar(i) }} strokeWidth={2} />
+              {last ? (
+                <text x={right + 6} y={labelY[i]} dy="0.32em" style={{ fill: seriesVar(i) }} className="text-[10px] font-medium">
+                  {pct(last.value!)} {s.label}
+                </text>
+              ) : (
+                <text x={right + 6} y={labelY[i]} dy="0.32em" className="fill-muted-foreground text-[10px] italic">
+                  {s.label}: not recorded at {formatDate(base)}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <label className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="shrink-0">Compare with</span>
+        <input
+          type="range"
+          min={0}
+          max={dates.length - 1}
+          value={baseIdx}
+          onChange={(e) => setBaseIdx(Number(e.target.value))}
+          className="w-full accent-[var(--brand)]"
+          aria-valuetext={formatDate(base)}
+        />
+        <span className="w-16 shrink-0 text-right font-medium text-foreground tabular-nums">{formatDate(base)}</span>
+      </label>
+    </div>
   );
 }
 

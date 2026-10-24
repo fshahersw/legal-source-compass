@@ -58,3 +58,18 @@ export function sunburstLayout(root: TreeNode, radius: number): HierarchyRectang
     .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
   return partition<TreeNode>().size([2 * Math.PI, radius])(h).descendants();
 }
+
+/** Spread end-of-line labels so none sits closer than `gap` to its neighbour, keeping order and staying in [min, max]. */
+export function spreadLabels(ys: readonly number[], gap: number, min: number, max: number): number[] {
+  const order = ys.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
+  const out = order.map((o) => Math.min(max, Math.max(min, o.y)));
+  for (let k = 1; k < out.length; k += 1) out[k] = Math.max(out[k]!, out[k - 1]! + gap);
+  const over = out.length ? out[out.length - 1]! - max : 0;
+  if (over > 0) {
+    out[out.length - 1] = max;
+    for (let k = out.length - 2; k >= 0; k -= 1) out[k] = Math.min(out[k]!, out[k + 1]! - gap);
+  }
+  const res = new Array<number>(ys.length);
+  order.forEach((o, k) => (res[o.i] = out[k]!));
+  return res;
+}

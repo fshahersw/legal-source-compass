@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { divergingDomain, rebase, stackLayers, sunburstLayout } from "./maths";
+import { divergingDomain, rebase, spreadLabels, stackLayers, sunburstLayout } from "./maths";
 
 describe("d3 maths", () => {
   it("rebases to the chosen date and keeps gaps null", () => {
@@ -22,5 +22,9 @@ describe("d3 maths", () => {
     const nodes = sunburstLayout({ name: "r", children: [{ name: "a", value: 3 }, { name: "b", value: 1 }] }, 100);
     const a = nodes.find((n) => n.data.name === "a")!;
     expect(a.x1 - a.x0).toBeCloseTo(1.5 * Math.PI);
+  });
+  it("spreads colliding labels apart and keeps them in bounds", () => {
+    expect(spreadLabels([50, 52, 200], 12, 0, 300)).toEqual([50, 62, 200]);
+    expect(spreadLabels([295, 298], 12, 0, 300)).toEqual([288, 300]);
   });
 });
