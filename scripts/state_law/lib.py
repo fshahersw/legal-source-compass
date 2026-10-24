@@ -632,7 +632,7 @@ _CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+(?:effective|enact
                                  r"Effective\s+\d+\s+(?:years?|months?|days?)\s+after\b)[^\)\]]*[\)\]]", re.I)
 # Nevada: "[Effective on the later of January 1, 2027, or the date on which the Director ... notifies ...]" -- not in
 # effect before that date whatever the event; once the date has passed, whether the event occurred is not printed
-_LATER_OF_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:on\s+)?the\s+later\s+of\s+(" + _DATE_WORDS + r")[^\)\]]*[\)\]]", re.I)
+_LATER_OF_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:on\s+)?the\s+later\s+of\s+(" + _DATE_WORDS + r")?[^\)\]]*[\)\]]", re.I)
 _QUALIFIED_RE = re.compile(r"\b(unless|contingent|subject to|or upon|until (?:the|such)|if|when)\b", re.I)
 # South Carolina's first text line: "Section effective until July 1, 2027. See, also, section 57-3-20 effective ..."
 _SECTION_EFFECTIVE_LINE_RE = re.compile(r"^Section effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")\.", re.I)
@@ -672,7 +672,7 @@ def effective_marker(heading: str | None, today: _dt.date) -> dict:
         later = _LATER_OF_MARK_RE.search(heading or "")
         if later:
             marker = norm_ws(later.group(0))
-            day = _marker_date(later.group(1))
+            day = _marker_date(later.group(1)) if later.group(1) else None
             if day is not None and day > today:
                 return {"status": "future_effective", "status_basis": "publisher_marker", "status_marker": marker,
                         "effective": {"start": None, "end": None, "note": marker}}

@@ -241,6 +241,9 @@ class EffectiveMarkerTests(unittest.TestCase):
         self.assertEqual((later["status"], later["effective"]["start"]), ("future_effective", None))
         self.assertEqual(lib.effective_marker("Fees. [Effective on the later of January 1, 2026, " + notify, today)["status"],
                          "not_recorded")
+        self.assertEqual(lib.effective_marker("License. [Effective on the later of the date on which the Director notifies "
+                                              "the Governor, or the date on which the Director notifies the Bureau.]",
+                                              today)["status"], "not_recorded")
         self.assertEqual(lib.effective_marker("(Effective on July 1, 2027) Rates", today)["status"], "future_effective")
 
     def test_first_line_and_module_dates(self):
