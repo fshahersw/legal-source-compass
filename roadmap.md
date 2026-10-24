@@ -61,7 +61,7 @@
 - [x] d3 chart forms: change-since (index) chart, stacked bars over time, above/below-baseline dots, sunburst (`src/components/charts/d3/`, maths tested)
 - [x] Map zoom and pan (buttons, Ctrl+scroll, drag, reset) on every MetricMap
 - [x] Places: highest/lowest 5 states vs the median, following the selected measure
-- [ ] Places home: tidy header, KPI strip from the selected measure
+- [x] Places home: AI summary + Ask AI for the selected measure (median, highest and lowest five, states with a value) under the comparison chart
 - [x] Courts & judges: change-since chart of federal caseloads (civil, criminal, MDL pending; fiscal years) + latest-year dots
 - [x] Law & government: Federal Register final/proposed rules by year and bills per Congress split by became law (stacked, unfinished periods faded)
 - [ ] Courts & judges: dots vs national baseline where a per-court measure exists
