@@ -509,6 +509,42 @@ class MarylandMarkTests(unittest.TestCase):
         self.assertEqual((m.group(1), m.group(2)), ("5-101", "Definitions apply."))
 
 
+class LouisianaSectionLineTests(unittest.TestCase):
+    """The section line "§2.2.  Heading" is section 2.2: a decimal number keeps its fractional part and the heading is
+    only what follows the dot-and-space (a repealed stub's heading is the marker, so it is classified as repealed)."""
+
+    @staticmethod
+    def page(label: str, paragraphs: list[str]) -> lib.Fetched:
+        body = "".join(f"<p>{p}</p>" for p in paragraphs)
+        html = (f'<html><head><meta charset="utf-8"></head><body><span id="LabelName">{label}</span>'
+                f'<div id="LabelDocument">{body}</div></body></html>')
+        return fetched("https://legis.la.gov/legis/LawPrint.aspx?d=1", html.encode())
+
+    def test_decimal_repealed_stub_is_a_marker_heading(self):
+        module = load("la")
+        parsed = module.parse_lawprint(self.page("RS 2:2.2", ["§2.2. Repealed by Acts 2008, No. 326, §1."]))
+        self.assertEqual(parsed["heading"], "Repealed by Acts 2008, No. 326, §1.")
+        self.assertEqual(parsed["text"], "")
+        self.assertEqual(lib.classify_status(parsed["heading"], parsed["text"])[0], "repealed")
+
+    def test_decimal_section_with_text_keeps_a_clean_heading(self):
+        module = load("la")
+        parsed = module.parse_lawprint(self.page("RS 9:5604.1", [
+            "§5604.1.  Catchline of the section", "A. The operative text.", "Acts 1990, No. 1091, §1."]))
+        self.assertEqual(parsed["heading"], "Catchline of the section")
+        self.assertEqual(parsed["text"], "A. The operative text.")
+        self.assertEqual(parsed["history"], "Acts 1990, No. 1091, §1.")
+
+    def test_integer_section_and_article_lines_are_unchanged(self):
+        module = load("la")
+        parsed = module.parse_lawprint(self.page("RS 9:5604", ["§5604.  Prescription", "Text.", "Acts 1990, No. 1091."]))
+        self.assertEqual(parsed["heading"], "Prescription")
+        parsed = module.parse_lawprint(self.page("CC 3492", ["Art. 3492.  Delictual actions", "Text."]))
+        self.assertEqual(parsed["heading"], "Delictual actions")
+        self.assertEqual(module.SECTION_RE.match("§2.2.").group(1), "2.2")
+        self.assertEqual(module.SECTION_RE.match("§2.2. Heading").group(2), "Heading")
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):

@@ -56,7 +56,9 @@ META = lib.StateMeta(
 
 HISTORY_RE = re.compile(r"^(?:Acts\s+\d{4}|Amended by|Added by|Amended and reenacted|Enacted by|Redesignated|"
                         r"Repealed by|Reenacted|Re-enacted|Source:|Transferred by|Renumbered|Amended and renumbered)")
-SECTION_RE = re.compile(r"^(?:§|Art\.)\s*([0-9][0-9A-Za-z.:\-]*?)\.\s*(.*)$")
+# The number ends at the first dot that is followed by whitespace or the end of the line ("§2.2.  Repealed ..." is
+# section 2.2, not section 2 headed "2. Repealed ..."), so decimal numbers keep their fractional part
+SECTION_RE = re.compile(r"^(?:§|Art\.)\s*([0-9][0-9A-Za-z.:\-]*?)\.(?=\s|$)\s*(.*)$")
 TITLE_RE = re.compile(r"^TITLE\s+([0-9A-Z.\-]+)$")
 
 
