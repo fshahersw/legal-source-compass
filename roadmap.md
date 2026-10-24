@@ -68,6 +68,8 @@
 - [x] Litigation: change-since chart of the 5 largest pending MDLs + biggest 12-month rises/falls (JPML)
 - [x] Enforcement: change-since chart by agency (calendar-year series only; FY series named, not mixed; coverage-change markers honoured) + latest-period change dots
 - [x] Products & safety: one recalls change-since chart + latest-period dots; the four per-agency cards kept one click away ("Each agency's recalls by year")
+- [x] AI summary + Ask AI under every new lead chart pair (figures, source and period as context)
+- [x] Companies: method paragraph into "How companies are linked"; two duplicate KPI tiles folded into the summary line (listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md)
 - [ ] Litigation: stacked bars over time (filings by category)
 - [ ] Law: sunburst of code/CFR coverage
 - [ ] Companies / Insights: change-since chart for multi-series trends
