@@ -135,7 +135,7 @@ export function EntityPage({
             />
           ) : null}
           {key.length ? (
-            <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">
+            <dl className="grid flex-1 content-start grid-cols-1 gap-x-6 gap-y-2.5 text-[13px] sm:grid-cols-2">
               {key.map(([k, val], i) => (
                 <div key={i} className="min-w-0">
                   <dt className="text-[11px] text-muted-foreground">{k}</dt>

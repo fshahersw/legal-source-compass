@@ -74,7 +74,7 @@
 - [ ] Law: sunburst of code/CFR coverage
 - [ ] Companies / Insights: change-since chart for multi-series trends
 - [x] Court profiles: headline strip (cases filed, pending, pending MDLs, sitting judges) with AI summary; five sections (Court, Judges, Caseload, Cases & opinions, Rules & resources) behind a sticky index; sections with nothing for a court are hidden and dropped from the index; record scope note moved into "About this record" on every record page
-- [ ] Court profile: condense the identity facts box (name/type/system repeat the header)
+- [x] Record identity box: facts the header already prints (title, a subtitle part) move to "More details"; facts pack at the top beside the photo
 - [x] Judge profiles: Career, Practices, Cases & MDLs, Disclosures behind the sticky index; the record's own sections sit under "Record details" (one index, no second sticky strip)
 - [x] Company profiles: six tabs folded into four views (Overview, Financials, Documents & filings, Litigation); every former ?tab= address opens its view with its part first
 - [x] Agency profiles: AI summary under the headline figures; overview in five sections (Rulemaking, Pipeline, Money, Law and structure, Data) behind the sticky index; "Rules & notices" and "All documents" merged into one Documents tab (recent 12, then browse all)
