@@ -206,7 +206,7 @@ export function SourceFooter({
         className,
       )}
     >
-      <div data-slot="source-text" className="min-w-0 flex-1 truncate" title={sourceTitle}>
+      <div data-slot="source-text" className="min-w-0 flex-1 truncate">
         {period ? <span data-item="period">{period}</span> : null}
       </div>
       <div data-slot="source-actions" className="-my-0.5 flex shrink-0 items-center gap-1">
