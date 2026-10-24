@@ -25,6 +25,7 @@ import {
   caseLawConfigured,
 } from "./citationVerify.server";
 import { pageWindow } from "./textWindow";
+import { CASE_LAW_TOOL, runCaseLawSearch } from "./caseLawSearch.server";
 
 export { publicUrl, pageWindow };
 import type { AssistantSource } from "./protocol";
@@ -143,20 +144,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ["url"],
     },
   },
-  {
-    name: "search_case_law",
-    description:
-      "Search U.S. court opinions (type o) or federal dockets (type r) in the free law archive. Returns case names, courts, dates, citations and links.",
-    input_schema: {
-      type: "object",
-      properties: {
-        query: { type: "string" },
-        type: { type: "string", enum: ["o", "r"] },
-        court: { type: "string", description: "Optional court id, e.g. cand or ca9." },
-      },
-      required: ["query"],
-    },
-  },
+  CASE_LAW_TOOL,
   ...OFFICIAL_TOOL_DEFINITIONS,
   ...STATUTE_TOOL_DEFINITIONS,
   ...SEMANTIC_TOOL_DEFINITIONS,
@@ -432,45 +420,7 @@ function pageOutcome(
 }
 
 async function caseLawTool(input: Record<string, unknown>): Promise<ToolOutcome> {
-  const key = env("COURTLISTENER_API_KEY");
-  if (!key) throw new Error("case-law search is not configured");
-  const q = str(input["query"], 300).trim();
-  if (!q) throw new Error("query required");
-  const type = input["type"] === "r" ? "r" : "o";
-  const params = new URLSearchParams({ q, type, order_by: "score desc" });
-  const court = str(input["court"], 40);
-  if (/^[a-z0-9]{2,20}$/.test(court)) params.set("court", court);
-  const res = await timed(25000, (signal) =>
-    fetch(`https://www.courtlistener.com/api/rest/v4/search/?${params}`, {
-      signal,
-      headers: { authorization: `Token ${key}` },
-    }),
-  );
-  if (!res.ok) throw new Error(`case-law search failed (${res.status})`);
-  const body = (await res.json()) as { count?: number; results?: Record<string, unknown>[] };
-  const results = (body.results ?? []).slice(0, 10).map((x) => ({
-    case: x["caseName"] ?? x["case_name"],
-    court: x["court"] ?? x["court_id"],
-    date: x["dateFiled"] ?? x["date_filed"],
-    citation: x["citation"],
-    docket: x["docketNumber"],
-    url:
-      typeof x["absolute_url"] === "string"
-        ? `https://www.courtlistener.com${x["absolute_url"]}`
-        : null,
-    snippet: Array.isArray(x["opinions"])
-      ? str((x["opinions"][0] as Record<string, unknown> | undefined)?.["snippet"], 500)
-      : str(x["snippet"], 500),
-  }));
-  return {
-    content: clip(JSON.stringify({ count: body.count ?? null, results })),
-    sources: results
-      .filter((x) => x.url)
-      .slice(0, 6)
-      .map((x) => ({ title: String(x.case ?? "Case"), url: x.url!, internal: false })),
-    label: type === "o" ? "Searched case law" : "Searched federal dockets",
-    detail: `“${q}” · ${results.length} results`,
-  };
+  return await runCaseLawSearch(input, env("COURTLISTENER_API_KEY"));
 }
 
 function codeSearchTool(input: Record<string, unknown>): ToolOutcome {
