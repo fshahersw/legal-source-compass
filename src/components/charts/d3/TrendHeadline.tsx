@@ -103,7 +103,39 @@ export function TrendHeadline({
       </span>
     ) : undefined;
 
+  const aiTitle = `${subject[0]!.toUpperCase()}${subject.slice(1)}: trends`;
+  const period = start && lastDate ? `${fmtX(dates[0]!)}–${fmtX(lastDate)}` : null;
+  const context =
+    loading || !blocks.length
+      ? null
+      : buildSectionContext({
+          id: sectionId,
+          title: aiTitle,
+          scope: "United States",
+          period,
+          source: uniqueSources.map((x) => x.label).join("; "),
+          figures: [
+            ...ranked.map((r) => ({
+              label: `${r.s.label}: change since ${fmtX(start!)}`,
+              value: r.end!.value! * 100,
+              unit: "%",
+              decimals: 1,
+              period: `${fmtX(start!)}–${fmtX(r.end!.date)}`,
+            })),
+            ...changes.flatMap(({ b, c, latest }) => [
+              { label: `${b.label}, ${latest!.period}`, value: latest!.value, unit: b.block.unit },
+              {
+                label: `${b.label}: change on ${c!.comparedWith}`,
+                value: c!.percent,
+                unit: "%",
+                decimals: 1,
+              },
+            ]),
+          ],
+        });
+
   return (
+    <section id={sectionId} aria-label={aiTitle} className="space-y-3">
     <div
       className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
       data-testid="trend-headline"
