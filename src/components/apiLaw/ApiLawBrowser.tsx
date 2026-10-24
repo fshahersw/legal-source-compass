@@ -68,8 +68,8 @@ export function ApiLawBrowser({
   if (facets.data === null)
     return (
       <StateNote>
-        {ds.label} is not published yet. When the lead loads it, the {ds.noun} appear here with
-        their official links.
+        This dataset ({ds.label}) is not published yet. Once it is loaded, the {ds.noun} appear here
+        with their official links.
       </StateNote>
     );
 
