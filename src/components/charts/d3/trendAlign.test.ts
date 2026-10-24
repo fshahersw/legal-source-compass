@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { TrendBlockData } from "@/lib/analytics/trend";
 import { alignTrends } from "./trendAlign";
 
-const block = (xKind: "year" | "fy", pts: [string, number | null, boolean?][]): TrendBlockData =>
+const block = (
+  xKind: "year" | "fy",
+  pts: [string, number | null, boolean?][],
+  markers: { x: string; label: string }[] = [],
+): TrendBlockData =>
   ({
     id: "x",
     xKind,
@@ -18,7 +22,7 @@ const block = (xKind: "year" | "fy", pts: [string, number | null, boolean?][]): 
     asOf: null,
     notes: [],
     gaps: 0,
-    markers: [],
+    markers,
   }) as TrendBlockData;
 
 describe("alignTrends", () => {
@@ -57,5 +61,14 @@ describe("alignTrends", () => {
         { id: "b", label: "B", block: block("year", [["2020", 1], ["2021", 2]]) },
       ]),
     ).toBeNull();
+  });
+  it("leaves out periods before a coverage change marker", () => {
+    const r = alignTrends([
+      { id: "a", label: "A", block: block("year", [["2018", 1], ["2019", 50], ["2020", 55], ["2021", 60]], [{ x: "2019", label: "Coverage changes" }]) },
+      { id: "b", label: "B", block: block("year", [["2018", 5], ["2019", 6], ["2020", 7], ["2021", 8]]) },
+    ]);
+    expect(r!.series[0]!.points.map((p) => p.value)).toEqual([null, 50, 55, 60]);
+    expect(r!.commonStart).toBe(1);
+    expect(r!.cutAt).toEqual([{ id: "a", label: "A", x: "2019", marker: "Coverage changes" }]);
   });
 });

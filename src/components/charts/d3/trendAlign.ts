@@ -15,6 +15,8 @@ export type AlignedTrends = {
   commonStart: number;
   /** Periods dropped because a source marked them unfinished. */
   partialDropped: string[];
+  /** Series whose earlier periods are left out because the source marks a change in what is counted. */
+  cutAt: { id: string; label: string; x: string; marker: string }[];
 };
 
 export function alignTrends(
@@ -28,10 +30,16 @@ export function alignTrends(
   const used = blocks.filter((b) => b.block.xKind === xKind);
   const leftOut = blocks.filter((b) => b.block.xKind !== xKind).map((b) => b.id);
   const partialDropped = new Set<string>();
+  const cutAt: AlignedTrends["cutAt"] = [];
+  const byNum = (a: string, b: string) => a.localeCompare(b, "en", { numeric: true });
   const perSeries = used.map((b) => {
     const s = b.block.series[b.block.primary] ?? b.block.series[0];
     const at = new Map<string, number | null>();
+    // a marker means what is counted changes there: only the periods from the last marker on are comparable
+    const lastMarker = [...b.block.markers].sort((m, n) => byNum(m.x, n.x)).pop();
+    if (lastMarker) cutAt.push({ id: b.id, label: b.label, x: lastMarker.x, marker: lastMarker.label });
     for (const p of s?.points ?? []) {
+      if (lastMarker && byNum(p.x, lastMarker.x) < 0) continue;
       if (p.partial) {
         partialDropped.add(p.x);
         continue;
@@ -58,5 +66,5 @@ export function alignTrends(
     0,
     dates.findIndex((d) => series.every((s) => (s.points.find((p) => p.date === d)?.value ?? 0) > 0)),
   );
-  return { xKind, series, leftOut, commonStart, partialDropped: [...partialDropped].sort() };
+  return { xKind, series, leftOut, commonStart, partialDropped: [...partialDropped].sort(), cutAt };
 }
