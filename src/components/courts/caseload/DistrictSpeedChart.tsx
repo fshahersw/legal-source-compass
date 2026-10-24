@@ -58,7 +58,11 @@ export function DistrictSpeedChart() {
           period: `FY${fy}`,
           source: SOURCE.label,
           figures: [
-            { label: "National median, filing to disposition", value: speed.baseline, unit: "days" },
+            {
+              label: "National median, filing to disposition",
+              value: speed.baseline,
+              unit: "days",
+            },
             ...picks.map((d) => ({ label: d.name, value: d.value, unit: "days" })),
             { label: "Districts compared", value: speed.counted },
           ],
