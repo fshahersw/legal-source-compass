@@ -14,7 +14,9 @@ import {
   LibrarySquare,
   LineChart,
   Map as MapIcon,
+  MessageCircle,
   ScatterChart,
+  Search,
   SearchX,
 } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
@@ -36,6 +38,7 @@ import {
   ChartSkeleton,
   DeltaPill,
   EmptyState,
+  HeaderStrip,
   InfoPopover,
   InsightCallout,
   KpiCard,
@@ -95,7 +98,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PRIMARY_NAVIGATION } from "@/lib/atlas/navigation";
+import { PRIMARY_NAVIGATION, sectionMenu } from "@/lib/atlas/navigation";
 import { listDatasets } from "@/lib/external/catalog.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { pageHead } from "@/lib/corpus/head";
@@ -491,6 +494,72 @@ function Specimens({ panel }: { panel: string }) {
   return (
     <div className="space-y-10">
       <Specimen
+        id={`${panel}-strip`}
+        name="HeaderStrip + HeaderMenu"
+        note="the one header: breadcrumb, title, a menu of links and dropdown panels, search, Ask AI. The Caseload panel is open; below 768 px the menu is one button that opens a sheet"
+      >
+        <div className="min-h-[27rem] overflow-visible rounded-xl border border-border bg-background">
+          <HeaderStrip
+            title="Courts & judges"
+            description="Federal, state and tribal courts, and the judges who sit on them."
+            breadcrumbs={[{ label: "Courts & judges", to: "/courts" }, { label: "Vacancies" }]}
+            menu={sectionMenu("/courts/vacancies")}
+            menuTitle="Courts & judges"
+            menuLabel={`Section (${panel}, desktop)`}
+            titleAs="h2"
+            defaultOpenMenu="courts:caseload"
+            search={
+              <div className="relative hidden w-56 shrink-0 md:block lg:w-72">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
+                <Input
+                  aria-label={`Search research (${panel})`}
+                  placeholder="Search research"
+                  className="h-9 pl-9"
+                />
+              </div>
+            }
+            askAi={
+              <Button variant="outline" className="h-9 shrink-0 gap-1.5 px-2.5 md:h-9">
+                <MessageCircle className="size-4 text-brand" aria-hidden />
+                <span className="hidden sm:inline">Ask AI</span>
+              </Button>
+            }
+            actions={<Button size="sm">Export</Button>}
+          />
+        </div>
+      </Specimen>
+      <Specimen
+        id={`${panel}-strip-phone`}
+        name="HeaderStrip, phone width"
+        note="below 768 px the menu is one button labelled with the current page; it opens a sheet with every destination and its line"
+      >
+        <div className="w-[390px] max-w-full overflow-hidden rounded-xl border border-border bg-background">
+          <HeaderStrip
+            compact
+            titleAs="h2"
+            title="Judicial vacancies"
+            breadcrumbs={[{ label: "Courts & judges", to: "/courts" }, { label: "Vacancies" }]}
+            menu={sectionMenu("/courts/vacancies")}
+            menuTitle="Courts & judges"
+            menuLabel={`Section (${panel}, phone)`}
+            askAi={
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-9 shrink-0"
+                aria-label={`Ask AI (${panel})`}
+              >
+                <MessageCircle className="size-4 text-brand" aria-hidden />
+              </Button>
+            }
+          />
+        </div>
+      </Specimen>
+
+      <Specimen
         id={`${panel}-header`}
         name="PageHeader + PageTabs"
         note="nine tabs: six show, the rest sit under More"
@@ -499,6 +568,7 @@ function Specimens({ panel }: { panel: string }) {
           <PageHeader
             breadcrumbs={[{ label: "Prototypes", to: "/prototypes" }, { label: "Page kit" }]}
             title="Courts & judges"
+            titleAs="h2"
             description="Every court and judge in the directory, caseloads, vacancies and comparisons."
             actions={
               <>
@@ -924,9 +994,10 @@ function Page() {
       }
     >
       <SectionIndex
-        className="-mt-4 mb-6"
+        className="mb-6"
         label="Specimens"
         items={[
+          { id: "light-strip", label: "Header strip" },
           { id: "light-header", label: "Header & tabs" },
           { id: "light-kpis", label: "KPIs" },
           { id: "light-chart", label: "Chart card & data" },

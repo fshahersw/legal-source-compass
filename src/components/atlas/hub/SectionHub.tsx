@@ -169,7 +169,7 @@ export function SectionHub({
 }) {
   const hub = HUBS[section];
   return (
-    <div className="space-y-6">
+    <div className="stack-section">
       <HubKpis
         items={hub.kpis}
         deferred={deferred}

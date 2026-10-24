@@ -10,6 +10,8 @@ import {
   UNSECTIONED_UTILITIES,
   UTILITY_NAVIGATION,
   contextualNavigation,
+  menuLinks,
+  sectionMenu,
   navigationSection,
   type NavigationSection,
 } from "./navigation";
@@ -265,6 +267,13 @@ describe("navigation targets exist", () => {
       ),
     ];
     for (const to of targets) expect(exists(to), to).toBe(true);
+  });
+  it("every destination in a section's header menu opens an existing route in that section", () => {
+    for (const s of [...PRIMARY_NAVIGATION, ...UTILITY_NAVIGATION])
+      for (const link of menuLinks(sectionMenu(s.to))) {
+        expect(exists(link.to), `${s.label}: ${link.key}`).toBe(true);
+        expect(navigationSection(link.to, link.search), `${s.label}: ${link.key}`).toBe(s.id);
+      }
   });
   it("every hub link opens an existing route in its own section (or names the other section)", () => {
     for (const [section, hub] of Object.entries(HUBS))

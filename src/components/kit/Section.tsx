@@ -34,7 +34,7 @@ export function Section({
     <section id={id} aria-labelledby={titleId} className={cn("min-w-0 scroll-mt-16", className)}>
       <div
         className={cn(
-          "mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-1",
+          "mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-1",
           headerClassName,
         )}
       >
@@ -43,7 +43,7 @@ export function Section({
             {title}
           </Heading>
           {description ? (
-            <p className="mt-0.5 text-[13px] leading-5 text-muted-foreground">{description}</p>
+            <p className="measure mt-1 text-body text-muted-foreground">{description}</p>
           ) : null}
         </div>
         {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}

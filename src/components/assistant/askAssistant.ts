@@ -5,6 +5,13 @@ export const ASK_EVENT = "assistant:ask";
 /** Open the assistant with one page section attached as context (the panel shows it as a removable chip). */
 export const SECTION_EVENT = "assistant:section";
 
+/** Open the research assistant without a question (the header's Ask AI button). */
+export const OPEN_EVENT = "assistant:open";
+
+export function openAssistant() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
 export type AskDetail = {
   question: string;
   label?: string | undefined;

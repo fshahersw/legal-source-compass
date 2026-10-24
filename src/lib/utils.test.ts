@@ -12,6 +12,7 @@ describe("cn", () => {
       "text-title font-semibold text-foreground",
     );
     expect(cn("text-foreground text-meta")).toBe("text-foreground text-meta");
+    expect(cn("text-body text-muted-foreground")).toBe("text-body text-muted-foreground");
   });
 
   it("lets a later size replace an earlier one, custom or built in", () => {

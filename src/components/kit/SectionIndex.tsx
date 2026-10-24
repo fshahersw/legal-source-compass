@@ -70,7 +70,7 @@ export function SectionIndex({
     <nav
       aria-label={label}
       className={cn(
-        "sticky top-0 z-20 -mx-[var(--workspace-gutter)] border-b border-border bg-background/90 px-[var(--workspace-gutter)] backdrop-blur supports-[backdrop-filter]:bg-background/75",
+        "sticky top-0 z-20 -mx-[var(--workspace-gutter)] -mt-[var(--page-pad-top,0px)] border-b border-border bg-background/90 px-[var(--workspace-gutter)] backdrop-blur supports-[backdrop-filter]:bg-background/75",
         className,
       )}
     >

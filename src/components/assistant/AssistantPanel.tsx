@@ -33,7 +33,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { SectionContext } from "@/lib/assistant/sectionContext";
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "./AssistantMarkdown";
-import { ASK_EVENT, SECTION_EVENT, type AskDetail, type SectionAskDetail } from "./askAssistant";
+import {
+  ASK_EVENT,
+  OPEN_EVENT,
+  SECTION_EVENT,
+  type AskDetail,
+  type SectionAskDetail,
+} from "./askAssistant";
 import { CitationCheckLine } from "./CitationCheck";
 import { citationMarks } from "./citationStatus";
 import { collectPageContext, suggestionsFor } from "./pageContext";
@@ -408,11 +414,14 @@ export function AssistantPanel() {
       setChipOpen(false);
       setTimeout(() => input.current?.focus(), 60);
     };
+    const onOpen = () => setMode("open");
     window.addEventListener(ASK_EVENT, onAsk);
     window.addEventListener(SECTION_EVENT, onSection);
+    window.addEventListener(OPEN_EVENT, onOpen);
     return () => {
       window.removeEventListener(ASK_EVENT, onAsk);
       window.removeEventListener(SECTION_EVENT, onSection);
+      window.removeEventListener(OPEN_EVENT, onOpen);
     };
   }, []);
   // a section belongs to the page it was attached on

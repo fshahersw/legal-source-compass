@@ -66,6 +66,30 @@ function nav(html: string, label: string): string | null {
   return new RegExp(`<nav aria-label="${label}"[^>]*>(.*?)</nav>`).exec(html)?.[1] ?? null;
 }
 
+type MenuEntry = {
+  label: string;
+  tag: "a" | "button";
+  href: string | null;
+  ariaCurrent: string | null;
+  active: boolean;
+};
+
+/** The header menu's top-level items (links and panel triggers), in order. */
+function menuEntries(html: string): MenuEntry[] {
+  return [...html.matchAll(/<(a|button)\b([^>]*)>(.*?)<\/\1>/g)].map(
+    ([, tag = "", attrs = "", inner = ""]) => ({
+      label: inner
+        .replace(/<[^>]+>/g, "")
+        .replace(/&amp;/g, "&")
+        .trim(),
+      tag: tag as "a" | "button",
+      href: (/href="([^"]*)"/.exec(attrs)?.[1] ?? null)?.replace(/&amp;/g, "&") ?? null,
+      ariaCurrent: /aria-current="([^"]*)"/.exec(attrs)?.[1] ?? null,
+      active: /data-active/.test(attrs),
+    }),
+  );
+}
+
 function render(pathname: string, search: Record<string, unknown> = {}, crumbs = [{ label: "T" }]) {
   mocks.pathname = pathname;
   mocks.search = search;
@@ -77,6 +101,7 @@ function render(pathname: string, search: Record<string, unknown> = {}, crumbs =
   return {
     html,
     tabs: section === null ? null : anchors(section),
+    menu: section === null ? null : menuEntries(section),
     primary: anchors(nav(html, "Primary") ?? ""),
     utilities: anchors(nav(html, "Utilities") ?? ""),
     crumbs: [...crumbHtml.matchAll(/<li[^>]*>(.*?)<\/li>/g)].map(([, li = ""]) =>
@@ -163,64 +188,109 @@ describe("AppShell sidebar", () => {
   });
 });
 
-describe("AppShell section tabs", () => {
+describe("AppShell header menu", () => {
+  // [path, search, the lit top-level item, its aria-current]; a dropdown panel's trigger is "true" for any page inside it
   it.each([
     ["/courts/nysd", {}, "Courts", "true"],
     ["/judges/123", {}, "Judges", "true"],
-    ["/courts/analytics", {}, "Compare courts", "page"],
-    ["/litigation/settlements", {}, "Settlements", "page"],
-    ["/matters/intel", {}, "MDLs & mass torts", "true"],
-    ["/cases/abc", {}, "Case law", "true"],
+    ["/courts/caseload", {}, "Caseload", "true"],
+    ["/courts/vacancies", {}, "Caseload", "true"],
+    ["/courts/analytics", {}, "Compare", "true"],
+    ["/judges/analytics", {}, "Compare", "true"],
+    ["/litigation/settlements", {}, "Mass litigation", "true"],
+    ["/matters/intel", {}, "Mass litigation", "true"],
+    ["/cases/abc", {}, "Cases & dockets", "true"],
+    ["/courts/firms", {}, "Law firms", "page"],
     ["/law", {}, "Overview", "page"],
-    ["/law", { scope: "federal" }, "Federal law", "page"],
-    ["/law/uscode/42", {}, "Federal law", "true"],
-    ["/law", { scope: "states", state: "NY" }, "State law", "true"],
+    ["/law", { scope: "federal" }, "Federal & state law", "true"],
+    ["/law/uscode/42", {}, "Federal & state law", "true"],
+    ["/law", { scope: "states", state: "NY" }, "Federal & state law", "true"],
+    ["/law/rulemaking", {}, "Congress & agencies", "true"],
     ["/limitations/statutory", {}, "Time limits", "true"],
     ["/enforcement", {}, "Overview", "page"],
     ["/enforcement", { tab: "actions" }, "Actions by agency", "page"],
     ["/enforcement", { tab: "actions", agency: "sec" }, "Actions by agency", "true"],
-    ["/enforcement", { tab: "oversight" }, "Oversight reports", "page"],
-    ["/safety", { view: "neiss" }, "Injuries (NEISS)", "page"],
-    ["/safety", { agency: "FDA" }, "Collections", "true"],
-    ["/safety/signals", {}, "Signals", "page"],
+    ["/enforcement", { tab: "oversight" }, "Checks & oversight", "true"],
+    ["/safety", { view: "neiss" }, "Injuries & reports", "true"],
+    ["/safety", { agency: "FDA" }, "Browse data", "true"],
+    ["/safety/signals", {}, "Signals & intelligence", "true"],
     ["/companies/0001326801", {}, "Directory", "true"],
     ["/companies/payments", {}, "Industry payments", "page"],
     ["/places/analytics", {}, "Compare", "page"],
+    ["/insights/trends", {}, "Analyse", "true"],
+    ["/sources/library", {}, "Browse", "true"],
     ["/saved-sources", {}, "Saved sources", "page"],
   ])("%s %j lights only %s (aria-current=%s)", (path, search, label, current) => {
-    const { tabs } = render(path, search);
-    expect(tabs).not.toBeNull();
-    expect(lit(tabs!)).toEqual([[label, current]]);
-    for (const tab of tabs!) {
-      const active = tab.label === label;
-      expect(tab.attrs.includes("font-semibold text-primary")).toBe(active);
-      expect(tab.attrs.includes("text-muted-foreground")).toBe(!active);
+    const { menu } = render(path, search);
+    expect(menu).not.toBeNull();
+    const lit = menu!.filter((m) => m.ariaCurrent !== null);
+    expect(lit.map((m) => [m.label, m.ariaCurrent])).toEqual([[label, current]]);
+    // the clear active style (ink label and rule) is data-active, on the same single item
+    expect(menu!.filter((m) => m.active).map((m) => m.label)).toEqual([label]);
+  });
+
+  it("shows direct links as links and dropdown panels as buttons, at most four in all", () => {
+    for (const path of ["/courts", "/safety", "/litigation", "/law", "/enforcement", "/insights"]) {
+      const { menu } = render(path);
+      expect(menu!.length, path).toBeGreaterThanOrEqual(2);
+      expect(menu!.length, path).toBeLessThanOrEqual(4);
     }
-  });
-
-  it("links query tabs with their query", () => {
-    expect(render("/enforcement").tabs!.map((t) => t.href)).toEqual([
-      "/enforcement",
-      "/enforcement?tab=actions",
-      "/enforcement?tab=exclusions",
-      "/enforcement?tab=oversight",
-      "/enforcement?tab=merger",
-      "/enforcement?tab=sources",
-    ]);
-    expect(render("/safety").tabs!.map((t) => t.href)).toEqual([
-      "/safety",
-      "/law/monitoring",
-      "/safety?view=neiss",
-      "/safety?view=reports",
-      "/safety/signals",
-      "/safety/products",
-      "/safety?view=list",
+    const courts = render("/courts").menu!;
+    expect(courts.map((m) => [m.label, m.tag])).toEqual([
+      ["Courts", "a"],
+      ["Judges", "a"],
+      ["Caseload", "button"],
+      ["Compare", "button"],
     ]);
   });
 
-  it("has no tab strip on the map home or a state page", () => {
-    expect(render("/").tabs).toBeNull();
-    expect(render("/places/NE").tabs).toBeNull();
+  it("links the direct items with their query", () => {
+    expect(
+      render("/enforcement")
+        .menu!.filter((m) => m.tag === "a")
+        .map((m) => m.href),
+    ).toEqual(["/enforcement", "/enforcement?tab=actions"]);
+    expect(
+      render("/law")
+        .menu!.filter((m) => m.tag === "a")
+        .map((m) => m.href),
+    ).toEqual(["/law", "/limitations"]);
+  });
+
+  it("names the menu for assistive technology and gives the small-screen button the current page", () => {
+    const { html } = render("/courts/vacancies");
+    expect(html).toContain('<nav aria-label="Section"');
+    expect(html).toContain('aria-label="Section: Vacancies"');
+  });
+
+  it("has no menu on the map home or a state page", () => {
+    expect(render("/").menu).toBeNull();
+    expect(render("/places/NE").menu).toBeNull();
+    expect(render("/").html).not.toContain('aria-label="Section"');
+  });
+
+  it("is one header: one H1, the breadcrumb, search and Ask AI in it, and no second tab row", () => {
+    const { html } = render("/courts/analytics");
+    expect(html.match(/<h1\b/g)).toHaveLength(1);
+    expect(html.match(/data-slot="header-strip"/g)).toHaveLength(1);
+    expect(html).toContain('aria-label="Ask AI about this page (Ctrl+J)"');
+    expect(html).toContain('aria-label="Search all corpus data"');
+    expect(html.match(/<nav aria-label="Breadcrumb"/g)).toHaveLength(1);
+  });
+
+  it("can hide the menu for a one-page section that has its own section index", () => {
+    mocks.pathname = "/insights";
+    mocks.search = {};
+    const html = renderToStaticMarkup(
+      createElement(AppShell, {
+        title: "T",
+        breadcrumbs: [{ label: "T" }],
+        sectionTabs: false,
+        children: "body",
+      }),
+    );
+    expect(html).not.toContain('<nav aria-label="Section"');
+    expect(html).toContain("<h1");
   });
 });
 
