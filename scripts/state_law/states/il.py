@@ -55,6 +55,27 @@ HEADING_ID_RE = re.compile(r"^\((\d+)\s+ILCS\s+([0-9.]+)/(.+?)\s+heading\)\s*(.*
 SEC_RE = re.compile(r"^Sec\.\s+([0-9A-Za-z][0-9A-Za-z.\-]*?)\.\s*$")
 SEC_INLINE_RE = re.compile(r"^Sec\.\s+([0-9A-Za-z][0-9A-Za-z.\-]*?)\.\s+(.*)$")
 SOURCE_RE = re.compile(r"^\(Source:.*\)\.?$")
+# The "Sec. N." line carries a catchline and, when the section has none, its first body run in the same position, so
+# the second run is a catchline only when it reads like one. When unsure it is body text: no printed word is lost.
+STATUS_RUN_RE = re.compile(r"^[(\[]\s*(?:repealed|renumbered|reserved|blank|text omitted)[^)\]]*[)\]]\.?$", re.I)
+ARTICLE_TITLE_RE = re.compile(r"^(?:Article|Section|Part|Division)\s+[0-9A-Za-z.\-]+\.\s+[^.]+\.$")
+SENTENCE_BREAK_RE = re.compile(r"(?<!\bInc)(?<!\bCo)(?<!\bCorp)(?<!\bNo)(?<!\bNos)(?<!\bSt)(?<!\bDr)(?<!\bU\.S)(?<!\bLtd)\.\s+[A-Z\"“(]")
+SUBJECT_RE = re.compile(r"^(?:Any|Every|All|No|Each|The|A|An|This|That|Such|Notwithstanding)\b")
+FINITE_RE = re.compile(r"\b(?:is|are|was|were|has|have|had|does|do|will|may|can|shall|must|be)\b")
+MODAL_RE = re.compile(r"\b(?:shall|must|is hereby|are hereby|is declared|are declared)\b|\bmeans?\s+(?:the|a|an|any|each|every|all)\b", re.I)
+
+
+def is_catchline(run: str) -> bool:
+    text = lib.norm_ws(run)
+    if not text:
+        return False
+    if STATUS_RUN_RE.match(text) or ARTICLE_TITLE_RE.match(text):
+        return True
+    if len(text) > 200 or not text.endswith(".") or text[0] in "\"“'‘([":
+        return False
+    if SUBJECT_RE.match(text) and FINITE_RE.search(text) and len(text) >= 50:
+        return False
+    return not (SENTENCE_BREAK_RE.search(text) or MODAL_RE.search(text))
 VERSION_RE = re.compile(r"^\(Text of (?:Section|Article|Part)[^)]*\)$")
 EFF_RE = re.compile(r"P\.A\.\s*([0-9]+-[0-9]+)[^;)]*?eff\.\s*(\d{1,2})-(\d{1,2})-(\d{2,4})")
 UNIT_LEVEL = {"Art.": "article", "Pt.": "part", "Div.": "division", "Subdiv.": "subdivision", "Tit.": "title",
@@ -166,8 +187,8 @@ def parse_act_page(ctx: lib.RunContext, page: lib.Fetched, chapter: str, chapter
         body_first: list[str] = []
         match = SEC_RE.match(lib.norm_ws(sec_runs[0]))
         if match:
-            # second run = catchline, unless the line has only one long run after "Sec. N." (no catchline printed)
-            if len(sec_runs) > 2 or (len(sec_runs) == 2 and len(lib.norm_ws(sec_runs[1])) <= 200):
+            # second run = catchline when it reads like one; otherwise it is the section's first body text
+            if len(sec_runs) > 1 and is_catchline(sec_runs[1]):
                 heading = lib.norm_ws(sec_runs[1])
                 body_first = sec_runs[2:]
             else:

@@ -144,6 +144,55 @@ class IllinoisTests(unittest.TestCase):
             self.assertTrue(verify_mod.verify(c.ctx.dir, pathlib.Path(tmp) / "raw")["ok"])
 
 
+class IllinoisCatchlineTests(unittest.TestCase):
+    @staticmethod
+    def section(cite: str, sec_line: str, body: str = "") -> str:
+        return ("<table><tr><td><div align='justify'><p></p><code>&nbsp;</code><code><font>(" + cite + ")</font></code>"
+                "<br><code>&nbsp;</code>" + sec_line + body +
+                "<br><code><font>(Source: P.A. 87-823.)</font></code></div></td></tr></table>")
+
+    def parse(self, *tables: str) -> list[dict]:
+        il = load("il")
+        page = "<html><body><div class='billtext-host'>" + "".join(tables) + "</div></body></html>"
+        with tempfile.TemporaryDirectory() as tmp:
+            c = Ctx(il, pathlib.Path(tmp))
+            fetched_page = c.record(fetched("https://www.ilga.gov/legislation/ILCS/details?x=2", page.encode()))
+            il.parse_act_page(c.ctx, fetched_page, "5", "GENERAL PROVISIONS", "100", "Act.", dt.date(2026, 10, 24))
+            c.ctx.finish()
+            return list(lib.read_jsonl(c.ctx.dir / "sections.jsonl.gz"))
+
+    def test_definition_without_a_catchline_keeps_its_words(self):
+        rows = self.parse(self.section("5 ILCS 100/1-25", "<code><font>Sec. 1-25. </font></code>"
+                                       "<code><font>\"Agency head\" means an individual in whom authority is vested.</font></code>"))
+        self.assertIsNone(rows[0]["heading"])
+        self.assertEqual(rows[0]["text"], '"Agency head" means an individual in whom authority is vested.')
+
+    def test_first_sentence_split_across_runs_is_not_a_heading(self):
+        rows = self.parse(self.section("5 ILCS 100/1", "<code><font>Sec. 1. </font></code>"
+                                       "<code><font>This Act may be cited as the </font></code><code><font>Standard Time Act.</font></code>"))
+        self.assertIsNone(rows[0]["heading"])
+        self.assertEqual(rows[0]["text"], "This Act may be cited as the Standard Time Act.")
+
+    def test_catchlines_and_status_markers_stay_headings(self):
+        rows = self.parse(
+            self.section("5 ILCS 100/1-5", "<code><font>Sec. 1-5. </font></code><code><font>Who may act as guardian.</font></code>",
+                         "<br><code><font>(a) Text.</font></code>"),
+            self.section("5 ILCS 100/1-6", "<code><font>Sec. 1-6. </font></code><code><font>(Repealed).</font></code>"))
+        self.assertEqual(rows[0]["heading"], "Who may act as guardian.")
+        self.assertEqual(rows[0]["text"], "(a) Text.")
+        self.assertEqual(rows[1]["status"], "repealed")
+
+    def test_is_catchline(self):
+        il = load("il")
+        for yes in ("Applicability.", "Article 36. Trial procedure.", "Treatment by prayer or spiritual means.",
+                    "Persons filing statements; notice; certification of list of names."):
+            self.assertTrue(il.is_catchline(yes), yes)
+        for no in ("This Act may be cited as the", "The Board is hereby authorized to:",
+                   "Any person who violates this Act is guilty of a Class B misdemeanor.",
+                   "The corporate authorities may contract with any person for the collection of waste."):
+            self.assertFalse(il.is_catchline(no), no)
+
+
 class MassachusettsAndMarylandTests(unittest.TestCase):
     def test_ma_section(self):
         ma = load("ma")
