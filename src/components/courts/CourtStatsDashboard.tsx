@@ -394,7 +394,6 @@ function NosChart({ data, yi }: { data: CourtStatsOverview; yi: number }) {
         },
       ]}
       sources={COURT_SOURCES}
-      period={`FY${data.years[0]}–FY${data.years.at(-1)}`}
       table={periodTable(
         rows,
         "year",
@@ -453,7 +452,6 @@ function PharmaChart({ data }: { data: CourtStatsOverview }) {
       title={leader ?? "Personal injury product liability filings, NOS 365, 367 and 368"}
       subtitle="Cases filed, national, by nature of suit · Table C-2A · fiscal years"
       sources={COURT_SOURCES}
-      period={`FY${data.years[0]}–FY${data.years.at(-1)}`}
       table={periodTable(rows, "year", series, fmtCount, {
         caption: "Personal injury product liability filings by nature of suit",
         xLabel: "Fiscal year",
@@ -541,7 +539,6 @@ function SmallTrend({
       title={takeaway ?? title}
       subtitle={subtitle}
       sources={COURT_SOURCES}
-      period={`FY${years[0]}–FY${years.at(-1)}`}
       kpis={
         second
           ? [

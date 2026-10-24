@@ -68,7 +68,7 @@ export function ChartGallery() {
       <Section
         id="cards"
         title="ChartCard and states"
-        note="Takeaway title, measure subtitle, KPI strip, Chart / Table toggle with CSV download, source footer and the About popover. Loading keeps the chart's height; error offers a retry; empty states the reason."
+        note="The kit card chrome (takeaway title, measure subtitle, View data drawer with CSV, source footer with the Partial pill and the About popover) with the chart layer inside; an optional key-figure strip above the chart. Loading keeps the chart's height; error offers a retry; empty states the reason."
       >
         <div className="grid gap-3 md:grid-cols-3">
           <ChartCard

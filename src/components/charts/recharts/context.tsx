@@ -244,7 +244,7 @@ export function RankBars({
       </div>
       {limit && total > rows.length ? (
         <p className="pt-1 text-xs text-muted-foreground">
-          {`Top ${focusId && rows.some((r) => r.focus && r.rank > limit) ? limit - 1 : limit} of ${total} shown${focusId && rows.some((r) => r.focus && r.rank > limit) ? ", with the selected item" : ""}; the table view lists every row.`}
+          {`Top ${focusId && rows.some((r) => r.focus && r.rank > limit) ? limit - 1 : limit} of ${total} shown${focusId && rows.some((r) => r.focus && r.rank > limit) ? ", with the selected item" : ""}; View data lists every row.`}
         </p>
       ) : null}
       {missing.length ? (
@@ -384,7 +384,17 @@ export function SmallMultiplesGrid({
                     <CartesianGrid {...gridProps} />
                     <XAxis
                       dataKey={xKey}
-                      tick={TICK}
+                      tick={(t: { x?: number; y?: number; payload?: { value?: unknown } }) => (
+                        <text
+                          x={t.x ?? 0}
+                          y={(t.y ?? 0) + 8}
+                          fontSize={TICK.fontSize}
+                          fill={TICK.fill}
+                          textAnchor={t.payload?.value === first ? "start" : "end"}
+                        >
+                          {String(t.payload?.value ?? "")}
+                        </text>
+                      )}
                       tickLine={false}
                       axisLine={{ stroke: "var(--border-strong)" }}
                       {...(first !== undefined && last !== undefined

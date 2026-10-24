@@ -79,7 +79,6 @@ export function BlockCard({
       }
       table={c.table}
       sources={[c.source]}
-      period={data.period}
       asOf={data.asOf ?? undefined}
       partial={
         c.hasPartial
