@@ -345,6 +345,8 @@ const USED_ON: Readonly<Record<string, readonly AppLink[]>> = {
   "uscourts_tables_*": [P.courts, P.caseload],
   uscourts_bapcpa: [P.caseload],
   uscourts_wiretap: [P.caseload],
+  uscourts_dnsw: [P.caseload],
+  uscourts_fisc: [P.caseload],
   uscourts_series_index: [P.caseload],
   "fjc_civil_*": [P.caseload],
   clb_court_profiles: [P.courts],

@@ -92,7 +92,18 @@ for (const suite of [
   { directory: "scripts/enrichment/clb_1026", modules: ["test_clb_1026"] },
   {
     directory: "scripts/enrichment/uscourts_tables",
-    modules: ["test_uscourts_tables", "test_normalize", "test_build_tables", "test_pdf", "test_reconcile", "test_wiretap"],
+    modules: [
+      "test_uscourts_tables",
+      "test_normalize",
+      "test_build_tables",
+      "test_pdf",
+      "test_reconcile",
+      "test_wiretap",
+      "test_court_ids",
+      "test_hierarchy",
+      "test_pdf_grid",
+      "test_reports",
+    ],
   },
   {
     directory: "scripts/limitations/backfill",
