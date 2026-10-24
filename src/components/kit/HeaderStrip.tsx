@@ -367,7 +367,7 @@ export function HeaderStrip({
       <div className="relative">
       {backdrop ? (
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          <img src={backdrop} alt="" width={1920} height={640} className="absolute inset-y-0 right-0 h-full w-full object-cover object-right opacity-90 md:w-[75%]" />
+          <img src={backdrop} alt="" width={1920} height={640} className="absolute inset-y-0 right-0 h-full w-full object-cover object-right opacity-90" />
           <div className="header-backdrop-fade absolute inset-0" />
         </div>
       ) : null}
