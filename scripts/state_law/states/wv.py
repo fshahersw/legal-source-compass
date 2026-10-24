@@ -77,6 +77,17 @@ def parse_article(html_fragment: str):
     return out
 
 
+def chapter_options(page_text: str) -> list[tuple[str, str | None]]:
+    """(chapter number, chapter heading) from the home page's chapter menu, in printed order; the first option is printed
+    `<option value='1' selected>`."""
+    chapters: list[tuple[str, str | None]] = []
+    for value, label in re.findall(r"<option value='([0-9A-Z]+)'(?:\s+selected(?:='selected')?)?>(CHAPTER[^<]*)</option>",
+                                   page_text):
+        if value not in [c[0] for c in chapters]:
+            chapters.append((value, re.sub(r"^CHAPTER\s+\S+?\.\s*", "", sb.one_line(_html.unescape(label))) or None))
+    return chapters
+
+
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [a.strip() for a in options.get("articles", "").split(",") if a.strip()]   # e.g. 55-2
@@ -85,10 +96,7 @@ def acquire(ctx):
     m = re.search(r"These West Virginia Code sections are updated regularly as new legislation takes effect\.", page)
     ctx.edition(edition_label="West Virginia Code", currency_statement=m.group(0) if m else None,
                 currency_source_url=SITE + "/")
-    chapters = []
-    for value, label in re.findall(r"<option value='([0-9A-Z]+)'>(CHAPTER[^<]*)</option>", home.text()):
-        if value not in [c[0] for c in chapters]:
-            chapters.append((value, re.sub(r"^CHAPTER\s+\S+?\.\s*", "", sb.one_line(_html.unescape(label))) or None))
+    chapters = chapter_options(home.text())
     for chapter, chapter_name in chapters:
         if only and not any(a.split("-")[0] == chapter for a in only):
             continue

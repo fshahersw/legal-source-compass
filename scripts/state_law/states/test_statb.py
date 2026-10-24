@@ -234,6 +234,16 @@ class Vermont(unittest.TestCase):
         self.assertEqual(vt.unique_copies([one, dict(one), other]), [one, other])
 
 
+class WestVirginia(unittest.TestCase):
+    def test_selected_first_chapter(self):
+        wv = load("wv")
+        page = ("<option value='1' selected>CHAPTER 1. THE STATE AND ITS SUBDIVISIONS.</option>\r\n"
+                "<option value='2'>CHAPTER 2. COMMON LAW, STATUTES.</option><option value='5A'>CHAPTER 5A. "
+                "DEPARTMENT OF ADMINISTRATION.</option>")
+        self.assertEqual(wv.chapter_options(page), [("1", "THE STATE AND ITS SUBDIVISIONS."), ("2", "COMMON LAW, STATUTES."),
+                                                    ("5A", "DEPARTMENT OF ADMINISTRATION.")])
+
+
 class Utah(unittest.TestCase):
     XML = (b'<title number="78B"><catchline>Judicial Code</catchline><chapter number="78B-2"><catchline>Statutes of '
            b'Limitations</catchline><section number="78B-2-307"><histories><history>Amended by Chapter 99, 2024 '
