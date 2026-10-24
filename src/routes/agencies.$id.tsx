@@ -31,7 +31,7 @@ export const Route = createFileRoute("/agencies/$id")({
   component: AgencyPage,
 });
 
-const TABS = ["Overview", "Rules & notices", "Unified Agenda", "All documents"] as const;
+const TABS = ["Overview", "Documents", "Unified Agenda"] as const;
 
 const SOURCES: { label: string; url: string; note: string }[] = [
   {
@@ -161,6 +161,7 @@ function AgencyPage() {
   const known = !!listed || !!profile;
   const [type, setType] = useState("");
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
+  const [browseAll, setBrowseAll] = useState(false);
   // Corpus index counts are the fallback when the agency profile dataset has no record for this agency.
   const counts = useQuery({
     queryKey: ["agency-counts", id],
@@ -172,7 +173,7 @@ function AgencyPage() {
     queryKey: ["agency-docs", id, type],
     queryFn: () => ld({ data: { id, ...(type ? { type } : {}) } }),
     staleTime: 10 * 60_000,
-    enabled: known && tab === "Rules & notices",
+    enabled: known && tab === "Documents",
   });
   const name = profile?.name ?? listed?.name ?? "Agency";
   const safety = SAFETY_AGENCY[name];
@@ -249,7 +250,10 @@ function AgencyPage() {
             {tab === "Overview" ? (
               <div className="space-y-2 text-[13px]">
                 {profile && prof.data ? (
-                  <AgencyProfileView data={prof.data} />
+                  <AgencyProfileView
+                    data={prof.data}
+                    after={<AgencyOversightPanel agencyId={id} />}
+                  />
                 ) : (
                   <>
                     <p className="rounded-md border border-border bg-surface px-3 py-2 text-[12px] text-muted-foreground">
@@ -284,13 +288,13 @@ function AgencyPage() {
                         </Link>
                       </p>
                     ) : null}
+                    <AgencyOversightPanel agencyId={id} />
                   </>
                 )}
-                <AgencyOversightPanel agencyId={id} />
                 <AgencyProvenance id={id} asOf={prof.data?.trends?.asOf ?? null} />
               </div>
             ) : null}
-            {tab === "Rules & notices" ? (
+            {tab === "Documents" ? (
               <div className="space-y-2">
                 <label className="flex items-center gap-2 text-[12px]">
                   Type
@@ -380,6 +384,24 @@ function AgencyPage() {
                     </tbody>
                   </table>
                 </div>
+                <div className="pt-4">
+                  {browseAll ? (
+                    <DatasetBrowser
+                      dataset="federal_register_history"
+                      initialFilters={{ agency: id }}
+                      compact
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setBrowseAll(true)}
+                      className="rounded-md border border-border bg-surface px-3 py-1.5 text-[12px] font-medium hover:bg-muted"
+                    >
+                      Browse every Federal Register document from this agency
+                      {listed?.count != null ? ` (${listed.count.toLocaleString("en-US")})` : ""}
+                    </button>
+                  )}
+                </div>
               </div>
             ) : null}
             {tab === "Unified Agenda" ? (
@@ -395,13 +417,6 @@ function AgencyPage() {
                   compact
                 />
               </div>
-            ) : null}
-            {tab === "All documents" ? (
-              <DatasetBrowser
-                dataset="federal_register_history"
-                initialFilters={{ agency: id }}
-                compact
-              />
             ) : null}
           </div>
         </>
