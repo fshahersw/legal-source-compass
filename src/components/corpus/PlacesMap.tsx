@@ -3,8 +3,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
-  ArrowRight,
   BookOpen,
+  ChevronRight,
   Clock3,
   ExternalLink,
   Landmark,
@@ -13,6 +13,8 @@ import {
   UsersRound,
 } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
+import { SourceFooter } from "@/components/kit/Card";
+import { LinkTile } from "@/components/kit/LinkTile";
 import { MetricMap, type MapArea } from "@/components/places/MetricMap";
 import { dataRows } from "@/components/places/mapView";
 import { parseMapSearch, resolveMapSelection } from "@/components/places/mapSearch";
@@ -37,6 +39,7 @@ import {
   type StateMapMetric,
 } from "@/lib/external/mapMetricsModel";
 import { externalHref } from "@/lib/external/href";
+import { cn } from "@/lib/utils";
 
 const DESTINATIONS = [
   { id: "overview" as const, label: "State overview", icon: MapPin },
@@ -45,11 +48,30 @@ const DESTINATIONS = [
 ];
 const RANKED = STATES.map((s) => s.fips);
 
+/** Segmented control (soft pill on a muted track) shared by the map's toggles. */
+const SEGMENTED = "flex rounded-lg border border-border bg-muted p-[3px]";
+const segment = (on: boolean) =>
+  cn(
+    "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-ring",
+    on
+      ? "bg-surface font-medium text-foreground shadow-xs"
+      : "text-muted-foreground hover:text-foreground",
+  );
+
 /**
- * The national map. On "/" it is the Overview (its briefing is passed as `after`); on /places it is the Places
- * section's Map tab. Both keep the same metric selector, layers, readout and data table.
+ * The national map. On "/" it is the Overview (its briefing is passed as `before` and its section links as `after`);
+ * on /places it is the Places section's Map tab. Both keep the same metric selector, layers, readout and data table.
  */
-export function PlacesMap({ home, after }: { home?: boolean | undefined; after?: ReactNode }) {
+export function PlacesMap({
+  home,
+  before,
+  after,
+}: {
+  home?: boolean | undefined;
+  /** Rendered above the map (the Overview's KPI row). */
+  before?: ReactNode;
+  after?: ReactNode;
+}) {
   const atlas = useAtlas();
   const corpus = useCorpus();
   const navigate = useNavigate();
@@ -161,26 +183,45 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
   const metricFailed = def.key !== "directory_sources" && !metrics.isPending && !metric;
   const failedParts = metrics.data?.unavailable ?? [];
 
+  const shownSourceUrl = countyMode && layer.data ? layer.data.sourceUrl : metric?.sourceUrl;
+  const shownSourceName = countyMode && layer.data ? layer.data.sourceName : metric?.sourceName;
+  const shownPeriod = countyMode && layer.data ? layer.data.yearLabel : metric?.yearLabel;
+  const sourceLink =
+    metric && shownSourceUrl ? (
+      <a
+        href={externalHref(shownSourceUrl)}
+        {...(shownSourceUrl.startsWith("/") ? {} : { target: "_blank", rel: "noreferrer" })}
+        title={shownSourceName}
+        className="inline-flex min-w-0 items-center gap-0.5 underline-offset-2 hover:text-foreground hover:underline"
+      >
+        <span className="truncate">{shownSourceName}</span>
+        {shownSourceUrl.startsWith("/") ? null : (
+          <ExternalLink className="size-3 shrink-0" aria-hidden />
+        )}
+      </a>
+    ) : null;
+
   return (
     <AppShell
       breadcrumbs={[]}
       title={home ? "Overview" : "Places"}
       description={
         home
-          ? "The national map of courts, litigation, law, enforcement and Census figures, with a briefing across the platform below it."
+          ? "The national map of courts, litigation, law, enforcement and Census figures, with a briefing across the platform."
           : "States, counties and cities: shade the map by a metric, then open a state for its courts, law, litigation and figures."
       }
     >
+      {before ? <div className="mb-6">{before}</div> : null}
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+          <label className="flex flex-col gap-1.5 text-meta font-medium text-muted-foreground">
             Shade the map by
             <select
               value={metricKey}
               onChange={(e) => setSearch({ metric: e.target.value })}
               aria-label="Map metric"
               data-testid="map-metric"
-              className="h-9 w-72 max-w-full rounded-md border border-input bg-surface px-2 text-xs text-foreground"
+              className="h-9 w-72 max-w-full cursor-pointer rounded-md border border-input bg-surface px-2.5 text-[13px] font-normal text-foreground shadow-xs transition-[border-color,box-shadow] hover:border-border-strong focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
             >
               {MAP_GROUPS.map((group) => (
                 <optgroup key={group} label={group}>
@@ -193,13 +234,9 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
               ))}
             </select>
           </label>
-          <div className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+          <div className="flex flex-col gap-1.5 text-meta font-medium text-muted-foreground">
             <span id="map-layer-label">Layer</span>
-            <div
-              role="group"
-              aria-labelledby="map-layer-label"
-              className="flex rounded-md border border-border bg-surface p-0.5"
-            >
+            <div role="group" aria-labelledby="map-layer-label" className={SEGMENTED}>
               {(
                 [
                   { id: "states", label: "States", on: !countyMode, enabled: true },
@@ -213,7 +250,7 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
                   disabled={!l.enabled}
                   title={l.enabled ? undefined : "No county data exists for this metric"}
                   onClick={() => setSearch({ layer: l.id === "counties" ? "counties" : null })}
-                  className={`h-8 rounded px-3 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${l.on ? "bg-primary font-semibold text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                  className={segment(l.on)}
                 >
                   {l.label}
                 </button>
@@ -221,23 +258,26 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </div>
           </div>
         </div>
-        <div
-          className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-surface p-1"
-          role="group"
-          aria-label="Open selected state in"
-        >
-          {DESTINATIONS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={tab === id}
-              onClick={() => setTab(id)}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors ${tab === id ? "bg-primary font-semibold text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
-            >
-              <Icon className="size-3.5" aria-hidden />
-              {label}
-            </button>
-          ))}
+        <div className="flex flex-col gap-1.5 text-meta font-medium text-muted-foreground">
+          <span id="map-destination-label">Open a state in</span>
+          <div
+            className={cn(SEGMENTED, "flex-wrap")}
+            role="group"
+            aria-labelledby="map-destination-label"
+          >
+            {DESTINATIONS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={tab === id}
+                onClick={() => setTab(id)}
+                className={segment(tab === id)}
+              >
+                <Icon className="size-3.5" aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
@@ -271,7 +311,7 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
               }}
             />
           ) : (
-            <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-md border border-border bg-surface text-sm text-muted-foreground">
+            <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card text-sm text-muted-foreground shadow-xs">
               <MapPin className="size-8 opacity-50" />
               <p role="status">
                 {corpus.error ? "The map is temporarily unavailable." : "Preparing the state map…"}
@@ -290,13 +330,16 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </p>
           ) : null}
           {metricFailed ? (
-            <div role="alert" className="rounded-md border border-border bg-surface p-3 text-xs">
+            <div
+              role="alert"
+              className="rounded-lg border border-status-critical-ring bg-status-critical-soft px-3 py-2.5 text-xs text-status-critical-ink"
+            >
               {def.label} could not be loaded
               {failedParts.length ? ` (${failedParts.join(", ")} unavailable)` : ""}. States are
               shown as Not recorded.
               <button
                 type="button"
-                className="ml-2 text-primary underline"
+                className="ml-2 font-medium text-foreground underline"
                 onClick={() => void metrics.refetch()}
               >
                 Retry
@@ -309,11 +352,14 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </p>
           ) : null}
           {countyMode && layer.isError ? (
-            <div role="alert" className="rounded-md border border-border bg-surface p-3 text-xs">
+            <div
+              role="alert"
+              className="rounded-lg border border-status-critical-ring bg-status-critical-soft px-3 py-2.5 text-xs text-status-critical-ink"
+            >
               County values could not be loaded.
               <button
                 type="button"
-                className="ml-2 text-primary underline"
+                className="ml-2 font-medium text-foreground underline"
                 onClick={() => void layer.refetch()}
               >
                 Retry
@@ -321,59 +367,62 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </div>
           ) : null}
           <div
-            className="rounded-md border border-border bg-surface px-3 py-2.5 text-xs leading-5"
+            className="rounded-xl border border-border bg-card px-4 py-2.5 shadow-xs"
             data-testid="map-about"
           >
-            <h2 className="text-[13px] font-semibold">{def.label}</h2>
-            <p className="m-0 mt-0.5 text-muted-foreground">{def.help}</p>
-            {countyMode && def.countyNote ? (
-              <p className="m-0 mt-1 text-muted-foreground">{def.countyNote}</p>
-            ) : null}
-            {metric ? (
-              <p className="m-0 mt-1 text-muted-foreground">
-                Period: {countyMode && layer.data ? layer.data.yearLabel : metric.yearLabel}.
-                Source:{" "}
-                <a
-                  href={externalHref(
-                    countyMode && layer.data ? layer.data.sourceUrl : metric.sourceUrl,
-                  )}
-                  {...((countyMode && layer.data
-                    ? layer.data.sourceUrl
-                    : metric.sourceUrl
-                  ).startsWith("/")
-                    ? {}
-                    : { target: "_blank", rel: "noreferrer" })}
-                  className="inline-flex items-center gap-0.5 text-primary underline"
-                >
-                  {countyMode && layer.data ? layer.data.sourceName : metric.sourceName}
-                  {(countyMode && layer.data ? layer.data.sourceUrl : metric.sourceUrl).startsWith(
-                    "/",
-                  ) ? null : (
-                    <ExternalLink className="size-3" aria-hidden />
-                  )}
-                </a>
-                .
-                {metric.denominator && !countyMode ? (
-                  <>
-                    {" "}
-                    Denominator: {metric.denominator.label}, {metric.denominator.year} (
-                    <a
-                      href={externalHref(metric.denominator.url)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline"
-                    >
-                      Census Bureau
-                    </a>
-                    ).
-                  </>
-                ) : null}{" "}
-                Ranks cover the 50 states and DC. Shading is by quantile class; darker is higher.
-              </p>
-            ) : null}
+            <SourceFooter
+              source={sourceLink}
+              period={metric ? shownPeriod : undefined}
+              aboutTitle={def.label}
+              about={
+                <>
+                  <p>{def.help}</p>
+                  {countyMode && def.countyNote ? <p>{def.countyNote}</p> : null}
+                  {metric ? (
+                    <p>
+                      Period: {shownPeriod}. Source:{" "}
+                      <a
+                        href={externalHref(shownSourceUrl!)}
+                        {...(shownSourceUrl!.startsWith("/")
+                          ? {}
+                          : { target: "_blank", rel: "noreferrer" })}
+                      >
+                        {shownSourceName}
+                      </a>
+                      .
+                      {metric.denominator && !countyMode ? (
+                        <>
+                          {" "}
+                          Denominator: {metric.denominator.label}, {metric.denominator.year} (
+                          <a
+                            href={externalHref(metric.denominator.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Census Bureau
+                          </a>
+                          ).
+                        </>
+                      ) : null}{" "}
+                      Ranks cover the 50 states and DC. Shading is by quantile class; a stronger
+                      shade is a higher value.
+                    </p>
+                  ) : null}
+                </>
+              }
+            >
+              {!metric ? <span className="flex-1 truncate">{def.label}</span> : null}
+            </SourceFooter>
           </div>
-          <details className="rounded-md border border-border bg-surface" data-testid="map-data">
-            <summary className="cursor-pointer px-3 py-2 text-xs font-medium hover:bg-muted/40">
+          <details
+            className="group rounded-xl border border-border bg-card shadow-xs"
+            data-testid="map-data"
+          >
+            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-medium hover:bg-accent/60 focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                className="size-4 text-muted-foreground transition-transform group-open:rotate-90"
+                aria-hidden
+              />
               Show data for the states
             </summary>
             <div className="max-h-80 overflow-auto border-t border-border">
@@ -381,43 +430,43 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
                 <caption className="sr-only">
                   {def.label}, {metric?.yearLabel ?? ""}, by state
                 </caption>
-                <thead className="sticky top-0 bg-muted/60 text-left text-[11px] text-muted-foreground">
+                <thead className="sticky top-0 bg-muted text-left text-[11px] text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-3 py-1.5 font-medium">
+                    <th scope="col" className="px-4 py-2 font-medium">
                       Rank
                     </th>
-                    <th scope="col" className="px-3 py-1.5 font-medium">
+                    <th scope="col" className="px-4 py-2 font-medium">
                       State
                     </th>
-                    <th scope="col" className="px-3 py-1.5 text-right font-medium">
+                    <th scope="col" className="px-4 py-2 text-right font-medium">
                       {def.unit}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {tableRows.map((r) => (
-                    <tr key={r.id} className="border-t border-border/60">
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
+                    <tr key={r.id} className="border-t border-border/70">
+                      <td className="px-4 py-1.5 tabular-nums text-muted-foreground">
                         {r.rank ?? "—"}
                       </td>
-                      <td className="px-3 py-1">
+                      <td className="px-4 py-1.5">
                         <Link
                           to="/places/$state"
                           params={{ state: stateByFips.get(r.id)?.usps ?? r.id }}
                           search={{ tab }}
-                          className="text-primary hover:underline"
+                          className="font-medium text-foreground underline-offset-2 hover:text-brand hover:underline"
                         >
                           {r.name}
                         </Link>
                       </td>
-                      <td className="px-3 py-1 text-right font-mono tabular-nums">
+                      <td className="px-4 py-1.5 text-right tabular-nums">
                         {formatMapValue(r.value, def.format)}
                       </td>
                     </tr>
                   ))}
                   {!tableRows.length ? (
                     <tr>
-                      <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">
+                      <td colSpan={3} className="px-4 py-4 text-center text-muted-foreground">
                         {NOT_RECORDED}
                       </td>
                     </tr>
@@ -427,66 +476,54 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </div>
           </details>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link
+            <LinkTile
               to="/law"
-              className="group flex items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary/25"
-            >
-              <span className="rounded-md bg-[var(--blue-tint)] p-2 text-primary">
-                <BookOpen className="size-4" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">Federal law & agencies</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Statutes, rules and regulatory sources.
-                </span>
-              </span>
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
+              icon={BookOpen}
+              title="Federal law & agencies"
+              description="Statutes, rules and regulatory sources."
+            />
+            <LinkTile
               to="/limitations"
-              className="group flex items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary/25"
-            >
-              <span className="rounded-md bg-[var(--blue-tint)] p-2 text-primary">
-                <Clock3 className="size-4" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">Deadline assessment</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Cited rules with a guided review.
-                </span>
-              </span>
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
+              icon={Clock3}
+              title="Deadline assessment"
+              description="Cited rules with a guided review."
+            />
           </div>
         </section>
-        <aside className="overflow-hidden rounded-md border border-border bg-surface">
-          <div className="border-b border-border p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Choose a state</h2>
-              <span className="text-[11px] text-muted-foreground">{filtered.length} shown</span>
+        <aside className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+          <div className="border-b border-border p-4">
+            <div className="mb-2.5 flex items-center justify-between">
+              <h2 className="text-label font-semibold">Choose a state</h2>
+              <span className="text-meta tabular-nums text-muted-foreground">
+                {filtered.length} shown
+              </span>
             </div>
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Find a state"
                 placeholder="Name or abbreviation"
-                className="h-9 pl-8 text-xs"
+                className="h-9 pl-8 text-[13px] md:h-9"
               />
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="mt-2.5 flex items-center justify-between gap-2 text-meta text-muted-foreground">
               <span className="truncate" title={`${def.short}, ${metric?.yearLabel ?? ""}`}>
                 {def.short}
               </span>
-              <span className="flex gap-1" role="group" aria-label="Sort states">
+              <span
+                className={cn(SEGMENTED, "shrink-0 p-0.5")}
+                role="group"
+                aria-label="Sort states"
+              >
                 {(["name", "value"] as const).map((s) => (
                   <button
                     key={s}
                     type="button"
                     aria-pressed={sortBy === s}
                     onClick={() => setSortBy(s)}
-                    className={`rounded px-1.5 py-0.5 ${sortBy === s ? "bg-muted font-medium text-foreground" : "hover:bg-muted/60"}`}
+                    className={cn(segment(sortBy === s), "h-6 px-2 text-[11px]")}
                   >
                     {s === "name" ? "A to Z" : "By value"}
                   </button>
@@ -494,7 +531,7 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
               </span>
             </div>
           </div>
-          <ul className="max-h-[29rem] divide-y divide-border/60 overflow-y-auto">
+          <ul className="max-h-[29rem] divide-y divide-border/70 overflow-y-auto">
             {filtered.map((state) => {
               const value = metric?.values[state.fips];
               const rank = metric?.rank[state.fips];
@@ -506,20 +543,24 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
                     search={{ tab }}
                     onMouseEnter={() => setHover(state.usps)}
                     onMouseLeave={() => setHover(null)}
-                    className={`flex items-center gap-2.5 px-3 py-2 transition-colors ${hover === state.usps ? "bg-muted" : "hover:bg-muted/50"}`}
+                    className={`group flex items-center gap-2.5 px-4 py-2 transition-colors ${hover === state.usps ? "bg-accent" : "hover:bg-accent"}`}
                   >
                     <StateMark state={state.usps} className="size-7 rounded-md p-1" />
                     <span className="min-w-0 flex-1 text-[13px] font-medium">{state.name}</span>
-                    <span className="text-right text-[11px] tabular-nums text-muted-foreground">
+                    <span className="text-right text-[12px] tabular-nums text-foreground/80">
                       {loadingMetric ||
                       (def.key === "directory_sources" && atlas.status === "loading")
                         ? "…"
                         : value == null
                           ? "—"
                           : formatMapValue(value, def.format)}
-                      {rank ? <span className="block text-[10px]">#{rank.rank}</span> : null}
+                      {rank ? (
+                        <span className="block text-[10.5px] text-muted-foreground">
+                          #{rank.rank}
+                        </span>
+                      ) : null}
                     </span>
-                    <ArrowRight className="size-3 text-muted-foreground/50" />
+                    <ChevronRight className="size-3.5 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </li>
               );
@@ -540,7 +581,7 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
           ) : null}
         </aside>
       </div>
-      {after ? <div className="mt-6">{after}</div> : null}
+      {after ? <div className="mt-8">{after}</div> : null}
     </AppShell>
   );
 }

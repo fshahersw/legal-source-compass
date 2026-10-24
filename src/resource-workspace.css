@@ -1,64 +1,92 @@
-/* Shared resource workspace: navy contrast, compact rows and accessible motion. */
-.atlas-shell {
+/*
+ * Shared workspace classes (2026-10-24 refresh): light section bands, card panels, compact rows, accessible motion.
+ * Colour tokens live in styles.css (:root and .dark); this file only maps legacy names onto them so pages written
+ * for the former navy workspace pick up the new look without edits.
+ */
+:root {
   --workspace-gutter: 16px;
-  --background: oklch(0.978 0.004 258);
-  --primary: oklch(0.285 0.043 258);
-  --sidebar: oklch(0.245 0.038 258);
-  --sidebar-primary: oklch(0.96 0.005 258);
-  --sidebar-accent: oklch(0.34 0.038 258);
-  --sidebar-ring: oklch(0.78 0.055 258);
-  --navy: var(--primary);
-  --navy-deep: var(--sidebar);
-  --navy-muted: oklch(0.88 0.022 258);
-  --blue-tint: oklch(0.96 0.01 258);
-  --map-low: #d6e4f3;
-  --map-high: #527da8;
-  --map-active: #174a7e;
-  --map-focus: #7fb5ec;
+  /* legacy names, kept for existing components */
+  --navy: var(--foreground);
+  --navy-deep: var(--foreground);
+  --navy-muted: var(--muted-foreground);
+  --blue-tint: var(--accent);
 }
+@media (min-width: 1024px) {
+  :root {
+    --workspace-gutter: 24px;
+  }
+}
+@media (max-width: 639px) {
+  :root {
+    --workspace-gutter: 12px;
+  }
+}
+
 .atlas-shell {
   background: var(--background);
 }
-.atlas-header {
-  border-top: 2px solid var(--navy);
-}
-.atlas-header,
-.atlas-section-nav {
-  padding-inline: var(--workspace-gutter);
-}
 .atlas-main {
-  padding: 12px var(--workspace-gutter) 24px;
+  padding: 16px var(--workspace-gutter) 32px;
 }
+
+/* Section band: a light header row on a card (formerly a navy bar). */
 .research-band {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 8px 12px;
-  color: #fff;
-  background: var(--navy);
+  min-height: 44px;
+  padding: 10px 16px;
+  color: var(--foreground);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
 }
-.research-band h2 {
+.research-band h2,
+.research-band h3 {
   font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
 }
+.research-band svg {
+  color: var(--muted-foreground);
+}
+/* Compatibility: utilities written for white text on the former navy band read as normal ink on the light band. */
+.research-band .text-white,
+.research-band [class*="hover:text-white"]:hover {
+  color: var(--foreground);
+}
+.research-band [class*="border-white"] {
+  border-color: var(--border);
+}
+.research-band [class*="hover:bg-white"]:hover {
+  background-color: var(--accent);
+}
+.research-band select[class*="text-white"] {
+  background-color: var(--surface);
+}
+
 .resource-panel {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-xl);
   background: var(--surface);
+  box-shadow: var(--shadow-xs);
 }
 .resource-row {
   display: flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  padding: 6px 10px;
+  padding: 6px 12px;
   transition: background-color 140ms ease;
 }
-a.resource-row:hover {
-  background: var(--blue-tint);
+a.resource-row:hover,
+button.resource-row:hover {
+  background: var(--accent);
 }
-a.resource-row:focus-visible {
+a.resource-row:focus-visible,
+button.resource-row:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: -3px;
 }
@@ -66,30 +94,32 @@ a.resource-row:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--blue-tint);
-  color: var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  color: var(--muted-foreground);
 }
+/* Segmented control strip. */
 .workspace-tabs {
   display: flex;
-  gap: 3px;
+  gap: 2px;
   overflow-x: auto;
   padding: 3px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
+  border-radius: var(--radius-md);
+  background: var(--muted);
 }
 .workspace-tabs button {
   flex-shrink: 0;
-  min-height: 32px;
+  min-height: 30px;
+  border-radius: calc(var(--radius-md) - 2px);
 }
 .atlas-map {
-  background: var(--blue-tint);
+  background: var(--map-canvas);
 }
 .atlas-map svg {
   display: block;
@@ -111,9 +141,6 @@ a.resource-row:focus-visible {
   font-weight: 600;
 }
 @media (max-width: 639px) {
-  .atlas-shell {
-    --workspace-gutter: 12px;
-  }
   .research-band {
     padding: 10px 12px;
   }
@@ -142,13 +169,12 @@ a.resource-row:focus-visible {
     color: #111 !important;
   }
   .atlas-shell > aside,
-  .atlas-shell > div > nav,
-  .atlas-header form,
+  .atlas-topbar,
+  .atlas-section-nav,
   .atlas-header button {
     display: none !important;
   }
   .atlas-header {
-    border-top: 0;
     padding: 0 0 12px;
   }
   .atlas-main {
@@ -184,10 +210,4 @@ a.resource-row:focus-visible {
     color: #111 !important;
     text-decoration: none;
   }
-}
-
-.atlas-shell .nav-link[data-status="active"],
-.atlas-shell .nav-link[aria-current="page"] {
-  background: var(--sidebar-accent);
-  box-shadow: inset 3px 0 0 var(--sidebar-primary);
 }
