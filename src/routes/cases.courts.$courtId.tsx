@@ -3,6 +3,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { CourtCaseLaw } from "@/components/caselaw/CourtCaseLaw";
 import { normalizeCourtCases } from "@/components/caselaw/courtCaseLaw";
 import { courtYearsQuery } from "@/components/caselaw/caseQueries";
+import { CourtHeroStrip } from "@/components/courts/hero/CourtHeroStrip";
 import { pageHead } from "@/lib/corpus/head";
 
 const COURT_ID = /^[a-z0-9_-]{1,40}$/;
@@ -52,6 +53,7 @@ function Page() {
         { label: name.length > 60 ? `${name.slice(0, 57)}…` : name },
       ]}
     >
+      {COURT_ID.test(courtId) ? <CourtHeroStrip courtId={courtId} title={name} /> : null}
       {COURT_ID.test(courtId) ? (
         <CourtCaseLaw
           courtId={courtId}

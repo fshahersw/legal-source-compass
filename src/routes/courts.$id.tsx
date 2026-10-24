@@ -4,7 +4,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { recordedCourtState } from "@/lib/courts/recordedState";
 import { courtLinkCompatible } from "@/lib/corpus/courtLinks";
 import { buildEntityView } from "@/lib/external/entityView";
-import { CourtArtwork } from "@/components/corpus/CourtArtwork";
+import { CourtHero } from "@/components/courts/hero/CourtHero";
 import { CourtResources } from "@/components/corpus/CourtResources";
 import { CourtAnalyticsPanel } from "@/components/corpus/CourtAnalyticsPanel";
 import { CaseloadHistoryPanel } from "@/components/courts/CaseloadHistoryPanel";
@@ -80,7 +80,7 @@ function Page() {
       crumbs={crumbs}
       linkFilter={(links) => links.filter((link) => courtLinkCompatible(link, system))}
       lead={(_raw, v) => (
-        <CourtArtwork
+        <CourtHero
           courtId={id}
           title={v.title}
           system={system}

@@ -1,15 +1,3 @@
-import {
-  Archive,
-  Building2,
-  CircleHelp,
-  Columns3,
-  Gavel,
-  Landmark,
-  LibraryBig,
-  MapPinHouse,
-  Scale,
-  University,
-} from "lucide-react";
 import { useState } from "react";
 import { fileUrl } from "@/lib/external/groups";
 import {
@@ -17,24 +5,10 @@ import {
   classifyCourtType,
   courtTypeLabels,
   recordedCourtArtwork,
-  type CourtTypeGroup,
 } from "@/lib/courts/artwork";
 import { cn } from "@/lib/utils";
 import { communityCourtArtwork } from "@/lib/visuals/registry";
-
-const typeIcons = {
-  "us-supreme": Landmark,
-  "federal-appellate": Columns3,
-  "federal-district": University,
-  "federal-bankruptcy": Scale,
-  "state-high": Landmark,
-  "state-appellate": LibraryBig,
-  "state-trial": Gavel,
-  county: MapPinHouse,
-  "local-specialty": Building2,
-  historical: Archive,
-  unclassified: CircleHelp,
-} satisfies Record<CourtTypeGroup, typeof Landmark>;
+import { courtTypeIcons as typeIcons } from "@/components/courts/hero/typeIcons";
 
 export function CourtArtwork({
   courtId,
