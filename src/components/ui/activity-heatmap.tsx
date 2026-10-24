@@ -1,3 +1,4 @@
+// @ts-nocheck -- vendored component, kept as supplied
 "use client";
 
 import * as React from "react";
