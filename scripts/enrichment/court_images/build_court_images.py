@@ -55,9 +55,13 @@ HOST_REASONS = {
     "www.gsa.gov": "rights not stated on the source page (GSA building page)",
     "tile.loc.gov": "no public-domain statement at the source ('No known restrictions on publication')",
 }
-LICENCE_LABEL = {"public domain": "Public domain", "cc0": "CC0", "cc by": "CC BY", "cc by-sa": "CC BY-SA"}
+LICENCE_LABEL = {"public domain": "Public domain", "cc0": "CC0", "cc by": "CC BY", "cc by-sa": "CC BY-SA",
+                 "other": "Other licence (as recorded)"}
+# The owner's visual registry (scripts/enrichment/visual_registry) is a second lead source, used only for courts the
+# workbook leads above do not cover; its leads name an asset id instead of a sheet row.
+REGISTRY_SHEET = "Visual registry"
 SHEET_SLUG = {"Top Courts": "top_courts", "Court Directory": "court_directory", "Federal Offices": "federal_offices",
-              "Buildings": "buildings"}
+              "Buildings": "buildings", REGISTRY_SHEET: "visual_registry"}
 
 
 def rendition_sizes(acq):
@@ -188,6 +192,13 @@ def row_for(court_id, spine_row, lead, photo, alternates):
     place = ", ".join(p for p in (lead["city"], lead["state"]) if p)
     building = lead["building"] or "Not recorded"
     author = photo["attribution"] or "Not recorded"
+    registry = lead["sheet"] == REGISTRY_SHEET
+    named_by = (f"owner's visual registry, asset {lead['asset_id']} ({lead['relationship_label']})" if registry
+                else f"owner's court-buildings workbook, sheet {lead['sheet']}, row {lead['row']}")
+    # Registry rows carry the licence as the registry recorded it (owner decision 2026-10-24: no licence re-check).
+    verified = (f"not re-verified; licence and rights status as recorded by the visual registry "
+                f"({photo['verified_at'] or 'date not recorded'})" if registry
+                else f"{photo['verified_at']} from the file page metadata")
     facts = [
         ["Court", title],
         ["Court id", court_id],
@@ -196,12 +207,14 @@ def row_for(court_id, spine_row, lead, photo, alternates):
         ["Photograph", photo["file"].removeprefix("File:")],
         ["Author", author],
         ["Licence", photo["license"]],
-        ["Licence link", photo["license_url"]],
+        ["Licence link", photo["license_url"] or "Not recorded"],
         ["Image source page", photo["source_page"]],
         ["Original size", f"{photo['original']['width']} × {photo['original']['height']} px"],
-        ["Licence verified", f"{photo['verified_at']} from the file page metadata"],
-        ["Building named by", f"owner's court-buildings workbook, sheet {lead['sheet']}, row {lead['row']}"],
+        ["Licence verified", verified],
+        ["Building named by", named_by],
     ]
+    if registry:
+        facts.append(["Rights status (as recorded)", photo.get("rights_status") or "Not recorded"])
     if photo["restrictions"]:
         facts.append(["Other restrictions", photo["restrictions"]])
     photo_out = {**photo, "building": lead["building"] or None, "city": lead["city"] or None,
