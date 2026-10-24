@@ -89,7 +89,7 @@ for (const suite of [
   { directory: "scripts/enrichment/court_images", modules: ["test_court_images"] },
   {
     directory: "scripts/enrichment/uscourts_tables",
-    modules: ["test_uscourts_tables", "test_normalize", "test_build_tables", "test_pdf"],
+    modules: ["test_uscourts_tables", "test_normalize", "test_build_tables", "test_pdf", "test_reconcile", "test_wiretap"],
   },
   {
     directory: "scripts/limitations/backfill",
