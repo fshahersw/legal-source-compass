@@ -18,6 +18,34 @@ import { SaferProductsReports } from "@/components/safety/saferproducts/SaferPro
 import { SafetyRecallTrends, SafetyAgencyTrends } from "@/components/safety/SafetyTrendCards";
 import { safetyViewOf } from "@/components/safety/safetyView";
 import { SectionHub } from "@/components/atlas/hub/SectionHub";
+import { TrendHeadline } from "@/components/charts/d3/TrendHeadline";
+
+const RECALL_LEAD = (
+  <TrendHeadline
+    subject="recalls"
+    unitNote="Each agency counts and classifies recalls its own way, and one recall can cover many products and units, so compare the direction and size of change, not the levels."
+    items={[
+      { id: "cpsc-recalls", label: "CPSC product recalls" },
+      { id: "nhtsa-recalls", label: "NHTSA vehicle recalls" },
+      { id: "fda-recalls", label: "FDA recall entries" },
+      { id: "fsis-recalls", label: "USDA FSIS food recalls" },
+    ]}
+  />
+);
+
+/** The four agencies' own yearly cards, one click away under the lead charts. */
+function EachAgencyRecalls() {
+  return (
+    <details className="group rounded-lg border border-border bg-card px-4 py-3">
+      <summary className="cursor-pointer select-none text-sm font-medium text-foreground marker:text-muted-foreground">
+        Each agency&apos;s recalls by year (4 charts)
+      </summary>
+      <div className="mt-3">
+        <SafetyRecallTrends />
+      </div>
+    </details>
+  );
+}
 import { sectionOf } from "@/lib/external/groups";
 import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
 import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
@@ -111,11 +139,11 @@ function SafetyPage() {
   if (overview && (datasets.error || datasets.isLoading))
     // The landing's counts, links and panels have their own queries; only the agency cards wait for the catalog.
     body = (
-      <SectionHub section="safety">
+      <SectionHub section="safety" lead={RECALL_LEAD}>
         <div className="space-y-6">
           <DailyInsightCard section="safety" />
           <SafetyIntelligence />
-          <SafetyRecallTrends />
+          <EachAgencyRecalls />
           <FsisRecallsTable />
           {datasets.error ? <ExternalError error={datasets.error} /> : loadingCollections}
         </div>
@@ -148,11 +176,11 @@ function SafetyPage() {
     // The caveat applies to every summed count, so it is stated once in full above the cards.
     const summed = agencyCards.some((c) => c.summed);
     body = (
-      <SectionHub section="safety">
+      <SectionHub section="safety" lead={RECALL_LEAD}>
         <div className="space-y-6">
           <DailyInsightCard section="safety" />
           <SafetyIntelligence />
-          <SafetyRecallTrends />
+          <EachAgencyRecalls />
           <FsisRecallsTable />
           {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
           <FolderGrid
