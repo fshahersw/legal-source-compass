@@ -87,9 +87,10 @@ def parse_chapter(raw: bytes):
             if cur:
                 sections.append(cur)
             lead = p.xpath('./span[@class="Leadline"]')
-            number = sb.one_line(number_span[0].text_content())
+            # a number can be printed in two spans ("388C" + ".140" for NRS 388C.140)
+            number = "".join(sb.one_line(span.text_content()) for span in number_span)
             catch = sb.one_line(lead[0].text_content()) if lead else None
-            last = lead[0] if lead else number_span[0]
+            last = lead[0] if lead else number_span[-1]
             rest = []
             for sib in last.itersiblings():
                 if sib.get("class") == "Empty" and not rest:

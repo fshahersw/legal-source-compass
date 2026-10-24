@@ -282,6 +282,15 @@ class EarlierModules(unittest.TestCase):
                            ("N.C. Gen. Stat. § 28A-18-2", "28a-18-2")):
             self.assertIn(("GS", want), _lib.apply_patterns(nc.META.codes, cite), cite)
 
+    def test_nv_number_split_across_spans(self):
+        nv = load("nv")
+        raw = ('<html><body><p class="SectBody"><span class="Empty">NRS</span><span class="Empty">\u2002</span>'
+               '<span class="Section">388C</span><span class="Section">.140</span><span class="Empty">\u2002</span>'
+               '<span class="Leadline">Rules for academic advancement of pupils.</span></p>'
+               '<p class="SectBody">1. The governing body shall adopt rules.</p></body></html>').encode("windows-1252")
+        got = nv.parse_chapter(raw)["sections"]
+        self.assertEqual([(s["number"], s["heading"]) for s in got], [("388C.140", "Rules for academic advancement of pupils.")])
+
     def test_nj_section(self):
         nj = load("nj")
         got = nj.split_section("2A:14-1. Actions of trespass to real property.",
