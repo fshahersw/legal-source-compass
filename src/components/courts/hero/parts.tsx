@@ -1,4 +1,7 @@
 import { courtTypeLabels } from "@/lib/courts/artwork";
+import { markImageFailed } from "@/components/visuals/failedImages";
+import { CreditText } from "@/components/visuals/ImageCredit";
+import { plainCredit } from "@/lib/visuals/common";
 import { photoAuthor, photoSource, type CourtPhotoThumb } from "@/lib/courts/photos";
 import { cn } from "@/lib/utils";
 import type { CourtMark } from "./courtMark";
@@ -38,7 +41,10 @@ export function MarkImage({
         alt={markAlt(mark, title)}
         loading="lazy"
         decoding="async"
-        onError={img.onError}
+        onError={() => {
+          img.onError();
+          markImageFailed(src);
+        }}
         className={cn("object-contain", className)}
       />
     );
@@ -174,7 +180,8 @@ export function MarkCaption({ mark, className }: { mark: CourtMark; className?: 
 
 /**
  * Visible credit for a photograph: author, licence (linked when a licence link is recorded) and source page (linked).
- * When the record names no licence, only "Source: <site>" is shown.
+ * A URL inside the author is a short link labelled with its host. When the record names no licence, the second line is
+ * "Source: <site>".
  */
 export function PhotoCredit({
   photo,
@@ -191,19 +198,7 @@ export function PhotoCredit({
       {photoSource(photo)}
     </a>
   );
-  if (!photo.license)
-    return (
-      <p
-        className={cn(
-          "m-0 leading-snug text-muted-foreground",
-          compact ? "text-[10.5px]" : "text-[11px]",
-          className,
-        )}
-      >
-        Source: {source}
-      </p>
-    );
-  const links = (
+  const second = photo.license ? (
     <>
       {photo.licenseUrl ? (
         <a href={photo.licenseUrl} target="_blank" rel="noreferrer" className={linkClass}>
@@ -214,6 +209,8 @@ export function PhotoCredit({
       )}{" "}
       · {source}
     </>
+  ) : (
+    <>Source: {source}</>
   );
   if (compact)
     return (
@@ -224,20 +221,20 @@ export function PhotoCredit({
         )}
       >
         <span className="shrink-0">Photo:</span>
-        <span className="min-w-0 shrink truncate" title={author}>
-          {author}
+        <span className="min-w-0 shrink truncate" title={plainCredit(author)}>
+          <CreditText value={author} />
         </span>
-        <span className="min-w-0 max-w-[60%] shrink-0 truncate" title={photo.license}>
-          · {links}
+        <span className="min-w-0 max-w-[60%] shrink-0 truncate" title={photo.license ?? undefined}>
+          · {second}
         </span>
       </p>
     );
   return (
     <div className={cn("space-y-0.5 text-[11px] leading-snug text-muted-foreground", className)}>
-      <p className="m-0 line-clamp-2 [overflow-wrap:anywhere]" title={author}>
-        Photo: {author}
+      <p className="m-0 line-clamp-2 [overflow-wrap:anywhere]" title={plainCredit(author)}>
+        Photo: <CreditText value={author} />
       </p>
-      <p className="m-0">{links}</p>
+      <p className="m-0">{second}</p>
     </div>
   );
 }

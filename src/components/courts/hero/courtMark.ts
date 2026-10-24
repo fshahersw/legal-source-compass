@@ -11,6 +11,7 @@ import {
   type CourtTypeGroup,
 } from "@/lib/courts/artwork";
 import { buildEntityView } from "@/lib/external/entityView";
+import { plainMediaLabel } from "@/lib/corpus/heldMedia";
 import { fileUrl } from "@/lib/external/groups";
 import { communityCourtArtwork } from "@/lib/visuals/registry";
 
@@ -86,7 +87,7 @@ export function resolveCourtMark(
       src: fileUrl(recorded.url),
       shape: "seal",
       label: "Recorded court image",
-      description: recorded.label,
+      description: plainMediaLabel(recorded.label),
       group,
     };
   return {

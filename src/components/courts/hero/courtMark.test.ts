@@ -28,6 +28,17 @@ describe("resolveCourtMark", () => {
     ]);
     expect(mark.kind).toBe("recorded");
   });
+
+  it("describes a stored identity-mark image without the earlier permission note", () => {
+    const mark = resolveCourtMark("no-such-court", "Federal", "Federal district", [
+      {
+        url: "/supplement-files/court_spine/logo_0285f97dee8bc066",
+        label: "Identity mark image (reuse permission not established)",
+      },
+    ]);
+    expect(mark.kind).toBe("recorded");
+    expect(mark.description).toBe("Identity mark image");
+  });
 });
 
 describe("recordedSystemAndType", () => {

@@ -1,12 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { isHeldMediaLabel, isStoredFilePath } from "./heldMedia";
+import { isStoredFilePath, isStoredMarkLabel, plainMediaLabel } from "./heldMedia";
 
-describe("held media", () => {
-  it("recognises labels that say reuse permission is not established", () => {
-    expect(isHeldMediaLabel("Identity mark image (reuse permission not established)")).toBe(true);
-    expect(isHeldMediaLabel("Identity marks (Reuse Permission Not Established)")).toBe(true);
-    expect(isHeldMediaLabel("Official seal")).toBe(false);
-    expect(isHeldMediaLabel("Page where it was observed")).toBe(false);
+describe("stored media labels", () => {
+  it("recognises stored identity-mark labels, with or without the earlier permission note", () => {
+    expect(isStoredMarkLabel("Identity mark image")).toBe(true);
+    expect(isStoredMarkLabel("Identity mark image (reuse permission not established)")).toBe(true);
+    expect(isStoredMarkLabel("Identity marks (Reuse Permission Not Established)")).toBe(true);
+    expect(isStoredMarkLabel("Official seal")).toBe(false);
+    expect(isStoredMarkLabel("Page where it was observed")).toBe(false);
+  });
+
+  it("prints a label without the earlier permission annotation and leaves other labels alone", () => {
+    expect(plainMediaLabel("Identity mark image (reuse permission not established)")).toBe(
+      "Identity mark image",
+    );
+    expect(plainMediaLabel("Identity marks (Reuse Permission Not Established)")).toBe(
+      "Identity marks",
+    );
+    expect(plainMediaLabel("Identity mark image (permission is not established)")).toBe(
+      "Identity mark image",
+    );
+    expect(plainMediaLabel("Court seal (published by the court)")).toBe(
+      "Court seal (published by the court)",
+    );
   });
 
   it("treats only root-relative paths as stored files", () => {

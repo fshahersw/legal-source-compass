@@ -11,6 +11,9 @@ import {
   parseMarkImage,
   parseOpenImage,
   parseRendition,
+  plainCredit,
+  recordedLicence,
+  creditSegments,
   sourceLabel,
   text,
   yearOf,
@@ -245,5 +248,86 @@ describe("helpers", () => {
     expect(yearOf("1930s")).toBeNull();
     expect(yearOf("2012?")).toBeNull();
     expect(yearOf(null)).toBeNull();
+  });
+});
+
+describe("recordedLicence", () => {
+  it("keeps a named licence or rights statement and drops registry review wording", () => {
+    for (const named of [
+      "CC BY-SA 4.0",
+      "Public domain",
+      "No known restrictions on publication.",
+      "Copyrighted free use",
+      "U.S. government work under official committee copyright policy",
+    ])
+      expect(recordedLicence(named)).toBe(named);
+    for (const status of [
+      "Not assessed; credit original repository cited on FJC source page",
+      "Not specified by logo registry",
+      "Pending file-specific policy and visual review",
+      "GSA-hosted photograph; individual image reuse rights/credit not stated on profile",
+      "",
+      "   ",
+    ])
+      expect(recordedLicence(status)).toBeNull();
+    expect(recordedLicence(null)).toBeNull();
+  });
+
+  it("makes parsed images and marks read 'Source: <site>' for such a status", () => {
+    const fjc = parseOpenImage({
+      ...FJC_IMAGE,
+      license: "Not assessed; credit original repository cited on FJC source page",
+    })!;
+    expect(fjc.license).toBeNull();
+    expect(fjc.licenseUrl).toBeNull();
+    expect(
+      parseLicence({
+        license: "Pending file-specific policy and visual review",
+        license_family: "other",
+        license_url: "https://agriculture.house.gov/privacy",
+      }),
+    ).toEqual({ license: null, licenseFamily: "other", licenseUrl: null, licenseUrlIsDeed: false });
+  });
+});
+
+describe("credit text", () => {
+  it("turns each URL into a link labelled with its host, never the raw address", () => {
+    const segs = creditSegments(
+      "James Brooks · https://www.flickr.com/photos/jkbrooks85/50796914563/",
+    );
+    expect(segs).toEqual([
+      { kind: "text", text: "James Brooks · " },
+      {
+        kind: "link",
+        href: "https://www.flickr.com/photos/jkbrooks85/50796914563/",
+        host: "flickr.com",
+      },
+    ]);
+    expect(plainCredit("James Brooks · https://www.flickr.com/photos/x/1/")).toBe(
+      "James Brooks · flickr.com",
+    );
+  });
+
+  it("handles several URLs, trailing punctuation and http addresses", () => {
+    const text =
+      "Library of Congress Catalog: http://lccn.loc.gov/2014630182, image https://cdn.loc.gov/master/a.tif.";
+    expect(plainCredit(text)).toBe("Library of Congress Catalog: lccn.loc.gov, image cdn.loc.gov.");
+    expect(creditSegments(text).filter((s) => s.kind === "link")).toHaveLength(2);
+    expect(creditSegments("see (https://www.census.gov/)")[1]).toEqual({
+      kind: "link",
+      href: "https://www.census.gov/",
+      host: "census.gov",
+    });
+  });
+
+  it("leaves plain text, other schemes and unparsable addresses as text", () => {
+    expect(creditSegments("Ken Lund from Reno, Nevada, USA")).toEqual([
+      { kind: "text", text: "Ken Lund from Reno, Nevada, USA" },
+    ]);
+    expect(creditSegments("javascript:alert(1) and ftp://x.org/a")).toEqual([
+      { kind: "text", text: "javascript:alert(1) and ftp://x.org/a" },
+    ]);
+    expect(plainCredit("https:// broken")).toBe("https:// broken");
+    expect(creditSegments("")).toEqual([]);
   });
 });
