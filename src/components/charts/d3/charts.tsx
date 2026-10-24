@@ -387,5 +387,3 @@ export function Sunburst({ root, size = 360 }: { root: TreeNode; size?: number }
   );
 }
 
-/** Legend-free scale helper kept for callers that place their own axis. */
-export const pointScale = scalePoint;
