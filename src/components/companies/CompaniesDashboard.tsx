@@ -20,6 +20,7 @@ import { ArrowDown, ArrowUp, ExternalLink, Search } from "lucide-react";
 import { ChartCard, ChartUnavailable } from "@/components/fda-analytics/FdaCharts";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { Input } from "@/components/ui/input";
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { getCompaniesIntelligence } from "@/lib/external/companies.functions";
 import { cn } from "@/lib/utils";
 import {
@@ -108,24 +109,27 @@ function Dashboard({ data }: { data: CompaniesData }) {
 
   return (
     <div className="space-y-4">
-      <SourceLine>
-        Companies are linked to an MDL only when their own SEC filing names it: the MDL number (tier
-        A), the official JPML caption (tier B), or — labelled for review — the caption&apos;s
-        subject next to &ldquo;MDL&rdquo; (tier C). Every link was re-checked against the downloaded
-        filing text. Financials are the registrant&apos;s own XBRL facts. Built {o.asOf}; JPML
-        pending counts as of {o.jpmlAsOf ?? NOT_RECORDED}.
-      </SourceLine>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <Kpi
-          label="SEC registrants linked"
-          value={count(o.companies)}
-          note={`${count(o.companiesWithFinancials)} with XBRL financials`}
-        />
-        <Kpi
-          label="Company–MDL links"
-          value={count(o.links)}
-          note={`A ${o.tiers.A ?? 0} · B ${o.tiers.B ?? 0} · C ${o.tiers.C ?? 0}`}
-        />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        <span>
+          {count(o.companies)} SEC registrants linked to MDLs · {count(o.links)} links · built {o.asOf}
+        </span>
+        <InfoPopover label="How companies are linked" showLabel>
+          <p>
+            Companies are linked to an MDL only when their own SEC filing names it: the MDL number (tier A), the
+            official JPML caption (tier B), or, labelled for review, the caption&apos;s subject next to
+            &ldquo;MDL&rdquo; (tier C). Every link was re-checked against the downloaded filing text.
+          </p>
+          <p className="mt-2">
+            Links by tier: A {o.tiers.A ?? 0} · B {o.tiers.B ?? 0} · C {o.tiers.C ?? 0}.{" "}
+            {count(o.companiesWithFinancials)} of {count(o.companies)} linked registrants have XBRL financials, the
+            registrant&apos;s own reported facts.
+          </p>
+          <p className="mt-2">
+            Built {o.asOf}; JPML pending counts as of {o.jpmlAsOf ?? NOT_RECORDED}.
+          </p>
+        </InfoPopover>
+      </div>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Kpi
           label="Pending MDLs linked"
           value={`${o.pendingMdlsWithLinks} / ${o.pendingTargets}`}
