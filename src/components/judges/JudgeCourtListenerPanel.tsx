@@ -11,23 +11,23 @@ import { TrendGrid } from "@/components/trends/ProfileTrend";
 import { JudgeClYearCard } from "./JudgeTrendCards";
 
 const TIER_TEXT: Record<CrosswalkTier, string> = {
-  exact_id: "Exact identifier: the FJC id on this record equals the CourtListener person's FJC id",
+  exact_id: "Exact identifier: the federal judicial id on this record equals the case-law person's federal judicial id",
   parent_profile_link:
     "Exact identifier through the FJC-backed directory record this profile belongs to",
   exact_name_same_court:
-    "Exact full name and a CourtListener judicial position at a court on this record; the only such person",
+    "Exact full name and a the source judicial position at a court on this record; the only such person",
   exact_name_same_state:
-    "Exact full name and a CourtListener judicial position in this state; the only such person there",
+    "Exact full name and a the source judicial position in this state; the only such person there",
   compatible_name_same_court:
     "Possible match: same first and last name at a court on this record, middle name written differently",
-  ambiguous: "Several CourtListener people fit this name and court, so none is linked",
+  ambiguous: "Several the source people fit this name and court, so none is linked",
   fjc_conflict: "The FJC ids on the two sides disagree, so no person is linked",
   date_conflict: "The service dates on the two sides do not overlap, so no person is linked",
   withheld_for_review: "The source bridge for this record is withheld for review",
   no_cl_person_for_fjc_id:
-    "CourtListener has no person with this record's FJC id, and no exact name match was found",
+    "the source has no person with this record's federal judicial id, and no exact name match was found",
   not_found:
-    "CourtListener's people database has no judicial position for this name at the recorded courts or state",
+    "The judicial people database has no judicial position for this name at the recorded courts or state",
 };
 
 /** Static column classes so the tile grid has no empty cells (Tailwind needs literal class names). */
@@ -72,7 +72,7 @@ export function JudgeCourtListenerPanel({ judgeId }: { judgeId: string }) {
   if (c.needsReview && c.clPersonId !== null) return <Review c={c} />;
   return (
     <p className="mb-5 text-xs text-muted-foreground">
-      <span className="font-medium text-foreground/80">CourtListener: </span>
+      <span className="font-medium text-foreground/80">Case law: </span>
       not linked. {TIER_TEXT[c.tier]}.
     </p>
   );
@@ -122,7 +122,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
         <h2 className="text-heading font-semibold text-foreground">
-          CourtListener{" "}
+          Opinions &amp; activity{" "}
           <span className="font-normal text-muted-foreground">
             · {c.clName ?? `person ${c.clPersonId}`}
           </span>
@@ -201,12 +201,12 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
         ) : null}
         {o?.excludedOutsideLifespan ? (
           <p>
-            {fmt(o.excludedOutsideLifespan)} opinions CourtListener credits to this person are dated
+            {fmt(o.excludedOutsideLifespan)} opinions the source credits to this person are dated
             outside their recorded lifespan and are left out.
           </p>
         ) : null}
         <p>
-          Counts describe CourtListener's collection (snapshot Sept 30, 2026), not a complete
+          Counts describe the source's collection (snapshot Sept 30, 2026), not a complete
           caseload.{" "}
           {c.clDocketsRecord ? (
             <Link

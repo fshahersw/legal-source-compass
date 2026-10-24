@@ -45,7 +45,7 @@ function Body({ p }: { p: JudgePanels }) {
       title="Recorded panels"
       subtitle={
         <>
-          Opinion clusters that list this judge on the panel in CourtListener ·{" "}
+          Opinion clusters that list this judge on the panel in the source ·{" "}
           {yearSpan(p.firstFiled, p.lastFiled) ?? "years not recorded"}
         </>
       }
@@ -103,7 +103,7 @@ function Body({ p }: { p: JudgePanels }) {
                 render: (c) => fmtInt(c.panels),
               },
             ]}
-            note="Counts are clusters listing both judges; people are CourtListener person ids, never matched by name."
+            note="Counts are clusters listing both judges; people are case-law person ids, never matched by name."
           />
           <MiniTable
             caption="Courts"
@@ -134,7 +134,7 @@ function Body({ p }: { p: JudgePanels }) {
       ) : null}
       <p className="px-3 pb-3 text-[11px] leading-4 text-muted-foreground">
         Most opinion clusters list no panel, so these counts cover only the clusters where
-        CourtListener recorded one; they are not a count of cases heard.
+        The source recorded one; they are not a count of cases heard.
         {p.firstFiled ? "" : ` Filing years: ${NOT_RECORDED}.`}
       </p>
     </PanelShell>

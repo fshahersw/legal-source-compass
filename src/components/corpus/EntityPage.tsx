@@ -92,12 +92,28 @@ export function EntityPage({
   const printed = new Set([v.title, ...(v.subtitle ? v.subtitle.split(" · ") : [])].map((t) => t.trim()));
   const repeats = ([, val]: (typeof v.facts)[number]) =>
     typeof val === "string" && printed.has(val.trim());
-  const key = v.facts.slice(0, 8).filter((f) => !repeats(f));
+  // Same value under another key (State / States / Location) is printed once; counters of empty lists and
+  // record ids add nothing to the identity box and move to the technical details.
+  const seenVals = new Set<string>();
+  const dupe = ([, val]: (typeof v.facts)[number]) => {
+    if (typeof val !== "string") return false;
+    const k = val.trim().toLowerCase();
+    if (seenVals.has(k)) return true;
+    seenVals.add(k);
+    return false;
+  };
+  const isNoise = ([k, val]: (typeof v.facts)[number]) =>
+    /\bcount$/i.test(k) && String(val) === "0";
+  const isId = ([k]: (typeof v.facts)[number]) => /^record id$/i.test(k);
+  const moved = v.facts.filter((f) => isNoise(f) || isId(f));
+  const facts = v.facts.filter((f) => !isNoise(f) && !isId(f) && !dupe(f));
+  const key = facts.slice(0, 8).filter((f) => !repeats(f));
   // A caller's lead replaces the photo; the facts box is drawn only when it has something to hold.
   const leadNode = lead ? lead(data.raw, v) : null;
   const hasLead = leadNode !== null && leadNode !== undefined && leadNode !== false;
   const photo = !lead && v.photo ? v.photo : null;
-  const rest = [...v.facts.slice(0, 8).filter(repeats), ...v.facts.slice(8)];
+  const rest = [...facts.slice(0, 8).filter(repeats), ...facts.slice(8)];
+  const technical = [...moved, ...v.technical];
   const nav = [
     ...(docket
       ? [
@@ -184,7 +200,7 @@ export function EntityPage({
           Record details
         </h2>
       ) : null}
-      {nav.length > 1 ? (
+      {nav.length > 1 && !extra ? (
         <nav
           aria-label={extra ? "Record details" : "On this page"}
           className={
@@ -244,19 +260,19 @@ export function EntityPage({
         ))}
         {v.text ? <FullText text={v.text} /> : null}
       </div>
-      {v.empty.length ? (
-        <p className="mt-6 text-[11px] text-muted-foreground">
-          Not recorded for this entry: {v.empty.join(", ")}.
-        </p>
-      ) : null}
-      {v.technical.length || v.provenanceJson ? (
-        <details className="mt-4 text-[12px]">
+      {technical.length || v.provenanceJson || v.empty.length ? (
+        <details className="mt-8 border-t border-border pt-3 text-[12px]">
           <summary className="cursor-pointer text-muted-foreground">
             Technical details and provenance
           </summary>
-          {v.technical.length ? (
+          {v.empty.length ? (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Not recorded for this entry: {v.empty.join(", ")}.
+            </p>
+          ) : null}
+          {technical.length ? (
             <dl className="mt-2 grid grid-cols-[minmax(10rem,auto)_1fr] gap-x-3 gap-y-1">
-              {v.technical.map(([k, val], i) => (
+              {technical.map(([k, val], i) => (
                 <div key={i} className="contents">
                   <dt className="text-muted-foreground">{k}</dt>
                   <dd className="break-words">{displayValue(val)}</dd>

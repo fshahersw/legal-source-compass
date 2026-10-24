@@ -68,7 +68,7 @@ function Body({ d }: { d: JudgeDisclosures }) {
       title="Financial disclosure reports"
       subtitle={
         <>
-          As filed and extracted by CourtListener ·{" "}
+          As filed and extracted by the source ·{" "}
           {d.reports === 1 ? "1 report" : `${fmtInt(d.reports)} reports`}
           {span ? `, ${span}` : ""}
         </>
@@ -87,7 +87,7 @@ function Body({ d }: { d: JudgeDisclosures }) {
         >
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning-foreground" aria-hidden />
           <span>
-            CourtListener attributes to this person reports filed under more than one circuit code (
+            The source attributes to this person reports filed under more than one circuit code (
             {d.attribution.circuits.map((c) => `${c.code}: ${c.reports}`).join(", ")}). They may
             belong to more than one judge, so no gifts, reimbursements or agreements are listed
             here; the counts below include every attributed report.
@@ -236,7 +236,7 @@ function Body({ d }: { d: JudgeDisclosures }) {
               ]}
             />
             <p className="text-[11px] leading-4 text-muted-foreground">
-              Text is CourtListener's extraction from scanned forms and can contain reading errors;
+              Text is the source's extraction from scanned forms and can contain reading errors;
               values are the report's own codes or words.
               {withheld
                 ? ` ${fmtInt(withheld)} items from reports whose file name does not carry this surname, or could not be read, are not listed.`
@@ -291,7 +291,7 @@ function Body({ d }: { d: JudgeDisclosures }) {
           measures={[
             {
               term: "Report",
-              means: "A financial disclosure report CourtListener holds and links to this person.",
+              means: "A financial disclosure report the source holds and links to this person.",
               caveat: "Report years 1987–2022 in this snapshot; not every report a judge filed.",
             },
             {

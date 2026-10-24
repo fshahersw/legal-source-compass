@@ -72,7 +72,7 @@ function Body({ d }: { d: DisclosureItems }) {
       title="What the disclosure reports contain"
       subtitle={
         <>
-          As filed and extracted by CourtListener · {fmtInt(d.reports)} report
+          As filed and extracted by the source · {fmtInt(d.reports)} report
           {d.reports === 1 ? "" : "s"}
           {span ? `, ${span}` : ""} · value ranges shown as the printed form codes
         </>
@@ -125,7 +125,7 @@ function Body({ d }: { d: DisclosureItems }) {
               render: (y) => fmtInt(y.transactions),
             },
           ]}
-          note="Counts include every report CourtListener attributes to this person. Transactions are investment lines that record a purchase, sale or other transaction in the year."
+          note="Counts include every report the source attributes to this person. Transactions are investment lines that record a purchase, sale or other transaction in the year."
         />
       </CollapsibleSection>
       {d.conflict ? (
@@ -146,7 +146,7 @@ function Body({ d }: { d: DisclosureItems }) {
             {
               term: "Value code",
               means:
-                "the letter code printed on the report for a value range; for example J is 1 - 15,000 dollars and K is 15,001 - 50,000 dollars (the form's ranges, from CourtListener's legend).",
+                "the letter code printed on the report for a value range; for example J is 1 - 15,000 dollars and K is 15,001 - 50,000 dollars (the form's ranges, from the source's legend).",
               caveat:
                 "A code is a range, not an amount. Codes are counted, never added up or averaged.",
             },
@@ -158,14 +158,14 @@ function Body({ d }: { d: DisclosureItems }) {
             {
               term: "Failed extraction",
               means:
-                "CourtListener could not read the code from the scanned report (stored as -1).",
+                "the source could not read the code from the scanned report (stored as -1).",
             },
             {
               term: "Listed items",
               means:
                 "shown only from reports whose original file name carries this person's surname.",
               caveat:
-                "Text is as CourtListener extracted it from scanned forms and can contain reading errors.",
+                "Text is as the source extracted it from scanned forms and can contain reading errors.",
             },
           ]}
         />
@@ -191,7 +191,7 @@ function ValueMatrix({ d }: { d: DisclosureItems }) {
       headingLevel="h3"
       sources={[
         {
-          label: "CourtListener bulk data: financial-disclosure investments (Sept 30, 2026)",
+          label: "the source bulk data: financial-disclosure investments (Sept 30, 2026)",
           url: FD_URL,
         },
       ]}

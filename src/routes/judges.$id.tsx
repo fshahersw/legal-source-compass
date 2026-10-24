@@ -67,6 +67,22 @@ function Page() {
       lead={(_, v) => <JudgeHeadshot judgeId={id} name={v.title} recorded={v.photo} />}
       extra={() => (
         <>
+          {states.length ? (
+            <div className="-mt-2 mb-5 flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-muted-foreground">State:</span>
+              {states.map((state) => (
+                <Link
+                  key={state.usps}
+                  to="/places/$state"
+                  params={{ state: state.usps }}
+                  search={{ tab: "judges" }}
+                  className="rounded-xl border border-border bg-card shadow-xs px-2.5 py-1 font-medium hover:bg-muted"
+                >
+                  {state.name} →
+                </Link>
+              ))}
+            </div>
+          ) : null}
           <ProfileSections
             after={[{ id: "entity-record", label: "Record" }]}
             sections={[
@@ -119,22 +135,6 @@ function Page() {
               },
             ]}
           />
-          {states.length ? (
-            <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-muted-foreground">Recorded state associations:</span>
-              {states.map((state) => (
-                <Link
-                  key={state.usps}
-                  to="/places/$state"
-                  params={{ state: state.usps }}
-                  search={{ tab: "judges" }}
-                  className="rounded-xl border border-border bg-card shadow-xs px-3 py-2 font-medium hover:bg-muted"
-                >
-                  {state.name} →
-                </Link>
-              ))}
-            </div>
-          ) : null}
         </>
       )}
     />
