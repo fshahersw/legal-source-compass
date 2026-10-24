@@ -47,7 +47,7 @@ export function largestMdlSeries(data: MdlAnalytics, n = 5): { series: Series[];
     const at = new Map(m.series.map((p) => [p.date, p.pending]));
     return {
       id: String(m.mdl),
-      label: productLabel(m, 14),
+      label: productLabel(m, 12),
       points: dates.map((date) => ({ date, value: at.get(date) ?? null })),
     };
   });
@@ -84,7 +84,7 @@ export function LitigationHeadline() {
         variant="editorial"
         title={
           lead && o
-            ? `${shortMdl(lead, 28)} is the largest pending MDL, with ${int(lead.pending)} actions`
+            ? `${productLabel(lead, 36)} is the largest pending MDL, with ${int(lead.pending)} actions`
             : "Largest pending MDLs over time"
         }
         subtitle="Actions pending in the five largest MDLs · change since the report you choose"
@@ -119,7 +119,7 @@ export function LitigationHeadline() {
         variant="editorial"
         title={
           movers.length && o
-            ? `${shortMdl(movers[0]!, 28)} grew most in 12 months (${signed(movers[0]!.change12m!)} actions)`
+            ? `${productLabel(movers[0]!, 36)} grew most in 12 months (${signed(movers[0]!.change12m!)} actions)`
             : "Biggest 12-month changes in pending actions"
         }
         subtitle="Change in actions pending over the last 12 monthly reports · largest rises and falls"
