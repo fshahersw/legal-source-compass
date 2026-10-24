@@ -287,7 +287,7 @@ function CompareTrends({
         footnotes={[
           ...(showChange
             ? [
-                "Change since: each line is its value divided by its value at the chosen period, minus one. Move the "Compare with" slider to change the comparison point; a line with no value there is not drawn.",
+                "Change since: each line is its value divided by its value at the chosen period, minus one. Move the \u201cCompare with\u201d slider to change the comparison point; a line with no value there is not drawn.",
                 ...(change?.partialDropped.length
                   ? [
                       `Partial period${change.partialDropped.length === 1 ? "" : "s"} left out of the change view: ${change.partialDropped.map((k) => drawn!.axis.label(k)).join(", ")}.`,
