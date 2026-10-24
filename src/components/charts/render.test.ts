@@ -93,7 +93,7 @@ describe("ChartFrame states", () => {
     );
     expect(ready).toContain("One source could not be read.");
     expect(ready).toContain("View data");
-    expect(ready).toContain("About this data");
+    expect(ready).toContain("Source and notes");
     expect(ready).toContain("Cases · 2019–2023");
     expect(ready).toContain("* Partial period.");
     expect(ready).toContain('href="https://www.fjc.gov/research/idb"');

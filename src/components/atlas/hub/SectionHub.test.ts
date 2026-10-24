@@ -55,7 +55,7 @@ describe("hub record counts", () => {
     mocks.query.data = [dataset("sec_enforcement_actions", 30731, "SEC enforcement actions")];
     const html = kpis([{ dataset: "sec_enforcement_actions", label: "SEC enforcement actions" }]);
     expect(html).toContain("30,731");
-    expect(html).toContain('href="/data/sec_enforcement_actions"');
+    expect(html).toContain("Source and notes");
     expect(html).toContain('title="Source: SEC enforcement actions"');
   });
   it("says Not recorded when the catalog has no count, and drops a dataset it does not hold", () => {

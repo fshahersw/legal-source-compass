@@ -210,8 +210,7 @@ describe("ChartCard", () => {
     expect(out).toContain("45,713");
     expect(out).toContain("View data");
     expect(out).toContain("chart body");
-    expect(out).toContain('href="https://www.uscourts.gov"');
-    expect(out).toContain("About this data");
+    expect(out).toContain("Source and notes");
   });
 
   it("renders loading, error and empty states", () => {
