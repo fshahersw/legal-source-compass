@@ -50,6 +50,11 @@ vi.mock("@/components/atlas/AppShell", () => ({
   AppShell: ({ children }: { children: ReactNode }) => createElement("main", null, children),
 }));
 vi.mock("@/components/corpus/EntityArtwork", () => ({ AgencyMark: () => null }));
+vi.mock("@/components/visuals/AgencyEmblem", () => ({
+  AgencyEmblem: () => null,
+  AgencyMarkCaption: () => null,
+}));
+vi.mock("@/components/visuals/AgencyBuildingPhoto", () => ({ AgencyBuildingPhoto: () => null }));
 vi.mock("@/components/enforcement/oversight/AgencyOversightPanel", () => ({
   AgencyOversightPanel: () => null,
 }));
