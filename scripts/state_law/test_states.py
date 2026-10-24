@@ -6,6 +6,7 @@ import datetime as dt
 import hashlib
 import importlib.util
 import pathlib
+import re
 import sys
 import tempfile
 import unittest
@@ -341,6 +342,16 @@ class ConnecticutTests(unittest.TestCase):
         self.assertIs(items[1]["paras"], items[2]["paras"])
         self.assertIsNone(items[1]["heading"])
         self.assertEqual(items[5]["heading"], "Funds to be paid to General Fund.")
+
+
+class ConnecticutArticleTests(unittest.TestCase):
+    def test_article_pages_are_units(self):
+        ct = load("ct")
+        self.assertEqual(ct.unit_heading("art_002.htm", "ARTICLE 2*\nSALES\n*See chapter 669"), ("Article", "2", "SALES"))
+        self.assertEqual(ct.unit_heading("chap_926.htm", "CHAPTER 926*\nSTATUTE OF LIMITATIONS\n"),
+                         ("Chapter", "926", "STATUTE OF LIMITATIONS"))
+        title = '<a href="art_001.htm">1</a><a href="art_002a.htm">2A</a><a href="chap_669.htm">x</a><a href="titles.htm">t</a>'
+        self.assertEqual(re.findall(ct.UNIT_RE, title), ["art_001.htm", "art_002a.htm", "chap_669.htm"])
 
 
 class LoaderRejectBoundTests(unittest.TestCase):

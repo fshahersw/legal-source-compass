@@ -3,7 +3,7 @@
 The current text is the publisher's revision (/current/pub/: "Revised to January 1, 2025") read together with its
 Supplement (/<year>/sup/: "2026 Supplement … intended to be used in conjunction with the General Statutes …"): a
 section printed in the supplement replaces the revision's text (the supplement holds the versions amended, added or
-repealed since the revision). Pages: titles.htm -> title_NN.htm -> chap_NNN.htm. A chapter page prints each section
+repealed since the revision). Pages: titles.htm -> title_NN.htm -> chap_NNN.htm (art_NNN.htm for the articles of Title 42a). A chapter page prints each section
 as <p><span class="catchln" id="sec_52-577">Sec. 52-577. Catchline.</span> text</p>, further <p> paragraphs, then
 `source` paragraphs (kept as history) and `history`, `cross-ref`, `annotation` paragraphs (editorial; dropped).
 "Secs. x to y." range entries (reserved/repealed ranges) are not single sections and are ledgered, not emitted;
@@ -105,6 +105,19 @@ def chapter_heading(flat: str) -> tuple[str | None, str | None]:
     return (m.group(1), lib.norm_ws(m.group(2))) if m else (None, None)
 
 
+# Title 42a (the Uniform Commercial Code) is divided into articles: title_42a.htm links art_001.htm ... art_010.htm,
+# printed like chapter pages under "ARTICLE 2*" / "SALES"
+UNIT_RE = r'href="((?:chap|art)_[0-9a-z]+\.htm)"'
+
+
+def unit_heading(file_name: str, flat: str) -> tuple[str, str | None, str | None]:
+    """(label, number, heading) of a chapter or article page."""
+    if file_name.startswith("art_"):
+        m = re.search(r"ARTICLE\s+([0-9A-Za-z]+)\*?\s*\n([^\n]+)", flat)
+        return ("Article",) + ((m.group(1), lib.norm_ws(m.group(2))) if m else (None, None))
+    return ("Chapter",) + chapter_heading(flat)
+
+
 def acquire(ctx: lib.RunContext) -> None:
     titles_page = ctx.get(PUB + "titles.htm", fallback_fresh=True)
     flat = lib.html_text(titles_page.body)
@@ -120,7 +133,7 @@ def acquire(ctx: lib.RunContext) -> None:
     statement = "\n".join(x for x in (masthead(flat), masthead(sup_flat), sup_stmt.group(0) if sup_stmt else None) if x)
     ctx.edition(edition_label=f"Revision of {base_stmt.group(0)[11:]} with the {SUP_YEAR} Supplement" if base_stmt else None,
                 currency_statement=statement or None, currency_source_url=PUB + "titles.htm")
-    sup_chapters = set(re.findall(r'href="(chap_[0-9a-z]+\.htm)"', " ".join(
+    sup_chapters = set(re.findall(UNIT_RE, " ".join(
         ctx.get(SUP + t, fallback_fresh=True).text() for t in dict.fromkeys(re.findall(r'href="(title_[0-9a-z]+\.htm)"', sup_page.text()))
     ))) if ctx.sample is None else {"chap_926.htm"}
     titles = list(dict.fromkeys(re.findall(r'href="(title_[0-9a-z]+\.htm)"', titles_page.text())))
@@ -131,16 +144,17 @@ def acquire(ctx: lib.RunContext) -> None:
             break
         tpage = ctx.get(PUB + title_file, fallback_fresh=True)
         t_no, t_head = title_heading(lib.html_text(tpage.body))
-        chapters = list(dict.fromkeys(re.findall(r'href="(chap_[0-9a-z]+\.htm)"', tpage.text())))
+        chapters = list(dict.fromkeys(re.findall(UNIT_RE, tpage.text())))
         if ctx.sample is not None:
             chapters = ["chap_926.htm"]
         for chap_file in chapters:
             if not ctx.want_more():
                 break
             cpage = ctx.get(PUB + chap_file, fallback_fresh=True)
-            c_no, c_head = chapter_heading(lib.html_text(cpage.body))
+            c_label, c_no, c_head = unit_heading(chap_file, lib.html_text(cpage.body))
             path = [{"level": "title", "label": "Title", "number": t_no or title_file[6:-4].lstrip("0"), "heading": t_head},
-                    {"level": "chapter", "label": "Chapter", "number": c_no or chap_file[5:-4], "heading": c_head}]
+                    {"level": c_label.lower(), "label": c_label, "number": c_no or chap_file.split("_", 1)[1][:-4],
+                     "heading": c_head}]
             replaced: dict[str, tuple[dict, lib.Fetched]] = {}
             if chap_file in sup_chapters:
                 spage = ctx.get(SUP + chap_file, fallback_fresh=True)
