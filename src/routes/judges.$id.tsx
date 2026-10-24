@@ -5,6 +5,8 @@ import { JudgePracticesPanel } from "@/components/judges/practices/JudgePractice
 import { JudgeCourtListenerPanel } from "@/components/judges/JudgeCourtListenerPanel";
 import { JudgeDisclosuresPanel } from "@/components/judges/clb/JudgeDisclosuresPanel";
 import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServicePanel";
+import { JudgeServicePanel } from "@/components/judges/clb/JudgeServicePanel";
+import { JudgeDisclosureContentsPanel } from "@/components/judges/clb/JudgeDisclosureContentsPanel";
 import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
@@ -67,9 +69,11 @@ function Page() {
           <JudgeFjcPanel judgeId={id} />
           <JudgePracticesPanel judgeId={id} />
           <NominationPanel judgeId={id} />
+          <JudgeServicePanel judgeId={id} />
           <JudgeCourtListenerPanel judgeId={id} />
           <JudgePanelServicePanel judgeId={id} />
           <JudgeDisclosuresPanel judgeId={id} />
+          <JudgeDisclosureContentsPanel judgeId={id} />
           <JudgeMdlPanel judgeId={id} />
           <JudgeMdlFlowsPanel judgeId={id} />
           {/^[0-9a-f]{32}$/.test(id) ? (
