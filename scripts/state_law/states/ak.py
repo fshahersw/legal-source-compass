@@ -97,7 +97,8 @@ def acquire(ctx: lib.RunContext) -> None:
         if not ctx.want_more():
             break
         toc = ctx.fetch(f"{PAGE}?media=js&type=TOC&title={title}")
-        chapters = [(c, n, lib.norm_ws(h)) for c, n, h in CHAPTER_RE.findall(toc.text())]
+        # a title's table of contents can list a chapter twice; each chapter is read once
+        chapters = list({c: (c, n, lib.norm_ws(h)) for c, n, h in CHAPTER_RE.findall(toc.text())}.values())
         if ctx.sample is not None:
             chapters = [c for c in chapters if c[0] == "09.10"]
         title_step = {"level": "title", "label": "Title", "number": str(title), "heading": title_names.get(title)}
