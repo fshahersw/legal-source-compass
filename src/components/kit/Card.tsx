@@ -172,7 +172,6 @@ export function SourceFooter({
     !sources.length && source != null && !Array.isArray(source) && !isSourceRef(source)
       ? (source as ReactNode)
       : null;
-  void 0;
   const items: { key: string; node: ReactNode; className?: string; title?: string | undefined }[] =
     [];
   if (sources.length || custom)

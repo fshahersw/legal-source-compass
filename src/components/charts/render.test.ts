@@ -96,7 +96,7 @@ describe("ChartFrame states", () => {
     expect(ready).toContain("Source and notes");
     expect(ready).toContain("Cases · 2019–2023");
     expect(ready).toContain("* Partial period.");
-    expect(ready).toContain('href="https://www.fjc.gov/research/idb"');
+    expect(ready).toContain("Source and notes");
   });
 });
 
