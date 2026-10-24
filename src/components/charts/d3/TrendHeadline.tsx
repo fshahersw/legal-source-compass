@@ -136,131 +136,141 @@ export function TrendHeadline({
 
   return (
     <section id={sectionId} aria-label={aiTitle} className="space-y-3">
-    <div
-      className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
-      data-testid="trend-headline"
-    >
-      <ChartCard
-        variant="editorial"
-        title={
-          lead && start
-            ? `Since ${fmtX(start)}, ${lead.s.label} changed most: ${pctText(lead.end!.value! * 100)}`
-            : `How ${subject} changed over time`
-        }
-        subtitle={`Each series as a % change from the ${aligned ? KIND_LABEL[aligned.xKind] : "period"} you choose`}
-        status={
-          status.kind === "ready" && !aligned
-            ? {
-                kind: "empty",
-                reason: "Fewer than three periods are shared by two or more series.",
-              }
-            : status
-        }
-        notice={notice}
-        sources={uniqueSources}
-        period={start && lastDate ? `${fmtX(dates[0]!)}–${fmtX(lastDate)}` : undefined}
-        about={
-          <>
-            <p>{unitNote}</p>
-            <p className="mt-2">
-              Lines start at 0% at the period you choose, so large and small series compare on one
-              scale. Periods a source does not record are gaps.
-              {aligned?.cutAt.length
-                ? ` ${aligned.cutAt.map((c) => `${c.label} starts at ${c.x} (${c.marker.toLowerCase()})`).join("; ")}.`
-                : ""}
-              {aligned?.partialDropped.length
-                ? ` Unfinished periods (${aligned.partialDropped.join(", ")}) are left out.`
-                : ""}
-            </p>
-          </>
-        }
-        table={
-          aligned
-            ? {
-                caption: `${subject}, by ${KIND_LABEL[aligned.xKind]}`,
-                columns: [{ label: "Period" }, ...aligned.series.map((s) => ({ label: s.label }))],
-                rows: dates.map((d, i) => ({
-                  key: d,
-                  cells: [
-                    fmtX(d),
-                    ...aligned.series.map((s) => s.points[i]?.value ?? "Not recorded"),
+      <div
+        className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+        data-testid="trend-headline"
+      >
+        <ChartCard
+          variant="editorial"
+          title={
+            lead && start
+              ? `Since ${fmtX(start)}, ${lead.s.label} changed most: ${pctText(lead.end!.value! * 100)}`
+              : `How ${subject} changed over time`
+          }
+          subtitle={`Each series as a % change from the ${aligned ? KIND_LABEL[aligned.xKind] : "period"} you choose`}
+          status={
+            status.kind === "ready" && !aligned
+              ? {
+                  kind: "empty",
+                  reason: "Fewer than three periods are shared by two or more series.",
+                }
+              : status
+          }
+          notice={notice}
+          sources={uniqueSources}
+          period={start && lastDate ? `${fmtX(dates[0]!)}–${fmtX(lastDate)}` : undefined}
+          about={
+            <>
+              <p>{unitNote}</p>
+              <p className="mt-2">
+                Lines start at 0% at the period you choose, so large and small series compare on one
+                scale. Periods a source does not record are gaps.
+                {aligned?.cutAt.length
+                  ? ` ${aligned.cutAt.map((c) => `${c.label} starts at ${c.x} (${c.marker.toLowerCase()})`).join("; ")}.`
+                  : ""}
+                {aligned?.partialDropped.length
+                  ? ` Unfinished periods (${aligned.partialDropped.join(", ")}) are left out.`
+                  : ""}
+              </p>
+            </>
+          }
+          table={
+            aligned
+              ? {
+                  caption: `${subject}, by ${KIND_LABEL[aligned.xKind]}`,
+                  columns: [
+                    { label: "Period" },
+                    ...aligned.series.map((s) => ({ label: s.label })),
                   ],
-                })),
-              }
-            : undefined
-        }
-        minHeight={340}
-      >
-        {aligned ? (
-          <IndexChart
-            series={aligned.series}
-            initialIndex={aligned.commonStart}
-            labelWidth={180}
-            formatDate={fmtX}
-          />
-        ) : null}
-      </ChartCard>
-      <ChartCard
-        variant="editorial"
-        title={
-          biggest
-            ? `${biggest.b.label} ${biggest.c!.percent! >= 0 ? "rose" : "fell"} most in ${biggest.latest!.period}: ${pctText(biggest.c!.percent!)}`
-            : "Latest period against the one before"
-        }
-        subtitle="Latest complete period against the one before it"
-        status={
-          status.kind === "ready" && !changes.length
-            ? { kind: "empty", reason: "No series has two complete periods to compare." }
-            : status
-        }
-        sources={uniqueSources}
-        about={
-          <p>
-            Each dot compares a series&apos; latest complete period with the period before it, as
-            the source counts them.
-          </p>
-        }
-        table={{
-          caption: "Latest complete period against the one before",
-          columns: [
-            { label: "Series" },
-            { label: "Latest period" },
-            { label: "Value" },
-            { label: "Before" },
-            { label: "Change" },
-          ],
-          rows: changes.map(({ b, c, latest }) => ({
-            key: b.id,
-            cells: [
-              b.label,
-              latest!.period,
-              formatValue(latest!.value, b.block.format),
-              `${formatValue(c!.previousValue, b.block.format)} (${c!.comparedWith})`,
-              pctText(c!.percent!),
+                  rows: dates.map((d, i) => ({
+                    key: d,
+                    cells: [
+                      fmtX(d),
+                      ...aligned.series.map((s) => s.points[i]?.value ?? "Not recorded"),
+                    ],
+                  })),
+                }
+              : undefined
+          }
+          minHeight={340}
+        >
+          {aligned ? (
+            <IndexChart
+              series={aligned.series}
+              initialIndex={aligned.commonStart}
+              labelWidth={180}
+              formatDate={fmtX}
+            />
+          ) : null}
+        </ChartCard>
+        <ChartCard
+          variant="editorial"
+          title={
+            biggest
+              ? `${biggest.b.label} ${biggest.c!.percent! >= 0 ? "rose" : "fell"} most in ${biggest.latest!.period}: ${pctText(biggest.c!.percent!)}`
+              : "Latest period against the one before"
+          }
+          subtitle="Latest complete period against the one before it"
+          status={
+            status.kind === "ready" && !changes.length
+              ? { kind: "empty", reason: "No series has two complete periods to compare." }
+              : status
+          }
+          sources={uniqueSources}
+          about={
+            <p>
+              Each dot compares a series&apos; latest complete period with the period before it, as
+              the source counts them.
+            </p>
+          }
+          table={{
+            caption: "Latest complete period against the one before",
+            columns: [
+              { label: "Series" },
+              { label: "Latest period" },
+              { label: "Value" },
+              { label: "Before" },
+              { label: "Change" },
             ],
-          })),
-        }}
-        minHeight={340}
-      >
-        {changes.length ? (
-          <DivergingDots
-            items={changes.map(({ b, latest }) => ({
-              label: b.label,
-              value: byId.get(b.id)?.latest?.change?.percent ?? null,
-            }))}
-            baseline={0}
-            baselineLabel="No change"
-            showBaselineValue={false}
-            format={pctText}
-            labelWidth={170}
+            rows: changes.map(({ b, c, latest }) => ({
+              key: b.id,
+              cells: [
+                b.label,
+                latest!.period,
+                formatValue(latest!.value, b.block.format),
+                `${formatValue(c!.previousValue, b.block.format)} (${c!.comparedWith})`,
+                pctText(c!.percent!),
+              ],
+            })),
+          }}
+          minHeight={340}
+        >
+          {changes.length ? (
+            <DivergingDots
+              items={changes.map(({ b, latest }) => ({
+                label: b.label,
+                value: byId.get(b.id)?.latest?.change?.percent ?? null,
+              }))}
+              baseline={0}
+              baselineLabel="No change"
+              showBaselineValue={false}
+              format={pctText}
+              labelWidth={170}
+            />
+          ) : null}
+        </ChartCard>
+      </div>
+      <AiSummary
+        context={context}
+        actions={
+          <AskAiButton
+            sectionId={sectionId}
+            title={aiTitle}
+            context={context}
+            questions={QUESTIONS}
           />
-        ) : null}
-      </ChartCard>
-    </div>
-    <AiSummary
-      context={context}
-      actions={<AskAiButton sectionId={sectionId} title={aiTitle} context={context} questions={QUESTIONS} />}
-    />
+        }
+      />
     </section>
   );
 }
