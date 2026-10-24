@@ -67,7 +67,7 @@ export function IndexChart({
   const narrow = W < 400;
   const gutter = narrow ? Math.min(labelWidth, 92) : labelWidth;
   const right = Math.max(120, W - gutter);
-  const x = scalePoint<string>().domain(dates).range([44, right]);
+  const x = scalePoint<string>().domain(dates).range([56, right]);
   const y = scaleLinear()
     .domain([Math.min(0, ...vals), Math.max(0, ...vals)])
     .nice()
@@ -93,7 +93,7 @@ export function IndexChart({
     });
     if (best !== baseIdx) setBaseIdx(best);
   };
-  const bx = x(base) ?? 44;
+  const bx = x(base) ?? 56;
   const near = (v: number) => Math.abs(bx - v) < 70;
   return (
     <div ref={box} className="min-w-0">
@@ -112,20 +112,20 @@ export function IndexChart({
             {y.ticks(5).map((t) => (
               <g key={t}>
                 <line
-                  x1={44}
+                  x1={56}
                   x2={right}
                   y1={y(t)}
                   y2={y(t)}
                   style={{ stroke: t === 0 ? "var(--chart-axis)" : "var(--chart-grid)" }}
                   strokeDasharray={t === 0 ? undefined : "2 3"}
                 />
-                <text x={38} y={y(t)} dy="0.32em" textAnchor="end" className={TICK}>
+                <text x={50} y={y(t)} dy="0.32em" textAnchor="end" className={TICK}>
                   {pct(t)}
                 </text>
               </g>
             ))}
-            {near(44) ? null : (
-              <text x={44} y={height - 10} className={TICK}>
+            {near(56) ? null : (
+              <text x={56} y={height - 10} className={TICK}>
                 {formatDate(dates[0]!)}
               </text>
             )}
@@ -273,7 +273,7 @@ export function DivergingDots({
   const [box, W] = useWidth<HTMLDivElement>();
   const row = 26;
   const height = items.length * row + 30;
-  const gutter = W < 400 ? Math.min(labelWidth, 120) : labelWidth;
+  const gutter = Math.min(labelWidth, Math.max(110, Math.round(W * 0.42)));
   const x = scaleLinear()
     .domain(divergingDomain(items.map((i) => i.value), baseline))
     .range([gutter + 44, W - 52]);

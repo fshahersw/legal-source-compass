@@ -99,6 +99,9 @@ export function TrendHeadline({
             <p className="mt-2">
               Lines start at 0% at the period you choose, so large and small series compare on one scale. Periods a
               source does not record are gaps.
+              {aligned?.cutAt.length
+                ? ` ${aligned.cutAt.map((c) => `${c.label} starts at ${c.x} (${c.marker.toLowerCase()})`).join("; ")}.`
+                : ""}
               {aligned?.partialDropped.length
                 ? ` Unfinished periods (${aligned.partialDropped.join(", ")}) are left out.`
                 : ""}
@@ -153,14 +156,14 @@ export function TrendHeadline({
         {changes.length ? (
           <DivergingDots
             items={changes.map(({ b, latest }) => ({
-              label: `${b.label} · ${latest!.period}`,
+              label: b.label,
               value: byId.get(b.id)?.latest?.change?.percent ?? null,
             }))}
             baseline={0}
             baselineLabel="No change"
             showBaselineValue={false}
             format={pctText}
-            labelWidth={200}
+            labelWidth={170}
           />
         ) : null}
       </ChartCard>

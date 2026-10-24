@@ -67,8 +67,8 @@ describe("alignTrends", () => {
       { id: "a", label: "A", block: block("year", [["2018", 1], ["2019", 50], ["2020", 55], ["2021", 60]], [{ x: "2019", label: "Coverage changes" }]) },
       { id: "b", label: "B", block: block("year", [["2018", 5], ["2019", 6], ["2020", 7], ["2021", 8]]) },
     ]);
-    expect(r!.series[0]!.points.map((p) => p.value)).toEqual([null, 50, 55, 60]);
-    expect(r!.commonStart).toBe(1);
+    expect(r!.series[0]!.points.map((p) => p.value)).toEqual([50, 55, 60]);
+    expect(r!.series[1]!.points[0]!.date).toBe("2019");
     expect(r!.cutAt).toEqual([{ id: "a", label: "A", x: "2019", marker: "Coverage changes" }]);
   });
 });
