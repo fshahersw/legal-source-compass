@@ -196,42 +196,27 @@ export function SourceFooter({
         </>
       ),
     });
-  if (period) items.push({ key: "period", node: period });
-  if (asOf) items.push({ key: "asof", node: <>as of {asOf}</> });
-  const hasActions = Boolean(partial || children || about);
+  const sourceNode = items.length ? items[0]!.node : null;
+  const hasInfo = Boolean(sourceNode || about || asOf);
   return (
     <div
       data-slot="source-footer"
-      className={cn("flex min-w-0 items-start gap-2 text-meta text-muted-foreground", className)}
+      className={cn("flex min-w-0 items-center justify-end gap-2 text-meta text-muted-foreground", className)}
     >
-      <div data-slot="source-text" className="min-w-0 flex-1 overflow-hidden">
-        <p className="m-0 -ml-3 flex flex-wrap gap-y-0.5">
-          {items.map((item) => (
-            <span
-              key={item.key}
-              data-item={item.key}
-              title={item.title}
-              className={cn(
-                "relative min-w-0 max-w-full break-words pl-3 before:absolute before:left-1 before:top-0 before:text-border-strong before:content-['·']",
-                item.className,
-              )}
-            >
-              {item.node}
-            </span>
-          ))}
-        </p>
+      <div data-slot="source-text" className="min-w-0 flex-1 truncate" title={sourceTitle}>
+        {period ? <span data-item="period">{period}</span> : null}
       </div>
-      {hasActions ? (
-        <div data-slot="source-actions" className="-my-0.5 flex shrink-0 items-center gap-1">
-          {partial ? <PartialPill note={partial} /> : null}
-          {children}
-          {about ? (
-            <InfoPopover label={aboutLabel} title={aboutTitle}>
-              {about}
-            </InfoPopover>
-          ) : null}
-        </div>
-      ) : null}
+      <div data-slot="source-actions" className="-my-0.5 flex shrink-0 items-center gap-1">
+        {partial ? <PartialPill note={partial} /> : null}
+        {children}
+        {hasInfo ? (
+          <InfoPopover label={sourceNode ? "Source and notes" : aboutLabel} title={aboutTitle ?? (sourceNode ? "Source" : undefined)}>
+            {sourceNode ? <p data-item="source" className="m-0">{sourceNode}</p> : null}
+            {asOf ? <p className="m-0">As of {asOf}</p> : null}
+            {about}
+          </InfoPopover>
+        ) : null}
+      </div>
     </div>
   );
 }
