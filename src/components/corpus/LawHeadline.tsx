@@ -30,12 +30,12 @@ export function LawHeadline() {
   const bills = useBlock("congress-bills");
 
   const frRows = fr.block ? blockStackRows(fr.block) : [];
-  const frLast = [...frRows].reverse().find((r) => !r.partial && r.values.rules != null && r.values.proposed != null);
+  const frLast = [...frRows].reverse().find((r) => !r.partial && r.values["rules"] != null && r.values["proposed"] != null);
   const billRows = bills.block ? subsetStackRows(bills.block, "introduced", "law", congressLabel) : [];
-  const billLast = [...billRows].reverse().find((r) => !r.partial && r.values.part != null);
+  const billLast = [...billRows].reverse().find((r) => !r.partial && r.values["part"] != null);
   const billShare =
-    billLast && billLast.values.part != null && billLast.values.rest != null
-      ? billLast.values.part / (billLast.values.part + billLast.values.rest)
+    billLast && billLast.values["part"] != null && billLast.values["rest"] != null
+      ? billLast.values["part"] / (billLast.values["part"] + billLast.values["rest"])
       : null;
 
   return (
@@ -44,7 +44,7 @@ export function LawHeadline() {
         variant="editorial"
         title={
           frLast
-            ? `${frLast.period}: ${formatCount(frLast.values.rules)} final rules and ${formatCount(frLast.values.proposed)} proposed rules`
+            ? `${frLast.period}: ${formatCount(frLast.values["rules"])} final rules and ${formatCount(frLast.values["proposed"])} proposed rules`
             : "Federal Register rules published each year"
         }
         subtitle="Documents published in the Federal Register, by year and type"
@@ -61,8 +61,8 @@ export function LawHeadline() {
                   key: r.period,
                   cells: [
                     `${r.period}${r.partial ? " (unfinished)" : ""}`,
-                    r.values.rules ?? "Not recorded",
-                    r.values.proposed ?? "Not recorded",
+                    r.values["rules"] ?? "Not recorded",
+                    r.values["proposed"] ?? "Not recorded",
                   ],
                 })),
               }
@@ -82,8 +82,8 @@ export function LawHeadline() {
         variant="editorial"
         title={
           billLast && billShare != null
-            ? `${billLast.period} Congress: ${formatCount(billLast.values.part)} of ${formatCount(
-                billLast.values.part! + billLast.values.rest!,
+            ? `${billLast.period} Congress: ${formatCount(billLast.values["part"])} of ${formatCount(
+                billLast.values["part"]! + billLast.values["rest"]!,
               )} bills became law (${(billShare * 100).toFixed(1)}%)`
             : "Bills introduced in each Congress, and how many became law"
         }
@@ -101,9 +101,9 @@ export function LawHeadline() {
                   key: r.period,
                   cells: [
                     `${r.period}${r.partial ? " (still sitting)" : ""}`,
-                    r.values.part ?? "Not recorded",
-                    r.values.rest ?? "Not recorded",
-                    r.values.part != null && r.values.rest != null ? r.values.part + r.values.rest : "Not recorded",
+                    r.values["part"] ?? "Not recorded",
+                    r.values["rest"] ?? "Not recorded",
+                    r.values["part"] != null && r.values["rest"] != null ? r.values["part"] + r.values["rest"] : "Not recorded",
                   ],
                 })),
               }
