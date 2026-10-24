@@ -7,6 +7,7 @@ import { DocumentsPanel } from "@/components/matters/DocumentsPanel";
 import { DocumentsPanel as FilingsPanel } from "@/components/documents/DocumentsPanel";
 import { EvidencePanel } from "@/components/matters/EvidencePanel";
 import { MatterLifecyclePanel } from "@/components/litviz/MatterLifecyclePanel";
+import { MatterAi } from "@/components/matters/MatterAi";
 import { MatterHeader } from "@/components/matters/MatterHeader";
 import { OverviewPanel } from "@/components/matters/OverviewPanel";
 import { PartiesPanel } from "@/components/matters/PartiesPanel";
@@ -77,6 +78,7 @@ export function MatterPage({
     >
       <div className="space-y-4">
         <MatterHeader payload={payload} />
+        <MatterAi payload={payload} />
         {/* The border lives on the nav and the scroller is inside it: a negative-margin tab inside an overflow
             container would add a 1px vertical overflow and show a vertical scrollbar on Windows. */}
         <nav aria-label="Matter sections" className="border-b border-border">

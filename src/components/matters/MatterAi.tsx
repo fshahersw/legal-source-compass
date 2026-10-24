@@ -15,7 +15,12 @@ export function MatterAi({ payload }: { payload: MatterOverviewPayload }) {
   const jpml = o.asOf ? `JPML report ${o.asOf}` : undefined;
   const figures: FigureInput[] = [
     { label: "JPML actions pending", value: o.actions.pending, unit: "actions", period: jpml },
-    { label: "JPML actions in total (pending and closed)", value: o.actions.total, unit: "actions", period: jpml },
+    {
+      label: "JPML actions in total (pending and closed)",
+      value: o.actions.total,
+      unit: "actions",
+      period: jpml,
+    },
   ];
   if (m) {
     figures.push(
@@ -34,7 +39,11 @@ export function MatterAi({ payload }: { payload: MatterOverviewPayload }) {
             ? `of ${m.entries.providerTotal.toLocaleString("en-US")} the provider reports`
             : undefined,
       },
-      { label: "Parties on the master docket", value: m.parties?.published ?? null, unit: "parties" },
+      {
+        label: "Parties on the master docket",
+        value: m.parties?.published ?? null,
+        unit: "parties",
+      },
     );
   }
   if (figures.every((f) => f.value == null)) return null;
