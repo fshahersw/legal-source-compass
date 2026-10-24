@@ -184,7 +184,7 @@ export function ChartCard({
         variant === "editorial" ? (
           <>
             <span aria-hidden className="mb-2 block h-[3px] w-9 rounded-full bg-brand" />
-            <span className="block text-[19px] font-bold leading-[1.25] tracking-[-0.01em] text-foreground">
+            <span className="block text-[15px] font-semibold leading-[1.3] tracking-[-0.01em] text-foreground">
               {title}
             </span>
           </>
