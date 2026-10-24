@@ -11,6 +11,7 @@ statutory code" and which acts it includes ("This version includes all acts enac
 """
 from __future__ import annotations
 
+import datetime as _dt
 import html as _html
 import pathlib
 import re
@@ -44,7 +45,11 @@ META = lib.StateMeta(
     update_cadence="Updated as acts are enacted (home page names the last act included); re-check monthly.",
 )
 
-NUM = r"[0-9][0-9A-Za-z.\-]*?"
+# "8101", "2-101.1", and the Article 9 transition sections "A-101"
+NUM = r"(?:[A-Z]-)?[0-9][0-9A-Za-z.\-]*?"
+# "Definitions [Effective until Oct. 21, 2026]." / "Definitions [Effective Oct. 21, 2026]." — the publisher prints the
+# outgoing and the incoming text of a section around an amendment's effective date
+EFFECTIVE_RE = re.compile(r"\s*\[Effective\s+(until\s+)?([A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4})\]\.?\s*$")
 # "§ 8101. Catchline." — the number ends at the first period followed by a space (so "§ 2-101.1. Title" is 2-101.1)
 HEAD_RE = re.compile(rf"^§\s*({NUM})\.(?:\s+(.*))?$")
 # "§§ 164,165. [Reserved.]" lists numbers; "§§ 166-169. [Reserved.]" is a range (ledgered, never expanded: section
@@ -117,6 +122,35 @@ def parse_chapter(page: lib.Fetched) -> tuple[list[dict], list[dict]]:
     return path, sections
 
 
+def effective_fields(heading: str | None, today: _dt.date) -> dict:
+    """Heading without its "[Effective ...]" bracket, plus version, effective dates and status from it. The outgoing
+    text ("until" a date on or before today) is expired; incoming text effective after today is not yet in effect;
+    otherwise the text is in force. No bracket: nothing is added."""
+    m = EFFECTIVE_RE.search(heading or "")
+    if not m:
+        return {"heading": heading}
+    raw = m.group(2).replace("Sept.", "Sep.")
+    day = None
+    for fmt in ("%b. %d, %Y", "%b %d, %Y", "%B %d, %Y"):
+        try:
+            day = _dt.datetime.strptime(raw, fmt).date()
+            break
+        except ValueError:
+            continue
+    if day is None:
+        raise RuntimeError(f"unreadable effective date {m.group(0)!r}")
+    marker = m.group(0).strip().rstrip(".")
+    out = {"heading": (heading[: m.start()].rstrip() + ".") if heading[: m.start()].strip() else None,
+           "version": marker.strip("[]"), "status_marker": marker, "status_basis": "publisher_marker"}
+    if m.group(1):
+        out["effective"] = {"end": day.isoformat(), "note": marker.strip("[]")}
+        out["status"] = "expired" if day <= today else "in_force"
+    else:
+        out["effective"] = {"start": day.isoformat(), "note": marker.strip("[]")}
+        out["status"] = "future_effective" if day > today else "in_force"
+    return out
+
+
 def links(page_text: str, pattern: str) -> list[str]:
     """Link targets matching `pattern`, in page order, once each. The publisher wraps hrefs in encoded newlines and
     spaces (href="&#xA;   title1/index.html&#xA; "), so each href is unescaped and trimmed before it is matched."""
@@ -160,6 +194,11 @@ def acquire(ctx: lib.RunContext) -> None:
                     links(page.text(), r"((?:\.\./)*(?:title\d+[a-z]?/)?(?:c\d+[a-z]?/)?sc\d+[a-z]?/index\.html)")]
             queue = subs + queue
             path, sections = parse_chapter(page)
+            printed: dict[str, int] = {}
+            for item in sections:
+                if "number" in item:
+                    printed[item["number"]] = printed.get(item["number"], 0) + 1
+            seen: dict[str, int] = {}
             for item in sections:
                 if not ctx.want_more():
                     break
@@ -170,5 +209,9 @@ def acquire(ctx: lib.RunContext) -> None:
                     ctx._rejects.write({"state": "DE", "code": "DELC", "number": None, "reason": item["reject"],
                                         "source_url": page.url, "source_sha256": page.sha256})
                     continue
-                ctx.section(code="DELC", number=f"{title_no}:{item['number']}", heading=item["heading"], text=item["text"],
-                            history=item["history"], source=page, path=path)
+                fields = effective_fields(item["heading"], ctx.today)
+                if printed[item["number"]] > 1:  # outgoing and incoming text of one section: both kept, as versions
+                    seen[item["number"]] = seen.get(item["number"], 0) + 1
+                    fields["version_index"] = seen[item["number"]]
+                ctx.section(code="DELC", number=f"{title_no}:{item['number']}", text=item["text"],
+                            history=item["history"], source=page, path=path, **fields)

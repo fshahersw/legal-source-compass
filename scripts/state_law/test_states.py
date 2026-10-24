@@ -284,6 +284,18 @@ class DelawareTests(unittest.TestCase):
         self.assertEqual(sections[3]["reject"], "range entry: \u00a7\u00a7 166-169. [Reserved.]")
         self.assertEqual(sections[4]["heading"], "Short title.")
 
+    def test_outgoing_and_incoming_versions(self):
+        de = load("de")
+        today = dt.date(2026, 10, 24)
+        out = de.effective_fields("Definitions [Effective until Oct. 21, 2026].", today)
+        self.assertEqual((out["heading"], out["status"], out["effective"]["end"]), ("Definitions.", "expired", "2026-10-21"))
+        inc = de.effective_fields("Definitions [Effective Oct. 21, 2026].", today)
+        self.assertEqual((inc["heading"], inc["status"], inc["effective"]["start"]), ("Definitions.", "in_force", "2026-10-21"))
+        later = de.effective_fields("Licenses [Effective Jan. 1, 2027].", today)
+        self.assertEqual(later["status"], "future_effective")
+        self.assertEqual(de.effective_fields("Short title.", today), {"heading": "Short title."})
+        self.assertEqual(de.HEAD_RE.match("\u00a7 A-101. Title.").group(1), "A-101")
+
     def test_entity_wrapped_links(self):
         de = load("de")
         home = '<a href="&#xA;   title1/index.html&#xA; ">1</a><a href="title10/index.html">10</a><a href="title1/index.html">x</a>'

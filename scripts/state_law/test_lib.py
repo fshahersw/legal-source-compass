@@ -185,6 +185,22 @@ class RunContextTests(unittest.TestCase):
                 ctx.fetch("https://www.commercial-host.example.com/x")
 
 
+class EffectiveMarkerTests(unittest.TestCase):
+    def test_dated_markers(self):
+        import datetime as _dt
+        today = _dt.date(2026, 10, 24)
+        past = lib.effective_marker("(Effective until January 1, 2026) Surrender of Custody of Minor", today)
+        self.assertEqual((past["status"], past["effective"]["end"]), ("expired", "2026-01-01"))
+        both = lib.effective_marker("(Effective July 1, 2026; Effective until October 1, 2026)", today)
+        self.assertEqual((both["status"], both["effective"]["start"], both["effective"]["end"]),
+                         ("expired", "2026-07-01", "2026-10-01"))
+        cond = lib.effective_marker("(Effective until September 30, 2025, Unless Extended by the Legislature) Board", today)
+        self.assertEqual(cond["status"], "not_recorded")
+        self.assertEqual(lib.effective_marker("(Effective January 1, 2027) New text", today)["status"], "future_effective")
+        self.assertEqual(lib.effective_marker("[Effective until October 1, 2027] Screening", today), {})
+        self.assertEqual(lib.effective_marker("Contract of Employment Effective until Superseded or Cancelled.", today), {})
+
+
 class VectorTests(unittest.TestCase):
     def test_vectors_are_current(self):
         from state_law import gen_vectors

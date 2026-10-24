@@ -612,6 +612,60 @@ def classify_status(heading: str | None, text: str | None) -> tuple[str | None, 
     return None, None
 
 
+_DATE_WORDS = r"(?:[A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})"
+# "(Effective until January 1, 2026)", "[Effective until Oct. 21, 2026]", "(Effective July 1, 2026; Effective until
+# October 1, 2026)", "(Effective until September 30, 2025, Unless Extended by the Legislature)"
+_EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(until\s+)?(" + _DATE_WORDS + r")((?:[^\)\]])*)[\)\]]", re.I)
+_QUALIFIED_RE = re.compile(r"\b(unless|contingent|subject to|or upon|until (?:the|such)|if|when)\b", re.I)
+
+
+def _marker_date(value: str) -> _dt.date | None:
+    value = norm_ws(value).replace("Sept.", "Sep.")
+    for fmt in ("%B %d, %Y", "%b. %d, %Y", "%b %d, %Y", "%m-%d-%Y", "%m/%d/%Y"):
+        try:
+            return _dt.datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def effective_marker(heading: str | None, today: _dt.date) -> dict:
+    """Status from a publisher's dated version marker in a heading, for modules that do not read it themselves:
+    "(Effective until <date>)" on or before today is expired; "(Effective <date>)" after today is not yet in effect;
+    a marker with a condition ("..., Unless Extended by the Legislature") is not_recorded (whether it still applies is
+    not printed). Returns {} when the heading carries no dated marker or the dates put the text in force."""
+    found = list(_EFFECTIVE_MARK_RE.finditer(heading or ""))
+    if not found:
+        return {}
+    start = end = None
+    for m in found:
+        day = _marker_date(m.group(2))
+        if day is None:
+            return {}
+        if m.group(1):
+            end = day
+        else:
+            start = day
+        tail = m.group(3) or ""
+        for extra in re.finditer(r"Effective\s+(until\s+)?(" + _DATE_WORDS + r")", tail, re.I):  # "...; Effective until ..."
+            other = _marker_date(extra.group(2))
+            if other is not None:
+                if extra.group(1):
+                    end = other
+                else:
+                    start = other
+    marker = norm_ws(" ".join(m.group(0) for m in found))
+    effective = {"start": start.isoformat() if start else None, "end": end.isoformat() if end else None, "note": marker}
+    if any(_QUALIFIED_RE.search(_EFFECTIVE_MARK_RE.sub(lambda x: x.group(3) or "", m.group(0))) for m in found):
+        return {"status": "not_recorded", "status_basis": "not_recorded", "status_marker": marker, "effective": effective}
+    if end is not None and end <= today:
+        return {"status": "expired", "status_basis": "publisher_marker", "status_marker": marker, "effective": effective}
+    if start is not None and start > today:
+        return {"status": "future_effective", "status_basis": "publisher_marker", "status_marker": marker,
+                "effective": effective}
+    return {}
+
+
 # ---------------------------------------------------------------------------------------------------------------
 # Network
 # ---------------------------------------------------------------------------------------------------------------
@@ -1337,6 +1391,11 @@ class RunContext:
             status, marker = classify_status(heading, text)
             if status:
                 status_marker = status_marker or marker
+        if status is None and effective is None:  # a dated "(Effective until ...)" marker the module did not read
+            dated = effective_marker(heading, self.today)
+            if dated:
+                status, status_basis = dated["status"], dated["status_basis"]
+                status_marker, effective = dated["status_marker"], dated["effective"]
         if status is None:
             if not self.meta.official_source:
                 status, basis = "not_recorded", "not_recorded"
