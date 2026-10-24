@@ -114,7 +114,7 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
     kpis: [
       { dataset: "court_spine", label: "Courts in the court directory" },
       { dataset: "judges", label: "Judges in the judge directory" },
-      { dataset: "judge_profiles_fjc", label: "Article III judges (FJC Biographical Directory)" },
+      { dataset: "judge_profiles_fjc", label: "Article III judges" },
       { dataset: "judicial_nominations", label: "Nominations to federal judgeships, 1981–2026" },
       {
         dataset: "judicial_vacancies",
