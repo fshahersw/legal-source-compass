@@ -118,5 +118,5 @@ Helpers (pure, tested): `deltaDirection`, `deltaTone`, `formatSigned`, `formatSi
   `text-meta`, `text-kpi`, `text-kpi-sm`). Plain tailwind-merge files them with the text colours and silently drops
   them from `cn("text-meta text-muted-foreground")`; if you add a size, add it to `CUSTOM_TEXT_SIZES`.
 - The floating assistant button is a 32 px round icon (40 px on a phone) with a tooltip, reachable last in tab
-  order and with Ctrl+J. It sits 8 px from the right edge, so it covers the page gutter and a card's 16 px padding,
+  order and with Ctrl+J. It sits 6 px from the right edge, so it covers the page gutter and a card's 16 px padding,
   never text inside a card; every card pads its text at least 16 px, and the page container pads its bottom by 72 px.
