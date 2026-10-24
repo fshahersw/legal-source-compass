@@ -75,7 +75,7 @@ describe("nice value axes", () => {
 
 describe("theme props and content", () => {
   it("colours series in fixed order and refuses a slot past the palette", () => {
-    expect(seriesColor(0)).toBe("var(--chart-1, #2863ab)");
+    expect(seriesColor(0)).toBe("var(--chart-1, light-dark(#2863ab, #4c88d3))");
     expect(() => seriesColor(6)).toThrow(RangeError);
   });
 
@@ -185,7 +185,7 @@ describe("period table", () => {
 });
 
 describe("ChartCard", () => {
-  it("shows the takeaway title, subtitle, KPI strip, view toggle and source footer", () => {
+  it("shows the takeaway title, subtitle, KPI strip, View data and source footer", () => {
     const out = html(
       createElement(
         ChartCard,
@@ -208,7 +208,7 @@ describe("ChartCard", () => {
     expect(out).toContain("Filings peaked in FY2020");
     expect(out).toContain("Product liability filings · cases · FY2014–FY2025");
     expect(out).toContain("45,713");
-    expect(out).toContain('aria-label="Table view"');
+    expect(out).toContain("View data");
     expect(out).toContain("chart body");
     expect(out).toContain('href="https://www.uscourts.gov"');
     expect(out).toContain("About this data");

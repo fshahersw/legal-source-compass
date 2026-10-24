@@ -21,7 +21,7 @@
  * rounded data end), categorical colours in fixed order from palette.ts.
  */
 import { createElement, type CSSProperties } from "react";
-import { CATEGORICAL_HEX, MAX_SERIES } from "../palette";
+import { MAX_SERIES, slotColor } from "../palette";
 import { TICK_FONT, axisWidth, labelWidth, type NiceAxis } from "./axis";
 import type { ReferenceSpec } from "./charts";
 import { ThemedLegend, ThemedTooltip, type ThemedTooltipProps } from "./content";
@@ -30,7 +30,7 @@ import { ThemedLegend, ThemedTooltip, type ThemedTooltipProps } from "./content"
 export function seriesColor(index: number): string {
   if (!Number.isInteger(index) || index < 0 || index >= MAX_SERIES)
     throw new RangeError(`Series slot ${index} is outside the ${MAX_SERIES}-slot palette.`);
-  return `var(--chart-${index + 1}, ${CATEGORICAL_HEX[index]})`;
+  return `var(--chart-${index + 1}, ${slotColor(index)})`;
 }
 
 /** The single-series accent (slot 1). */

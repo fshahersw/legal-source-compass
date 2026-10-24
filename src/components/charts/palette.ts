@@ -8,6 +8,13 @@
  * and direct labels (the relief rule). Scatter, maps and small multiples (any two marks can touch) use at most the
  * first three slots, which pass the all-pairs test (CVD ΔE 11.0, normal-vision 19.6).
  *
+ * Dark theme: selected dark steps of the same six hues (not an automatic flip), validated 2026-10-24 on the dark card
+ * surface #141618: lightness band 0.48–0.67 PASS, chroma >= 0.10 PASS, worst adjacent CVD ΔE 11.4 (protan) PASS,
+ * worst adjacent normal-vision ΔE 21.6 PASS, every slot >= 3:1 against the surface (and against the page background
+ * #0b0c0e); first three slots all-pairs PASS (CVD ΔE 11.4, normal-vision 15.5). Each `--chart-N` is
+ * `light-dark(light, dark)`, so a chart follows the page's `color-scheme` (styles.css sets it per theme) with no
+ * theme check in component code.
+ *
  * Slots are assigned in fixed order and follow the entity, never its rank; a seventh series is folded or faceted, never
  * given a generated hue. Sequential shading reuses the map ramp (--map-low → --map-high); the diverging pair is slot 1
  * (blue) against slot 2 (orange) with a neutral grey midpoint.
@@ -24,6 +31,22 @@ export const CATEGORICAL_HEX = [
   "#c09000",
   "#bc4b87",
 ] as const;
+
+/** Dark-theme steps of the same slots, in the same order: OKLCH blue 0.62/0.13/255, orange 0.66/0.15/60, teal
+ * 0.62/0.11/175, violet 0.62/0.14/295, ochre 0.66/0.13/85, magenta 0.62/0.16/350. */
+export const CATEGORICAL_HEX_DARK = [
+  "#4c88d3",
+  "#d37812",
+  "#1f9b82",
+  "#8d73d1",
+  "#b68b16",
+  "#ca5794",
+] as const;
+
+/** The CSS value of slot `index` (0-based) for both themes: `light-dark(light, dark)`. */
+export function slotColor(index: number): string {
+  return `light-dark(${CATEGORICAL_HEX[index]}, ${CATEGORICAL_HEX_DARK[index]})`;
+}
 
 export const MAX_SERIES = CATEGORICAL_HEX.length;
 /** Forms where every mark can sit beside every other (scatter, maps, small multiples) use at most this many hues. */
@@ -51,12 +74,12 @@ export function divergingFill(t: number): string {
 
 /** CSS variables every chart root sets. The neutral and ink roles map onto the app's own tokens. */
 export const chartTokens: CSSProperties = {
-  ["--chart-1" as string]: CATEGORICAL_HEX[0],
-  ["--chart-2" as string]: CATEGORICAL_HEX[1],
-  ["--chart-3" as string]: CATEGORICAL_HEX[2],
-  ["--chart-4" as string]: CATEGORICAL_HEX[3],
-  ["--chart-5" as string]: CATEGORICAL_HEX[4],
-  ["--chart-6" as string]: CATEGORICAL_HEX[5],
+  ["--chart-1" as string]: slotColor(0),
+  ["--chart-2" as string]: slotColor(1),
+  ["--chart-3" as string]: slotColor(2),
+  ["--chart-4" as string]: slotColor(3),
+  ["--chart-5" as string]: slotColor(4),
+  ["--chart-6" as string]: slotColor(5),
   ["--chart-mid" as string]: "var(--muted)",
   ["--chart-grid" as string]: "var(--border)",
   ["--chart-axis" as string]: "var(--muted-foreground)",

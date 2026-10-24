@@ -92,7 +92,7 @@ describe("ChartFrame states", () => {
       ),
     );
     expect(ready).toContain("One source could not be read.");
-    expect(ready).toContain('aria-label="Table view"');
+    expect(ready).toContain("View data");
     expect(ready).toContain("About this data");
     expect(ready).toContain("Cases · 2019–2023");
     expect(ready).toContain("* Partial period.");
