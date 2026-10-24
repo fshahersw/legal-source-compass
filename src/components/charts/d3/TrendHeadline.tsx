@@ -40,6 +40,7 @@ export function TrendHeadline({
     [results.map((r) => r.dataUpdatedAt).join(","), items],
   );
   const aligned = useMemo(() => alignTrends(blocks), [blocks]);
+  const fmtX = (x: string) => (aligned?.xKind === "fy" ? `FY${x}` : x);
   const byId = new Map<string, TrendBlockData>(blocks.map((b) => [b.id, b.block]));
   const sources = blocks.map((b) => ({ label: b.block.source.label, url: b.block.source.url }));
   const uniqueSources = sources.filter((s, i) => sources.findIndex((t) => t.url === s.url) === i);
@@ -85,14 +86,14 @@ export function TrendHeadline({
         variant="editorial"
         title={
           lead && start
-            ? `Since ${start}, ${lead.s.label} changed most: ${pctText(lead.end!.value! * 100)}`
+            ? `Since ${fmtX(start)}, ${lead.s.label} changed most: ${pctText(lead.end!.value! * 100)}`
             : `How ${subject} changed over time`
         }
         subtitle={`Each series as a % change from the ${aligned ? KIND_LABEL[aligned.xKind] : "period"} you choose`}
         status={status.kind === "ready" && !aligned ? { kind: "empty", reason: "Fewer than three periods are shared by two or more series." } : status}
         notice={notice}
         sources={uniqueSources}
-        period={start && lastDate ? `${dates[0]}–${lastDate}` : undefined}
+        period={start && lastDate ? `${fmtX(dates[0]!)}–${fmtX(lastDate)}` : undefined}
         about={
           <>
             <p>{unitNote}</p>
@@ -115,7 +116,7 @@ export function TrendHeadline({
                 columns: [{ label: "Period" }, ...aligned.series.map((s) => ({ label: s.label }))],
                 rows: dates.map((d, i) => ({
                   key: d,
-                  cells: [d, ...aligned.series.map((s) => s.points[i]?.value ?? "Not recorded")],
+                  cells: [fmtX(d), ...aligned.series.map((s) => s.points[i]?.value ?? "Not recorded")],
                 })),
               }
             : undefined
@@ -123,7 +124,12 @@ export function TrendHeadline({
         minHeight={340}
       >
         {aligned ? (
-          <IndexChart series={aligned.series} initialIndex={aligned.commonStart} labelWidth={180} />
+          <IndexChart
+            series={aligned.series}
+            initialIndex={aligned.commonStart}
+            labelWidth={180}
+            formatDate={fmtX}
+          />
         ) : null}
       </ChartCard>
       <ChartCard
