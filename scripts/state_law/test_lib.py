@@ -220,6 +220,10 @@ class EffectiveMarkerTests(unittest.TestCase):
                                   "2027.\nThe responsibilities ...", today)
         self.assertEqual((line["status"], line["effective"]["start"]), ("future_effective", "2027-07-01"))
         self.assertEqual(lib.effective_line("Section effective until July 1, 2027. See, also, ...", today), {})
+        upon = lib.effective_line("Section effective upon the approval and ratification of an amendment to Section 7, "
+                                  "Article VI of the South Carolina Constitution. The referendum ...", today)
+        self.assertEqual(upon["status"], "not_recorded")
+        self.assertEqual(lib.effective_line("Section effective until the approval and ratification of an amendment.", today), {})
         done = lib.status_from_dates({"start": None, "end": "2026-07-01", "note": None}, "(Effective until July 1, 2026)", today)
         self.assertEqual((done["status"], done["status_marker"]), ("expired", "(Effective until July 1, 2026)"))
         self.assertEqual(lib.status_from_dates({"start": "2026-07-01", "end": None, "note": None}, None, today), {})

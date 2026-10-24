@@ -624,6 +624,8 @@ _CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effectiv
 _QUALIFIED_RE = re.compile(r"\b(unless|contingent|subject to|or upon|until (?:the|such)|if|when)\b", re.I)
 # South Carolina's first text line: "Section effective until July 1, 2027. See, also, section 57-3-20 effective ..."
 _SECTION_EFFECTIVE_LINE_RE = re.compile(r"^Section effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")\.", re.I)
+# "Section effective upon the approval and ratification of an amendment to Section 7, Article VI ..."
+_SECTION_CONTINGENT_LINE_RE = re.compile(r"^Section effective\s+(?:upon|once|when|if|on\s+the\s+effective\s+date)\b[^.]*\.", re.I)
 
 
 def _marker_date(value: str) -> _dt.date | None:
@@ -691,6 +693,11 @@ def effective_line(text: str | None, today: _dt.date) -> dict:
     2027. See, also, ...")."""
     m = _SECTION_EFFECTIVE_LINE_RE.match((text or "").lstrip())
     if not m:
+        contingent = _SECTION_CONTINGENT_LINE_RE.match((text or "").lstrip())
+        if contingent:
+            marker = norm_ws(contingent.group(0))
+            return {"status": "not_recorded", "status_basis": "not_recorded", "status_marker": marker,
+                    "effective": {"start": None, "end": None, "note": marker}}
         return {}
     day = _marker_date(m.group(2))
     if day is None:
