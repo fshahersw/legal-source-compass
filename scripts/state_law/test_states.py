@@ -164,6 +164,13 @@ class MassachusettsAndMarylandTests(unittest.TestCase):
             self.assertEqual(row["text"], "Actions of tort shall be commenced within three years—\n(a) next.")
             self.assertEqual(row["citation"], "Mass. Gen. Laws ch. 260, § 2A")
 
+    def test_ma_chapter_url_encodes_a_slash_in_the_code(self):
+        ma = load("ma")
+        self.assertEqual(ma.chapter_url({"Code": "92A1/2", "Details": "https://malegislature.gov/api/Chapters/92A1~2"}),
+                         "https://malegislature.gov/api/Chapters/92A1~2")
+        self.assertEqual(ma.chapter_url({"Code": "92A1/2"}), "https://malegislature.gov/api/Chapters/92A1~2")
+        self.assertEqual(ma.chapter_url({"Code": "260"}), "https://malegislature.gov/api/Chapters/260")
+
     def test_md_section(self):
         md = load("md")
         page = fetched("https://mgaleg.maryland.gov/mgawebsite/Laws/StatuteText?article=gcj&section=5-101",

@@ -46,8 +46,17 @@ def _json(fetched: lib.Fetched):
     return json.loads(fetched.body.decode("utf-8"))
 
 
+def api_code(code: str) -> str:
+    """The API writes a slash inside a code (chapter 92A1/2) as a tilde in the path."""
+    return code.replace("/", "~")
+
+
+def chapter_url(ref: dict) -> str:
+    return ref.get("Details") or f"{API}/Chapters/{api_code(ref['Code'])}"
+
+
 def section_record(ctx: lib.RunContext, part: dict, chapter: dict, ref: dict) -> None:
-    url = ref.get("Details") or f"{API}/Chapters/{chapter['Code']}/Sections/{ref['Code']}"
+    url = ref.get("Details") or f"{API}/Chapters/{api_code(chapter['Code'])}/Sections/{api_code(ref['Code'])}"
     fetched = ctx.fetch(url, method="publisher_api", headers={"Accept": "application/json"})
     data = _json(fetched)
     raw = (data.get("Text") or "").replace("\r\n", "\n").replace("\r", "\n")
@@ -96,7 +105,7 @@ def acquire(ctx: lib.RunContext) -> None:
                 continue
             if not ctx.want_more():
                 break
-            chapter = _json(ctx.fetch(f"{API}/Chapters/{chapter_ref['Code']}", method="publisher_api",
+            chapter = _json(ctx.fetch(chapter_url(chapter_ref), method="publisher_api",
                                       headers={"Accept": "application/json"}))
             for section in chapter.get("Sections", []):
                 if not ctx.want_more():
