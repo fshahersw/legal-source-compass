@@ -188,6 +188,7 @@ def acquire(ctx: lib.RunContext) -> None:
                 number, heading, where = chapter_toc(ctx.get(toc_url, fallback_fresh=True))
             folder = re.search(r"/HRS0*(\d+[A-Z]*)/$", chap_url).group(1)
             chapter_step = {"level": "chapter", "label": "Chapter", "number": number or folder, "heading": heading}
+            ctx.prefetch(u for u in files if u != toc_url)  # retained runs: read ahead
             for url in files:
                 if url == toc_url:
                     continue

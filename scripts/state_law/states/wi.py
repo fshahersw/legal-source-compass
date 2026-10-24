@@ -224,6 +224,7 @@ def acquire(ctx):
     if only:
         chapters = [c for c in chapters if c in only]
     ctx.log(f"{len(chapters)} chapters")
+    ctx.prefetch(f"{SITE}/statutes/statutes/{ch}.txt" for ch in chapters)  # retained runs: read ahead
     for ch in chapters:
         fetched = ctx.get(f"{SITE}/statutes/statutes/{ch}.txt", method="publisher_bulk")
         parsed = parse_chapter(fetched.text("utf-8"))

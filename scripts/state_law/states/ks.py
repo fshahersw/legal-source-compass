@@ -142,6 +142,7 @@ def acquire(ctx: lib.RunContext) -> None:
         chapter, entries = chapter_toc(cpage)
         if ctx.sample is not None:
             entries = [e for e in entries if e[0] and e[0]["number"] == "5"]
+        ctx.prefetch(e[3] for e in entries)  # retained runs: read ahead
         for article, number, caption, url in entries:
             if not ctx.want_more():
                 break

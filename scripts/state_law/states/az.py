@@ -157,6 +157,7 @@ def acquire(ctx: lib.RunContext) -> None:
         # pages are read first: whether two index rows are two versions of one section or two sections is decided by
         # the numbers the pages print, not by the index labels (see printed_matches)
         read = []
+        ctx.prefetch(row["url"] for row in rows)  # retained runs: read ahead
         for row in rows:
             if not ctx.want_more() or (ctx.sample is not None and len(read) >= ctx.sample):
                 break

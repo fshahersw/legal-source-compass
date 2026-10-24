@@ -171,6 +171,7 @@ def acquire(ctx):
     if only:
         files = [f for f in files if f.split("%20", 1)[1][:-4] in only]
     ctx.log(f"{len(files)} chapter files listed by the publisher")
+    ctx.prefetch(file_base + name for name in files)  # retained runs: read ahead
     for name in files:
         fetched = ctx.get(file_base + name, method="publisher_bulk")
         parsed = parse_chapter(fetched.body)

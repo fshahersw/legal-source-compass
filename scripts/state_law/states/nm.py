@@ -250,6 +250,7 @@ def acquire(ctx):
     if only:
         items = [i for i in items if i[1] in only]
     ctx.log(f"{len(items)} chapters listed")
+    ctx.prefetch(f"{SITE}/nmos/nmsa/en/{item}/1/document.do" for item, _c, _n in items)  # retained runs: read ahead
     for item, chapter, name in items:
         fetched = ctx.get(f"{SITE}/nmos/nmsa/en/{item}/1/document.do", method="publisher_bulk")
         if not _emit(ctx, fetched, parse_chapter(pdf_lines(fetched.body), chapter), chapter, name):

@@ -171,6 +171,7 @@ def acquire(ctx: lib.RunContext) -> None:
             cpage = ctx.get(f"{BASE}{title_no}/{chapter}", fallback_fresh=True)
             sections = list(dict.fromkeys(re.findall(rf'href="\./(title{re.escape(title_no)}sec[0-9A-Za-z.\-]+\.html)"',
                                                      cpage.text())))
+            ctx.prefetch(f"{BASE}{title_no}/{link}" for link in sections)  # retained runs: read ahead
             for link in sections:
                 if not ctx.want_more():
                     break

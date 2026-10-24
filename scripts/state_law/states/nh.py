@@ -119,6 +119,7 @@ def acquire(ctx):
     urls = [u for u in retained.urls(ROOT) if u.endswith("-mrg.htm")]
     urls.sort(key=lambda u: sb.natural_key(u.rsplit("/", 1)[1][:-8]))
     ctx.log(f"{len(urls)} retained chapter pages")
+    ctx.prefetch(urls)  # retained runs: read ahead
     for url in urls:
         if only and url.rsplit("/", 1)[1][:-8] not in only:
             continue
