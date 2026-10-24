@@ -32,7 +32,7 @@ import {
 
 const BULK = "https://www.courtlistener.com/help/api/bulk-data/";
 const LINK_BASIS: Partial<Record<CrosswalkTier, string>> = {
-  exact_id: "linked by FJC id",
+  exact_id: "linked by federal judicial id",
   parent_profile_link: "linked through the FJC-backed directory record",
   exact_name_same_court: "linked by exact name at the same court",
   exact_name_same_state: "linked by exact name in the same state",
@@ -85,9 +85,9 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
       title="Appointment, service and education"
       subtitle={
         <>
-          CourtListener people database, Sept 30, 2026 export
+          the source people database, Sept 30, 2026 export
           {j.aba.length
-            ? `; ABA ratings read from CourtListener on ${abaRead ?? NOT_RECORDED}`
+            ? `; ABA ratings read from the source on ${abaRead ?? NOT_RECORDED}`
             : ""}
           {LINK_BASIS[tier] ? ` · ${LINK_BASIS[tier]}` : ""}
           {hasFjc ? " · the FJC record above is the official source for federal service" : ""}
@@ -194,11 +194,11 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
             ]}
             note={
               <>
-                Retention: CourtListener's people database records no retention events for any judge
+                Retention: the judicial people database records no retention events for any judge
                 (0 rows in its export and its API on Oct 24, 2026), so re-elections and
                 reappointments are not listed.
                 {courts.some((p) => p.inferred)
-                  ? " Positions marked by CourtListener as having inferred values were partly filled from a source rather than entered by hand."
+                  ? " Positions marked by the source as having inferred values were partly filled from a source rather than entered by hand."
                   : ""}
               </>
             }
@@ -252,7 +252,7 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
       >
         {j.aba.length ? (
           <MiniTable
-            caption="American Bar Association ratings recorded by CourtListener"
+            caption="American Bar Association ratings recorded by the source"
             rows={j.aba}
             rowKey={(a) => String(a.id)}
             columns={[
@@ -263,7 +263,7 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
               },
               { key: "r", label: "Rating", render: (a) => a.rating },
             ]}
-            note={`Read from CourtListener's aba-ratings API${abaRead ? ` on ${abaRead}` : ""}. A rating is the ABA committee's; CourtListener records the rating and year only.`}
+            note={`Read from the ratings record${abaRead ? ` on ${abaRead}` : ""}. A rating is the ABA committee's; the source records the rating and year only.`}
           />
         ) : (
           <p className="text-xs text-muted-foreground">
@@ -323,7 +323,7 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
           measures={[
             {
               term: "Dates",
-              means: "shown to the precision CourtListener recorded: a year, a month or a day.",
+              means: "shown to the precision the source recorded: a year, a month or a day.",
               caveat: "A year-only start is drawn from the start of that year in the timeline.",
             },
             {
@@ -334,11 +334,11 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
             {
               term: "Selected",
               means:
-                "how CourtListener records the person was selected, and the appointing official it links.",
+                "how the source records the person was selected, and the appointing official it links.",
             },
             {
               term: "No end recorded",
-              means: "CourtListener records no end date for the position.",
+              means: "the source records no end date for the position.",
               caveat: "It does not by itself mean the person still serves.",
             },
           ]}
@@ -352,11 +352,11 @@ function LowerCourtAppealsBlock({ a }: { a: NonNullable<JudgePeople["lowerCourtA
   return (
     <div className="space-y-2 text-xs">
       <p className="leading-5">
-        CourtListener's appellate dockets carry an originating-court record for each appeal;{" "}
-        {fmtInt(a.assigned)} of them name this judge (by CourtListener person id) as the judge the
+        the source's appellate dockets carry an originating-court record for each appeal;{" "}
+        {fmtInt(a.assigned)} of them name this judge (by case-law person id) as the judge the
         case was assigned to below
         {a.ordering ? `, and ${fmtInt(a.ordering)} as the ordering judge` : ""}. This covers the
-        appeals in CourtListener's collection, not every appeal.
+        appeals in the source's collection, not every appeal.
       </p>
       {a.byNoticeYear.length ? (
         <MiniTable

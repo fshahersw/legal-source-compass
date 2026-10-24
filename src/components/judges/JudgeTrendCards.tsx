@@ -16,26 +16,26 @@ const DETAIL = { to: "/judges/analytics", label: "Judge analytics" } as const;
 
 const CARDS = {
   dockets: {
-    title: "Dockets assigned to this judge in CourtListener's collection, by year filed",
+    title: "Dockets assigned to this judge in the source's collection, by year filed",
     measure: "assigned dockets",
     unit: "dockets",
     seriesLabel: "Assigned dockets",
     counts:
-      "Counts dockets CourtListener lists as assigned to this person, by the year each was filed.",
+      "Counts dockets the source lists as assigned to this person, by the year each was filed.",
     totalLabel: "assigned dockets",
     empty:
-      "CourtListener's collection holds no assigned docket with a filing year for this person.",
+      "the source's collection holds no assigned docket with a filing year for this person.",
   },
   opinions: {
-    title: "Opinions this judge authored in CourtListener's collection, by year filed",
+    title: "Opinions this judge authored in the source's collection, by year filed",
     measure: "authored opinions",
     unit: "opinions",
     seriesLabel: "Authored opinions",
     counts:
-      "Counts opinions CourtListener credits to this person as author, by the year each was filed.",
+      "Counts opinions the source credits to this person as author, by the year each was filed.",
     totalLabel: "authored opinions",
     empty:
-      "CourtListener's collection holds no authored opinion with a filing year for this person.",
+      "the source's collection holds no authored opinion with a filing year for this person.",
   },
   panels: {
     title: "Opinion clusters listing this judge on the panel, by year filed",

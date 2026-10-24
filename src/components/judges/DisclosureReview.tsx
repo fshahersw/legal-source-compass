@@ -343,7 +343,7 @@ export function DisclosureReview({
             </span>
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Scope: the checked reports only. The CourtListener bulk files hold no report later than{" "}
+            Scope: the checked reports only. The the source bulk files hold no report later than{" "}
             {years.at(-1) ?? "the years shown"} for these judges, so current holdings are not
             covered.
           </p>
@@ -373,13 +373,13 @@ export function DisclosureReview({
           measures={[
             {
               term: "Disclosures",
-              means: `CourtListener bulk financial-disclosure files${summary?.clBulkDate ? ` (${summary.clBulkDate})` : ""}: the ${summary?.yearsPerJudge ?? 3} most recent report years per judge, every extracted Part VII investment row.`,
+              means: `the source bulk financial-disclosure files${summary?.clBulkDate ? ` (${summary.clBulkDate})` : ""}: the ${summary?.yearsPerJudge ?? 3} most recent report years per judge, every extracted Part VII investment row.`,
               caveat:
-                "Line = position of the row among the report’s extracted rows; open the PDF to confirm. Judges are linked to CourtListener by the FJC identifier, or by the MDL master docket’s assigned judge when that is the only link and surnames agree.",
+                "Line = position of the row among the report’s extracted rows; open the PDF to confirm. Judges are linked to the source by the FJC identifier, or by the MDL master docket’s assigned judge when that is the only link and surnames agree.",
             },
             {
               term: "Party evidence",
-              means: `A company is compared only when it is named in the JPML caption, listed as a defendant on the master docket’s CourtListener party list, or ${
+              means: `A company is compared only when it is named in the JPML caption, listed as a defendant on the master docket’s the source party list, or ${
                 summary?.secLinksUsed
                   ? "linked by its own SEC filing that cites the MDL number or caption and describes claims against it"
                   : "(once published) linked by its own SEC filing citing the MDL"

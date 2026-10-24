@@ -145,7 +145,7 @@ const DISCLOSURE_STATUS: Record<string, string> = {
   filing_with_no_reportable_holdings: "Filed; no reportable holdings listed",
   no_filing_in_snapshot: "No filing found in the disclosure snapshot",
   not_bridged_to_courtlistener_person_id:
-    "Not linked to a CourtListener person record, so no filing could be looked up",
+    "Not linked to a case-law person record, so no filing could be looked up",
 };
 /** The judge profile's financial-disclosure summary (years filed, holdings per year, latest-year holdings). */
 function isDisclosureSummary(v: unknown): v is Record<string, unknown> {
@@ -227,7 +227,7 @@ function disclosureSections(
       sample: holdings.map((h) => {
         const flags = [
           h["redacted"] === true ? "Row contains redactions" : null,
-          h["inferred"] === true ? "Values inferred during CourtListener extraction" : null,
+          h["inferred"] === true ? "Values inferred during the source extraction" : null,
         ].filter((f): f is string => !!f);
         return {
           title:
