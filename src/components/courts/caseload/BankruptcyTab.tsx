@@ -354,7 +354,7 @@ function RollingNational({
           ariaLabel={`${spec.label} in the 12 months ending each quarter, United States`}
           annotations={[
             ...(rename ? [{ key: rename, label: "Heading renamed" }] : []),
-            { key: newest.end, label: `Newest: ${longDate(newest.end)}` },
+            { key: newest.end, label: "Newest" },
           ]}
           height={220}
         />
