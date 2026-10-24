@@ -3,6 +3,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { SectionHub } from "@/components/atlas/hub/SectionHub";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { CaseMixChart } from "@/components/litviz/CaseMixChart";
+import { CaseTypeSunburst } from "@/components/litviz/CaseTypeSunburst";
 import { LitigationHeadline } from "@/components/litviz/LitigationHeadline";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -29,6 +30,7 @@ function Page() {
           <div className="space-y-6">
             <LitigationHeadline />
             <CaseMixChart />
+            <CaseTypeSunburst />
           </div>
         }
       >

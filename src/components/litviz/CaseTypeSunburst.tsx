@@ -73,7 +73,9 @@ export function CaseTypeSunburst() {
               The five largest case types match the chart above; the other groups sit in &ldquo;All
               other case types&rdquo;, where the outer ring shows each group instead of its codes.
             </li>
-            <li>Codes with no filings in the year, and codes not mapped to a group, are left out.</li>
+            <li>
+              Codes with no filings in the year, and codes not mapped to a group, are left out.
+            </li>
           </ul>
         }
         table={
