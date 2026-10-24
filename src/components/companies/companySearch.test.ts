@@ -32,3 +32,12 @@ describe("normalizeCompanySearch", () => {
     expect(tabOf({ tab: "litigation" })).toBe("litigation");
   });
 });
+
+describe("company views", () => {
+  it("keeps every former tab address inside one of four views", () => {
+    expect(COMPANY_VIEWS).toHaveLength(4);
+    for (const tab of COMPANY_TABS) expect(viewOf(tab).tabs as readonly string[]).toContain(tab);
+    expect(viewOf("segments").id).toBe("financials");
+    expect(viewOf("filings").id).toBe("documents");
+  });
+});

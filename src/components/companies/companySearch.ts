@@ -37,3 +37,19 @@ export function normalizeCompanySearch(raw: Record<string, unknown>): CompanySea
 }
 
 export const tabOf = (s: CompanySearch): CompanyTab => s.tab ?? "overview";
+
+/**
+ * The four views the company page shows (owner rule: at most four tabs). Each view holds one or more of the URL tabs
+ * above, so every former address still opens the same content: statements and segments share "Financials",
+ * investor documents and filings share "Documents & filings".
+ */
+export const COMPANY_VIEWS = [
+  { id: "overview", label: "Overview", tabs: ["overview"] },
+  { id: "financials", label: "Financials", tabs: ["statements", "segments"] },
+  { id: "documents", label: "Documents & filings", tabs: ["documents", "filings"] },
+  { id: "litigation", label: "Litigation", tabs: ["litigation"] },
+] as const satisfies readonly { id: string; label: string; tabs: readonly CompanyTab[] }[];
+export type CompanyView = (typeof COMPANY_VIEWS)[number];
+
+export const viewOf = (tab: CompanyTab): CompanyView =>
+  COMPANY_VIEWS.find((v) => (v.tabs as readonly CompanyTab[]).includes(tab)) ?? COMPANY_VIEWS[0];
