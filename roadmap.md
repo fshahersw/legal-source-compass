@@ -77,5 +77,6 @@
 - [ ] Court profile: condense the identity facts box (name/type/system repeat the header)
 - [x] Judge profiles: Career, Practices, Cases & MDLs, Disclosures behind the sticky index; the record's own sections sit under "Record details" (one index, no second sticky strip)
 - [x] Company profiles: six tabs folded into four views (Overview, Financials, Documents & filings, Litigation); every former ?tab= address opens its view with its part first
-- [ ] Agency and MDL profiles: headline strip + sectioned page
+- [x] Agency profiles: AI summary under the headline figures; overview in five sections (Rulemaking, Pipeline, Money, Law and structure, Data) behind the sticky index; "Rules & notices" and "All documents" merged into one Documents tab (recent 12, then browse all)
+- [x] MDL profiles: seven tabs folded into four views (Overview + lifecycle, Cases & parties, Docket & documents, Evidence & sources; every former ?tab= opens its part first); AI summary under the header; two figures repeated from the header removed from "Membership & coverage"
 - [ ] Desktop + phone screenshots per page; demoted blocks listed
