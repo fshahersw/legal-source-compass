@@ -319,7 +319,7 @@ function Body({ m }: { m: CaseloadMethod }) {
           <dt className="font-medium">Links</dt>
           <dd className="flex flex-wrap gap-x-4 gap-y-1">
             {m.sourcePage ? (
-              <SourceLink href={m.sourcePage}>Federal caseload data civil data page</SourceLink>
+              <SourceLink href={m.sourcePage}>Civil data page</SourceLink>
             ) : null}
             {m.sourceFile ? (
               <SourceLink href={m.sourceFile}>Source file (cv88on)</SourceLink>
