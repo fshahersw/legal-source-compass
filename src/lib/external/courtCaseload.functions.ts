@@ -994,3 +994,48 @@ export const getCaseloadMethod = createServerFn({ method: "GET" }).handler(
     return value;
   },
 );
+
+// ---------------------------------------------------------------------------------------------- case-type groups over time
+
+/** One of this project's nature-of-suit groups: civil filings per fiscal year (FJC IDB). */
+export type CaseGroupTrend = {
+  id: string;
+  label: string;
+  years: { fy: number; partial: boolean; filings: number | null }[];
+};
+
+export function parseGroupTrends(
+  rows: readonly { id?: unknown; name?: unknown; s?: unknown }[],
+): Listed<CaseGroupTrend> {
+  const seen = new Set<string>();
+  return parseList([...rows], rows.length, (r) => {
+    const id = str(r.id);
+    const label = str(r.name);
+    if (!id || !label || !/^group:[a-z_]{2,40}$/.test(id) || seen.has(id)) return null;
+    seen.add(id);
+    const years = parseYears(r.s, null).map((y) => ({
+      fy: y.fy,
+      partial: y.partial,
+      filings: y.filings,
+    }));
+    return years.length ? { id, label, years } : null;
+  });
+}
+
+const groupTrendCache: { current: { at: number; value: Listed<CaseGroupTrend> } | null } = {
+  current: null,
+};
+
+/** Filings per fiscal year for every nature-of-suit group (one read; the series are trimmed to filings here). */
+export const getCaseloadGroupTrends = createServerFn({ method: "GET" }).handler(
+  async (): Promise<Listed<CaseGroupTrend>> => {
+    const hit = fresh(groupTrendCache.current);
+    if (hit) return hit;
+    const res = await restGet<{ id: unknown; name: unknown; s: unknown }[]>(
+      "corpus_records?select=id,name:item->cells->name,s:item->profile->series&dataset=eq.fjc_civil_nos&id=like.group:*&order=ordinal.asc&limit=100",
+    );
+    const value = parseGroupTrends(res.rows);
+    if (value.rows.length) groupTrendCache.current = { at: Date.now(), value };
+    return value;
+  },
+);
