@@ -21,7 +21,7 @@ rule_set, strip_sign; [ ... ] is kept only when every group inside it is non-emp
 
 from __future__ import annotations
 
-VERSION = "citations-v2/2026-10-25.4"
+VERSION = "citations-v2/2026-10-25.5"
 
 # ------------------------------------------------------------------------------------------------ fragments
 FRAGMENTS: dict[str, str] = {

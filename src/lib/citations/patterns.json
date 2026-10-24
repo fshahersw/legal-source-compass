@@ -1,9 +1,9 @@
 {
- "version": "citations-v2/2026-10-25.4",
+ "version": "citations-v2/2026-10-25.5",
  "source": {
   "reporters_db": "3.2.67",
   "reporters_json_sha256": "d1dee4057eaf051b3737c720fd0c58cd436f74b69286f521c3601d6aa4d332f1",
-  "pattern_source_sha256": "700f2a8b014ea4291148f6aaac7a0d7e4561212945f050c4180943553115984d"
+  "pattern_source_sha256": "affee38f0af6508820c2d379984d28981798944f2dcaf393ca5784289a66946f"
  },
  "rules": [
   {

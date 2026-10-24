@@ -71,6 +71,8 @@ TEXTS: list[tuple[str, str]] = [
     ("not-cases", "On 5 May 2020 the 3 Defendants paid 12 dollars; 100 NE 2nd Ave; 25 Black 3 sold; page 4 Exhibit 5."),
     ("ucc-dotted", "Express warranty: Mo. Rev. Stat. § 400.2-313 and Minn. Stat. § 336.2-314(2)(c); Mo. Rev. Stat. § "
                    "400.4A-101; damages under Mo. Rev. Stat. § 537.090-537.100 and Fla. Stat. § 95.11(3)."),
+    ("hyphen-variants", "Deceptive acts: Ind. Code § 24\u20115\u20110.5\u20113(a); Ala. Code § 6\u20102\u201138(l); "
+                        "Conn. Gen. Stat. Ann. §§ 42a\u20112\u2011313 to 42a\u20112\u2011315; 15 U.S.C. § 78j\u2011b."),
 ]
 
 # A document given page by page (short forms resolve across pages).

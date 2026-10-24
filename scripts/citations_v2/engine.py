@@ -135,6 +135,16 @@ def dash(s: str) -> str:
     return s.replace("–", "-").replace("—", "-").replace("‑", "-")
 
 
+# hyphen look-alikes that text layers print inside section numbers ("Ind. Code § 24\u20115\u20110.5\u20113": U+2010 hyphen,
+# U+2011 non-breaking hyphen, U+2012 figure dash, U+2212 minus) are read as "-" before matching; one character for one,
+# so offsets are unchanged (en and em dashes keep their meaning as range marks)
+_HYPHENS = str.maketrans({"\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2212": "-"})
+
+
+def hyphens(s: str) -> str:
+    return s.translate(_HYPHENS)
+
+
 def compact(s: str) -> str:
     return nospace(s).replace("’", "'")
 
@@ -757,13 +767,14 @@ def _postprocess(c: Compiled, text: str, kept: list[dict]) -> list[dict]:
 def extract(text: str, compiled: Compiled | None = None, max_chars: int = MAX_CHARS) -> list[dict]:
     """Citations of one text (a page or a whole document), short forms linked within it. See module docstring."""
     c = compiled or default()
-    source = text[:max_chars]
+    original = text[:max_chars]
+    source = hyphens(original)
     cands, furniture = _candidates(c, source)
     if furniture:
         cands = [x for x in cands if x["kind"] not in ("docket", "mdl") or all(x["end"] <= a or x["start"] >= b for a, b in furniture)]
     kept = _postprocess(c, source, _resolve_overlaps(cands))
     for x in kept:
-        x["matched"] = source[x["start"] : x["end"]]
+        x["matched"] = original[x["start"] : x["end"]]  # the text as printed (same offsets as the normalized copy)
     link_short_forms(c, [(0, source, kept)])
     return [public(x) for x in kept]
 
@@ -774,13 +785,14 @@ def extract_pages(pages: list[str], compiled: Compiled | None = None) -> list[li
     c = compiled or default()
     per_page = []
     for i, text in enumerate(pages):
-        source = text[:MAX_CHARS]
+        original = text[:MAX_CHARS]
+        source = hyphens(original)
         cands, furniture = _candidates(c, source)
         if furniture:
             cands = [x for x in cands if x["kind"] not in ("docket", "mdl") or all(x["end"] <= a or x["start"] >= b for a, b in furniture)]
         kept = _postprocess(c, source, _resolve_overlaps(cands))
         for x in kept:
-            x["matched"] = source[x["start"] : x["end"]]
+            x["matched"] = original[x["start"] : x["end"]]
         per_page.append((i, source, kept))
     link_short_forms(c, per_page)
     return [[public(x) for x in kept] for _i, _s, kept in per_page]

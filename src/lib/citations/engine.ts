@@ -105,6 +105,12 @@ const SPACE_RUN = /\s+/g;
 export const squash = (s: string) => s.replace(SPACE_RUN, " ").replace(/^ +| +$/g, "");
 const nospace = (s: string) => s.replace(SPACE_RUN, "");
 const dash = (s: string) => s.replace(/[–—‑]/g, "-");
+/**
+ * Hyphen look-alikes that text layers print inside section numbers (U+2010 hyphen, U+2011 non-breaking hyphen, U+2012
+ * figure dash, U+2212 minus) are read as "-" before matching; one character for one, so offsets are unchanged (en and
+ * em dashes keep their meaning as range marks).
+ */
+const hyphens = (s: string) => s.replace(/[\u2010\u2011\u2012\u2212]/g, "-");
 const compact = (s: string) => nospace(s).replace(/’/g, "'");
 const isDigits = (s: string) => /^[0-9]+$/.test(s);
 const isUpperCh = (ch: string) =>
@@ -986,9 +992,11 @@ function pageCitations(c: Compiled, text: string): Raw[] {
 }
 
 /** Citations of one text (a page or a whole document), short forms linked within it. */
-export function extractCitations(text: string, compiled?: Compiled): Citation[] {
+export function extractCitations(input: string, compiled?: Compiled): Citation[] {
   const c = compiled ?? defaultCompiled();
+  const text = hyphens(input);
   const kept = pageCitations(c, text);
+  for (const x of kept) x.matched = input.slice(x.start, x.end); // the text as printed (same offsets)
   linkShortForms(c, [[0, text, kept]]);
   const cp = codePointMapper(text);
   return kept.map((x) => toPublic(x, cp));
@@ -1000,7 +1008,12 @@ export function extractCitations(text: string, compiled?: Compiled): Citation[] 
  */
 export function extractPages(pages: string[], compiled?: Compiled): Citation[][] {
   const c = compiled ?? defaultCompiled();
-  const per: [number, string, Raw[]][] = pages.map((t, i) => [i, t, pageCitations(c, t)]);
+  const per: [number, string, Raw[]][] = pages.map((input, i) => {
+    const t = hyphens(input);
+    const kept = pageCitations(c, t);
+    for (const x of kept) x.matched = input.slice(x.start, x.end); // the text as printed (same offsets)
+    return [i, t, kept];
+  });
   linkShortForms(c, per);
   return per.map(([, t, kept]) => {
     const cp = codePointMapper(t);
