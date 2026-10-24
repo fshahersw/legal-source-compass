@@ -1,4 +1,5 @@
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { Fragment, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import {
@@ -108,13 +109,11 @@ export function EntityPage({
       {...(v.subtitle ? { description: v.subtitle } : {})}
     >
       {v.qualification ? (
-        <section
-          aria-label="Source scope"
-          className="mb-4 rounded-lg border border-border bg-muted/30 p-3 text-[13px] leading-relaxed"
-        >
-          <p className="mb-1 text-[11px] font-medium text-muted-foreground">Source scope</p>
-          <p className="whitespace-pre-wrap">{v.qualification}</p>
-        </section>
+        <div className="mb-3 flex items-center text-xs text-muted-foreground">
+          <InfoPopover label="About this record" showLabel align="start" contentClassName="max-w-md">
+            <p className="whitespace-pre-wrap">{v.qualification}</p>
+          </InfoPopover>
+        </div>
       ) : null}
       {key.length || hasLead || photo ? (
         <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
