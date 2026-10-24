@@ -284,8 +284,8 @@ class EarlierModules(unittest.TestCase):
 
     def test_nv_number_split_across_spans(self):
         nv = load("nv")
-        raw = ('<html><body><p class="SectBody"><span class="Empty">NRS</span><span class="Empty">\u2002</span>'
-               '<span class="Section">388C</span><span class="Section">.140</span><span class="Empty">\u2002</span>'
+        raw = ('<html><body><p class="SectBody"><span class="Empty">NRS</span><span class="Empty">&#8194;</span>'
+               '<span class="Section">388C</span><span class="Section">.140</span><span class="Empty">&#8194;</span>'
                '<span class="Leadline">Rules for academic advancement of pupils.</span></p>'
                '<p class="SectBody">1. The governing body shall adopt rules.</p></body></html>').encode("windows-1252")
         got = nv.parse_chapter(raw)["sections"]
