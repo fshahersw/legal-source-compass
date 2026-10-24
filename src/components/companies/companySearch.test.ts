@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { normalizeCompanySearch, tabOf } from "./companySearch";
+import {
+  COMPANY_TABS,
+  COMPANY_VIEWS,
+  normalizeCompanySearch,
+  tabOf,
+  viewOf,
+} from "./companySearch";
 
 describe("normalizeCompanySearch", () => {
   it("keeps known tabs and drops the default", () => {

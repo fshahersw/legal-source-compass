@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -45,7 +45,7 @@ import {
   type Metric,
 } from "./companyData";
 import { companyStatementsQuery } from "./companyQueries";
-import { COMPANY_TABS, tabOf, type CompanySearch, type CompanyTab } from "./companySearch";
+import { COMPANY_VIEWS, tabOf, viewOf, type CompanySearch, type CompanyTab } from "./companySearch";
 import type { Grain } from "./companyStatements";
 import { CompanyFacts } from "./CompanyHeader";
 import { GrainToggle, OverviewTab, StatementsTab } from "./CompanyFinancials";
@@ -79,14 +79,12 @@ export const companyDetailQuery = (cik: string) => ({
 
 const axis = { fontSize: 11, fill: "var(--muted-foreground)" };
 
-const TABS: { id: CompanyTab; label: string; Icon: typeof LayoutDashboard }[] = [
-  { id: "overview", label: "Overview", Icon: LayoutDashboard },
-  { id: "statements", label: "Financial statements", Icon: BarChart3 },
-  { id: "segments", label: "Segments", Icon: PieChart },
-  { id: "documents", label: "Investor documents", Icon: FileText },
-  { id: "filings", label: "Filings", Icon: FileStack },
-  { id: "litigation", label: "Litigation", Icon: Gavel },
-];
+const VIEW_ICON: Record<(typeof COMPANY_VIEWS)[number]["id"], typeof LayoutDashboard> = {
+  overview: LayoutDashboard,
+  financials: BarChart3,
+  documents: FileText,
+  litigation: Gavel,
+};
 
 export type CompanyNavigate = (next: CompanySearch, opts?: { replace?: boolean }) => void;
 
@@ -136,8 +134,8 @@ export function CompanyProfile({
       <TabBar tab={tab} onOpen={open} />
       <div
         role="tabpanel"
-        id={`company-panel-${tab}`}
-        aria-labelledby={`company-tab-${tab}`}
+        id={`company-panel-${viewOf(tab).id}`}
+        aria-labelledby={`company-tab-${viewOf(tab).id}`}
         className="min-w-0"
       >
         {statements.isError && tab !== "litigation" ? (
@@ -147,19 +145,48 @@ export function CompanyProfile({
           </Notice>
         ) : tab === "overview" ? (
           <OverviewTab profile={p} summary={d?.summary ?? null} onOpen={open} />
-        ) : tab === "statements" ? (
-          <StatementsTab cik={cik} profile={p} grain={grain} onGrain={setGrain} />
-        ) : tab === "segments" ? (
-          <SegmentsTab cik={cik} grain={grain} onGrain={setGrain} currency={p?.currency ?? null} />
-        ) : tab === "documents" ? (
-          <DocumentsTab
-            cik={cik}
-            docId={search.doc}
-            onDoc={(id) => onNavigate({ tab: "documents", doc: id }, { replace: true })}
-            currency={p?.currency ?? null}
-          />
-        ) : tab === "filings" ? (
-          <FilingsTab cik={cik} profile={p} />
+        ) : tab === "statements" || tab === "segments" ? (
+          <div className="space-y-8">
+            <ViewPart
+              id="company-statements"
+              title="Financial statements"
+              focus={tab === "statements"}
+            >
+              <StatementsTab cik={cik} profile={p} grain={grain} onGrain={setGrain} />
+            </ViewPart>
+            <ViewPart
+              id="company-segments"
+              title="Segments"
+              focus={tab === "segments"}
+              scrollOnFocus
+            >
+              <SegmentsTab
+                cik={cik}
+                grain={grain}
+                onGrain={setGrain}
+                currency={p?.currency ?? null}
+              />
+            </ViewPart>
+          </div>
+        ) : tab === "documents" || tab === "filings" ? (
+          <div className="space-y-8">
+            <ViewPart id="company-documents" title="Investor documents" focus={tab === "documents"}>
+              <DocumentsTab
+                cik={cik}
+                docId={search.doc}
+                onDoc={(id) => onNavigate({ tab: "documents", doc: id }, { replace: true })}
+                currency={p?.currency ?? null}
+              />
+            </ViewPart>
+            <ViewPart
+              id="company-filings"
+              title="SEC filings"
+              focus={tab === "filings"}
+              scrollOnFocus
+            >
+              <FilingsTab cik={cik} profile={p} />
+            </ViewPart>
+          </div>
         ) : d ? (
           <Litigation d={d} />
         ) : detail.isError ? (
@@ -175,24 +202,60 @@ export function CompanyProfile({
   );
 }
 
+/** One part of a view; a former tab address (?tab=segments, ?tab=filings) scrolls to its part. */
+function ViewPart({
+  id,
+  title,
+  focus,
+  scrollOnFocus = false,
+  children,
+}: {
+  id: string;
+  title: string;
+  focus: boolean;
+  scrollOnFocus?: boolean;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (focus && scrollOnFocus) ref.current?.scrollIntoView({ block: "start" });
+  }, [focus, scrollOnFocus]);
+  return (
+    <section
+      ref={ref}
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className="min-w-0 scroll-mt-16 space-y-3"
+    >
+      <h2 id={`${id}-title`} className="text-heading text-foreground">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
 function TabBar({ tab, onOpen }: { tab: CompanyTab; onOpen: (id: CompanyTab) => void }) {
-  const refs = useRef(new Map<CompanyTab, HTMLButtonElement>());
+  const refs = useRef(new Map<string, HTMLButtonElement>());
+  const current = viewOf(tab);
+  const openView = (v: (typeof COMPANY_VIEWS)[number]) => onOpen(v.tabs[0]);
   const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
-    const i = COMPANY_TABS.indexOf(tab);
+    const i = COMPANY_VIEWS.findIndex((v) => v.id === current.id);
+    const n = COMPANY_VIEWS.length;
     const next =
       e.key === "ArrowRight"
-        ? COMPANY_TABS[(i + 1) % COMPANY_TABS.length]
+        ? COMPANY_VIEWS[(i + 1) % n]
         : e.key === "ArrowLeft"
-          ? COMPANY_TABS[(i - 1 + COMPANY_TABS.length) % COMPANY_TABS.length]
+          ? COMPANY_VIEWS[(i - 1 + n) % n]
           : e.key === "Home"
-            ? COMPANY_TABS[0]
+            ? COMPANY_VIEWS[0]
             : e.key === "End"
-              ? COMPANY_TABS[COMPANY_TABS.length - 1]
+              ? COMPANY_VIEWS[n - 1]
               : undefined;
     if (!next) return;
     e.preventDefault();
-    onOpen(next);
-    refs.current.get(next)?.focus();
+    openView(next);
+    refs.current.get(next.id)?.focus();
   };
   return (
     <div
@@ -200,31 +263,35 @@ function TabBar({ tab, onOpen }: { tab: CompanyTab; onOpen: (id: CompanyTab) => 
       aria-label="Company views"
       className="flex gap-1 overflow-x-auto rounded-md border border-border bg-surface p-1"
     >
-      {TABS.map(({ id, label, Icon }) => (
-        <button
-          key={id}
-          ref={(el) => {
-            if (el) refs.current.set(id, el);
-          }}
-          type="button"
-          role="tab"
-          id={`company-tab-${id}`}
-          aria-selected={tab === id}
-          aria-controls={`company-panel-${id}`}
-          tabIndex={tab === id ? 0 : -1}
-          onClick={() => onOpen(id)}
-          onKeyDown={onKey}
-          className={cn(
-            "flex shrink-0 items-center gap-1.5 rounded px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
-            tab === id
-              ? "bg-primary font-semibold text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted",
-          )}
-        >
-          <Icon className="size-3.5" aria-hidden />
-          {label}
-        </button>
-      ))}
+      {COMPANY_VIEWS.map((v) => {
+        const Icon = VIEW_ICON[v.id];
+        const on = v.id === current.id;
+        return (
+          <button
+            key={v.id}
+            ref={(el) => {
+              if (el) refs.current.set(v.id, el);
+            }}
+            type="button"
+            role="tab"
+            id={`company-tab-${v.id}`}
+            aria-selected={on}
+            aria-controls={`company-panel-${v.id}`}
+            tabIndex={on ? 0 : -1}
+            onClick={() => openView(v)}
+            onKeyDown={onKey}
+            className={cn(
+              "flex shrink-0 items-center gap-1.5 rounded px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+              on
+                ? "bg-primary font-semibold text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted",
+            )}
+          >
+            <Icon className="size-3.5" aria-hidden />
+            {v.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
