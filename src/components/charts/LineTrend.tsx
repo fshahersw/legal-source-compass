@@ -168,6 +168,7 @@ export function LineTrend({
                   y1={y(t)}
                   y2={y(t)}
                   stroke="var(--chart-grid)"
+                  strokeOpacity={0.55}
                   strokeWidth={1}
                   shapeRendering="crispEdges"
                 />
@@ -257,7 +258,7 @@ export function LineTrend({
                         .join(" ")}
                       fill="none"
                       stroke={c}
-                      strokeWidth={emphasis ? 2 : 1.5}
+                      strokeWidth={emphasis ? 1.75 : 1.25}
                       strokeLinejoin="round"
                       strokeLinecap="round"
                       {...(seg.dashed ? { strokeDasharray: "4 4" } : {})}

@@ -66,6 +66,11 @@ export type ChartCardProps = {
   footnotes?: readonly ReactNode[] | undefined;
   /** Controls in the header (a select, a segmented toggle). */
   actions?: ReactNode;
+  /**
+   * "editorial": a bold takeaway headline under a small accent rule, a one-line subtitle (measure, unit, period) and
+   * the source line, for the page's lead charts. The default card is the quieter working card.
+   */
+  variant?: "default" | "editorial" | undefined;
   /** Kept for callers; the kit card's title is an h3. */
   headingLevel?: "h2" | "h3" | "h4";
   id?: string | undefined;
@@ -156,6 +161,7 @@ export function ChartCard({
   notice,
   footnotes,
   actions,
+  variant = "default",
   id,
   className,
   minHeight = 200,
@@ -174,8 +180,25 @@ export function ChartCard({
   const hasFooter = sourceProp !== undefined || period || asOf || about || partial;
   return (
     <KitChartCard
-      title={title}
-      subtitle={subtitle}
+      title={
+        variant === "editorial" ? (
+          <>
+            <span aria-hidden className="mb-2 block h-[3px] w-9 rounded-full bg-brand" />
+            <span className="block text-[19px] font-bold leading-[1.25] tracking-[-0.01em] text-foreground">
+              {title}
+            </span>
+          </>
+        ) : (
+          title
+        )
+      }
+      subtitle={
+        variant === "editorial" && subtitle ? (
+          <span className="mt-0.5 block text-[13px] leading-5">{subtitle}</span>
+        ) : (
+          subtitle
+        )
+      }
       actions={actions}
       id={id}
       className={className}

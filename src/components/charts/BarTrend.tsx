@@ -147,6 +147,7 @@ export function BarTrend({
                   y1={y(t)}
                   y2={y(t)}
                   stroke={t === 0 ? "var(--border-strong)" : "var(--chart-grid)"}
+                  strokeOpacity={t === 0 ? 1 : 0.55}
                   shapeRendering="crispEdges"
                 />
                 <text x={leftMargin - 6} y={y(t)} dy="0.32em" textAnchor="end" {...axisText}>

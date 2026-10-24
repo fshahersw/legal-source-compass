@@ -41,7 +41,7 @@ import {
   so no extra table block sits beside a chart.
 - **Context, always:** over time, against a national or peer median (labelled reference line), ranked with the focus
   item highlighted, or small multiples on a shared axis. A chart that only repeats a KPI is dropped.
-- **Marks:** 2 px lines, bars at most 24 px with a 4 px rounded data end, hairline solid grid, muted 12 px ticks on
+- **Marks:** 1.75 px lines (1.25 px for context), bars at most 24 px with a 4 px rounded data end, hairline grid at 55% opacity, muted 12 px ticks on
   nice steps (1, 2 or 5 × 10ⁿ; 4–6 ticks; compact 50K / 1.2M), legend above the plot for two or more series, direct
   end labels for up to four lines, the latest value on the last column, crosshair tooltip on lines, per-bar hover on
   bars, values leading in the tooltip. No dual axes, no pies over four parts, no 3D, no rainbow.
@@ -64,6 +64,13 @@ import {
 | How do several entities compare over time?                    | Small multiples, one hue, shared axis, context line in each panel                           | `SmallMultiplesGrid`                                                                              | A state's 4 districts (§5.4-2); actions per agency per year (Enforcement 1); recall streams 2×2 (Safety 1)                                                                                  |
 | Against a national or median value?                           | Reference line labelled inline                                                              | `references={benchmark("Median district", mid, fmt)}` on `TrendLines`, `TrendColumns`, `RankBars` | PL share against its series median (court analytics); national vs median district months (court analytics)                                                                                  |
 | What happened over time, compactly (instead of a bare count)? | Timeline strip (thin columns, latest in the accent) or sparkline ≥ 120 × 32 with values     | `TimelineStrip`, SVG `Sparkline`                                                                  | KPI cards that only print a count; table-row trends (district ranking)                                                                                                                      |
+| What happened, and when did the rule change?                  | Line or area with an event rule, a peak callout on a leader, a labelled partial period      | `AnnotatedTrend`                                                                                  | MDL pending actions with the JPML report-date change; product liability filings with a peak and decline (court analytics)                                                                   |
+| What is it made of over time?                                 | Stacked area with the name inside each area; 100% area for shares                           | `StackedAreaTrend` (`mode="percent"`)                                                             | FDA recall entries by product type; enforcement by agency per year; recall streams                                                                                                          |
+| Which side of zero is it on, and when did it flip?            | One signed series, two tones around a zero line, peak, low and last written                 | `DivergingAreaTrend`                                                                              | Civil cases filed minus terminated; net change in pending cases                                                                                                                             |
+| What is the shape of the association, and how sure are we?    | Scatter, smooth line, 95% band, the farthest points named                                   | `ScatterBand`                                                                                     | Filings per judgeship against months to disposition; insights explorer pairs                                                                                                                |
+| How did outcomes split for each subject?                      | One 100% bar per subject, legend grouped by kind of outcome, click to highlight             | `VerdictStack`                                                                                    | Terminated MDLs by remand or closure; enforcement outcomes by agency                                                                                                                        |
+| How far apart are two values, entity by entity?               | Dumbbell on one zero-based scale, gap written at the right                                  | `DumbbellRange`                                                                                   | Filed against terminated per district; budget against actual                                                                                                                                |
+| How do entities compare across several measures?              | Matrix with grouped rows, a highlighted column, the leader bold on a plate                  | `BenchMatrix`                                                                                     | Court, judge, MDL or company comparisons                                                                                                                                                    |
 | One number that matters                                       | Not a chart: a KPI with its comparison                                                      | kit `KpiCard` / `KpiStrip`, or `kpis` on `ChartCard`                                              | Page KPI rows                                                                                                                                                                               |
 
 ## Components
@@ -74,7 +81,7 @@ The chart layer's props on the kit's card chrome. Props: `title` (takeaway), `su
 figures: `{ label, value, detail?, delta?: { text, direction } }`; the change pill is neutral), `status?`
 (`{kind: "loading" | "error" (message?, onRetry?) | "empty" (reason) | "ready"}`), `table?` (TableSpec → View data
 drawer with CSV), `sources?` (`{label, url}[]`), `period?`, `asOf?`, `footer?` (a node in place of the sources),
-`about?`, `aboutTitle?`, `partial?` (footer Partial pill + note), `notice?` (a data-quality note above the chart, e.g.
+`variant?` (`"default"` or `"editorial"`), `about?`, `aboutTitle?`, `partial?` (footer Partial pill + note), `notice?` (a data-quality note above the chart, e.g.
 "one MDL docket is 42% of the pooled figure"), `footnotes?`, `actions?`, `id?`, `className?`, `minHeight?`.
 
 ```tsx
@@ -103,6 +110,10 @@ drawer with CSV), `sources?` (`{label, url}[]`), `period?`, `asOf?`, `footer?` (
   />
 </ChartCard>
 ```
+
+`variant="editorial"` is the headline form for a chart that carries a page: a short accent rule above a bold 19 px
+title and a quieter 13 px subtitle (measure, unit, geography, period only). It changes the heading, not the card: View
+data, the source footer and the About popover stay the same. Use it for one lead chart per page.
 
 `ChartFrame` (SVG kit) and the FDA `ChartCard` (`fda-analytics/FdaCharts.tsx`) render through it.
 
@@ -235,6 +246,90 @@ notes in About, View data. Props: `id`, `subject?`, `form?` ("auto" | "line" | "
 value, RankedBars with rounded data ends and a muted-rest highlight, Sparkline at least 120 × 32 with an end dot and
 optional `format` / `showStart` values). Use them where the insights metric layer already supplies `PeriodAxis` and
 `ValueFormatter`; otherwise prefer the recharts components above.
+
+## Editorial forms (`src/components/charts/editorial`)
+
+Seven forms in the editorial style: thin lines, a recessive grid, direct labels instead of a legend, the peak, the
+last value and the event written on the chart. They are exported from `@/components/charts/recharts` (and
+`@/components/charts/editorial`), draw inside the kit `ChartCard` and follow the same rules as every other chart:
+palette slots from `palette.ts` in light and dark, hover tooltip, keyboard arrows on the SVG forms, an `aria-label`
+that states the values, reduced motion respected, a gap is "Not recorded" and never zero, a partial period is dashed or
+hatched and never compared. Pass the card's `table` for View data. The SVG forms take the same inputs as `TrendLines`
+(`series`, `axis`, `formatter`) so `blockSeries(data)` turns an analytics block into them.
+
+| Component            | What it draws                                                                                                      | Props that matter                                                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AnnotatedTrend`     | Line or area per series, event rules with labels, peak/low/keyed callouts on leaders, end labels, partial period   | `form` ("line" \| "area"), `events` (`{key,label,kind?}`), `callouts` (`"peak"`, `"low"` or `{key,label}`), `smooth`, `zero`, `partialLabel`, `endLabels`, `highlight` |
+| `StackedAreaTrend`   | Stack or 100% area with each name inside its area (a leader at the right edge when the layer is thin), total label | `mode` ("stack" \| "percent"), `smooth`, `otherIds` (grey Other), `showTotal`, `legend` (default past four series)                                                     |
+| `DivergingAreaTrend` | One signed series filled in two tones at zero, peak, low and last written, one annotated period                    | `positiveLabel`, `negativeLabel`, `annotation` (`{key,label}`), `smooth`                                                                                               |
+| `ScatterBand`        | Points, local-regression line, 95% band, the points farthest from the line named                                   | `points` (`{id,label,x,y}`), `span`, `degree`, `showBand`, `logX`, `logY`, `bandFloor`, `outliers`, `labelIds`, `selected`/`onSelect`                                  |
+| `VerdictStack`       | A 100% bar per subject, whole percentages that sum to 100, legend grouped by kind of outcome (click to highlight)  | `subjects` (`{label,counts,n?}`), `taxonomy` (`{group,tags:[{key,label}]}[]`), `sortBy`, `labelWidth`                                                                  |
+| `DumbbellRange`      | Two dots per row joined by a connector on one zero-based scale, both values and the gap at the right               | `rows` (`{id,label,a,b}`), `aLabel`, `bLabel`, `format`, `tickFormat`, `gapLabel`, `sort`, `maxValue`                                                                  |
+| `BenchMatrix`        | Grouped rows with a vertical group label, a tinted hero column, the leading value bold on a plate                  | `columns` (`{id,label,sub?,hero?}`), `groups` (`{label,rows:[{label,note?,values,format?,lead?}]}`), `measureLabel`                                                    |
+
+```tsx
+<ChartCard
+  variant="editorial"
+  title="Actions pending in MDLs peaked at 464,724 in November 2023; 204,977 in October 2026"
+  subtitle="Actions now pending in all pending MDLs · per JPML monthly report · July 2012 to October 2026"
+  table={table}
+  sources={[{ label: "JPML pending MDL reports", url }]}
+>
+  <AnnotatedTrend
+    series={[pending]}
+    axis={axis}
+    formatter={count}
+    form="line"
+    events={[
+      {
+        key: "2024-01",
+        label: "Reports dated the first business day, from Jan 2024",
+        kind: "break",
+      },
+    ]}
+    callouts={["peak"]}
+    ariaLabel="Actions pending in MDLs per JPML monthly report, with the report-date change marked"
+  />
+</ChartCard>
+```
+
+```tsx
+<VerdictStack
+  ariaLabel="Outcome of terminated actions in the largest MDLs"
+  taxonomy={[
+    { group: "Closed", tags: [{ key: "closed", label: "Closed in the transferee court" }] },
+    { group: "Returned", tags: [{ key: "remanded", label: "Remanded to the original courts" }] },
+  ]}
+  subjects={mdls.map((m) => ({ id: String(m.mdl), label: `MDL ${m.mdl}`, counts: { closed: m.closed, remanded: m.remanded } }))}
+  sortBy="remanded"
+/>
+<DumbbellRange rows={districts} aLabel="Filed" bLabel="Terminated" format={fmtN} tickFormat={tickText} gapLabel="Net" />
+<BenchMatrix
+  ariaLabel="Four districts compared"
+  columns={[{ id: "ndil", label: "N.D. Illinois", sub: "7th Circuit", hero: true }, { id: "dsc", label: "D. South Carolina" }]}
+  groups={[{ label: "Speed", rows: [{ label: "Median months to disposition", values: [5.9, 7.8], lead: "lowest" }] }]}
+/>
+```
+
+Rules for the editorial forms:
+
+- **Direct labels, not a legend**, for up to four series; a legend only past four (`StackedAreaTrend` decides). A name
+  that cannot fit inside its area goes to the right edge with a leader; a label that would sit on another is left out
+  and the value stays in the tooltip.
+- **Smoothing is display only.** `smooth` draws a monotone curve through the recorded values (it never overshoots, so
+  a count never dips below zero); the table and tooltips show the recorded values. The scatter line is a local
+  regression with a 95% confidence band for the mean line, not a prediction interval; it needs at least eight points
+  with three distinct x values and otherwise draws the points alone and says so.
+- **Narrow cards.** `DumbbellRange` shows both values and the gap in a container of 520 px or more; narrower, only the
+  gap (when `gapLabel` is set) stays at the right and both values move to the tooltip and View data.
+- **Titles are computed.** Write them from the data (peak, last, share, leader). `BenchMatrix` marks a leader only
+  when a row has two recorded values, and a tie marks every tie.
+- **Colour.** Text set on a slot uses `seriesOn(i)` (`var(--chart-on-N)`, white or near-black by WCAG contrast in the
+  active theme); the neutral Other is `var(--chart-other)`; hatched fills mark partial periods. `VerdictStack` and
+  `StackedAreaTrend` colour slots in order and fold a seventh and later part into Other: fold the tail first.
+- **Pure parts are tested** (`editorial/*.test.ts`): curve and area paths, stacking, label spots, signed runs, callout
+  placement and collision, log ticks, LOESS and its band, whole-percentage rounding, dumbbell scale and layout, leader
+  selection.
 
 ## Custom recharts charts: the theme layer
 
