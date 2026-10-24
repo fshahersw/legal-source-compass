@@ -56,3 +56,16 @@
 - [ ] Kansas packet fixes before landing: 55 index-listed pages without a parsed section, second-version detection (expected 10 pages), 2026 change-list PDF parsing (0 entries matched)
 - [ ] Apply guided-calculator patch + stage/activate limitations release 2026-10-09.1, publish (queued 2026-10-09)
 - [ ] Kansas parser-v6 land + readback; California hierarchy enrichment from retained LAW_TOC tables
+
+## UI refresh: cleaner, more visual (approved 2026-10-24)
+- [x] d3 chart forms: change-since (index) chart, stacked bars over time, above/below-baseline dots, sunburst (`src/components/charts/d3/`, maths tested)
+- [x] Map zoom and pan (buttons, Ctrl+scroll, drag, reset) on every MetricMap
+- [x] Places: highest/lowest 5 states vs the median, following the selected measure
+- [ ] Places home: tidy header, KPI strip from the selected measure
+- [ ] Courts & judges: dots vs national baseline where a per-court measure exists
+- [ ] Litigation: stacked bars over time (filings by category)
+- [ ] Enforcement: stacked bars over time by agency
+- [ ] Law: sunburst of code/CFR coverage
+- [ ] Companies / Insights: change-since chart for multi-series trends
+- [ ] Profiles: one identity block (image, name, 4 KPIs, key chart)
+- [ ] Desktop + phone screenshots per page; demoted blocks listed
