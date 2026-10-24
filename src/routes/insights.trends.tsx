@@ -15,6 +15,7 @@ function parseTrendsSearch(input: Record<string, unknown>): TrendsSearch {
     pc: input["pc"] === "1" || input["pc"] === 1 ? "1" : undefined,
     scale: urlChoice(input["scale"], ["own"] as const),
     us: input["us"] === "0" || input["us"] === 0 ? "0" : undefined,
+    chg: input["chg"] === "1" || input["chg"] === 1 ? "1" : undefined,
   };
 }
 
