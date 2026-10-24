@@ -54,7 +54,7 @@
 - [x] California compact-v3 import: run 124b4562 completed, 162,526 sections, readback exact (docs/audits/2026-10-09-ca-import.md)
 - [ ] California publication: needs title/division/part/chapter/article headings from pubinfo TOC tables + a direct (non-proxied) official sample or an owner decision accepting proxied review
 - [ ] Kansas packet fixes before landing: 55 index-listed pages without a parsed section, second-version detection (expected 10 pages), 2026 change-list PDF parsing (0 entries matched)
-- [ ] Apply guided-calculator patch + stage/activate limitations release 2026-10-09.1, publish (queued 2026-10-09)
+- [ ] Guided calculator code is in place; the live manifest (created 2026-10-23) serves a rules.json other than the 2026-10-09.1 candidate — confirm whether .1 was superseded or still needs reconciling via the release scripts (not part of the UI refresh; Time Limits internals untouched)
 - [ ] Kansas parser-v6 land + readback; California hierarchy enrichment from retained LAW_TOC tables
 
 ## UI refresh: cleaner, more visual (approved 2026-10-24)
