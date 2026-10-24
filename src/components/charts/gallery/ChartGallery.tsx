@@ -4,7 +4,7 @@
  * published federal court statistics (Judicial Business tables) and the analytics trend blocks; benchmark bands and
  * medians are computed from those published values. The state examples carry no data.
  */
-import { useMemo, type ReactNode } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { courtStatsQuery } from "@/components/courts/CourtStatsDashboard";
 import { at, fmtNum, type CourtStatsOverview } from "@/components/courts/courtStatsData";
@@ -25,36 +25,15 @@ import {
   trendTakeaway,
 } from "../recharts";
 
+import { GallerySection as Section } from "./GallerySection";
+import { EditorialGallery } from "./EditorialGallery";
+
 const COURT_SOURCES = [
   {
     label: "Judicial Business of the United States Courts",
     url: "https://www.uscourts.gov/statistics-reports/analysis-reports/judicial-business-united-states-courts",
   },
 ];
-
-function Section({
-  id,
-  title,
-  note,
-  children,
-}: {
-  id: string;
-  title: string;
-  note: string;
-  children: ReactNode;
-}) {
-  return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-4 space-y-3">
-      <div>
-        <h2 id={`${id}-h`} className="text-base font-semibold leading-6">
-          {title}
-        </h2>
-        <p className="max-w-3xl text-xs leading-5 text-muted-foreground">{note}</p>
-      </div>
-      {children}
-    </section>
-  );
-}
 
 export function ChartGallery() {
   const q = useQuery(courtStatsQuery);
@@ -116,6 +95,7 @@ export function ChartGallery() {
       ) : (
         <CourtExamples data={q.data} />
       )}
+      <EditorialGallery />
     </div>
   );
 }
