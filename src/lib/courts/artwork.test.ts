@@ -89,23 +89,18 @@ describe("court artwork", () => {
     ).toBeNull();
   });
 
-  it("never draws a stored image whose reuse permission is not established", () => {
+  it("draws a stored identity-mark image whatever its label's earlier permission note says", () => {
+    const stored = {
+      url: "/supplement-files/court_spine/ilnd/logo.png",
+      label: "Identity mark image (reuse permission not established)",
+    };
+    expect(recordedCourtArtwork([stored])).toEqual(stored);
+    // An explicit seal still comes first.
     expect(
-      recordedCourtArtwork([
-        {
-          url: "/supplement-files/court_spine/ilnd/logo.png",
-          label: "Identity mark image (reuse permission not established)",
-        },
-      ]),
-    ).toBeNull();
-    expect(
-      recordedCourtArtwork([
-        {
-          url: "/supplement-files/court_spine/x/logo.png",
-          label: "Identity mark image (reuse permission not established)",
-        },
-        { url: "/api/files/seal", label: "Official seal" },
-      ]),
-    ).toEqual({ url: "/api/files/seal", label: "Official seal" });
+      recordedCourtArtwork([stored, { url: "/api/files/seal", label: "Official seal" }]),
+    ).toEqual({
+      url: "/api/files/seal",
+      label: "Official seal",
+    });
   });
 });

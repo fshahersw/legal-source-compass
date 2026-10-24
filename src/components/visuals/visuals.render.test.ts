@@ -5,6 +5,8 @@ import { agency_images, court_buildings, state_capitol_images } from "@/lib/visu
 import { parseAgencyImages } from "@/lib/visuals/agencyImages";
 import { parseCourtBuildings } from "@/lib/visuals/courtBuildings";
 import { parseStateCapitol } from "@/lib/visuals/stateCapitols";
+import { committee_marks } from "@/lib/visuals/fixtures/rows";
+import { parseCommitteeMark } from "@/lib/visuals/committeeMarks";
 
 const state = vi.hoisted(() => ({ result: {} as Record<string, unknown> }));
 vi.mock("@tanstack/react-query", () => ({
@@ -20,7 +22,9 @@ vi.mock("@/lib/visuals/visuals.functions", () => ({
   getStateCapitol: vi.fn(),
 }));
 
+import { AboutImage } from "./AboutImage";
 import { AgencyBuildingPhoto } from "./AgencyBuildingPhoto";
+import { CommitteeMarkCaption } from "./CommitteeMark";
 import { CourtBuildingsPanel } from "./CourtBuildingsPanel";
 import { OpenImageCredit } from "./ImageCredit";
 import { StateCapitolHeader } from "./StateCapitolHeader";
@@ -47,13 +51,14 @@ describe("credits", () => {
     expect(out).toContain('href="https://creativecommons.org/licenses/by-sa/4.0"');
     expect(out).toContain(">Wikimedia Commons</a>");
   });
-  it("shows only the source site when no licence is recorded", () => {
+  it("says only 'Source: <site>' when neither a licence nor an author is recorded", () => {
     const out = html(
       createElement(OpenImageCredit, {
         image: {
           ...base,
           origin: "other",
           filePage: "https://www.fjc.gov/history/courthouse/chicago-illinois-1964",
+          author: null,
           license: null,
           licenseUrl: null,
         },
@@ -62,6 +67,30 @@ describe("credits", () => {
     expect(out).toContain("Source: ");
     expect(out).toContain(">fjc.gov</a>");
     expect(out).not.toContain("Photo:");
+    expect(out).not.toContain("Author not recorded");
+  });
+  it("keeps a recorded author when no licence is recorded", () => {
+    const out = html(
+      createElement(OpenImageCredit, { image: { ...base, license: null, licenseUrl: null } }),
+    );
+    expect(out).toContain("Photo: DXR");
+    expect(out).toContain("Source: ");
+  });
+  it("shows a URL inside the author as a short link labelled with its host", () => {
+    const out = html(
+      createElement(OpenImageCredit, {
+        image: {
+          ...base,
+          author: "James Brooks · https://www.flickr.com/photos/jkbrooks85/50796914563/",
+        },
+      }),
+    );
+    expect(out).toContain("Photo: James Brooks · ");
+    expect(out).toContain('href="https://www.flickr.com/photos/jkbrooks85/50796914563/"');
+    expect(out).toContain(">flickr.com</a>");
+    // The raw address is never printed as text or in the tooltip.
+    expect(out).not.toContain(">https://www.flickr.com");
+    expect(out).toContain('title="Photo: James Brooks · flickr.com"');
   });
   it("shows an unlinked licence when the record has no licence link", () => {
     const out = html(createElement(OpenImageCredit, { image: { ...base, licenseUrl: null } }));
@@ -102,6 +131,22 @@ describe("page sections", () => {
     expect(out).toContain("LC-DIG-highsm-25144");
   });
 
+  it("state capitol: a credit that records a URL shows its host, in a compact band", () => {
+    const row = state_capitol_images[0]!.item["photo"] as Record<string, unknown>;
+    state.result = {
+      data: parseStateCapitol("AK", {
+        ...row,
+        author: "James Brooks · https://www.flickr.com/photos/jkbrooks85/50796914563/",
+        building: "Alaska State Capitol",
+      }),
+    };
+    const out = html(createElement(StateCapitolHeader, { usps: "AK", stateName: "Alaska" }));
+    expect(out).toContain(">flickr.com</a>");
+    expect(out).not.toContain(">https://www.flickr.com");
+    expect(out).toContain("sm:h-[8.5rem]");
+    expect(out).toContain("sm:flex-row");
+  });
+
   it("state capitol: the building, its credit and no state name repeated", () => {
     const row = state_capitol_images[0]!.item;
     state.result = { data: parseStateCapitol("AL", row["photo"]) };
@@ -109,5 +154,64 @@ describe("page sections", () => {
     expect(out).toContain("Alabama State Capitol");
     expect(out).toContain("Photo: DXR");
     expect(out).not.toContain("Capitol</span><span");
+  });
+});
+
+describe("committee mark caption", () => {
+  const mark = committee_marks[0]!.item["mark"] as Record<string, unknown>;
+  const registryProse =
+    "Committee/chamber symbols may have additional identity/endorsement conditions. Keep as source candidate until reviewed for the intended use.";
+
+  it("is one short credit line with the registry's branding note kept in the About popover", () => {
+    state.result = {
+      data: parseCommitteeMark("hsru00", {
+        ...mark,
+        license: "Pending file-specific policy and visual review",
+        branding_note: registryProse,
+      }),
+    };
+    const out = html(createElement(CommitteeMarkCaption, { code: "hsru00" }));
+    expect(out).toContain("Logo from the committee\u2019s website:");
+    expect(out).toContain(">rules.house.gov</a>");
+    // The branding prose and the review status are not on the page; the info button is.
+    expect(out).not.toContain("Keep as source candidate");
+    expect(out).not.toContain("Pending file-specific");
+    expect(out).toContain('aria-label="About this image"');
+    expect(out).toContain("<button");
+  });
+
+  it("adds author and licence only when the record has them", () => {
+    state.result = {
+      data: parseCommitteeMark("hsru00", {
+        ...mark,
+        author: "Committee staff",
+        license: "U.S. government work under official committee copyright policy",
+      }),
+    };
+    const out = html(createElement(CommitteeMarkCaption, { code: "hsru00" }));
+    expect(out).toContain("Committee staff");
+    expect(out).toContain("U.S. government work under official committee copyright policy");
+  });
+
+  it("shows no info button when there is no note and no policy page", () => {
+    state.result = {
+      data: parseCommitteeMark("hsru00", {
+        ...mark,
+        branding_note: null,
+        policy_url: null,
+        policy_quote: null,
+      }),
+    };
+    expect(html(createElement(CommitteeMarkCaption, { code: "hsru00" }))).not.toContain("<button");
+  });
+});
+
+describe("AboutImage", () => {
+  it("is a labelled button that renders nothing when there is nothing to say", () => {
+    expect(html(createElement(AboutImage, { notes: ["A note"] }))).toContain(
+      'aria-label="About this image"',
+    );
+    expect(html(createElement(AboutImage, {}))).toBe("");
+    expect(html(createElement(AboutImage, { notes: [], links: [] }))).toBe("");
   });
 });

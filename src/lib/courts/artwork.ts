@@ -1,5 +1,4 @@
 // Relative .ts import: scripts/enrichment/verify_court_artwork.mjs loads this module in plain Node.
-import { isHeldMediaLabel } from "../corpus/heldMedia.ts";
 // Written by scripts/visuals/acquire_official_marks.py from each court's own homepage; checked byte for byte like the entries below.
 import officialCourtMarks from "./officialCourtMarks.json" with { type: "json" };
 
@@ -175,14 +174,17 @@ export function courtTypeCoverage(rows: readonly { system: string; type: string 
   );
 }
 
-/** A stored court image to show when no verified or community artwork exists; held images never qualify. */
+/**
+ * A stored court image to show when no verified or community artwork exists. A stored identity-mark image qualifies
+ * like any other (owner decision 2026-10-24: images are shown without re-verifying licences); an external or
+ * protocol-relative address never does.
+ */
 export function recordedCourtArtwork(links: readonly { url: string; label: string }[]) {
   const candidates = links.filter(
     (link) =>
       /^\/(?!\/)/.test(link.url) &&
       !link.url.includes("\\") &&
-      /seal|image|logo|court mark/i.test(link.label) &&
-      !isHeldMediaLabel(link.label),
+      /seal|image|logo|court mark/i.test(link.label),
   );
   return candidates.find((link) => /seal/i.test(link.label)) ?? candidates[0] ?? null;
 }

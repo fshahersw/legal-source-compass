@@ -9,6 +9,7 @@ import {
   httpsLink,
   IMAGE_HOSTS,
   parseFilePage,
+  recordedLicence,
   sourceLabel,
   type ImageOrigin,
 } from "@/lib/visuals/common";
@@ -98,12 +99,14 @@ export function parseCourtPhoto(raw: unknown, courtId: string): CourtPhoto | nul
   const display = parseRendition(p["display"]);
   const thumb = parseRendition(p["thumb"]);
   const page = parseFilePage(p["source_page"]);
-  const license = absent(p["license"]) ? null : str(p["license"], 160);
+  const licenseText = absent(p["license"]) ? null : str(p["license"], 160);
+  // A review status in the licence field ("Not assessed; ...") is not a licence: the credit then names the source only.
+  const license = recordedLicence(licenseText);
   const licenseUrl = absent(p["license_url"]) ? null : httpsLink(p["license_url"]);
   const file = str(p["file"], 400);
   const verifiedAt = str(p["verified_at"], 40);
   if (!display || !thumb || !page || !file || !verifiedAt) return null;
-  if ((!absent(p["license"]) && !license) || (!absent(p["license_url"]) && !licenseUrl))
+  if ((!absent(p["license"]) && !licenseText) || (!absent(p["license_url"]) && !licenseUrl))
     return null;
   // A Commons file's renditions are Wikimedia's; a Library item's are the Library's.
   const wikimedia = (u: string) => /^(upload|thumb)\.wikimedia\.org$/.test(new URL(u).hostname);

@@ -27,12 +27,10 @@ export function StateCapitolHeader({ usps, stateName }: { usps: string; stateNam
         </>
       }
       label={`${stateName} capitol photograph`}
-      photoWidth="sm:grid-cols-[20rem_minmax(0,1fr)]"
-      sizes="(min-width: 640px) 20rem, 100vw"
       className="mb-3"
     >
       <p className="m-0 text-[11px] leading-snug text-muted-foreground">
-        The photograph shows the building; it is not a statement of where a body meets today.
+        The photograph shows the building, not where a body meets today.
       </p>
     </PhotoHeaderBand>
   );

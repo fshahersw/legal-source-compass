@@ -13,9 +13,7 @@ import { CaseCatalog } from "@/components/corpus/CaseCatalog";
 import { DocketDocuments } from "@/components/corpus/DocketDocuments";
 import { fileUrl, resolveLink, searchLinkOutcome } from "@/lib/external/groups";
 import { displayValue } from "@/lib/external/domainRegistry";
-import { isHeldMediaLabel, isStoredFilePath } from "@/lib/corpus/heldMedia";
-
-const HELD_NOTE = "held, not shown: reuse permission is not established";
+import { isStoredFilePath, isStoredMarkLabel, plainMediaLabel } from "@/lib/corpus/heldMedia";
 
 /** How recorded no-result openFDA name searches are listed (see searchLinkOutcome). */
 const SEARCH_OUTCOMES = [
@@ -76,11 +74,8 @@ export function EntityPage({
       </AppShell>
     );
   const v = buildEntityView(data.raw);
-  // Held media (reuse permission not established) is never linked; it is counted in a note instead.
-  const heldLinks = v.links.filter(
-    (l) => isHeldMediaLabel(l.label) && isStoredFilePath(l.url),
-  ).length;
-  const ownLinks = v.links.filter((l) => !(isHeldMediaLabel(l.label) && isStoredFilePath(l.url)));
+  // A stored identity-mark image is the page's mark (the header draws it), not a link to list.
+  const ownLinks = v.links.filter((l) => !(isStoredMarkLabel(l.label) && isStoredFilePath(l.url)));
   const shownLinks = linkFilter ? linkFilter(ownLinks) : ownLinks;
   const withheldLinks = ownLinks.length - shownLinks.length;
   // Searches recorded as finding nothing usable are listed as such, not as source links.
@@ -104,7 +99,7 @@ export function EntityPage({
           { key: "docket", label: "Docket documents" },
         ]
       : []),
-    ...v.sections.map((s) => ({ key: s.key, label: s.label })),
+    ...v.sections.map((s) => ({ key: s.key, label: plainMediaLabel(s.label) })),
   ];
   return (
     <AppShell
@@ -172,11 +167,6 @@ export function EntityPage({
         <p className="mb-4 text-xs text-muted-foreground">
           {withheldLinks} conflicting homepage link withheld; the recorded court system does not
           match the destination. Original data is unchanged.
-        </p>
-      ) : null}
-      {heldLinks > 0 ? (
-        <p className="mb-4 text-xs text-muted-foreground">
-          {heldLinks === 1 ? "1 stored image" : `${heldLinks} stored images`} {HELD_NOTE}.
         </p>
       ) : null}
       {extra ? extra(data.raw) : null}
@@ -316,7 +306,7 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
     );
   if (s.kind === "items")
     return (
-      <Section id={s.key} label={`${s.label} (${s.items.length})`}>
+      <Section id={s.key} label={`${plainMediaLabel(s.label)} (${s.items.length})`}>
         <ul className="divide-y divide-border text-[13px]">
           {s.items.slice(0, all ? undefined : 25).map((it, i) => (
             <li key={i} className="py-1.5">
@@ -326,17 +316,14 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
               ) : null}
               {it.links.length ? (
                 <div className="flex flex-wrap gap-x-3">
-                  {it.links.map((l) =>
-                    // A section of held media keeps its source-page links; the stored file itself is not linked.
-                    (isHeldMediaLabel(s.label) || isHeldMediaLabel(l.label)) &&
-                    isStoredFilePath(l.url) ? (
-                      <span key={l.url} className="text-[12px] text-muted-foreground">
-                        Image {HELD_NOTE}
-                      </span>
-                    ) : (
-                      <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />
-                    ),
-                  )}
+                  {it.links.map((l) => (
+                    <CorpusLink
+                      key={l.url}
+                      url={l.url}
+                      label={plainMediaLabel(l.label)}
+                      aliases={aliases}
+                    />
+                  ))}
                 </div>
               ) : null}
             </li>

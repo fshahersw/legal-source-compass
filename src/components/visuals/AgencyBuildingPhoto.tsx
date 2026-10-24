@@ -31,29 +31,32 @@ export function AgencyBuildingPhoto({ agencyId, name }: { agencyId: string; name
         </>
       }
       label={`Building photograph recorded for ${name}`}
+      aside={
+        photos.length > 1 ? (
+          <div role="group" aria-label="Recorded photographs" className="flex gap-1">
+            {photos.map((p, i) => (
+              <button
+                key={p.display.url}
+                type="button"
+                aria-pressed={i === at}
+                aria-label={`Photograph ${i + 1} of ${photos.length}`}
+                onClick={() => setIndex(i)}
+                className={cn(
+                  "min-w-6 rounded border px-1.5 text-[11px] leading-5 focus-visible:outline-2 focus-visible:outline-ring",
+                  i === at
+                    ? "border-primary font-medium text-primary"
+                    : "border-border text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        ) : undefined
+      }
       className="mb-3"
     >
       <p className="m-0 text-[11px] leading-snug text-muted-foreground">{AGENCY_PHOTO_NOTE}</p>
-      {photos.length > 1 ? (
-        <div role="group" aria-label="Recorded photographs" className="flex flex-wrap gap-1 pt-0.5">
-          {photos.map((p, i) => (
-            <button
-              key={p.display.url}
-              type="button"
-              aria-pressed={i === at}
-              onClick={() => setIndex(i)}
-              className={cn(
-                "rounded border px-1.5 py-0.5 text-[11px] focus-visible:outline-2 focus-visible:outline-ring",
-                i === at
-                  ? "border-primary font-medium text-primary"
-                  : "border-border text-muted-foreground hover:bg-muted",
-              )}
-            >
-              Photograph {i + 1}
-            </button>
-          ))}
-        </div>
-      ) : null}
     </PhotoHeaderBand>
   );
 }

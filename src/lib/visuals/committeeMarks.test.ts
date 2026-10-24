@@ -33,9 +33,16 @@ describe("parseCommitteeMark", () => {
     const m = parseCommitteeMark("hsru00", { ...mark, policy_url: null, policy_quote: null })!;
     expect(m.policyUrl).toBeNull();
     expect(parseCommitteeMark("hsru00", { ...mark, policy_url: null })!.policyQuote).toBeNull();
-    expect(parseCommitteeMark("hsru00", { ...mark, license: "Pending review" })!.license).toBe(
-      "Pending review",
-    );
+    // A review status in the licence field is not a licence; a recorded one is kept.
+    expect(
+      parseCommitteeMark("hsru00", { ...mark, license: "Pending review" })!.license,
+    ).toBeNull();
+    expect(
+      parseCommitteeMark("hsru00", {
+        ...mark,
+        license: "U.S. government work under official committee copyright policy",
+      })!.license,
+    ).toBe("U.S. government work under official committee copyright policy");
   });
 
   it("requires integer sizes, a known type, a source page and a valid committee code", () => {

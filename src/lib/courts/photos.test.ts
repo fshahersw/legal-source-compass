@@ -96,6 +96,21 @@ describe("parseCourtPhoto", () => {
     expect(photoSource(p)).toBe("fjc.gov");
   });
 
+  it("reads a review status in the licence field as no licence, so the credit names the source", () => {
+    const p = parseCourtPhoto(
+      {
+        ...PHOTO,
+        license: "Not assessed; credit original repository cited on FJC source page",
+        license_family: "other",
+        license_url: null,
+      },
+      "alaska",
+    )!;
+    expect(p.license).toBeNull();
+    expect(p.licenseUrl).toBeNull();
+    expect(p.licenseUrlIsDeed).toBe(false);
+  });
+
   it("drops a Commons file whose renditions are not Wikimedia's, and malformed links", () => {
     const fjc = { url: "https://www.fjc.gov/x.jpg", width: 960, height: 639 };
     expect(parseCourtPhoto({ ...PHOTO, display: fjc }, "alaska")).toBeNull();

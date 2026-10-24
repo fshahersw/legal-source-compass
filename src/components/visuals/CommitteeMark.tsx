@@ -1,7 +1,8 @@
 import { hostOf, isWideMark } from "@/lib/visuals/common";
 import { cn } from "@/lib/utils";
 import { markImageFailed, useImageFailed } from "./failedImages";
-import { creditLinkClass, LicenceText } from "./ImageCredit";
+import { AboutImage } from "./AboutImage";
+import { creditLinkClass, CreditText, LicenceText } from "./ImageCredit";
 import { useMark } from "./useCommitteeMark";
 
 /**
@@ -39,50 +40,51 @@ export function CommitteeMarkEmblem({ code, name }: { code: string; name: string
 }
 
 /**
- * Where the mark comes from (the committee's site), its recorded author and licence when the record has them, the
- * branding note and, where recorded, the site's policy statement with its page.
+ * One short credit line for the committee's mark: the committee's site, plus the author and licence only when the record
+ * has them. The registry's branding note and the site's policy page sit in the "About this image" popover.
  */
 export function CommitteeMarkCaption({ code, className }: { code: string; className?: string }) {
   const mark = useMark(code);
   const failed = useImageFailed(mark?.url);
   if (!mark) return null;
+  const policy = mark.policyUrl ? new URL(mark.policyUrl) : null;
   return (
-    <div className={cn("space-y-0.5 text-[11px] leading-snug text-muted-foreground", className)}>
-      <p className="m-0 [overflow-wrap:anywhere]">
-        {failed ? "The committee logo did not load from its source. " : null}
-        Logo from the committee&rsquo;s official website ·{" "}
-        <a href={mark.sourcePage} target="_blank" rel="noreferrer" className={creditLinkClass}>
-          {hostOf(mark.sourcePage)}
-        </a>
-        {mark.license ? (
-          <>
-            {" "}
-            · {mark.author ?? "Author not recorded"} ·{" "}
-            <LicenceText license={mark.license} url={mark.licenseUrl} />
-          </>
-        ) : null}
-      </p>
-      {mark.brandingNote ? (
-        <p className="m-0 line-clamp-2 max-w-4xl" title={mark.brandingNote}>
-          {mark.brandingNote}
-        </p>
+    <p
+      className={cn(
+        "m-0 text-[11px] leading-snug text-muted-foreground [overflow-wrap:anywhere]",
+        className,
+      )}
+    >
+      {failed ? "The committee logo did not load from its source. " : null}
+      Logo from the committee&rsquo;s website:{" "}
+      <a href={mark.sourcePage} target="_blank" rel="noreferrer" className={creditLinkClass}>
+        {hostOf(mark.sourcePage)}
+      </a>
+      {mark.author ? (
+        <>
+          {" "}
+          · <CreditText value={mark.author} />
+        </>
       ) : null}
-      {mark.policyUrl && mark.policyQuote ? (
-        <details className="group">
-          <summary className="cursor-pointer list-none rounded-sm focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
-            <span className="underline decoration-dotted underline-offset-2 hover:text-foreground">
-              Policy text recorded from the committee&rsquo;s site
-            </span>
-          </summary>
-          <p className="m-0 mt-1 max-w-3xl">
-            &ldquo;{mark.policyQuote}&rdquo;{" "}
-            <a href={mark.policyUrl} target="_blank" rel="noreferrer" className={creditLinkClass}>
-              {hostOf(mark.policyUrl)}
-              {new URL(mark.policyUrl).pathname}
-            </a>
-          </p>
-        </details>
-      ) : null}
-    </div>
+      {mark.license ? (
+        <>
+          {" "}
+          · <LicenceText license={mark.license} url={mark.licenseUrl} />
+        </>
+      ) : null}{" "}
+      <AboutImage
+        notes={mark.brandingNote ? [mark.brandingNote] : []}
+        links={
+          policy && mark.policyUrl
+            ? [
+                {
+                  label: `Site policy page · ${hostOf(mark.policyUrl)}${policy.pathname === "/" ? "" : policy.pathname}`,
+                  href: mark.policyUrl,
+                },
+              ]
+            : []
+        }
+      />
+    </p>
   );
 }
