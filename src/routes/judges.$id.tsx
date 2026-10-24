@@ -12,6 +12,7 @@ import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
 import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import { NominationPanel } from "@/components/judiciary/NominationPanel";
+import { ProfileSections } from "@/components/kit/ProfileSections";
 import { pageHead } from "@/lib/corpus/head";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { buildEntityView } from "@/lib/external/entityView";
@@ -66,19 +67,56 @@ function Page() {
       lead={(_, v) => <JudgeHeadshot judgeId={id} name={v.title} recorded={v.photo} />}
       extra={() => (
         <>
-          <JudgeFjcPanel judgeId={id} />
-          <JudgePracticesPanel judgeId={id} />
-          <NominationPanel judgeId={id} />
-          <JudgeServicePanel judgeId={id} />
-          <JudgeCourtListenerPanel judgeId={id} />
-          <JudgePanelServicePanel judgeId={id} />
-          <JudgeDisclosuresPanel judgeId={id} />
-          <JudgeDisclosureContentsPanel judgeId={id} />
-          <JudgeMdlPanel judgeId={id} />
-          <JudgeMdlFlowsPanel judgeId={id} />
-          {/^[0-9a-f]{32}$/.test(id) ? (
-            <DocumentsPanel type="judge" id={id} quiet className="mb-6" />
-          ) : null}
+          <ProfileSections
+            sections={[
+              {
+                id: "judge-career",
+                title: "Career",
+                description: "Appointments, nomination and service as the official records list them.",
+                content: (
+                  <>
+                    <JudgeFjcPanel judgeId={id} />
+                    <NominationPanel judgeId={id} />
+                    <JudgeServicePanel judgeId={id} />
+                  </>
+                ),
+              },
+              {
+                id: "judge-practices",
+                title: "Practices",
+                description: "Standing orders and chambers procedures.",
+                content: <JudgePracticesPanel judgeId={id} />,
+              },
+              {
+                id: "judge-cases",
+                title: "Cases & MDLs",
+                description: "MDLs assigned, opinions and appellate panels.",
+                content: (
+                  <>
+                    <JudgeMdlPanel judgeId={id} />
+                    <JudgeMdlFlowsPanel judgeId={id} />
+                    <JudgeCourtListenerPanel judgeId={id} />
+                    <JudgePanelServicePanel judgeId={id} />
+                    {/^[0-9a-f]{32}$/.test(id) ? (
+                      <DocumentsPanel type="judge" id={id} quiet className="mb-6" />
+                    ) : null}
+                  </>
+                ),
+              },
+              {
+                id: "judge-disclosures",
+                title: "Financial disclosures",
+                label: "Disclosures",
+                description: "Annual disclosure reports as published.",
+                content: (
+                  <>
+                    <JudgeDisclosuresPanel judgeId={id} />
+                    <JudgeDisclosureContentsPanel judgeId={id} />
+                  </>
+                ),
+              },
+            ]}
+          />
           {states.length ? (
             <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-muted-foreground">Recorded state associations:</span>
