@@ -85,7 +85,7 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
       title="Appointment, service and education"
       subtitle={
         <>
-          the source people database, Sept 30, 2026 export
+          The source people database, Sept 30, 2026 export
           {j.aba.length
             ? `; ABA ratings read from the source on ${abaRead ?? NOT_RECORDED}`
             : ""}
@@ -352,7 +352,7 @@ function LowerCourtAppealsBlock({ a }: { a: NonNullable<JudgePeople["lowerCourtA
   return (
     <div className="space-y-2 text-xs">
       <p className="leading-5">
-        the source's appellate dockets carry an originating-court record for each appeal;{" "}
+        The source's appellate dockets carry an originating-court record for each appeal;{" "}
         {fmtInt(a.assigned)} of them name this judge (by case-law person id) as the judge the
         case was assigned to below
         {a.ordering ? `, and ${fmtInt(a.ordering)} as the ordering judge` : ""}. This covers the

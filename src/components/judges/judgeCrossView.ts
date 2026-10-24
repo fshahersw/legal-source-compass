@@ -117,7 +117,7 @@ export const fmtYears = (n: number | null | undefined) =>
 
 export const COVERAGE_LABEL: Record<string, string> = {
   checked: "Checked",
-  no_courtlistener_person: "Judge not found in CourtListener",
-  no_disclosures: "No disclosures in CourtListener",
-  no_extracted_investments: "Reports not itemised by CourtListener",
+  no_courtlistener_person: "Judge not found in case-law records",
+  no_disclosures: "No disclosures recorded",
+  no_extracted_investments: "Reports not itemised",
 };

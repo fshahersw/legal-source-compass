@@ -134,7 +134,7 @@ function Body({ p }: { p: JudgePanels }) {
       ) : null}
       <p className="px-3 pb-3 text-[11px] leading-4 text-muted-foreground">
         Most opinion clusters list no panel, so these counts cover only the clusters where
-        the source recorded one; they are not a count of cases heard.
+        The source recorded one; they are not a count of cases heard.
         {p.firstFiled ? "" : ` Filing years: ${NOT_RECORDED}.`}
       </p>
     </PanelShell>

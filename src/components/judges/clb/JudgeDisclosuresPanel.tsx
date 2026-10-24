@@ -87,7 +87,7 @@ function Body({ d }: { d: JudgeDisclosures }) {
         >
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning-foreground" aria-hidden />
           <span>
-            the source attributes to this person reports filed under more than one circuit code (
+            The source attributes to this person reports filed under more than one circuit code (
             {d.attribution.circuits.map((c) => `${c.code}: ${c.reports}`).join(", ")}). They may
             belong to more than one judge, so no gifts, reimbursements or agreements are listed
             here; the counts below include every attributed report.
