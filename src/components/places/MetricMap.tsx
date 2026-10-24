@@ -1,4 +1,7 @@
-import { memo, useId, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
+import { select } from "d3-selection";
+import { zoom as d3zoom, zoomIdentity, type ZoomBehavior } from "d3-zoom";
+import "d3-transition";
 import type { GeoData } from "@/lib/corpus/geo";
 import { stateFromGeometry } from "@/lib/corpus/stateHub";
 import {
@@ -96,6 +99,43 @@ export function MetricMap({
   const box = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<Tip | null>(null);
   const showCounties = counties != null;
+  const svgRef = useRef<SVGSVGElement>(null);
+  const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const [k, setK] = useState(1);
+  const [transform, setTransform] = useState("");
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const z = d3zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 12])
+      .translateExtent([[0, 0], [975, 610]])
+      .filter((e: Event) => (e.type === "wheel" ? (e as WheelEvent).ctrlKey || (e as WheelEvent).metaKey : !(e as MouseEvent).button))
+      .on("zoom", (e) => {
+        setTransform(e.transform.toString());
+        setK(e.transform.k);
+      });
+    zoomRef.current = z;
+    select(svg).call(z).on("dblclick.zoom", null);
+    return () => {
+      select(svg).on(".zoom", null);
+    };
+  }, []);
+  function zoomBy(f: number) {
+    const svg = svgRef.current;
+    if (svg && zoomRef.current) select(svg).transition().duration(300).call(zoomRef.current.scaleBy, f);
+  }
+  function fitTo(el: SVGGraphicsElement) {
+    const svg = svgRef.current;
+    if (!svg || !zoomRef.current) return;
+    const b = el.getBBox();
+    const scale = Math.min(12, 0.85 / Math.max(b.width / 975, b.height / 610));
+    const t = zoomIdentity.translate(975 / 2, 610 / 2).scale(scale).translate(-(b.x + b.width / 2), -(b.y + b.height / 2));
+    select(svg).transition().duration(600).call(zoomRef.current.transform, t);
+  }
+  function resetZoom() {
+    const svg = svgRef.current;
+    if (svg && zoomRef.current) select(svg).transition().duration(400).call(zoomRef.current.transform, zoomIdentity);
+  }
 
   // state shading and ranks (ranked over the 50 states and DC; the map draws no other area)
   const stateIdentity = useMemo(
@@ -209,7 +249,15 @@ export function MetricMap({
           {active.yearLabel} · {active.unit}
         </span>
       </div>
+      <div className="absolute right-2 top-11 z-10 flex flex-col overflow-hidden rounded-md border border-border bg-popover text-xs shadow-sm">
+        <button type="button" aria-label="Zoom in" className="px-2 py-1 hover:bg-muted" onClick={() => zoomBy(1.6)}>+</button>
+        <button type="button" aria-label="Zoom out" className="border-t border-border px-2 py-1 hover:bg-muted" onClick={() => zoomBy(1 / 1.6)}>−</button>
+        {k > 1.01 ? (
+          <button type="button" aria-label="Reset zoom" className="border-t border-border px-2 py-1 hover:bg-muted" onClick={resetZoom}>⟲</button>
+        ) : null}
+      </div>
       <svg
+        ref={svgRef}
         viewBox="0 0 975 610"
         className="h-auto min-h-52 w-full p-3"
         role="group"
@@ -235,6 +283,7 @@ export function MetricMap({
             />
           </pattern>
         </defs>
+        <g transform={transform}>
         {showCounties ? (
           <>
             <CountyPaths
@@ -304,6 +353,7 @@ export function MetricMap({
                 onHoverState?.(null);
               }}
               onClick={() => onState(id.fips)}
+              onDoubleClick={(e) => fitTo(e.currentTarget)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
@@ -315,6 +365,7 @@ export function MetricMap({
             </path>
           ))
         )}
+        </g>
       </svg>
       {tip ? (
         <div
@@ -348,7 +399,7 @@ export function MetricMap({
             <span className="text-muted-foreground">
               {showCounties
                 ? "Hover a county for its value; select one to open its page."
-                : "Select a state to open it. Tab moves between states."}
+                : "Select a state to open it. Double-click to zoom to it; Ctrl + scroll or the buttons zoom, drag to pan."}
             </span>
           )}
         </div>
