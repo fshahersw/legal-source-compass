@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
-import { OverviewBoard } from "@/components/insights/OverviewBoard";
+import { BoardGuide, OverviewBoard } from "@/components/insights/OverviewBoard";
 import type { ResearchSearch } from "@/components/research/shared";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -34,6 +34,8 @@ function Page() {
       title="Insights"
       description="Headline figures across the platform, what moved most, and the tools to compare, rank and analyse them."
       breadcrumbs={[{ label: "Home", to: "/" }, { label: "Insights" }]}
+      actions={<BoardGuide />}
+      sectionTabs={false}
     >
       <OverviewBoard />
     </AppShell>

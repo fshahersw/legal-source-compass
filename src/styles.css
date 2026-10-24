@@ -6,23 +6,58 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Seeger Weiss research workspace design system.
- * Compact navy / graphite / paper surfaces with a high-contrast navigation rail.
- * All colors are oklch tokens. Never hardcode colors in components.
+ * Seeger Weiss research workspace design system (2026-10-24 refresh).
+ * Neutral canvas, white cards with hairline borders and 12 px corners, a soft shadow only on raised surfaces, one
+ * accent (the chart slot-1 blue), near-black primary, a light sidebar, and status colours as soft pill pairs.
+ * All colours are oklch tokens defined here for light (:root) and dark (.dark). Never hardcode colours in components.
+ *
+ * Type scale (utilities): text-title 24/32 semibold (page title) · text-heading 16/24 semibold (section title) ·
+ * text-label 14/20 medium (card title) · body 14 · text-meta 12/16 (muted meta) · text-kpi 26/32 semibold and
+ * text-kpi-sm 20/28 semibold for KPI values (sans; pair with tabular-nums). Monospace only for ids and citations.
+ *
+ * Chart surfaces: src/components/charts/palette.ts maps chart chrome onto --surface (plot surface), --border (grid),
+ * --muted-foreground (axes), --foreground (ink), --muted (diverging midpoint) and the map ramp --map-low → --map-high;
+ * each is defined for both modes below. --viz-* tokens are the same roles under chart names, for new chart code.
  */
+
+@theme {
+  --text-title: 1.5rem;
+  --text-title--line-height: 2rem;
+  --text-title--letter-spacing: -0.018em;
+  --text-title--font-weight: 600;
+  --text-heading: 1rem;
+  --text-heading--line-height: 1.5rem;
+  --text-heading--letter-spacing: -0.01em;
+  --text-heading--font-weight: 600;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.25rem;
+  --text-label--font-weight: 500;
+  --text-meta: 0.75rem;
+  --text-meta--line-height: 1rem;
+  --text-kpi: 1.625rem;
+  --text-kpi--line-height: 2rem;
+  --text-kpi--letter-spacing: -0.022em;
+  --text-kpi--font-weight: 600;
+  --text-kpi-sm: 1.25rem;
+  --text-kpi-sm--line-height: 1.75rem;
+  --text-kpi-sm--letter-spacing: -0.015em;
+  --text-kpi-sm--font-weight: 600;
+}
 
 @theme inline {
   --font-display: "Public Sans", "Helvetica Neue", Arial, sans-serif;
   --font-sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  --radius-sm: 2px;
-  --radius-md: var(--radius);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 2px);
-  --radius-2xl: calc(var(--radius) + 2px);
-  --radius-3xl: calc(var(--radius) + 4px);
-  --radius-4xl: calc(var(--radius) + 4px);
+  /* Radius scale: controls 6-8 px, cards 10-12 px. */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.25rem;
+  --radius-4xl: 1.5rem;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -38,6 +73,9 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-warning: var(--warning);
@@ -49,10 +87,12 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --color-overlay: var(--overlay);
   --color-surface: var(--surface);
   --color-surface-foreground: var(--surface-foreground);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
@@ -60,58 +100,243 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  --shadow-drawer: -18px 0 48px -24px oklch(0.24 0.05 258 / 0.28);
-  --shadow-card: none;
+  /* Status as soft pill pairs: -soft background, -ink text, -ring hairline, plain name for a solid mark. */
+  --color-status-good: var(--status-good);
+  --color-status-good-soft: var(--status-good-soft);
+  --color-status-good-ink: var(--status-good-ink);
+  --color-status-good-ring: var(--status-good-ring);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-soft: var(--status-warning-soft);
+  --color-status-warning-ink: var(--status-warning-ink);
+  --color-status-warning-ring: var(--status-warning-ring);
+  --color-status-serious: var(--status-serious);
+  --color-status-serious-soft: var(--status-serious-soft);
+  --color-status-serious-ink: var(--status-serious-ink);
+  --color-status-serious-ring: var(--status-serious-ring);
+  --color-status-critical: var(--status-critical);
+  --color-status-critical-soft: var(--status-critical-soft);
+  --color-status-critical-ink: var(--status-critical-ink);
+  --color-status-critical-ring: var(--status-critical-ring);
+  --color-status-info: var(--status-info);
+  --color-status-info-soft: var(--status-info-soft);
+  --color-status-info-ink: var(--status-info-ink);
+  --color-status-info-ring: var(--status-info-ring);
+  --color-status-neutral: var(--status-neutral);
+  --color-status-neutral-soft: var(--status-neutral-soft);
+  --color-status-neutral-ink: var(--status-neutral-ink);
+  --color-status-neutral-ring: var(--status-neutral-ring);
+
+  /* Chart chrome under chart names (same roles palette.ts maps onto the app tokens). */
+  --color-viz-surface: var(--viz-surface);
+  --color-viz-grid: var(--viz-grid);
+  --color-viz-axis: var(--viz-axis);
+  --color-viz-ink: var(--viz-ink);
+
+  /* Soft shadows, resolved where they are used so a .dark subtree gets its own tint. */
+  --shadow-xs: 0 1px 2px 0 var(--shadow-tint);
+  --shadow-sm: 0 1px 3px 0 var(--shadow-tint), 0 1px 2px -1px var(--shadow-tint);
+  --shadow-md: 0 6px 16px -4px var(--shadow-tint-strong), 0 2px 4px -2px var(--shadow-tint);
+  --shadow-lg: 0 16px 36px -10px var(--shadow-tint-strong), 0 4px 8px -4px var(--shadow-tint);
+  --shadow-drawer: -18px 0 48px -24px var(--shadow-tint-strong);
+  --shadow-card: var(--shadow-xs);
 }
 
-:root {
-  --radius: 0.25rem;
+/* Light tokens; `.light` re-applies them inside a dark page (used by the kit gallery's light panel). */
+:root,
+.light {
+  --radius: 0.5rem;
+  color-scheme: light;
 
-  --background: oklch(0.985 0.003 250);
-  --foreground: oklch(0.24 0.032 258);
+  --background: oklch(0.984 0.0015 265);
+  --foreground: oklch(0.21 0.008 265);
 
   --surface: oklch(1 0 0);
-  --surface-foreground: oklch(0.24 0.032 258);
+  --surface-foreground: oklch(0.21 0.008 265);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.032 258);
+  --card-foreground: oklch(0.21 0.008 265);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.032 258);
+  --popover-foreground: oklch(0.21 0.008 265);
 
-  --primary: oklch(0.31 0.062 262);
-  --primary-foreground: oklch(0.98 0.004 250);
+  /* near-black primary (buttons, active segments); the accent is --brand */
+  --primary: oklch(0.225 0.01 265);
+  --primary-foreground: oklch(0.985 0.002 265);
 
-  --secondary: oklch(0.955 0.006 252);
-  --secondary-foreground: oklch(0.31 0.062 262);
+  --secondary: oklch(0.965 0.002 265);
+  --secondary-foreground: oklch(0.225 0.01 265);
 
-  --muted: oklch(0.962 0.005 252);
-  --muted-foreground: oklch(0.43 0.02 255);
+  --muted: oklch(0.965 0.002 265);
+  --muted-foreground: oklch(0.5 0.012 265);
 
-  --accent: oklch(0.945 0.013 254);
-  --accent-foreground: oklch(0.31 0.062 262);
+  /* hover / selected wash */
+  --accent: oklch(0.958 0.003 265);
+  --accent-foreground: oklch(0.21 0.008 265);
 
-  --destructive: oklch(0.505 0.168 24);
-  --destructive-foreground: oklch(0.985 0.003 250);
+  /* the one accent colour: chart slot-1 blue (#2863ab family) */
+  --brand: oklch(0.5 0.13 255);
+  --brand-foreground: oklch(0.99 0 0);
+  --brand-soft: oklch(0.962 0.018 255);
 
-  --warning: oklch(0.72 0.13 72);
-  --warning-foreground: oklch(0.26 0.04 60);
+  --destructive: oklch(0.53 0.19 25);
+  --destructive-foreground: oklch(0.99 0 0);
 
-  --success: oklch(0.52 0.09 158);
-  --success-foreground: oklch(0.985 0.003 250);
+  --warning: oklch(0.76 0.14 75);
+  --warning-foreground: oklch(0.34 0.07 60);
 
-  --border: oklch(0.88 0.008 252);
-  --border-strong: oklch(0.78 0.012 252);
-  --input: oklch(0.84 0.009 252);
-  --ring: oklch(0.55 0.055 260);
+  --success: oklch(0.53 0.12 155);
+  --success-foreground: oklch(0.99 0 0);
 
-  --sidebar: oklch(0.235 0.034 258);
-  --sidebar-foreground: oklch(0.96 0.006 250);
-  --sidebar-primary: oklch(0.78 0.12 82);
-  --sidebar-primary-foreground: oklch(0.22 0.035 258);
-  --sidebar-accent: oklch(0.32 0.04 258);
-  --sidebar-accent-foreground: oklch(0.99 0 0);
-  --sidebar-border: oklch(0.37 0.035 258);
-  --sidebar-ring: oklch(0.78 0.12 82);
+  --border: oklch(0.925 0.004 265);
+  --border-strong: oklch(0.86 0.006 265);
+  --input: oklch(0.9 0.005 265);
+  --ring: oklch(0.62 0.12 255);
+
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.3 0.01 265);
+  --sidebar-muted: oklch(0.55 0.012 265);
+  --sidebar-primary: oklch(0.21 0.008 265);
+  --sidebar-primary-foreground: oklch(0.985 0.002 265);
+  --sidebar-accent: oklch(0.955 0.003 265);
+  --sidebar-accent-foreground: oklch(0.18 0.008 265);
+  --sidebar-border: oklch(0.925 0.004 265);
+  --sidebar-ring: oklch(0.62 0.12 255);
+
+  --status-good: oklch(0.6 0.14 152);
+  --status-good-soft: oklch(0.965 0.03 155);
+  --status-good-ink: oklch(0.42 0.1 155);
+  --status-good-ring: oklch(0.88 0.06 155);
+  --status-warning: oklch(0.78 0.15 78);
+  --status-warning-soft: oklch(0.972 0.04 88);
+  --status-warning-ink: oklch(0.45 0.09 65);
+  --status-warning-ring: oklch(0.88 0.08 85);
+  --status-serious: oklch(0.68 0.16 45);
+  --status-serious-soft: oklch(0.968 0.025 50);
+  --status-serious-ink: oklch(0.48 0.14 42);
+  --status-serious-ring: oklch(0.88 0.06 50);
+  --status-critical: oklch(0.58 0.2 25);
+  --status-critical-soft: oklch(0.965 0.022 20);
+  --status-critical-ink: oklch(0.49 0.18 25);
+  --status-critical-ring: oklch(0.88 0.06 20);
+  --status-info: oklch(0.5 0.13 255);
+  --status-info-soft: oklch(0.962 0.018 255);
+  --status-info-ink: oklch(0.45 0.13 255);
+  --status-info-ring: oklch(0.88 0.045 255);
+  --status-neutral: oklch(0.55 0.012 265);
+  --status-neutral-soft: oklch(0.962 0.003 265);
+  --status-neutral-ink: oklch(0.4 0.012 265);
+  --status-neutral-ring: oklch(0.9 0.005 265);
+
+  --viz-surface: var(--surface);
+  --viz-grid: var(--border);
+  --viz-axis: var(--muted-foreground);
+  --viz-ink: var(--foreground);
+
+  /* sequential map ramp (light → strong) and map chrome */
+  --map-low: oklch(0.925 0.025 250);
+  --map-high: oklch(0.56 0.095 250);
+  --map-active: oklch(0.4 0.11 252);
+  --map-focus: oklch(0.74 0.11 250);
+  --map-canvas: oklch(0.982 0.004 250);
+
+  --shadow-tint: oklch(0.2 0.01 265 / 0.06);
+  --shadow-tint-strong: oklch(0.2 0.01 265 / 0.12);
+  --overlay: oklch(0.2 0.01 265 / 0.36);
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: oklch(0.155 0.004 265);
+  --foreground: oklch(0.955 0.003 265);
+
+  --surface: oklch(0.198 0.005 265);
+  --surface-foreground: oklch(0.955 0.003 265);
+
+  --card: oklch(0.198 0.005 265);
+  --card-foreground: oklch(0.955 0.003 265);
+  --popover: oklch(0.215 0.005 265);
+  --popover-foreground: oklch(0.955 0.003 265);
+
+  --primary: oklch(0.955 0.003 265);
+  --primary-foreground: oklch(0.2 0.006 265);
+
+  --secondary: oklch(0.255 0.006 265);
+  --secondary-foreground: oklch(0.955 0.003 265);
+
+  --muted: oklch(0.25 0.006 265);
+  --muted-foreground: oklch(0.72 0.01 265);
+
+  --accent: oklch(0.265 0.007 265);
+  --accent-foreground: oklch(0.955 0.003 265);
+
+  --brand: oklch(0.74 0.11 255);
+  --brand-foreground: oklch(0.18 0.02 255);
+  --brand-soft: oklch(0.29 0.04 255);
+
+  --destructive: oklch(0.66 0.18 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  --warning: oklch(0.78 0.14 75);
+  --warning-foreground: oklch(0.88 0.08 80);
+
+  --success: oklch(0.68 0.13 155);
+  --success-foreground: oklch(0.18 0.02 155);
+
+  --border: oklch(0.29 0.006 265);
+  --border-strong: oklch(0.38 0.008 265);
+  --input: oklch(0.33 0.007 265);
+  --ring: oklch(0.7 0.11 255);
+
+  --sidebar: oklch(0.175 0.005 265);
+  --sidebar-foreground: oklch(0.86 0.006 265);
+  --sidebar-muted: oklch(0.66 0.01 265);
+  --sidebar-primary: oklch(0.955 0.003 265);
+  --sidebar-primary-foreground: oklch(0.2 0.006 265);
+  --sidebar-accent: oklch(0.255 0.006 265);
+  --sidebar-accent-foreground: oklch(0.97 0.003 265);
+  --sidebar-border: oklch(0.27 0.006 265);
+  --sidebar-ring: oklch(0.7 0.11 255);
+
+  --status-good: oklch(0.7 0.15 152);
+  --status-good-soft: oklch(0.27 0.045 155);
+  --status-good-ink: oklch(0.84 0.11 155);
+  --status-good-ring: oklch(0.38 0.07 155);
+  --status-warning: oklch(0.8 0.15 80);
+  --status-warning-soft: oklch(0.29 0.05 80);
+  --status-warning-ink: oklch(0.88 0.11 85);
+  --status-warning-ring: oklch(0.42 0.08 80);
+  --status-serious: oklch(0.72 0.15 45);
+  --status-serious-soft: oklch(0.28 0.05 45);
+  --status-serious-ink: oklch(0.84 0.1 50);
+  --status-serious-ring: oklch(0.41 0.08 45);
+  --status-critical: oklch(0.66 0.19 25);
+  --status-critical-soft: oklch(0.27 0.06 22);
+  --status-critical-ink: oklch(0.83 0.1 22);
+  --status-critical-ring: oklch(0.41 0.1 22);
+  --status-info: oklch(0.74 0.11 255);
+  --status-info-soft: oklch(0.27 0.04 255);
+  --status-info-ink: oklch(0.84 0.08 255);
+  --status-info-ring: oklch(0.4 0.07 255);
+  --status-neutral: oklch(0.66 0.01 265);
+  --status-neutral-soft: oklch(0.255 0.006 265);
+  --status-neutral-ink: oklch(0.82 0.008 265);
+  --status-neutral-ring: oklch(0.34 0.007 265);
+
+  --viz-surface: var(--surface);
+  --viz-grid: var(--border);
+  --viz-axis: var(--muted-foreground);
+  --viz-ink: var(--foreground);
+
+  /* on a dark surface the ramp runs dim → bright: a stronger shade is a higher value */
+  --map-low: oklch(0.3 0.03 252);
+  --map-high: oklch(0.72 0.1 250);
+  --map-active: oklch(0.86 0.09 250);
+  --map-focus: oklch(0.8 0.1 250);
+  --map-canvas: oklch(0.18 0.006 255);
+
+  --shadow-tint: oklch(0 0 0 / 0.35);
+  --shadow-tint-strong: oklch(0 0 0 / 0.5);
+  --overlay: oklch(0 0 0 / 0.6);
 }
 
 @layer base {
@@ -119,7 +344,11 @@
     border-color: var(--color-border);
     /* Thin scrollbars without the classic arrow buttons Windows draws on every scroller (nav strips, tables, lists). */
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklch, var(--color-foreground) 30%, transparent) transparent;
+    scrollbar-color: color-mix(in oklch, var(--color-foreground) 22%, transparent) transparent;
+  }
+
+  html {
+    background-color: var(--color-background);
   }
 
   body {
@@ -127,19 +356,25 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     font-size: 0.875rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
   }
 
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.012em;
   }
 
   table {
     font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklch, var(--color-brand) 22%, transparent);
   }
 
   /* A grid without explicit columns has one implicit `auto` column, which grows to its widest unbreakable child
@@ -154,7 +389,7 @@
 @utility eyebrow {
   font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted-foreground);
 }
@@ -167,18 +402,24 @@
   color: var(--color-muted-foreground);
 }
 
+/* Sidebar item: muted icon, soft pill when active. */
 @utility nav-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
   border-radius: var(--radius-md);
-  padding: 0.4rem 0.55rem;
+  padding: 0.375rem 0.625rem;
   font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.25rem;
   color: var(--color-sidebar-foreground);
   transition:
     background-color 120ms ease,
     color 120ms ease;
+
+  & > svg {
+    color: var(--color-sidebar-muted);
+  }
 
   &:hover {
     background-color: var(--color-sidebar-accent);
@@ -187,13 +428,16 @@
 
   &:focus-visible {
     outline: 2px solid var(--color-sidebar-ring);
-    outline-offset: 2px;
+    outline-offset: 1px;
   }
 
   &[data-status="active"] {
     background-color: var(--color-sidebar-accent);
     color: var(--color-sidebar-accent-foreground);
     font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--color-sidebar-primary);
+  }
+
+  &[data-status="active"] > svg {
+    color: var(--color-sidebar-accent-foreground);
   }
 }
