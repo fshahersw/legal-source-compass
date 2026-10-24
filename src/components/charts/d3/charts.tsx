@@ -48,16 +48,19 @@ export function IndexChart({
   height = 280,
   formatDate = (d: string) => d,
   labelWidth = 150,
+  initialIndex = 0,
 }: {
   series: readonly Series[];
   height?: number;
   formatDate?: (d: string) => string;
+  /** Period the comparison starts at (index into the dates). */
+  initialIndex?: number;
   /** Room at the right for the end-of-line labels (CSS px). */
   labelWidth?: number;
 }) {
   const [box, W] = useWidth<HTMLDivElement>();
   const dates = series[0]?.points.map((p) => p.date) ?? [];
-  const [baseIdx, setBaseIdx] = useState(0);
+  const [baseIdx, setBaseIdx] = useState(initialIndex);
   const base = dates[Math.min(baseIdx, Math.max(0, dates.length - 1))] ?? "";
   const data = useMemo(() => rebase(series.slice(0, 6), base), [series, base]);
   const vals = data.flatMap((s) => s.points.map((p) => p.value)).filter((v): v is number => v != null);
