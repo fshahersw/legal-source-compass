@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { MdlLens, mdlLensQuery } from "@/components/lens/MdlLens";
+import { JpmlMdlSeriesPanel } from "@/components/mdl/jpml-series/JpmlMdlSeriesPanel";
+import { jpmlMdlSeriesQuery } from "@/components/mdl/jpml-series/queries";
 import { pageHead } from "@/lib/corpus/head";
 
 const parse = (raw: string) => {
@@ -11,7 +13,12 @@ const parse = (raw: string) => {
 export const Route = createFileRoute("/matters/lens/$mdl")({
   loader: ({ context, params }) => {
     const mdl = parse(params.mdl);
-    return mdl ? context.queryClient.prefetchQuery(mdlLensQuery(mdl)) : undefined;
+    return mdl
+      ? Promise.all([
+          context.queryClient.prefetchQuery(mdlLensQuery(mdl)),
+          context.queryClient.prefetchQuery(jpmlMdlSeriesQuery(mdl)),
+        ])
+      : undefined;
   },
   head: ({ params }) =>
     pageHead(
@@ -37,7 +44,10 @@ function Page() {
       ]}
     >
       {mdl ? (
-        <MdlLens mdl={mdl} />
+        <>
+          <MdlLens mdl={mdl} />
+          <JpmlMdlSeriesPanel mdl={mdl} />
+        </>
       ) : (
         <p className="text-sm text-muted-foreground">“{raw}” is not an MDL number.</p>
       )}

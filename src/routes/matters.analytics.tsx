@@ -4,10 +4,16 @@ import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { MdlAnalytics, mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { CitationGridOverview } from "@/components/litviz/CitationMap";
 import { MdlLanesOverview } from "@/components/litviz/MdlLanesOverview";
+import { JpmlNationalPanel } from "@/components/mdl/jpml-series/JpmlNationalPanel";
+import { jpmlNationalQuery } from "@/components/mdl/jpml-series/queries";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/matters/analytics")({
-  loader: ({ context }) => context.queryClient.prefetchQuery(mdlAnalyticsQuery),
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.prefetchQuery(mdlAnalyticsQuery),
+      context.queryClient.prefetchQuery(jpmlNationalQuery),
+    ]),
   head: () =>
     pageHead(
       "MDL analytics",
@@ -36,6 +42,7 @@ function Page() {
         <MdlLanesOverview />
         <CitationGridOverview />
       </section>
+      <JpmlNationalPanel />
       <MdlAnalytics />
     </AppShell>
   );

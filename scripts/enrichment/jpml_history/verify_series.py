@@ -4,7 +4,9 @@
 
 Second path: `pdftotext -raw` (content-stream order, not the layout mode the builder parses) and plain string search.
 Checks, each counted:
-  totals    every snapshot: the raw text holds 'Report Totals' followed by the stored printed MDL count, pending and
+  contract  each of the five build files meets the build-file contract (ids, dataset/category, source_url, title,
+            no ordinal, JSON round trip)
+  totals   every snapshot: the raw text holds 'Report Totals' followed by the stored printed MDL count, pending and
             total (comma-formatted), and the stored computed sums equal them
   rows      every MDL row of every snapshot: the raw-text segment that starts at that MDL's 'MDL -<n>' token holds
             the stored pending and total values in that order
@@ -55,14 +57,47 @@ def c(n):
     return f"{n:,}"
 
 
+DATASETS = ("jpml_pending_snapshots", "jpml_mdl_pending_series", "jpml_transferee_series", "jpml_quarterly_caseload", "jpml_series_index")
+
+
+def contract_problems(build):
+    """The build-file contract (CONTRACT.md): id format, keys present, rows carry the dataset as dataset and category,
+    unique ids, no ordinal, a source_url and a title on every row, JSON round trip stable."""
+    out = []
+    ds = build.get("dataset") or ""
+    if not re.fullmatch(r"[a-z0-9_]{1,80}", ds):
+        out.append(f"bad dataset id {ds!r}")
+    for k in ("label", "listing_block", "summary", "rows", "built_at", "inputs"):
+        if k not in build:
+            out.append(f"missing {k}")
+    rows = build.get("rows") or []
+    ids = [r.get("id") for r in rows]
+    if not rows or len(ids) != len(set(ids)):
+        out.append("no rows or duplicate ids")
+    for r in rows:
+        if r.get("dataset") != ds or r.get("category") != ds or "ordinal" in r:
+            out.append(f"{r.get('id')}: dataset/category/ordinal")
+        if not str(r.get("source_url") or "").startswith(("https://", "/")) or not str(r.get("title") or "").strip():
+            out.append(f"{r.get('id')}: source_url/title")
+    if json.loads(json.dumps(rows)) != rows:
+        out.append("not JSON round-trip stable")
+    return out[:20]
+
+
 def main():
     snaps = load(B / "jpml_pending_snapshots.json")
     inputs = {i["url"]: i["path"] for i in snaps["inputs"]}
     rows = [r for r in snaps["rows"] if r["id"].startswith("report:")]
-    res = {"totals": [0, []], "rows": [0, []], "circuits": [0, []], "archive": [0, []], "derived": [0, []], "spot": []}
+    res = {"contract": [0, []], "totals": [0, []], "rows": [0, []], "circuits": [0, []], "archive": [0, []], "derived": [0, []], "spot": []}
 
     def fail(kind, what):
         res[kind][1].append(what)
+
+    for ds in DATASETS:
+        res["contract"][0] += 1
+        p = contract_problems(snaps if ds == "jpml_pending_snapshots" else load(B / f"{ds}.json"))
+        if p:
+            fail("contract", {"dataset": ds, "problems": p})
 
     texts = {}
     for r in rows:
