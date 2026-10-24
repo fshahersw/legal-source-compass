@@ -1,0 +1,4 @@
+# Time Limits library rules
+
+- Missing provenance on a released rule is added only via the evidence-attachment ledger (`attachments.ts`): literal quotes of the cited stored text whose period words match the rule; provenance, period, dates, conditions, calculation untouched; shown as `evidenceAttachment` in "Change history". Literal match first; `passageMatch.ts` may accept spacing-only differences labelled `spacing_normalized`. Why: gaps close with the statute's words, reversibly.
+- Every coverage row has `timeComputation` or `timeComputationNotRecorded` (reason). Only a *verified* rule moves a weekend last day (`weekendTreatment`, `engine.ts`); flagged/absent rules yield a `weekendNotice` in result and steps, never a silent date. Why: a weekend anniversary says what the rule did or why none applied.
