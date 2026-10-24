@@ -88,12 +88,16 @@ export function EntityPage({
     ...o,
     links: shownLinks.filter((_, i) => outcomes[i] === o.outcome),
   })).filter((g) => g.links.length);
-  const key = v.facts.slice(0, 8);
+  // Facts the page header already prints (the title, or one part of the subtitle) move to "More details".
+  const printed = new Set([v.title, ...(v.subtitle ? v.subtitle.split(" · ") : [])].map((t) => t.trim()));
+  const repeats = ([, val]: (typeof v.facts)[number]) =>
+    typeof val === "string" && printed.has(val.trim());
+  const key = v.facts.slice(0, 8).filter((f) => !repeats(f));
   // A caller's lead replaces the photo; the facts box is drawn only when it has something to hold.
   const leadNode = lead ? lead(data.raw, v) : null;
   const hasLead = leadNode !== null && leadNode !== undefined && leadNode !== false;
   const photo = !lead && v.photo ? v.photo : null;
-  const rest = v.facts.slice(8);
+  const rest = [...v.facts.slice(0, 8).filter(repeats), ...v.facts.slice(8)];
   const nav = [
     ...(docket
       ? [
