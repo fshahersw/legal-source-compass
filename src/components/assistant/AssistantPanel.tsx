@@ -30,9 +30,10 @@ import {
   type AssistantAttachment,
 } from "@/lib/assistant/protocol";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import type { SectionContext } from "@/lib/assistant/sectionContext";
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "./AssistantMarkdown";
-import { ASK_EVENT, type AskDetail } from "./askAssistant";
+import { ASK_EVENT, SECTION_EVENT, type AskDetail, type SectionAskDetail } from "./askAssistant";
 import { CitationCheckLine } from "./CitationCheck";
 import { citationMarks } from "./citationStatus";
 import { collectPageContext, suggestionsFor } from "./pageContext";
@@ -169,12 +170,102 @@ function Sources({ m }: { m: ChatMessage }) {
   );
 }
 
+/** The section attached to the next question, as a removable chip that opens to the figures the model is given. */
+function SectionChip({
+  section,
+  open,
+  onToggle,
+  onRemove,
+}: {
+  section: SectionContext;
+  open: boolean;
+  onToggle: () => void;
+  onRemove: () => void;
+}) {
+  const detail = [...new Set([section.scope, section.period, section.source].filter(Boolean))].join(
+    " · ",
+  );
+  return (
+    <div
+      className="px-2 pt-2"
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && open) {
+          e.stopPropagation();
+          onToggle();
+        }
+      }}
+    >
+      <div
+        data-slot="section-chip"
+        className="inline-flex max-w-full items-center rounded-md border border-border bg-muted/50 text-[11px]"
+      >
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls="assistant-section-detail"
+          title={`Context sent with your next question: ${section.figures.length} figure${section.figures.length === 1 ? "" : "s"}${detail ? ` · ${detail}` : ""}`}
+          className="flex min-w-0 items-center gap-1 rounded-l-md py-0.5 pl-1.5 pr-1 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <ChevronRight
+            className={cn(
+              "size-3 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-90",
+            )}
+            aria-hidden
+          />
+          <span className="shrink-0 text-muted-foreground">Context:</span>
+          <span className="truncate font-medium">{section.title}</span>
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Remove context: ${section.title}`}
+          title="Remove this context"
+          className="grid size-5 shrink-0 place-items-center rounded-r-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          <X className="size-3" aria-hidden />
+        </button>
+      </div>
+      {open ? (
+        <div
+          id="assistant-section-detail"
+          className="mt-1 max-h-32 overflow-y-auto rounded-md border border-border bg-background px-2 py-1.5 text-[11px] leading-4 text-muted-foreground"
+        >
+          {detail ? <p className="m-0 mb-1">{detail}</p> : null}
+          <ul className="m-0 list-none space-y-0.5 p-0">
+            {section.figures.map((f, i) => (
+              <li key={`${f.label}-${i}`} className="flex gap-1.5">
+                <span className="min-w-0 flex-1 truncate" title={f.label}>
+                  {f.label}
+                </span>
+                <span className="shrink-0 tabular-nums text-foreground">
+                  {f.value}
+                  {f.unit ? (f.unit.startsWith("%") ? f.unit : ` ${f.unit}`) : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {section.total && section.total > section.figures.length ? (
+            <p className="m-0 mt-1">
+              {section.figures.length} of {section.total} figures sent.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function Message({ m }: { m: ChatMessage }) {
   if (m.role === "user")
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-lg bg-muted px-3 py-2 text-[13px] leading-relaxed">
           <p className="m-0 whitespace-pre-wrap break-words">{m.display ?? m.content}</p>
+          {m.sectionTitle ? (
+            <p className="m-0 mt-1 text-[11px] text-muted-foreground">Context: {m.sectionTitle}</p>
+          ) : null}
           {m.attachments.length ? (
             <p className="m-0 mt-1 text-[11px] text-muted-foreground">
               {m.attachments.map((a) => a.name).join(", ")}
@@ -217,13 +308,20 @@ export function AssistantPanel() {
   const [pos, setPos] = useState<Box | null>(null);
   const [draft, setDraft] = useState("");
   const [files, setFiles] = useState<AssistantAttachment[]>([]);
+  const [section, setSection] = useState<{ ctx: SectionContext; questions: string[] } | null>(null);
+  const [chipOpen, setChipOpen] = useState(false);
   const root = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLTextAreaElement | null>(null);
   const list = useRef<HTMLDivElement | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
   const dictationBase = useRef("");
   const path = useRouterState({ select: (s) => s.location.pathname });
-  const { messages, busy, send, stop, reset } = useAssistantChat();
+  const { messages, busy, send, stop, reset: resetChat } = useAssistantChat();
+  const reset = () => {
+    resetChat();
+    setSection(null);
+    setChipOpen(false);
+  };
   const dictation = useDictation((text, final) => {
     setDraft(`${dictationBase.current}${dictationBase.current && text ? " " : ""}${text}`);
     if (final) dictationBase.current = "";
@@ -283,12 +381,14 @@ export function AssistantPanel() {
     window.addEventListener("pointerup", up);
   };
 
-  const submit = (text = draft, label?: string) => {
+  const submit = (text = draft, label?: string, attach?: SectionContext) => {
     if (!text.trim() || busy) return;
     if (dictation.listening) dictation.stop();
-    void send(text, files, collectPageContext(root.current), label);
+    void send(text, files, collectPageContext(root.current), label, attach ?? section?.ctx);
     setDraft("");
     setFiles([]);
+    // the suggested questions were for the first question; the chip stays until the user removes it
+    setSection((s) => (s ? { ...s, questions: [] } : s));
   };
   const submitRef = useRef(submit);
   submitRef.current = submit;
@@ -297,11 +397,29 @@ export function AssistantPanel() {
       const detail = (e as CustomEvent<AskDetail>).detail;
       if (!detail || typeof detail.question !== "string" || !detail.question.trim()) return;
       setMode("open");
-      setTimeout(() => submitRef.current(detail.question, detail.label), 60);
+      if (detail.section) setSection({ ctx: detail.section, questions: [] });
+      setTimeout(() => submitRef.current(detail.question, detail.label, detail.section), 60);
+    };
+    const onSection = (e: Event) => {
+      const detail = (e as CustomEvent<SectionAskDetail>).detail;
+      if (!detail?.section || !Array.isArray(detail.section.figures)) return;
+      setMode("open");
+      setSection({ ctx: detail.section, questions: detail.questions.slice(0, 3) });
+      setChipOpen(false);
+      setTimeout(() => input.current?.focus(), 60);
     };
     window.addEventListener(ASK_EVENT, onAsk);
-    return () => window.removeEventListener(ASK_EVENT, onAsk);
+    window.addEventListener(SECTION_EVENT, onSection);
+    return () => {
+      window.removeEventListener(ASK_EVENT, onAsk);
+      window.removeEventListener(SECTION_EVENT, onSection);
+    };
   }, []);
+  // a section belongs to the page it was attached on
+  useEffect(() => {
+    setSection(null);
+    setChipOpen(false);
+  }, [path]);
 
   const attach = async (picked: FileList | null) => {
     if (!picked) return;
@@ -423,29 +541,69 @@ export function AssistantPanel() {
                   I read this page, the research corpus and anything you attach, and I can search
                   the web and case law.
                 </p>
-                <p className="m-0 mt-5 text-[12px] font-medium text-muted-foreground">Try asking</p>
+                <p className="m-0 mt-5 text-[12px] font-medium text-muted-foreground">
+                  {section?.questions.length
+                    ? `Try asking about ${section.ctx.title}`
+                    : "Try asking"}
+                </p>
                 <ul className="m-0 mt-1 list-none space-y-0.5 p-0">
-                  {suggestionsFor(path).map((s) => (
-                    <li key={s}>
-                      <button
-                        type="button"
-                        onClick={() => submit(s)}
-                        className="flex w-full items-start gap-2 rounded-md px-1 py-1.5 text-left text-[13px] text-foreground/85 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-                      >
-                        <ChevronRight
-                          className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
-                          aria-hidden
-                        />
-                        {s}
-                      </button>
-                    </li>
-                  ))}
+                  {(section?.questions.length ? section.questions : suggestionsFor(path)).map(
+                    (s) => (
+                      <li key={s}>
+                        <button
+                          type="button"
+                          onClick={() => submit(s)}
+                          className="flex w-full items-start gap-2 rounded-md px-1 py-1.5 text-left text-[13px] text-foreground/85 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                        >
+                          <ChevronRight
+                            className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+                            aria-hidden
+                          />
+                          {s}
+                        </button>
+                      </li>
+                    ),
+                  )}
                 </ul>
               </div>
             )}
           </div>
           <div className="px-3 pb-2 pt-1">
+            {messages.length && section?.questions.length && !busy && !draft ? (
+              <ul
+                aria-label={`Suggested questions about ${section.ctx.title}`}
+                className="m-0 mb-1.5 list-none space-y-0.5 p-0"
+              >
+                {section.questions.map((q) => (
+                  <li key={q}>
+                    <button
+                      type="button"
+                      onClick={() => submit(q)}
+                      className="flex w-full items-start gap-1.5 rounded-md border border-border px-2 py-1 text-left text-[12px] text-foreground/85 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      <ChevronRight
+                        className="mt-0.5 size-3 shrink-0 text-muted-foreground"
+                        aria-hidden
+                      />
+                      {q}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             <div className="rounded-lg border border-border bg-background focus-within:border-ring">
+              {section ? (
+                <SectionChip
+                  section={section.ctx}
+                  open={chipOpen}
+                  onToggle={() => setChipOpen((v) => !v)}
+                  onRemove={() => {
+                    setSection(null);
+                    setChipOpen(false);
+                    input.current?.focus();
+                  }}
+                />
+              ) : null}
               {files.length ? (
                 <div className="flex flex-wrap gap-1 px-2 pt-2">
                   {files.map((f, i) => (
@@ -467,7 +625,7 @@ export function AssistantPanel() {
                 </div>
               ) : null}
               <label htmlFor="assistant-input" className="sr-only">
-                Ask about this page
+                {section ? `Ask about ${section.ctx.title}` : "Ask about this page"}
               </label>
               <textarea
                 id="assistant-input"
@@ -481,7 +639,13 @@ export function AssistantPanel() {
                     submit();
                   }
                 }}
-                placeholder={dictation.listening ? "Listening…" : "Ask about this page"}
+                placeholder={
+                  dictation.listening
+                    ? "Listening…"
+                    : section
+                      ? "Ask about this section"
+                      : "Ask about this page"
+                }
                 className="block max-h-40 min-h-[2.75rem] w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] leading-relaxed outline-none placeholder:text-muted-foreground"
               />
               <div className="flex items-center gap-1 px-2 pb-2">

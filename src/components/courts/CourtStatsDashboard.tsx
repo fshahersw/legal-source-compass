@@ -18,6 +18,8 @@ import {
 import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
 import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { MoreToggle } from "@/components/enforcement/parts";
+import { AiSummary } from "@/components/kit/ai/AiSummary";
+import { AskAiButton } from "@/components/kit/ai/AskAiButton";
 import { Input } from "@/components/ui/input";
 import { getCourtStatsOverview } from "@/lib/external/courtStats.functions";
 import { cn } from "@/lib/utils";
@@ -47,6 +49,7 @@ import {
   NOT_RECORDED,
 } from "./courtStatsData";
 import { Kpi, Notice, ScrollX, SectionTitle, Spark } from "./CourtStatsParts";
+import { filingsContext } from "./courtAiContext";
 import { courtTakeaways } from "./courtTakeaways";
 
 const COURT_MEASURES: Measure[] = [
@@ -368,10 +371,30 @@ function NosChart({ data, yi }: { data: CourtStatsOverview; yi: number }) {
   const title =
     trendTakeaway("Product liability filings", totals, fmtCount) ??
     "Product liability filings by nature of suit";
+  const aiContext = filingsContext({
+    years: data.years,
+    totals: totals.map((t) => t.value),
+    selected: yi,
+    changePercent: pct,
+    otherShare: leadShare,
+    source: `${COURT_SOURCES[0]!.label}, Table C-11`,
+  });
   return (
     <ChartCard
       id="court-nos"
       title={title}
+      actions={
+        <AskAiButton
+          sectionId="court-nos"
+          context={aiContext}
+          size="icon"
+          questions={[
+            "What drove the swings in product liability filings?",
+            "Which years stand out, and what happened in them?",
+            "How does an MDL change what these filings count?",
+          ]}
+        />
+      }
       subtitle={`Cases filed in U.S. district courts, all product liability natures of suit · Table C-11 · FY${data.years[0]}–FY${data.years.at(-1)}`}
       kpis={[
         {
@@ -423,6 +446,7 @@ function NosChart({ data, yi }: { data: CourtStatsOverview; yi: number }) {
         height={220}
         ariaLabel={`Product liability filings by fiscal year, ${fy(data.years[yi]!)} selected`}
       />
+      <AiSummary context={aiContext} className="mt-3 border-0 bg-muted/40 shadow-none" />
     </ChartCard>
   );
 }

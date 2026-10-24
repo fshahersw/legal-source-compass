@@ -55,6 +55,17 @@ import {
   StatusPill,
   type DataColumn,
 } from "@/components/kit";
+import {
+  AI_THIN,
+  AI_UNCONFIGURED,
+  AiSummary,
+  AiSummaryView,
+  AskAiButton,
+  AskAiButtonView,
+  buildSectionContext,
+  figuresFromRows,
+  type SectionContext,
+} from "@/components/kit/ai";
 import { MOVEMENT_RULE } from "@/components/insights/kpis";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -350,6 +361,126 @@ function LiveInsight() {
         <p key={i}>{line}</p>
       ))}
     </InsightCallout>
+  );
+}
+
+/** The AI kit on live data: the Products & safety collection sizes from the catalog. State examples use stub text. */
+function AiSpecimen({ panel }: { panel: string }) {
+  const { q, rows } = useSafetyRows();
+  const recorded = rows.filter((r) => r.records !== null);
+  const context =
+    q.isPending || recorded.length < 2
+      ? null
+      : buildSectionContext({
+          title: "Products & safety collections",
+          scope: "Products & safety",
+          source: "Corpus catalog",
+          figures: figuresFromRows(recorded, {
+            label: (r) => r.label,
+            value: (r) => r.records,
+            unit: "records",
+            limit: 8,
+          }),
+        });
+  const top = recorded[0];
+  // layout text only: built from the live rows by a fixed template, never model output
+  const stub = top
+    ? [
+        `${top.label} is the largest collection, with ${top.records!.toLocaleString("en-US")} records.`,
+        `The catalog lists ${recorded.length} collections for this area.`,
+        "The figures do not show why the collections differ in size.",
+      ]
+    : ["Stub text for the layout."];
+  const noop = () => undefined;
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="space-y-3 p-4">
+          <p className="m-0 text-label">AskAiButton</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <AskAiButtonView
+              availability="ready"
+              name="Products & safety collections"
+              onAsk={noop}
+            />
+            <AskAiButtonView
+              availability="ready"
+              size="md"
+              name="Products & safety collections"
+              onAsk={noop}
+            />
+            <AskAiButtonView
+              availability="ready"
+              size="icon"
+              name="Products & safety collections"
+              onAsk={noop}
+            />
+            <AskAiButtonView availability="waiting" name="a section still loading" />
+            <AskAiButtonView availability="unconfigured" name="Products & safety collections" />
+          </div>
+          <p className="m-0 text-meta text-muted-foreground">
+            Small, medium, icon only, waiting for figures, and AI not configured (the tooltip and a
+            toast say so; the button stays focusable). The live button below opens the assistant
+            with this section attached.
+          </p>
+          <div className="flex items-center gap-2">
+            {context ? (
+              <AskAiButton context={context} sectionId={`kit-${panel}-ai-section`} />
+            ) : (
+              <AskAiButtonView availability="waiting" name="a section still loading" />
+            )}
+            <span className="text-meta text-muted-foreground">
+              Live: {context ? `${context.figures.length} figures from the catalog` : "loading"}
+            </span>
+          </div>
+        </Card>
+        <div className="space-y-4">
+          <AiSummary context={context} />
+          <p className="m-0 text-meta text-muted-foreground">
+            Live: Summarize reads the figures above through the server; where AI is not configured
+            this strip says so instead of failing.
+          </p>
+        </div>
+      </div>
+      <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <AiSummaryView state={{ kind: "idle" }} onSummarize={noop} />
+        <AiSummaryView state={{ kind: "loading" }} />
+        <AiSummaryView
+          state={{ kind: "ready", bullets: stub, omitted: 0, cached: false, generatedAt: "stub" }}
+          provenance="Products & safety collections. Source: Corpus catalog"
+        />
+        <AiSummaryView
+          state={{
+            kind: "ready",
+            bullets: stub.slice(0, 2),
+            omitted: 1,
+            cached: true,
+            generatedAt: "stub",
+          }}
+        />
+        <AiSummaryView
+          state={{
+            kind: "error",
+            message: "The summary could not be generated right now.",
+          }}
+          onSummarize={noop}
+        />
+        <AiSummaryView
+          state={{
+            kind: "rate_limited",
+            message: "Too many summaries in a short time. Try again in 3 minutes.",
+            retryAfterSec: 180,
+          }}
+          onSummarize={noop}
+        />
+        <AiSummaryView state={{ kind: "unconfigured", message: AI_UNCONFIGURED }} />
+        <AiSummaryView state={{ kind: "empty" }} />
+        <AiSummaryView state={{ kind: "thin", message: AI_THIN }} />
+      </div>
+      <p className="m-0 text-meta text-muted-foreground">
+        The state examples show stub text built from the live rows, not model output.
+      </p>
+    </div>
   );
 }
 
@@ -666,6 +797,14 @@ function Specimens({ panel }: { panel: string }) {
       </div>
 
       <Specimen
+        id={`${panel}-ai`}
+        name="AskAiButton + AiSummary"
+        note="section-scoped AI: a button that attaches the section, a cached 'What this shows' (live figures; state examples are stub text)"
+      >
+        <AiSpecimen panel={panel} />
+      </Specimen>
+
+      <Specimen
         id={`${panel}-ui`}
         name="ui primitives"
         note="restyled shadcn components, same APIs"
@@ -795,6 +934,7 @@ function Page() {
           { id: "light-footer", label: "Footer" },
           { id: "light-insight", label: "Insight" },
           { id: "light-links", label: "Links" },
+          { id: "light-ai", label: "AI" },
           { id: "light-ui", label: "Primitives" },
           { id: "kit-dark-panel", label: "Dark theme" },
         ]}

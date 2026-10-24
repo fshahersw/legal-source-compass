@@ -11,6 +11,7 @@ import {
   type CitationCheck,
   type PageContext,
 } from "@/lib/assistant/protocol";
+import type { SectionContext } from "@/lib/assistant/sectionContext";
 
 export type ChatMessage = {
   id: string;
@@ -18,6 +19,8 @@ export type ChatMessage = {
   content: string;
   /** Shown instead of `content` for questions sent from page actions. */
   display?: string | undefined;
+  /** Title of the section that went with this question ("Context: <title>" under it); the figures are not stored. */
+  sectionTitle?: string | undefined;
   status: "streaming" | "done" | "error" | "stopped";
   steps: AssistantStep[];
   sources: AssistantSource[];
@@ -81,6 +84,7 @@ export function useAssistantChat() {
       attachments: AssistantAttachment[],
       page: PageContext | null,
       display?: string,
+      section?: SectionContext | null,
     ) => {
       const question = text.trim();
       if (!question || busy) return;
@@ -89,6 +93,7 @@ export function useAssistantChat() {
         role: "user",
         content: question,
         display,
+        ...(section ? { sectionTitle: section.title } : {}),
         status: "done",
         steps: [],
         sources: [],
@@ -125,6 +130,7 @@ export function useAssistantChat() {
               [...prior, user].map((m) => ({ role: m.role, content: m.content })),
             ),
             page,
+            section: section ?? null,
             attachments,
           }),
         });

@@ -1,5 +1,6 @@
 /** Request and stream-event contract between the assistant panel and /api/assistant. Shared by client and server. */
 import { z } from "zod";
+import { sectionContextSchema } from "./sectionContext";
 
 export const MEMORY_MESSAGES = 8;
 export const MAX_ROUNDS = 23;
@@ -61,6 +62,8 @@ export const assistantRequestSchema = z
       .max(MEMORY_MESSAGES)
       .refine((m) => m[m.length - 1]!.role === "user", "The last message must be the user's."),
     page: pageContextSchema.nullable(),
+    /** The section the user attached with "Ask AI" (its figures, period and source); absent for an ordinary question. */
+    section: sectionContextSchema.nullish(),
     attachments: z.array(attachment).max(MAX_ATTACHMENTS),
   })
   .strict();

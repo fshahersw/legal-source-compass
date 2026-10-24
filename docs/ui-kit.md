@@ -120,3 +120,101 @@ Helpers (pure, tested): `deltaDirection`, `deltaTone`, `formatSigned`, `formatSi
 - The floating assistant button is a 32 px round icon (40 px on a phone) with a tooltip, reachable last in tab
   order and with Ctrl+J. It sits 6 px from the right edge, so it covers the page gutter and a card's 16 px padding,
   never text inside a card; every card pads its text at least 16 px, and the page container pads its bottom by 72 px.
+
+## AI
+
+Two small components and one helper (`src/components/kit/ai`, exported from `@/components/kit`) put AI on a section
+without leaving the figures the page shows. Owner decision of 2026-10-24 (night): important sections get a short
+summary and an Ask AI entry that carries that section's figures, source and period; AI text is grounded in those
+figures, labelled as AI-generated and never names a model or vendor.
+
+| Part                          | Props                                                                                                  | Use                                                                                                                                                                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `buildSectionContext(input)`  | `{ title, id?, scope?, period?, source?, figures, maxFigures? }` -> `SectionContext`                   | Turns what the page holds into the bounded context. Pure and deterministic; `figures` are `{ label, value, unit?, period?, note?, decimals? }`.                                                                                                    |
+| `figuresFromRows(rows, spec)` | `{ label, value, unit?, period?, note?, decimals?, order? ("desc"), limit? (10) }`                     | Rows (a ranked chart) to figures: ranked, gaps last, ties by label, cut to `limit`.                                                                                                                                                                |
+| `AiSummary`                   | `context: SectionContext \| null, title? ("What this shows"), actions?, className?`                    | A quiet strip: **Summarize** on demand, 3 or 4 bullets (about 90 words), cached. `context` null while the figures load (the strip waits, disabled, at the same height). `actions` takes the section's `AskAiButton`.                               |
+| `AskAiButton`                 | `sectionId, context: SectionContext \| null, title?, questions? (2-3), size? ("sm" \| "md" \| "icon")` | Opens the assistant with this section attached as a removable "Context: <title>" chip (click the chip to see every figure sent) and the questions ready to click. Nothing is sent until the user asks. `icon` suits a chart card's `actions` slot. |
+
+### What goes into a context
+
+- **Title** names the section as the reader sees it ("Federal civil cases filed"), **period** and **scope**
+  (geography, population) as the card's subtitle prints them, **source** as the footer prints it.
+- **Figures**: the numbers the section shows, each with a label, a value, a unit and, when it differs from the section's, a
+  period. Pass numbers and let the builder format them (`303716` -> `303,716`, exact digits, no "k" or "M"), or pass the
+  text the page prints (`"+12,736 (+4.4%) vs FY2024"`). A missing value is `null` and reads "Not recorded", never `0`.
+- **Units**: `unit: "cases"` goes after the number; `unit: "%"` attaches (`4.4%`); omit the unit when the text already
+  carries it (`"$3.94 billion"`).
+- **Size**: at most 24 figures by default (`maxFigures`, 40 at most) and never more than about 8 KB serialised; figures are
+  cut from the end and the context records "N of M shown". Keep the figures that answer the section's question first
+  (a ranked chart: the top 8 to 10 rows, not all 94). The order you give is the order sent.
+- **Not in a context**: raw record dumps, prose paragraphs, method notes, names of people beyond what the section shows,
+  anything the reader cannot see on the page. If a section has fewer than two recorded figures there is nothing to
+  summarize and the strip says so.
+
+### Grounding rules (enforced on the server, not only requested)
+
+1. The summary prompt allows only the supplied figures: no added facts, laws, cases, causes or numbers; no legal advice;
+   no calculation (sums, differences, percentages, rounding); at most 90 words; period and unit stay with each number.
+2. A deterministic check follows: every number a sentence states must appear in the context (thousands commas, `%` and
+   units are normalised; "303.7 thousand" is accepted for 303,716 only when correctly rounded). A sentence with any other
+   number is dropped and the strip says "Some details omitted"; if nothing survives, nothing is shown.
+3. Ask AI answers go through the assistant, which receives the section as a `<section_context>` block next to the page
+   text; it is told to quote the section's figures with their period and unit and to use its tools for anything more.
+4. The label under every summary is fixed: "AI-generated from the figures on this page; check the source." The copy button
+   adds the section title, source and period to what it copies.
+5. No model, vendor or provider name appears in UI text, docs, tests or comments. The server alone knows them.
+
+### Where AI is not configured
+
+The kit asks the server once whether AI is configured. If not, `AiSummary` reads "AI not configured" in its header row
+(the full sentence is its tooltip) and `AskAiButton` stays focusable, says "AI is not configured on this server." in its
+tooltip and in a toast on click; neither fails or hides, and the strip keeps its height. Rate limited, busy, timed out and error replies each have their own message and a **Try again** button.
+`/prototypes/kit` shows every state (stub text, not model output) in light and dark.
+
+### Examples
+
+A KPI strip: the context comes from the tiles, the strip sits under the grid with Ask AI inside it.
+
+```tsx
+const context = kpiContext("Headline figures", tileStates); // null while any tile loads (src/components/insights/kpiContext.ts)
+<KpiGrid>…</KpiGrid>
+<AiSummary context={context} className="mt-3"
+  actions={<AskAiButton sectionId="headlines" context={context}
+    questions={["Which figure changed most?", "What should I check before relying on these?"]} />} />
+```
+
+A chart card: Ask AI as an icon in the card's `actions`; the summary under the chart (use `border-0 bg-muted/40 shadow-none` inside a card).
+
+```tsx
+const context = buildSectionContext({
+  title: "Product liability filings by fiscal year", scope: "U.S. district courts", period: "FY2014–FY2025",
+  source: "Judicial Business of the United States Courts, Table C-11",
+  figures: years.map((y, i) => ({ label: "Product liability filings", value: totals[i], unit: "cases", period: `FY${y}` })),
+});
+<ChartCard title={takeaway} actions={<AskAiButton sectionId="court-nos" context={context} size="icon" />} …>
+  <TrendColumns … />
+  <AiSummary context={context} className="mt-3 border-0 bg-muted/40 shadow-none" />
+</ChartCard>
+```
+
+A page header or entity page: one strip under the KPI row summarizing the page's headline figures, built from the same
+values the KPI cards print (never from the DOM).
+
+```tsx
+const context = buildSectionContext({
+  title: court.name,
+  scope: "Federal district court",
+  period: "FY2025",
+  source: "Judicial Business of the United States Courts",
+  figures: [
+    { label: "Civil cases filed", value: stats.civilFiled, unit: "cases" },
+    { label: "Median time to disposition", value: stats.medianMonths, unit: "months", decimals: 1 },
+    { label: "Pending MDL cases", value: stats.mdlPending, unit: "cases" },
+  ],
+});
+<AiSummary context={context} actions={<AskAiButton sectionId="overview" context={context} />} />;
+```
+
+Limits: a summary costs about 0.3 to 2.5k input tokens and under 150 output tokens; results are cached in the browser
+for 6 hours (per tab) and on the server for 24 hours, keyed by a hash of the context, so a repeat costs nothing and new
+figures never show an old summary; 30 summaries per client address per 10 minutes, 20 s timeout, at most 6 at once.
