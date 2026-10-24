@@ -29,6 +29,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   type AssistantAttachment,
 } from "@/lib/assistant/protocol";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "./AssistantMarkdown";
 import { ASK_EVENT, type AskDetail } from "./askAssistant";
@@ -315,17 +316,27 @@ export function AssistantPanel() {
   if (!mounted) return null;
   const style = place ? { left: place.x, top: place.y } : { right: 16, bottom: 16 };
 
+  // A compact round icon button. At 32 px and 8 px from the right edge it covers only the page gutter and a card's
+  // 16 px padding, never the text inside a card (cards pad their text at least 16 px from the content edge, which
+  // sits 24 px from the viewport edge); the page container pads its bottom so the last content scrolls clear of it.
+  // On a phone it grows to the 40 px touch size. The name, Ctrl+J and keyboard focus are unchanged.
   const launcher = (
-    <button
-      type="button"
-      onClick={() => setMode("open")}
-      className="fixed bottom-4 right-4 z-50 flex items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-medium shadow-lg hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring print:hidden"
-      aria-label="Open the research assistant (Ctrl+J)"
-      title="Ask about this page (Ctrl+J)"
-    >
-      <MessageCircle className="size-4 text-primary" aria-hidden />
-      Ask AI
-    </button>
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={() => setMode("open")}
+            className="fixed bottom-3 right-3 z-50 grid size-10 place-items-center rounded-full border border-border bg-surface text-foreground shadow-md transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:right-2 md:size-8 print:hidden"
+            aria-label="Open the research assistant (Ctrl+J)"
+            data-assistant-launcher
+          >
+            <MessageCircle className="size-4 text-primary" aria-hidden />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="left">Ask AI about this page · Ctrl+J</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
   if (mode === "closed") return createPortal(launcher, document.body);
 

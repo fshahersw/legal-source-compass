@@ -109,22 +109,17 @@ function isSourceRef(v: unknown): v is SourceRef {
 }
 
 function SourceLink({ source }: { source: SourceRef }) {
-  if (!source.href)
-    return (
-      <span className="truncate" title={source.label}>
-        {source.label}
-      </span>
-    );
+  if (!source.href) return <span title={source.label}>{source.label}</span>;
   const external = !source.href.startsWith("/");
   return (
     <a
       href={source.href}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       title={source.label}
-      className="inline-flex min-w-0 items-center gap-0.5 underline-offset-2 hover:text-foreground hover:underline"
+      className="underline-offset-2 hover:text-foreground hover:underline"
     >
-      <span className="truncate">{source.label}</span>
-      {external ? <ExternalLink className="size-3 shrink-0" aria-hidden /> : null}
+      {source.label}
+      {external ? <ExternalLink className="ml-0.5 inline size-3 align-[-1px]" aria-hidden /> : null}
     </a>
   );
 }
@@ -148,7 +143,15 @@ export type SourceFooterProps = {
   children?: ReactNode | undefined;
 };
 
-/** One footer line: "Source · period · as of", a partial pill when needed, then the "About this data" popover. */
+/**
+ * The footer line: "Source · period · as of", a partial pill when needed, then the "About this data" popover.
+ *
+ * It wraps instead of clipping. The three facts are separate items in a wrapping row: a short source shares the line
+ * with the period and the "as of" date; a long source (clamped at two lines, the full name stays in its title) takes
+ * the whole first line and the period and "as of" flow onto the next, each wrapping on its own if it must. The "·"
+ * separator belongs to the item it precedes and is clipped when that item starts a line, so no line begins with a dot.
+ * The Partial pill, `children` and the About button stay pinned top-right, so the popover is always reachable.
+ */
 export function SourceFooter({
   source,
   period,
@@ -169,54 +172,65 @@ export function SourceFooter({
     !sources.length && source != null && !Array.isArray(source) && !isSourceRef(source)
       ? (source as ReactNode)
       : null;
-  const parts: ReactNode[] = [];
+  const sourceTitle = sources.length ? sources.map((x) => x.label).join("; ") : undefined;
+  const items: { key: string; node: ReactNode; className?: string; title?: string | undefined }[] =
+    [];
   if (sources.length || custom)
-    parts.push(
-      <span key="src" className="inline-flex min-w-0 items-center gap-1">
-        <span className="shrink-0">Source:</span>
-        {custom ??
-          sources.map((s, i) => (
-            <span key={`${s.label}-${i}`} className="inline-flex min-w-0 items-center">
-              {i > 0 ? <span className="mr-1">;</span> : null}
-              <SourceLink source={s} />
-            </span>
-          ))}
-      </span>,
-    );
-  if (period)
-    parts.push(
-      <span key="period" className="shrink-0">
-        {period}
-      </span>,
-    );
-  if (asOf)
-    parts.push(
-      <span key="asof" className="shrink-0">
-        as of {asOf}
-      </span>,
-    );
+    items.push({
+      key: "source",
+      // a custom source node written for the old one-line footer (an inline-flex link, a `truncate` span) must wrap
+      // here too: its links become inline and its truncation is lifted
+      className:
+        "line-clamp-2 [&_.truncate]:overflow-visible [&_.truncate]:whitespace-normal [&_a]:inline",
+      title: sourceTitle,
+      node: (
+        <>
+          Source:{" "}
+          {custom ??
+            sources.map((x, i) => (
+              <span key={`${x.label}-${i}`}>
+                {i > 0 ? "; " : ""}
+                <SourceLink source={x} />
+              </span>
+            ))}
+        </>
+      ),
+    });
+  if (period) items.push({ key: "period", node: period });
+  if (asOf) items.push({ key: "asof", node: <>as of {asOf}</> });
+  const hasActions = Boolean(partial || children || about);
   return (
     <div
-      className={cn("flex min-w-0 items-center gap-2 text-meta text-muted-foreground", className)}
+      data-slot="source-footer"
+      className={cn("flex min-w-0 items-start gap-2 text-meta text-muted-foreground", className)}
     >
-      <p className="m-0 flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-        {parts.map((p, i) => (
-          <span key={i} className={cn("inline-flex items-center gap-1.5", i === 0 && "min-w-0")}>
-            {i > 0 ? (
-              <span aria-hidden className="text-border-strong">
-                ·
-              </span>
-            ) : null}
-            {p}
-          </span>
-        ))}
-      </p>
-      {partial ? <PartialPill note={partial} /> : null}
-      {children}
-      {about ? (
-        <InfoPopover label={aboutLabel} title={aboutTitle}>
-          {about}
-        </InfoPopover>
+      <div data-slot="source-text" className="min-w-0 flex-1 overflow-hidden">
+        <p className="m-0 -ml-3 flex flex-wrap gap-y-0.5">
+          {items.map((item) => (
+            <span
+              key={item.key}
+              data-item={item.key}
+              title={item.title}
+              className={cn(
+                "relative min-w-0 max-w-full break-words pl-3 before:absolute before:left-1 before:top-0 before:text-border-strong before:content-['·']",
+                item.className,
+              )}
+            >
+              {item.node}
+            </span>
+          ))}
+        </p>
+      </div>
+      {hasActions ? (
+        <div data-slot="source-actions" className="-my-0.5 flex shrink-0 items-center gap-1">
+          {partial ? <PartialPill note={partial} /> : null}
+          {children}
+          {about ? (
+            <InfoPopover label={aboutLabel} title={aboutTitle}>
+              {about}
+            </InfoPopover>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

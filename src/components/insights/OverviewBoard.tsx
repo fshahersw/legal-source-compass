@@ -367,7 +367,7 @@ export function OverviewBoard() {
       >
         <KpiGrid columns={4} label="Headline figures">
           {headlines.map((s) => (
-            <KpiTile key={tileKey(s)} state={s} trendPlacement="below" />
+            <KpiTile key={tileKey(s)} state={s} />
           ))}
         </KpiGrid>
       </Section>
@@ -386,11 +386,7 @@ export function OverviewBoard() {
             initial={3}
             noun={`${TOPIC_LABEL[topic].toLowerCase()} series`}
             render={(shown) => (
-              <KpiGrid
-                columns={2}
-                className="xl:grid-cols-3"
-                label={`${TOPIC_LABEL[topic]} figures`}
-              >
+              <KpiGrid columns={3} label={`${TOPIC_LABEL[topic]} figures`}>
                 {shown.map((s) => (
                   <KpiTile key={tileKey(s)} state={s} />
                 ))}
