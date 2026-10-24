@@ -16,10 +16,16 @@ import { latestWithYear } from "./courtGlance";
 
 const FCMS = {
   label: "U.S. Courts, Federal Court Management Statistics",
-  href: "https://www.uscourts.gov/statistics-reports/analysis-reports/federal-court-management-statistics",
+  href: "https://www.uscourts.gov/data-news/reports/statistical-reports/federal-court-management-statistics/federal-court-management-statistics-june-2026",
 };
-const JPML = { label: "JPML pending MDL report", href: "https://www.jpml.uscourts.gov/pending-mdls-0" };
-const FJC = { label: "Federal Judicial Center, Biographical Directory", href: "https://www.fjc.gov/history/judges" };
+const JPML = {
+  label: "JPML pending MDL report",
+  href: "https://www.jpml.uscourts.gov/pending-mdl-reports-archive",
+};
+const FJC = {
+  label: "Federal Judicial Center, Biographical Directory",
+  href: "https://www.fjc.gov/history/judges/biographical-directory-article-iii-federal-judges-export",
+};
 
 const fmt = (v: number) => v.toLocaleString("en-US");
 const signed = (v: number) => `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
@@ -45,7 +51,9 @@ export function CourtGlance({ courtId, courtName }: { courtId: string; courtName
   const filings = court ? latestWithYear(court.years, court.metrics["filings"]) : null;
   const pending = court ? latestWithYear(court.years, court.metrics["pending"]) : null;
   const sitting = judges.data?.length ? judges.data.length : null;
-  const current = vacancies.data ? vacancies.data.open.length + vacancies.data.announced.length : null;
+  const current = vacancies.data
+    ? vacancies.data.open.length + vacancies.data.announced.length
+    : null;
 
   const items: (KpiCardProps & { key: string })[] = [];
   const figures: FigureInput[] = [];
@@ -59,12 +67,21 @@ export function CourtGlance({ courtId, courtName }: { courtId: string; courtName
       delta:
         filings.changePct == null
           ? null
-          : { value: filings.changePct, text: signed(filings.changePct), detail: `vs ${filings.year - 1}` },
+          : {
+              value: filings.changePct,
+              text: signed(filings.changePct),
+              detail: `vs ${filings.year - 1}`,
+            },
       source: { source: FCMS },
     });
     figures.push({ label: "Cases filed", value: filings.value, unit: "cases", period });
     if (filings.changePct != null)
-      figures.push({ label: "Cases filed, change on the year before", value: filings.changePct, unit: "%", decimals: 1 });
+      figures.push({
+        label: "Cases filed, change on the year before",
+        value: filings.changePct,
+        unit: "%",
+        decimals: 1,
+      });
   }
   if (pending) {
     const period = `June 30, ${pending.year}`;
@@ -87,7 +104,12 @@ export function CourtGlance({ courtId, courtName }: { courtId: string; courtName
     });
     figures.push(
       { label: "Pending MDLs", value: court.mdls.length, unit: "MDLs", period: court.mdl_as_of },
-      { label: "Actions pending in those MDLs", value: court.mdl_actions, unit: "actions", period: court.mdl_as_of },
+      {
+        label: "Actions pending in those MDLs",
+        value: court.mdl_actions,
+        unit: "actions",
+        period: court.mdl_as_of,
+      },
     );
   }
   if (sitting != null) {
@@ -95,22 +117,36 @@ export function CourtGlance({ courtId, courtName }: { courtId: string; courtName
       key: "judges",
       label: "Sitting Article III judges",
       value: fmt(sitting),
-      meta: current != null ? `${fmt(current)} current or announced vacanc${current === 1 ? "y" : "ies"}` : undefined,
+      meta:
+        current != null
+          ? `${fmt(current)} current or announced vacanc${current === 1 ? "y" : "ies"}`
+          : undefined,
       source: { source: FJC },
     });
     figures.push({ label: "Sitting Article III judges", value: sitting, unit: "judges" });
-    if (current != null) figures.push({ label: "Current or announced vacancies", value: current, unit: "vacancies" });
+    if (current != null)
+      figures.push({ label: "Current or announced vacancies", value: current, unit: "vacancies" });
   }
 
   if (loading)
-    return <div className="h-28 animate-pulse rounded-xl border border-border bg-muted/40" aria-busy="true" aria-label="Loading headline figures" />;
+    return (
+      <div
+        className="h-28 animate-pulse rounded-xl border border-border bg-muted/40"
+        aria-busy="true"
+        aria-label="Loading headline figures"
+      />
+    );
   if (!items.length) return null;
 
   const context = buildSectionContext({
     id: "court-glance",
     title: `${courtName}: headline figures`,
     scope: courtName,
-    source: [filings || pending ? FCMS.label : null, court?.mdls.length ? JPML.label : null, sitting != null ? FJC.label : null]
+    source: [
+      filings || pending ? FCMS.label : null,
+      court?.mdls.length ? JPML.label : null,
+      sitting != null ? FJC.label : null,
+    ]
       .filter(Boolean)
       .join("; "),
     figures,
