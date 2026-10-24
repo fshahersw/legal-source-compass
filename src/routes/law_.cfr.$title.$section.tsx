@@ -116,7 +116,7 @@ function CfrSectionPage() {
               : "CFR sections set"}
             .
           </p>
-          <section className="rounded-lg border border-border bg-surface p-4">
+          <section className="rounded-xl border border-border bg-card shadow-xs p-4">
             <h2 className="m-0 mb-2 text-[14px] font-semibold">{data.fallback.title}</h2>
             <div className="max-w-[78ch] space-y-1.5 text-[14px] leading-relaxed">
               {formatLawText(data.fallback.text).map((t, k) => (
@@ -245,7 +245,7 @@ function SectionBody({
           ) : (
             <section
               aria-label="Current text"
-              className="rounded-lg border border-border bg-surface p-4 shadow-card"
+              className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card"
             >
               {s.blocks.length ? (
                 <CfrBlocks blocks={s.blocks} label="Section text" />
@@ -288,7 +288,7 @@ function SectionBody({
           {history ? (
             <HistoryPanel history={history} asof={asof} onPick={onPick} />
           ) : (
-            <section className="rounded-lg border border-border bg-surface p-3 text-[12px] text-muted-foreground">
+            <section className="rounded-xl border border-border bg-card shadow-xs p-3 text-[12px] text-muted-foreground">
               No change history is recorded for this section.
             </section>
           )}
@@ -310,7 +310,7 @@ function HistoryPanel({
 }) {
   const changes = history.versions.filter((v) => v.substantive && v.date >= "2017-01-03").length;
   return (
-    <section aria-label="Change history" className="rounded-lg border border-border bg-surface p-3">
+    <section aria-label="Change history" className="rounded-xl border border-border bg-card shadow-xs p-3">
       <h2 className="eyebrow mb-1">Change history</h2>
       <p className="m-0 mb-2 text-[11px] text-muted-foreground">
         {history.versions.length} version{history.versions.length === 1 ? "" : "s"} listed by the

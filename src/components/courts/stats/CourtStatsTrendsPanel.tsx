@@ -46,7 +46,7 @@ function courtNameFor(trends: CourtTrends): string {
 function Skeleton() {
   return (
     <div
-      className="mb-5 rounded-lg border border-border bg-surface p-3"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs p-3"
       aria-busy="true"
       aria-label="Loading court statistics"
     >
@@ -124,7 +124,7 @@ function Loaded({ trends }: { trends: CourtTrends }) {
   const reported = trends.bankruptcy.find((t) => t.reportedWith)?.reportedWith ?? null;
   return (
     <section
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
       aria-labelledby="court-stats-trends-title"
     >
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border/70 px-3 py-2">

@@ -102,7 +102,7 @@ function LawCallout({ bill: b }: { bill: FederalBill }) {
       aria-label="Resulting law"
       className="rounded-md border border-primary/40 bg-primary/5 px-3 py-2.5"
     >
-      <h2 className="m-0 flex items-center gap-1.5 text-sm font-semibold">
+      <h2 className="m-0 flex items-center gap-1.5 text-heading font-semibold text-foreground">
         <Landmark className="size-4" aria-hidden />
         {enacted.length
           ? `Became ${enacted.map((l) => l.label).join(" and ")}`

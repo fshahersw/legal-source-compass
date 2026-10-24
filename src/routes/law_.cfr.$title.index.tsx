@@ -73,9 +73,9 @@ function CfrTitlePage() {
           </Link>
         </p>
       ) : (
-        <section aria-label="Parts" className="rounded-lg border border-border bg-surface">
+        <section aria-label="Parts" className="rounded-xl border border-border bg-card shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-4 py-2">
-            <h2 className="m-0 text-sm font-semibold">Parts</h2>
+            <h2 className="m-0 text-heading font-semibold text-foreground">Parts</h2>
             <input
               aria-label="Filter parts"
               value={filter}

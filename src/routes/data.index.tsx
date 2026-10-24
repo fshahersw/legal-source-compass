@@ -52,7 +52,7 @@ function Catalog() {
           if (!list.length) return null;
           return (
             <section key={s.id}>
-              <h2 className="mb-2 font-display text-lg">
+              <h2 className="mb-2 font-display text-heading text-foreground">
                 {s.label}{" "}
                 <span className="text-[12px] font-normal text-muted-foreground">
                   {list.length} datasets
@@ -64,7 +64,7 @@ function Catalog() {
                     key={d.id}
                     to="/data/$dataset"
                     params={{ dataset: d.id }}
-                    className="rounded-lg border border-border bg-surface p-3 shadow-card hover:border-primary/50"
+                    className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card hover:border-primary/50"
                   >
                     <div className="flex flex-col gap-1">
                       <span className="text-[13px] font-medium">
@@ -96,7 +96,7 @@ function Catalog() {
           );
         })}
         <section>
-          <h2 className="mb-2 font-display text-lg">
+          <h2 className="mb-2 font-display text-heading text-foreground">
             Supporting tables{" "}
             <span className="text-[12px] font-normal text-muted-foreground">
               stored outside the dataset list
@@ -108,7 +108,7 @@ function Catalog() {
                 key={id}
                 to="/data/tables/$table"
                 params={{ table: id }}
-                className="rounded-lg border border-border bg-surface p-3 shadow-card hover:border-primary/50"
+                className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card hover:border-primary/50"
               >
                 <span className="text-[13px] font-medium">{t.label}</span>
                 <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">

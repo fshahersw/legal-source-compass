@@ -64,11 +64,11 @@ export function StateCourtDataPanel({ usps }: { usps: string }) {
       aria-label="Federal civil caseload, CourtListener dockets and benches"
     >
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Gavel className="size-4" aria-hidden />
           Court data
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">Federal · CourtListener</span>
+        <span className="text-[11px] text-muted-foreground">Federal · CourtListener</span>
       </div>
       {q.isPending ? (
         <p role="status" aria-busy="true" className="px-3 py-6 text-xs text-muted-foreground">

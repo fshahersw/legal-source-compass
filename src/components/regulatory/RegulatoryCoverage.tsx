@@ -6,7 +6,7 @@ export function RegulatoryCoverage({ overview }: { overview: RegulatoryOverview 
   return (
     <div className="space-y-3">
       <section className={`${panelClass} p-3`}>
-        <h2 className="mb-2 font-sans text-base font-semibold">Coverage and source health</h2>
+        <h2 className="mb-2 text-heading font-semibold text-foreground">Coverage and source health</h2>
         <Qualifications items={overview.qualifications} />
         <p className="mt-2 text-xs leading-5 text-muted-foreground">
           A successful capture is not proof that every relevant event was published. Source windows,
@@ -19,7 +19,7 @@ export function RegulatoryCoverage({ overview }: { overview: RegulatoryOverview 
           <section key={source.id} className={`${panelClass} p-3`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <h3 className="font-sans text-sm font-semibold">{source.label}</h3>
+                <h3 className="text-label font-semibold text-foreground">{source.label}</h3>
                 <p className="mt-1 text-xs text-muted-foreground">{source.agency}</p>
               </div>
               <span className="rounded-md border border-border px-2 py-1 text-xs">
@@ -50,7 +50,7 @@ export function RegulatoryCoverage({ overview }: { overview: RegulatoryOverview 
       </div>
       <section className={panelClass}>
         <div className="border-b border-border p-3">
-          <h2 className="font-sans text-sm font-semibold">Recent collection runs</h2>
+          <h2 className="text-heading font-semibold text-foreground">Recent collection runs</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Incomplete and failed windows are operational gaps, not evidence that activity declined.
           </p>

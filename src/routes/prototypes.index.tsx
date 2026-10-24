@@ -58,10 +58,10 @@ function Page() {
         {EXAMPLES.map((e) => (
           <section
             key={e.title}
-            className="rounded-lg border border-border bg-surface p-4"
+            className="rounded-xl border border-border bg-card shadow-xs p-4"
             aria-label={e.title}
           >
-            <h2 className="font-sans text-sm font-semibold">{e.title}</h2>
+            <h2 className="text-heading font-semibold text-foreground">{e.title}</h2>
             <p className="mt-1 text-xs text-muted-foreground">{e.note}</p>
             <ul className="mt-3 space-y-1 text-sm">
               {e.links.map((l) => (

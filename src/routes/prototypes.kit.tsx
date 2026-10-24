@@ -498,7 +498,7 @@ function Specimens({ panel }: { panel: string }) {
         name="HeaderStrip + HeaderMenu"
         note="the one header: breadcrumb, title, a menu of links and dropdown panels, search, Ask AI. The Caseload panel is open; below 768 px the menu is one button that opens a sheet"
       >
-        <div className="min-h-[27rem] overflow-visible rounded-xl border border-border bg-background">
+        <div className="min-h-[27rem] overflow-visible rounded-xl border border-border bg-card shadow-xs">
           <HeaderStrip
             title="Courts & judges"
             description="Federal, state and tribal courts, and the judges who sit on them."
@@ -536,7 +536,7 @@ function Specimens({ panel }: { panel: string }) {
         name="HeaderStrip, phone width"
         note="below 768 px the menu is one button labelled with the current page; it opens a sheet with every destination and its line"
       >
-        <div className="w-[390px] max-w-full overflow-hidden rounded-xl border border-border bg-background">
+        <div className="w-[390px] max-w-full overflow-hidden rounded-xl border border-border bg-card shadow-xs">
           <HeaderStrip
             compact
             titleAs="h2"

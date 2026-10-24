@@ -145,7 +145,7 @@ export function CfrBlocks({ blocks, label }: { blocks: CfrBlock[]; label: string
 export function CfrNotes({ notes, title }: { notes: CfrNote[]; title: string }) {
   if (!notes.length) return null;
   return (
-    <section aria-label={title} className="rounded-lg border border-border bg-surface p-4">
+    <section aria-label={title} className="rounded-xl border border-border bg-card shadow-xs p-4">
       <h2 className="eyebrow mb-2">{title}</h2>
       <dl className="m-0 grid grid-cols-1 gap-y-2 text-[12px] sm:grid-cols-[9rem_1fr] sm:gap-x-3">
         {notes.map((n, k) => (

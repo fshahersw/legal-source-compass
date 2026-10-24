@@ -116,9 +116,9 @@ function EdgeList({ title, edges, empty }: { title: string; edges: FlowEdge[]; e
 function Panel({ f }: { f: JudgeMdlFlows }) {
   const received = f.received.length > 0 || !!f.transferee;
   return (
-    <section className="mb-5 rounded-lg border border-border bg-surface" aria-label="MDL transfers">
+    <section className="mb-5 rounded-xl border border-border bg-card shadow-xs" aria-label="MDL transfers">
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
-        <h2 className="font-sans text-sm font-semibold">
+        <h2 className="text-heading font-semibold text-foreground">
           MDL transfers{" "}
           <span className="font-normal text-muted-foreground">
             · judge to judge, by exact person

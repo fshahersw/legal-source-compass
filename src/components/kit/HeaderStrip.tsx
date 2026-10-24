@@ -123,7 +123,7 @@ function MobileMenu({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         className={cn(
-          "inline-flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-surface px-3 text-[13px] font-medium text-foreground shadow-xs hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
+          "inline-flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-xl border border-border bg-card shadow-xs px-3 text-[13px] font-medium text-foreground shadow-xs hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring",
           !always && "md:hidden",
         )}
         aria-label={`${label}: ${current}`}

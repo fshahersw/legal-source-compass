@@ -294,7 +294,7 @@ export function PlacesMap({
               }}
             />
           ) : (
-            <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card text-sm text-muted-foreground shadow-xs">
+            <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card shadow-xs text-sm text-muted-foreground shadow-xs">
               <MapPin className="size-8 opacity-50" />
               <p role="status">
                 {corpus.error ? "The map is temporarily unavailable." : "Preparing the state map…"}
@@ -315,9 +315,9 @@ export function PlacesMap({
                 return (
                   <section
                     aria-label="Highest and lowest states against the median"
-                    className="rounded-lg border border-border bg-card p-3"
+                    className="rounded-xl border border-border bg-card shadow-xs p-3"
                   >
-                    <h3 className="text-sm font-semibold">
+                    <h3 className="text-label font-semibold text-foreground">
                       Highest and lowest 5 states against the median
                     </h3>
                     <p className="mb-2 text-xs text-muted-foreground">
@@ -387,7 +387,7 @@ export function PlacesMap({
             </div>
           ) : null}
           <div
-            className="rounded-xl border border-border bg-card px-4 py-2.5 shadow-xs"
+            className="rounded-xl border border-border bg-card shadow-xs px-4 py-2.5 shadow-xs"
             data-testid="map-about"
           >
             <SourceFooter

@@ -106,7 +106,7 @@ function Panel({ d }: { d: DistrictPanel }) {
   const flags = [...d.flags, ...(t?.flags ?? [])].sort((a, b) => b.year - a.year);
   return (
     <section
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
       aria-labelledby="caseload-history-title"
     >
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border/70 px-3 py-2">

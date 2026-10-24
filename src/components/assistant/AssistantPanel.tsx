@@ -455,7 +455,7 @@ export function AssistantPanel() {
       onKeyDown={(e) => {
         if (e.key === "Escape") setMode("collapsed");
       }}
-      className="fixed z-50 flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-2xl print:hidden"
+      className="fixed z-50 flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-2xl print:hidden"
       style={{
         ...style,
         width: `min(${size.w}px, calc(100vw - 16px))`,
@@ -577,7 +577,7 @@ export function AssistantPanel() {
                 ))}
               </ul>
             ) : null}
-            <div className="rounded-lg border border-border bg-background focus-within:border-ring">
+            <div className="rounded-xl border border-border bg-card shadow-xs focus-within:border-ring">
               {section ? (
                 <SectionChip
                   section={section.ctx}

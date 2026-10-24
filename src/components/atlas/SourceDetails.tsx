@@ -74,12 +74,12 @@ export function SourceDetails({ source }: { source: DetailSource }) {
   }
 
   return (
-    <article className="max-w-5xl overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+    <article className="max-w-5xl overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-card">
       {source ? (
         <>
           <header className="border-b border-border p-5">
             <div className="eyebrow">{source.source_family || "Unclassified family"}</div>
-            <h2 className="text-base leading-snug">{source.title || "(untitled source)"}</h2>
+            <h2 className="text-heading  text-foreground">{source.title || "(untitled source)"}</h2>
             <p className="mono-cell break-all">{source.url}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {source.jurisdiction ? (

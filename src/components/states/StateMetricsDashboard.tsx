@@ -335,7 +335,7 @@ function Dashboard({
 
   return (
     <div className="min-w-0 space-y-3">
-      <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+      <div className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-card shadow-xs px-3 py-2">
         <MetricSelect
           id="state-metric"
           label="Metric"
@@ -698,7 +698,7 @@ function Dashboard({
       </div>
 
       <section
-        className="rounded-lg border border-border bg-surface px-3 py-2 text-xs"
+        className="rounded-xl border border-border bg-card shadow-xs px-3 py-2 text-xs"
         aria-label="Definition and sources"
       >
         <h3 className="flex items-center gap-1.5 text-[13px] font-semibold">

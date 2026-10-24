@@ -134,7 +134,7 @@ function NotInBulk({
       aria-label="What is not in the bulk files"
       className="scroll-mt-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 focus:outline-none"
     >
-      <h3 className="text-sm font-semibold leading-5">
+      <h3 className="text-label font-semibold  text-foreground">
         Attorneys, law firms, parties, roles, docket entries and RECAP documents are not in the bulk
         files
       </h3>

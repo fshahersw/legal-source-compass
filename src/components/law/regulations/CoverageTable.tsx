@@ -15,7 +15,7 @@ export function CoverageTable({ codes }: { codes: RegCode[] }) {
     ),
   );
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
       <table className="w-full min-w-[44rem] border-collapse text-left text-[13px]">
         <caption className="sr-only">
           State administrative codes: publisher, access and coverage

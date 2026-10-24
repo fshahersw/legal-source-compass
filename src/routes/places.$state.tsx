@@ -302,8 +302,8 @@ function StatePage() {
         <section className="space-y-3">
           <div className="resource-panel">
             <div className="research-band">
-              <h2 className="text-sm font-semibold">County resources</h2>
-              <span className="text-xs text-[var(--navy-muted)]">{state.name}</span>
+              <h2 className="text-heading font-semibold text-foreground">County resources</h2>
+              <span className="text-xs text-muted-foreground">{state.name}</span>
             </div>
             <p className="px-3 py-2 text-xs text-muted-foreground">
               Choose a county to see its Census figures and available resources.

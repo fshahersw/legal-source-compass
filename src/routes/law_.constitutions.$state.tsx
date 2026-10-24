@@ -124,7 +124,7 @@ function Facts({ c, dropped }: { c: Constitution; dropped: number }) {
   return (
     <section
       aria-label="Source"
-      className="mb-4 rounded-lg border border-border bg-surface px-4 py-3"
+      className="mb-4 rounded-xl border border-border bg-card shadow-xs px-4 py-3"
     >
       <dl className="m-0 grid gap-x-6 gap-y-1.5 text-xs sm:grid-cols-2 xl:grid-cols-4">
         <Fact label="Publisher" value={c.publisher ?? "Not recorded"} />
@@ -203,7 +203,7 @@ function Body({
       <nav
         aria-label="Articles"
         hidden={single}
-        className="self-start rounded-lg border border-border bg-surface lg:sticky lg:top-2"
+        className="self-start rounded-xl border border-border bg-card shadow-xs lg:sticky lg:top-2"
       >
         <p className="eyebrow m-0 border-b border-border/70 px-3 py-2">Articles</p>
         <ul className="m-0 max-h-[70vh] list-none overflow-auto p-1">
@@ -308,7 +308,7 @@ function StateSearch({ state, q }: { state: string; q: string }) {
   return (
     <section
       aria-label="Matching provisions"
-      className="rounded-lg border border-border bg-surface"
+      className="rounded-xl border border-border bg-card shadow-xs"
     >
       <p className="m-0 border-b border-border/70 px-3 py-2 text-[11px] text-muted-foreground">
         {(found.data.total ?? found.data.hits.length).toLocaleString("en-US")} provisions match
@@ -373,9 +373,9 @@ function ArticleText({
     document.getElementById(hash)?.scrollIntoView({ block: "start" });
   }, [hash, loading]);
   return (
-    <section aria-label={label} className="rounded-lg border border-border bg-surface">
+    <section aria-label={label} className="rounded-xl border border-border bg-card shadow-xs">
       <header className="border-b border-border/70 px-4 py-2.5">
-        <h2 className="m-0 text-sm font-semibold">
+        <h2 className="m-0 text-heading font-semibold text-foreground">
           {label}
           {group.title ? (
             <span className="font-normal text-muted-foreground"> · {oneLine(group.title)}</span>

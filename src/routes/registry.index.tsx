@@ -32,7 +32,7 @@ function RegistryPage() {
               {rows.length} of {q.data.matters.length} matters · {q.data.attorneys.length} attorneys · {q.data.courts.size} courts
             </span>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
             <table className="w-full text-[12px]">
               <thead className="text-left text-[11px] text-muted-foreground">
                 <tr><th className="px-3 py-2">Case</th><th className="px-3 py-2">Docket</th><th className="px-3 py-2">Court</th><th className="px-3 py-2">Status</th><th className="px-3 py-2">Filed</th><th className="px-3 py-2">Terminated</th><th className="px-3 py-2">Parties</th></tr>

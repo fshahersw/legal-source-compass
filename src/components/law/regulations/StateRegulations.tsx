@@ -85,7 +85,7 @@ export function SourceStrip({ code }: { code: RegCode }) {
   return (
     <section
       aria-label="Source"
-      className="mb-3 rounded-lg border border-border bg-surface px-4 py-2.5 text-xs"
+      className="mb-3 rounded-xl border border-border bg-card shadow-xs px-4 py-2.5 text-xs"
     >
       <p className="m-0 flex flex-wrap items-baseline gap-x-3 gap-y-1 leading-relaxed">
         <Official href={code.codeUrl}>Official {code.codeName}</Official>
@@ -208,7 +208,7 @@ export function ContentsPanel({ state, node }: { state: string; node: string | u
         </p>
       ) : null}
       {nodes.length ? (
-        <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+        <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-xs">
           {nodes.map((n) => (
             <li
               key={n.id}
@@ -245,7 +245,7 @@ export function ContentsPanel({ state, node }: { state: string; node: string | u
       {first.rules.length ? (
         <section aria-label="Rules" className="mt-3">
           <h2 className="eyebrow mb-1">Rules</h2>
-          <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-xs">
             {first.rules.map((r) => (
               <RuleRow key={r.id} r={r} />
             ))}
@@ -278,7 +278,7 @@ export function RuleReader({ id }: { id: string }) {
     <article aria-label={r.citation} className="max-w-3xl">
       <Crumbs state={r.state} path={v.path} />
       <header className="mb-3">
-        <h2 className="text-base font-semibold leading-snug">
+        <h2 className="text-heading font-semibold  text-foreground">
           {r.citation}
           {r.heading ? <span className="font-normal"> {r.heading}</span> : null}
         </h2>
@@ -309,7 +309,7 @@ export function RuleReader({ id }: { id: string }) {
         </dl>
       </header>
       {r.text ? (
-        <div className="whitespace-pre-line rounded-lg border border-border bg-surface px-4 py-3 text-[14px] leading-relaxed">
+        <div className="whitespace-pre-line rounded-xl border border-border bg-card shadow-xs px-4 py-3 text-[14px] leading-relaxed">
           {r.text}
         </div>
       ) : (
@@ -416,7 +416,7 @@ export function SearchPanel({
           {res.data.exact ? (
             <section aria-label="Citation" className="mb-3">
               <h2 className="eyebrow mb-1">Citation</h2>
-              <ul className="rounded-lg border border-border bg-surface">
+              <ul className="rounded-xl border border-border bg-card shadow-xs">
                 <RuleRow r={res.data.exact} />
               </ul>
             </section>
@@ -449,7 +449,7 @@ export function SearchPanel({
             </div>
           ) : null}
           {res.data.hits.length ? (
-            <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+            <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-xs">
               {res.data.hits.map((h) => (
                 <li key={h.id} className="px-3 py-2 text-[13px]">
                   <Link
@@ -545,7 +545,7 @@ export function RegisterPanel({ code }: { code: RegCode }) {
           {years.slice(0, 3).map((y) => (
             <section key={y.year} aria-label={`${y.year} issues`}>
               <h2 className="eyebrow mb-1">{y.year}</h2>
-              <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+              <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-xs">
                 {y.issues.map((i) => (
                   <li
                     key={i.id}

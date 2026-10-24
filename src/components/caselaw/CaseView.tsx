@@ -27,7 +27,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 export function CaseFacts({ r }: { r: CaseRecord }) {
   const scdb = r.scdb;
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 shadow-card">
+    <section className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
       <dl className="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-1 text-[12px] md:grid-cols-[9rem_1fr_9rem_1fr]">
         <Fact label="Citations">{r.citations.length ? r.citations.join(" · ") : NOT_RECORDED}</Fact>
         <Fact label="Court">{r.court}</Fact>
@@ -121,7 +121,7 @@ function OpinionTab({
   return (
     <article
       aria-label={label}
-      className="rounded-lg border border-border bg-surface p-4 shadow-card"
+      className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card"
     >
       <p className="mb-3 text-[12px] text-muted-foreground">
         {[

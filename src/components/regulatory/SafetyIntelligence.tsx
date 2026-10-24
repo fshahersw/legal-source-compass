@@ -91,7 +91,7 @@ function InsightCard({ insight }: { insight: SafetyInsight }) {
   const [open, setOpen] = useState(false);
   const detailId = `insight-${insight.id}`;
   return (
-    <li className="rounded-lg border border-border bg-surface">
+    <li className="rounded-xl border border-border bg-card shadow-xs">
       <div className="flex items-start gap-3 p-3">
         <Mark agency={insight.agency} className="size-9" />
         <div className="min-w-0 flex-1">
@@ -250,7 +250,7 @@ function SignalMix({
   }).filter((r) => r.total > 0);
   const max = Math.max(1, ...rows.map((r) => r.total));
   return (
-    <section className="rounded-lg border border-border bg-surface p-3" aria-label="Signal mix">
+    <section className="rounded-xl border border-border bg-card shadow-xs p-3" aria-label="Signal mix">
       <h3 className="text-[12px] font-semibold">Signal mix</h3>
       <ul className="mt-2 space-y-1.5">
         {rows.map((r) => (
@@ -292,7 +292,7 @@ function RisingThemes({ insights }: { insights: SafetyInsight[] }) {
   const max = Math.max(...themes.map((t) => t.metric.ratio ?? 0), 1);
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-3"
+      className="rounded-xl border border-border bg-card shadow-xs p-3"
       aria-label="Fastest-rising hazard themes"
     >
       <h3 className="text-[12px] font-semibold">Fastest-rising hazard themes</h3>

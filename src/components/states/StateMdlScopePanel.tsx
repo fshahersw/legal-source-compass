@@ -25,11 +25,11 @@ export function StateMdlScopePanel({ usps }: { usps: string }) {
   return (
     <section className="resource-panel" aria-label="MDL cases that started here">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Network className="size-4" aria-hidden />
           MDL cases that started here
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">Matter registry</span>
+        <span className="text-[11px] text-muted-foreground">Matter registry</span>
       </div>
       {q.isPending ? (
         <p role="status" aria-busy="true" className="px-3 py-5 text-xs text-muted-foreground">

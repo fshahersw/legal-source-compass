@@ -59,7 +59,7 @@ function Explore({
   return (
     <section className="resource-panel" aria-label={`Compare ${stateName}`}>
       <div className="research-band">
-        <h3 className="flex items-center gap-2 font-sans text-sm font-semibold">
+        <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
           <MapPin className="size-4" aria-hidden />
           Compare within and across states
         </h3>

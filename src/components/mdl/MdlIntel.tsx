@@ -213,7 +213,7 @@ function Dashboard({ data }: { data: Data }) {
         </div>
         <div className="overflow-hidden rounded-md border border-border bg-surface">
           <div className="border-b border-border/70 px-3 py-2">
-            <h2 className="text-sm font-semibold">
+            <h2 className="text-heading font-semibold text-foreground">
               Time from JPML transfer to the earliest quoted bellwether-trial date
             </h2>
             <p className="text-xs text-muted-foreground">

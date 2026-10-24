@@ -38,7 +38,7 @@ export function SourceTable({
   onSort: (key: SortKey) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-card">
       <Table className="text-[13px]">
         <TableHeader>
           <TableRow className="border-border bg-muted/60 hover:bg-muted/60">

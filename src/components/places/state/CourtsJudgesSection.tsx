@@ -23,11 +23,11 @@ function Band({
 }) {
   return (
     <div className="research-band">
-      <h3 className="flex items-center gap-2 font-sans text-sm font-semibold">
+      <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
         {icon}
         {title}
       </h3>
-      {note ? <span className="text-[11px] text-[var(--navy-muted)]">{note}</span> : null}
+      {note ? <span className="text-[11px] text-muted-foreground">{note}</span> : null}
     </div>
   );
 }

@@ -28,7 +28,7 @@ export function CourtHeroStrip({ courtId, title }: { courtId: string; title: str
   return (
     <section
       aria-label="Court building and seal"
-      className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface p-2.5"
+      className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card shadow-xs p-2.5"
     >
       <div className="relative aspect-[3/2] w-24 shrink-0 overflow-hidden rounded border border-border bg-muted/40">
         {q.isPending ? (

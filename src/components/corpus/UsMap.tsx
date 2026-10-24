@@ -108,7 +108,7 @@ export function UsMap({
             County boundaries
           </button>
         ) : (
-          <span className="text-[11px] text-[var(--navy-muted)]">{counties.length} areas</span>
+          <span className="text-[11px] text-muted-foreground">{counties.length} areas</span>
         )}
       </div>
       <svg

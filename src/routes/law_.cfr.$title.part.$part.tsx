@@ -85,7 +85,7 @@ function CfrPartPage() {
           {p ? (
             <section
               aria-label="Part"
-              className="rounded-lg border border-border bg-surface px-4 py-3 text-[12px]"
+              className="rounded-xl border border-border bg-card shadow-xs px-4 py-3 text-[12px]"
             >
               <p className="m-0 leading-relaxed">
                 {p.path
@@ -122,16 +122,16 @@ function CfrPartPage() {
           {p?.blocks.length ? (
             <section
               aria-label="Text printed for the part"
-              className="rounded-lg border border-border bg-surface p-4"
+              className="rounded-xl border border-border bg-card shadow-xs p-4"
             >
               <h2 className="eyebrow mb-2">Text printed for the part</h2>
               <CfrBlocks blocks={p.blocks} label="Part text" />
             </section>
           ) : null}
           {items.length ? (
-            <section aria-label="Sections" className="rounded-lg border border-border bg-surface">
+            <section aria-label="Sections" className="rounded-xl border border-border bg-card shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-4 py-2">
-                <h2 className="m-0 text-sm font-semibold">Sections and appendices</h2>
+                <h2 className="m-0 text-heading font-semibold text-foreground">Sections and appendices</h2>
                 <input
                   aria-label="Filter sections"
                   value={filter}

@@ -21,7 +21,7 @@ export function StateLegislationPanel({ usps }: { usps: string }) {
   return (
     <section className="resource-panel" aria-label="State legislation">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <ScrollText className="size-4" aria-hidden />
           Legislation
         </h2>

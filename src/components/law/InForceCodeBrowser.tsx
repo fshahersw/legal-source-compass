@@ -62,7 +62,7 @@ function EditionHeader({ edition }: { edition: StateLawEdition }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 className="font-sans text-sm font-semibold">{edition.codeName}</h2>
+        <h2 className="text-heading font-semibold text-foreground">{edition.codeName}</h2>
         {edition.editionLabel ? (
           <span className="text-xs text-muted-foreground">{edition.editionLabel}</span>
         ) : null}
@@ -230,7 +230,7 @@ export function InForceCodeBrowser({
 
   return (
     <section className="space-y-4" aria-label="In-force statutes">
-      <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+      <div className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
         <div className="flex flex-wrap items-start justify-between gap-4">
           {edition ? (
             <EditionHeader edition={edition} />
@@ -363,7 +363,7 @@ export function InForceCodeBrowser({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)]">
-        <div className="flex flex-col rounded-lg border border-border bg-surface shadow-card lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+        <div className="flex flex-col rounded-xl border border-border bg-card shadow-xs shadow-card lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
           <div className="space-y-2 border-b border-border p-3">
             <nav
               aria-label="Outline position"
@@ -486,7 +486,7 @@ export function InForceCodeBrowser({
         </div>
 
         <article
-          className="min-h-[16rem] rounded-lg border border-border bg-surface p-4 shadow-card"
+          className="min-h-[16rem] rounded-xl border border-border bg-card shadow-xs p-4 shadow-card"
           aria-label="Section text"
           data-testid="inforce-reader"
         >
@@ -506,7 +506,7 @@ export function InForceCodeBrowser({
             <div className="space-y-3">
               <header className="space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-sans text-base font-semibold">
+                  <h3 className="text-label font-semibold text-foreground">
                     {openSection.section.citation}
                   </h3>
                   <StatusBadge status={openSection.section.status} />

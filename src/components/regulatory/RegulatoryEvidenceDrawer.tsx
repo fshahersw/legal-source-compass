@@ -90,7 +90,7 @@ export function RegulatoryEvidenceDrawer({
             ) : (
               <>
                 <div>
-                  <h2 className="font-sans text-lg font-semibold leading-6">
+                  <h2 className="text-heading font-semibold  text-foreground">
                     {record?.title ?? `Record ${nativeId}`}
                   </h2>
                   <div className="mt-2">
@@ -130,7 +130,7 @@ export function RegulatoryEvidenceDrawer({
                 ) : (
                   <>
                     <section className="space-y-2">
-                      <h3 className="font-sans text-sm font-semibold">Why this is here</h3>
+                      <h3 className="text-label font-semibold text-foreground">Why this is here</h3>
                       <p className="text-sm leading-5">
                         {event?.reason ??
                           "This is a retained source version. An associated change event is not available in this response."}
@@ -143,7 +143,7 @@ export function RegulatoryEvidenceDrawer({
                       )}
                     </section>
                     <section>
-                      <h3 className="mb-2 font-sans text-sm font-semibold">
+                      <h3 className="mb-2 text-label font-semibold text-foreground">
                         Exact retained excerpt
                       </h3>
                       {record.evidence_excerpt ? (
@@ -161,7 +161,7 @@ export function RegulatoryEvidenceDrawer({
                       </p>
                     </section>
                     <section>
-                      <h3 className="mb-2 font-sans text-sm font-semibold">What changed</h3>
+                      <h3 className="mb-2 text-label font-semibold text-foreground">What changed</h3>
                       {event?.changedFields.length ? (
                         <div className="space-y-3">
                           {!previous && (
@@ -206,7 +206,7 @@ export function RegulatoryEvidenceDrawer({
                       )}
                     </section>
                     <section>
-                      <h3 className="mb-2 font-sans text-sm font-semibold">
+                      <h3 className="mb-2 text-label font-semibold text-foreground">
                         Dates and source identity
                       </h3>
                       <Metadata
@@ -229,7 +229,7 @@ export function RegulatoryEvidenceDrawer({
                     </section>
                     {record.entity_refs.length > 0 && (
                       <section>
-                        <h3 className="mb-2 font-sans text-sm font-semibold">
+                        <h3 className="mb-2 text-label font-semibold text-foreground">
                           Recorded entity references
                         </h3>
                         <ul className="space-y-2 text-sm">
@@ -249,7 +249,7 @@ export function RegulatoryEvidenceDrawer({
                       </section>
                     )}
                     <section>
-                      <h3 className="mb-2 font-sans text-sm font-semibold">
+                      <h3 className="mb-2 text-label font-semibold text-foreground">
                         Uncertainties and next review
                       </h3>
                       <Qualifications

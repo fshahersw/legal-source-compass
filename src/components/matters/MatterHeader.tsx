@@ -308,7 +308,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
   return (
     <section
       aria-label="Master docket header"
-      className="rounded-lg border border-border bg-surface shadow-card"
+      className="rounded-xl border border-border bg-card shadow-xs shadow-card"
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border px-4 py-2.5">
         <span className="font-display text-[15px] font-semibold">MDL {o.mdl}</span>

@@ -81,7 +81,7 @@ export function CountyChoropleth({
         <span id={headingId} className="truncate text-xs font-medium">
           {title}
         </span>
-        <span className="shrink-0 text-[11px] text-[var(--navy-muted)]">
+        <span className="shrink-0 text-[11px] text-muted-foreground">
           {counties.length} areas
         </span>
       </div>

@@ -12,7 +12,7 @@ import { useCourtDirectory } from "@/lib/external/useDirectory";
 export function ChartTable({ title, chart, table }: { title: string; chart: ReactNode; table: ReactNode }) {
   const [mode, setMode] = useState<"chart" | "table">("chart");
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 shadow-card">
+    <section className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
       <div className="mb-2 flex items-center justify-between gap-2">
         <h3 className="eyebrow">{title}</h3>
         <div className="inline-flex rounded-md border border-border p-0.5 text-[11px]">
@@ -83,7 +83,7 @@ export function CaseAnalytics({ rows, masterMap, onPick, compact }: { rows: Cata
       } table={<T head={["Firm / filing year", "Median days", "Closed cases"]} rows={[...a.closeFirm.map((x) => [x.label, x.median, x.n]), ...a.closeYear.map((x) => [x.label, x.median, x.n])]} />} />
 
       {!compact ? (
-        <section className="rounded-lg border border-border bg-surface p-4 shadow-card lg:col-span-2">
+        <section className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card lg:col-span-2">
           <h3 className="eyebrow mb-2">Cases by court state</h3>
           {corpus.geo && courts.data ? (
             <>

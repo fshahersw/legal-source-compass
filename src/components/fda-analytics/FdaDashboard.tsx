@@ -261,7 +261,7 @@ export function FdaDashboard({ search, onSearch }: Props) {
       ) : !snapshot && !data.isError ? (
         <div className="flex min-h-60 flex-col items-center justify-center gap-2 rounded-md border border-border bg-surface p-4 text-center">
           <Database className="size-6 text-muted-foreground" aria-hidden />
-          <h2 className="text-base font-semibold">No verified FDA snapshot is published</h2>
+          <h2 className="text-heading font-semibold text-foreground">No verified FDA snapshot is published</h2>
           <p className="max-w-lg text-sm text-muted-foreground">
             Charts will appear when a protected aggregate capture is available.
           </p>
@@ -826,7 +826,7 @@ function InventoryPanel({
   return (
     <section className="space-y-2" aria-label="FDA catalog inventories">
       <div className="flex items-center justify-between gap-2 px-1 pt-1">
-        <h2 className="font-sans text-sm font-semibold">Catalog & source inventories</h2>
+        <h2 className="text-heading font-semibold text-foreground">Catalog & source inventories</h2>
         <span className="text-xs text-muted-foreground">
           Snapshot scope · independent of date selection
         </span>

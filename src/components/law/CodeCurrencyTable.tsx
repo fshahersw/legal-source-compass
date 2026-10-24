@@ -46,7 +46,7 @@ export function CodeCurrencyTable({
           ? `${editions.length.toLocaleString()} in-force editions from official government publishers are loaded. Currency is each publisher's own statement, quoted.`
           : "The in-force layer has not been loaded yet; the captured editions below remain browsable."}
       </p>
-      <div className="mt-2 max-h-[28rem] overflow-auto rounded-lg border border-border bg-surface shadow-card">
+      <div className="mt-2 max-h-[28rem] overflow-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
         <Table className="table-fixed text-xs">
           <TableHeader>
             <TableRow>

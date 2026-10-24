@@ -74,7 +74,7 @@ export function AuthCard({ notice }: { notice?: string | undefined }) {
     mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Reset password";
 
   return (
-    <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-6">
+    <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xs p-6">
       <Link to="/" className="block" aria-label={`${PRODUCT_NAME} — home`}>
         <WorkspaceBrand />
       </Link>

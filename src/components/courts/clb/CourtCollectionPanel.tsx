@@ -110,7 +110,7 @@ function Body({ c }: { c: ClbCourtCollection }) {
   const sections = buildSections(p, snapshot, c.citingRecord);
   return (
     <section
-      className="mb-5 min-w-0 rounded-lg border border-border bg-surface"
+      className="mb-5 min-w-0 rounded-xl border border-border bg-card shadow-xs"
       aria-labelledby={`${uid}-title`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">

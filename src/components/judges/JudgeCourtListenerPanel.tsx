@@ -117,11 +117,11 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
   }
   return (
     <section
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
       aria-label="Source activity"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
-        <h2 className="font-sans text-sm font-semibold">
+        <h2 className="text-heading font-semibold text-foreground">
           CourtListener{" "}
           <span className="font-normal text-muted-foreground">
             · {c.clName ?? `person ${c.clPersonId}`}

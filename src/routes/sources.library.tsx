@@ -147,7 +147,7 @@ function EndpointsPanel() {
         />
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+      <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-card">
         <Table className="text-[13px]">
           <TableHeader>
             <TableRow className="bg-muted/60 hover:bg-muted/60">

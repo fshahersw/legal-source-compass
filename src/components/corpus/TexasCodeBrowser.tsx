@@ -251,8 +251,8 @@ export function TexasCodeBrowser({
 
   return (
     <section className="space-y-4" aria-label={`${state} code browser`}>
-      <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-        <h2 className="text-lg font-semibold text-foreground">Browse {state} code text</h2>
+      <div className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
+        <h2 className="text-heading font-semibold text-foreground">Browse {state} code text</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           {sectionCount == null
             ? "Loading section count…"
@@ -335,7 +335,7 @@ export function TexasCodeBrowser({
         </p>
       ) : null}
       <div className="grid gap-4 lg:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)]">
-        <div className="space-y-3 rounded-lg border border-border bg-surface p-4 shadow-card">
+        <div className="space-y-3 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           <label className="block text-sm font-semibold" htmlFor="code-title-select">
             Code title
           </label>
@@ -437,7 +437,7 @@ export function TexasCodeBrowser({
           ) : null}
         </div>
 
-        <div className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card">
+        <div className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           {!selectedChapter ? (
             <p className="text-sm text-muted-foreground">
               Choose a code title and source document to read the captured text.
@@ -446,7 +446,7 @@ export function TexasCodeBrowser({
             <>
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
                 <div className="min-w-0">
-                  <h3 className="text-base font-semibold">{selectedChapter.title}</h3>
+                  <h3 className="text-label font-semibold text-foreground">{selectedChapter.title}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {selectedChapter.publisher_member ?? "Publisher filename not recorded"} ·
                     Retrieved {capturedDate(selectedChapter.captured_at)}

@@ -11,7 +11,7 @@ import { externalHref } from "@/lib/external/href";
 
 function Box({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="mb-5 rounded-lg border border-border bg-surface p-3 shadow-card">
+    <section className="mb-5 rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">
       <div className="mb-2 flex flex-wrap items-baseline gap-2"><h2 className="eyebrow">{title}</h2>{hint ? <span className="text-[12px] text-muted-foreground">{hint}</span> : null}</div>
       {children}
     </section>

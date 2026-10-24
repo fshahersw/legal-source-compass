@@ -114,7 +114,7 @@ function CfrIndexPage() {
                 <Link
                   to="/law/cfr/$title"
                   params={{ title: t.title }}
-                  className="flex h-full items-baseline gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-[13px] hover:bg-muted/50"
+                  className="flex h-full items-baseline gap-3 rounded-xl border border-border bg-card shadow-xs px-3 py-2 text-[13px] hover:bg-muted/50"
                 >
                   <span className="w-8 shrink-0 font-semibold tabular-nums">{t.title}</span>
                   <span className="min-w-0 flex-1">{t.name}</span>

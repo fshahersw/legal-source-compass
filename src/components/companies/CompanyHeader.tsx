@@ -39,7 +39,7 @@ export function CompanyLogo({
   if (!logo && settled && open && !openFailed)
     return (
       <span
-        className="flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-surface"
+        className="flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card shadow-xs"
         style={{ width: size, height: size }}
         title={`${TRADEMARK_NOTE} Logo: ${open.license} · Wikimedia Commons`}
       >
@@ -58,7 +58,7 @@ export function CompanyLogo({
     );
   return (
     <span
-      className="flex shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-surface text-muted-foreground"
+      className="flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card shadow-xs text-muted-foreground"
       style={{ width: size, height: size }}
       title={
         logo

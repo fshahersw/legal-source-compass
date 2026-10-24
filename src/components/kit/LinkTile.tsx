@@ -58,7 +58,7 @@ export function LinkTile({
       {...(search ? { search: search as never } : {})}
       {...(params ? { params: params as never } : {})}
       className={cn(
-        "group flex h-full min-w-0 items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-xs transition-[border-color,box-shadow] hover:border-border-strong hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "group flex h-full min-w-0 items-start gap-3 rounded-xl border border-border bg-card shadow-xs p-4 shadow-xs transition-[border-color,box-shadow] hover:border-border-strong hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
       )}
     >

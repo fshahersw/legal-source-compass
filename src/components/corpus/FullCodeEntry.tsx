@@ -37,7 +37,7 @@ export function FullCodeEntry({ state }: { state: string }) {
   return (
     <section className="resource-panel" aria-label="Full code">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-[var(--blue-tint)] px-3 py-2.5">
-        <h2 className="flex items-center gap-2 font-sans text-sm font-semibold text-primary">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-primary">
           <BookOpen className="size-4" aria-hidden />
           State statutes
         </h2>

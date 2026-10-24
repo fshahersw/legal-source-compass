@@ -155,11 +155,11 @@ function Body({ c }: { c: CountyAnalysis }) {
       ) : null}
       <section className="resource-panel" aria-label="Legal activity">
         <div className="research-band">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
             <Gavel className="size-4" aria-hidden />
             Legal activity
           </h3>
-          <span className="text-[11px] text-[var(--navy-muted)]">
+          <span className="text-[11px] text-muted-foreground">
             per 100,000 residents a year unless noted
           </span>
         </div>
@@ -275,11 +275,11 @@ function Body({ c }: { c: CountyAnalysis }) {
       </section>
       <section className="resource-panel" aria-label="People and economy">
         <div className="research-band">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
             <Scale className="size-4" aria-hidden />
             People, economy and housing across the state's counties
           </h3>
-          <span className="text-[11px] text-[var(--navy-muted)]">
+          <span className="text-[11px] text-muted-foreground">
             dot: this county · band: middle half of the state's counties
           </span>
         </div>
@@ -314,11 +314,11 @@ function Body({ c }: { c: CountyAnalysis }) {
       </section>
       <section className="resource-panel" aria-label="Cities and places in the county">
         <div className="research-band">
-          <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
             <Building2 className="size-4" aria-hidden />
             Cities and places
           </h3>
-          <span className="text-[11px] text-[var(--navy-muted)]">
+          <span className="text-[11px] text-muted-foreground">
             10,000+ residents or among the state's 15 largest
           </span>
         </div>
@@ -394,12 +394,12 @@ function DistrictLine({ c }: { c: CountyAnalysis }) {
   return (
     <section className="resource-panel" aria-label="Federal district">
       <div className="research-band">
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
+        <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
           <Landmark className="size-4" aria-hidden />
           Federal district
         </h3>
         {ds ? (
-          <span className="text-[11px] text-[var(--navy-muted)]">
+          <span className="text-[11px] text-muted-foreground">
             {ds.counties.length} counties · {formatPlaceValue(ds.population, "int")} residents
           </span>
         ) : null}

@@ -30,8 +30,8 @@ export function AreaList({ usps, stateName }: { usps: string; stateName: string 
       data-testid="area-list"
     >
       <div className="research-band">
-        <h2 className="text-sm font-semibold">{stateName} counties and equivalents</h2>
-        <span className="text-xs text-[var(--navy-muted)]">
+        <h2 className="text-heading font-semibold text-foreground">{stateName} counties and equivalents</h2>
+        <span className="text-xs text-muted-foreground">
           {q.data ? `${q.data.length} areas` : ""}
         </span>
       </div>

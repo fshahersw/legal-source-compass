@@ -136,7 +136,7 @@ function SearchPage() {
             </div>
           ) : null}
           {snapshotHits.length ? (
-            <ul className="mt-2 divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
+            <ul className="mt-2 divide-y divide-border rounded-xl border border-border bg-card shadow-xs shadow-card">
               {snapshotHits.map((hit) => (
                 <li key={`${hit.state}-${hit.id}`}>
                   <Link
@@ -161,7 +161,7 @@ function SearchPage() {
           ) : null}
         </section>
       ) : null}
-      <ul className="divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
+      <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-xs shadow-card">
         {query.isLoading ? (
           <li className="px-3 py-3 text-[13px] text-muted-foreground">Searching…</li>
         ) : null}

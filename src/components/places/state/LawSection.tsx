@@ -87,11 +87,11 @@ export function LawSection({
         data-testid="law-section"
       >
         <div className="research-band">
-          <h3 className="flex items-center gap-2 font-sans text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
             <BookOpen className="size-4" aria-hidden />
             Codes, rules and time limits
           </h3>
-          <span className="text-[11px] text-[var(--navy-muted)]">official publishers</span>
+          <span className="text-[11px] text-muted-foreground">official publishers</span>
         </div>
         <ul className="m-0 list-none divide-y divide-border/70 p-0">
           <CodeRows

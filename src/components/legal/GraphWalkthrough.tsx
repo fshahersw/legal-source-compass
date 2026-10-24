@@ -19,7 +19,7 @@ export function GraphWalkthrough({ records, edges, start }: { records: LegalReco
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   return <section className="rounded-lg border border-border p-4" aria-label="Evidence graph">
-    <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-semibold">Explore the evidence graph</h3><Button variant="outline" size="sm" onClick={exportPath}>Export cited path</Button></div>
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 className="text-label font-semibold text-foreground">Explore the evidence graph</h3><Button variant="outline" size="sm" onClick={exportPath}>Export cited path</Button></div>
     <nav aria-label="Graph path" className="mb-3 flex flex-wrap gap-1 text-xs">
       {path.map((node, index) => <span key={`${recordKey(node)}-${index}`}>{index > 0 ? " / " : ""}<button className="max-w-64 truncate text-left text-primary underline" onClick={() => { setPath(path.slice(0, index + 1)); setPathEdges(pathEdges.slice(0, index)); }}>{node.title}</button></span>)}
     </nav>

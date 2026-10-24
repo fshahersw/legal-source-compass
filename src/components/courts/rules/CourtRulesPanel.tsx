@@ -54,9 +54,9 @@ export function CourtRulesPanel({ courtId }: { courtId: string }) {
   const points = docs.reduce((n, d) => n + d.insights, 0);
   const active = tab ?? (points ? "points" : "documents");
   return (
-    <section aria-label="Court rules" className="mb-5 rounded-lg border border-border bg-surface">
+    <section aria-label="Court rules" className="mb-5 rounded-xl border border-border bg-card shadow-xs">
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-3">
-        <h2 className="m-0 text-sm font-semibold">Court rules</h2>
+        <h2 className="m-0 text-heading font-semibold text-foreground">Court rules</h2>
         <p className="m-0 text-xs text-muted-foreground">
           {plural(docs.length, "rule document")} from official publishers
           {points ? ` · ${plural(points, "practice point")} with quotes` : ""}
@@ -117,9 +117,9 @@ function EmptyRules() {
   return (
     <section
       aria-label="Court rules"
-      className="mb-5 flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border bg-surface px-4 py-3"
+      className="mb-5 flex flex-wrap items-baseline justify-between gap-2 rounded-xl border border-border bg-card shadow-xs px-4 py-3"
     >
-      <h2 className="m-0 text-sm font-semibold">Court rules</h2>
+      <h2 className="m-0 text-heading font-semibold text-foreground">Court rules</h2>
       <p className="m-0 text-xs text-muted-foreground">
         No rules of court are recorded for this court.{" "}
         <Link

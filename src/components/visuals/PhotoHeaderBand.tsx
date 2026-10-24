@@ -40,7 +40,7 @@ export function PhotoHeaderBand({
     <figure
       aria-label={label}
       className={cn(
-        "m-0 flex flex-col gap-3 rounded-lg border border-border bg-surface p-2.5 sm:flex-row sm:gap-4",
+        "m-0 flex flex-col gap-3 rounded-xl border border-border bg-card shadow-xs p-2.5 sm:flex-row sm:gap-4",
         className,
       )}
     >

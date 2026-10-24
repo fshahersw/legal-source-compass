@@ -123,7 +123,7 @@ export function Section({
       className="min-w-0 rounded-md border border-border bg-surface"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-3 py-2">
-        <h2 className="m-0 text-sm font-semibold">{title}</h2>
+        <h2 className="m-0 text-heading font-semibold text-foreground">{title}</h2>
         {aside ? <span className="text-[11px] text-muted-foreground">{aside}</span> : null}
       </div>
       <div className="px-3 py-2.5">{children}</div>

@@ -203,7 +203,7 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
         />
       ) : null}
 
-      <details className="rounded-lg border border-border bg-surface px-4 py-3 shadow-card">
+      <details className="rounded-xl border border-border bg-card shadow-xs px-4 py-3 shadow-card">
         <summary className="cursor-pointer font-medium">
           Source & coverage details
           {payload.master?.sourceAsOf ? (

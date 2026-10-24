@@ -111,7 +111,7 @@ function ConstitutionsPage() {
                   {(found.data.total ?? found.data.hits.length).toLocaleString("en-US")} provisions
                   match. Showing {found.data.hits.length}, in state order.
                 </p>
-                <ul className="mt-2 divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
+                <ul className="mt-2 divide-y divide-border rounded-xl border border-border bg-card shadow-xs shadow-card">
                   {found.data.hits.map((h) => (
                     <li key={h.id} className="px-3 py-2">
                       <Link

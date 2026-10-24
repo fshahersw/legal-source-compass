@@ -90,7 +90,7 @@ function AgencyProvenance({ id, asOf }: { id: string; asOf: string | null }) {
   const dataset = source.data?.find((row) => row.id === "federal_register_history");
   return (
     <section className="mt-4 rounded-md border border-border bg-surface p-3">
-      <h2 className="text-sm font-semibold">Source and coverage</h2>
+      <h2 className="text-heading font-semibold text-foreground">Source and coverage</h2>
       <dl className="mt-2 grid gap-3 text-[12px] sm:grid-cols-3">
         <div>
           <dt className="text-muted-foreground">Federal Register agency ID</dt>

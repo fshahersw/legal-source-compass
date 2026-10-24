@@ -54,10 +54,10 @@ export function CourtLocationsPanel({ courtId }: { courtId: string }) {
   return (
     <section
       aria-label="Courthouse locations"
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-3">
-        <h2 className="m-0 text-sm font-semibold">Courthouse locations</h2>
+        <h2 className="m-0 text-heading font-semibold text-foreground">Courthouse locations</h2>
         <p className="m-0 text-xs text-muted-foreground">
           {data.locations.length} address{data.locations.length === 1 ? "" : "es"} in {cities.size}{" "}
           {cities.size === 1 ? "city" : "cities"}, as published by the court

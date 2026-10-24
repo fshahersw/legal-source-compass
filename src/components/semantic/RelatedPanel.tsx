@@ -28,7 +28,7 @@ function Frame({
   return (
     <section
       aria-label={`${heading} items`}
-      className={cn("rounded-lg border border-border bg-surface shadow-card", className)}
+      className={cn("rounded-xl border border-border bg-card shadow-xs shadow-card", className)}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-2 border-b border-border px-3 py-2">
         <h2 className="eyebrow">{heading}</h2>

@@ -55,7 +55,7 @@ export function StateCodeCoverage() {
             {counts.captured.toLocaleString()} available · {counts.private.toLocaleString()}{" "}
             in review · {counts.missing.toLocaleString()} not yet captured
           </p>
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
             <table className="w-full text-left text-[13px]">
               <thead className="bg-muted/50 text-[11px] text-muted-foreground">
                 <tr>

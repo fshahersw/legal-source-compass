@@ -127,7 +127,7 @@ function TitleFacts({ t }: { t: UscTitleDetail }) {
   return (
     <section
       aria-label="Source"
-      className="mb-4 rounded-lg border border-border bg-surface px-4 py-3"
+      className="mb-4 rounded-xl border border-border bg-card shadow-xs px-4 py-3"
     >
       <dl className="m-0 grid gap-x-6 gap-y-1.5 text-xs sm:grid-cols-2 xl:grid-cols-4">
         <Fact label="Release point">{t.release ?? "Not recorded"}</Fact>
@@ -221,7 +221,7 @@ function TitleHits({ title, q }: { title: string; q: string }) {
   return (
     <section
       aria-label="Matching sections"
-      className="mb-4 rounded-lg border border-border bg-surface"
+      className="mb-4 rounded-xl border border-border bg-card shadow-xs"
     >
       {found.isLoading ? (
         <p className="m-0 px-3 py-2 text-xs text-muted-foreground">Searching Title {title}…</p>
@@ -379,7 +379,7 @@ function Outline({
     <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
       <nav
         aria-label="Outline"
-        className="self-start rounded-lg border border-border bg-surface lg:sticky lg:top-2"
+        className="self-start rounded-xl border border-border bg-card shadow-xs lg:sticky lg:top-2"
       >
         <p className="eyebrow m-0 border-b border-border/70 px-3 py-2">Outline</p>
         <div className="max-h-[70vh] overflow-auto p-1">
@@ -429,7 +429,7 @@ function ContainerPanel({
     staleTime: 10 * 60 * 1000,
   });
   return (
-    <section aria-label="Contents" className="min-w-0 rounded-lg border border-border bg-surface">
+    <section aria-label="Contents" className="min-w-0 rounded-xl border border-border bg-card shadow-xs">
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border/70 px-4 py-2.5">
         <h2
           className={cn(

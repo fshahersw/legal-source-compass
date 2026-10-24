@@ -33,7 +33,7 @@ export function KeyTakeaways({
       className={cn("min-w-0 rounded-md border border-border bg-surface", className)}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-border/70 px-3 py-1.5">
-        <h3 className="text-sm font-semibold leading-5">{title}</h3>
+        <h3 className="text-label font-semibold  text-foreground">{title}</h3>
         <span className="ml-auto flex items-baseline gap-3">
           {scope ? <span className="text-[11px] text-muted-foreground">{scope}</span> : null}
           <button

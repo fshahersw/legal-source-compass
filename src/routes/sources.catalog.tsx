@@ -48,7 +48,7 @@ function CatalogPage() {
       </div>
       {rows.error ? <p className="text-[13px] text-destructive">{(rows.error as Error).message}</p> : null}
       <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
-        <section className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+        <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-card">
           <table className="w-full table-fixed text-[13px]">
             <thead className="bg-muted/50 text-left text-[11px] text-muted-foreground"><tr><th className="w-1/2 px-3 py-1.5">Title</th><th className="px-3 py-1.5">Host</th><th className="px-3 py-1.5">Category</th><th className="w-10" /></tr></thead>
             <tbody>
@@ -64,7 +64,7 @@ function CatalogPage() {
           </table>
           {shown.length > 200 ? <p className="border-t border-border px-3 py-2 text-[12px] text-muted-foreground">First 200 shown — narrow with search or filters.</p> : null}
         </section>
-        <aside className="rounded-lg border border-border bg-surface p-3 text-[13px] shadow-card">
+        <aside className="rounded-xl border border-border bg-card shadow-xs p-3 text-[13px] shadow-card">
           {open ? (
             <dl className="space-y-1.5">
               <h2 className="font-medium">{open.title}</h2>

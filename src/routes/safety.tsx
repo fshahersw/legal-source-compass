@@ -37,7 +37,7 @@ const RECALL_LEAD = (
 /** The four agencies' own yearly cards, one click away under the lead charts. */
 function EachAgencyRecalls() {
   return (
-    <details className="group rounded-lg border border-border bg-card px-4 py-3">
+    <details className="group rounded-xl border border-border bg-card shadow-xs px-4 py-3">
       <summary className="cursor-pointer select-none text-sm font-medium text-foreground marker:text-muted-foreground">
         Each agency&apos;s recalls by year (4 charts)
       </summary>
