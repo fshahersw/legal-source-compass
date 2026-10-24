@@ -122,7 +122,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
         <h2 className="text-heading font-semibold text-foreground">
-          The source{" "}
+          Opinions &amp; activity{" "}
           <span className="font-normal text-muted-foreground">
             · {c.clName ?? `person ${c.clPersonId}`}
           </span>

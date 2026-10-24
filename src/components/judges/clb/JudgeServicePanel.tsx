@@ -85,7 +85,7 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
       title="Appointment, service and education"
       subtitle={
         <>
-          The source people database, Sept 30, 2026 export
+          Judicial people records, Sept 30, 2026 export
           {j.aba.length
             ? `; ABA ratings read from the source on ${abaRead ?? NOT_RECORDED}`
             : ""}
