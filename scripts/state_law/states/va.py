@@ -117,7 +117,13 @@ def acquire(ctx):
                 version = vm.group(0).strip()
                 heading = heading[vm.end():].strip() or None
                 effective = {"start": None, "end": None, "note": version}
-                if "until" in version.lower():
+                low = version.lower()
+                if low.startswith("(contingent"):
+                    # "(Contingent effective date — see ...)": whether the condition has occurred is not printed;
+                    # "(Contingent expiration date ...)": in force until then
+                    if "effective" in low:
+                        fstatus = "not_recorded"
+                elif "until" in low or low.startswith("(expires"):  # "(Effective until ...)", "(Expires July 1, 2026)"
                     effective["end"] = sb.parse_us_date(version)
                 else:
                     effective["start"] = sb.parse_us_date(version)
@@ -126,7 +132,8 @@ def acquire(ctx):
             lines, history = body_parts(row["Body"])
             text = "\n".join(lines)
             if fstatus:
-                status = {"status": fstatus, "status_marker": version, "status_basis": "publisher_marker"}
+                status = {"status": fstatus, "status_marker": version,
+                          "status_basis": "not_recorded" if fstatus == "not_recorded" else "publisher_marker"}
             else:
                 status = sb.status_kwargs(heading, text)
             if status is None:

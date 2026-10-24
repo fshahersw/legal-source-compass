@@ -234,9 +234,16 @@ class EffectiveMarkerTests(unittest.TestCase):
                         effective={"start": "2026-07-01", "end": None, "note": None})
             ctx.section(code="TS", number="9.02", heading="Duties.", text="Section effective July 1, 2027. See, also, ...\nX.",
                         source=src, path=[])
+            # the generic default some modules pass for any entry with text does not hide a dated marker
+            ctx.section(code="TS", number="9.03", heading="Rates", text="Old rate.", source=src, path=[],
+                        status="in_force", status_basis="current_compilation", version="(Expires July 1, 2026)",
+                        effective={"start": None, "end": "2026-07-01", "note": "(Expires July 1, 2026)"})
+            ctx.section(code="TS", number="9.04", heading="(For contingent effective date, see Acts 2025, c. 1) Zones",
+                        text="New zones.", source=src, path=[], status="in_force", status_basis="current_compilation")
             ctx.finish()
             rows = list(lib.read_jsonl(ctx.dir / "sections.jsonl.gz"))
-            self.assertEqual([r["status"] for r in rows], ["expired", "in_force", "future_effective"])
+            self.assertEqual([r["status"] for r in rows],
+                             ["expired", "in_force", "future_effective", "expired", "not_recorded"])
 
 
 class VectorTests(unittest.TestCase):

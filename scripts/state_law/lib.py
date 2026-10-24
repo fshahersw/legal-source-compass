@@ -619,7 +619,8 @@ _DATE_WORDS = r"(?:[A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\
 _EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")((?:[^\)\]])*)[\)\]]", re.I)
 # a version that applies only once a condition is met: "(Effective Upon Ratification of Proposed Constitutional
 # Amendment)", "(Effective once contingency met. ...)", "(Contingently effective ...)"
-_CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effective\s+(?:upon|once|when|if|on\s+the\s+date)\b)[^\)\]]*[\)\]]", re.I)
+_CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effective\s+(?:upon|once|when|if|on\s+the\s+date)\b|"
+                                 r"(?:For\s+)?contingent\s+effective\s+date\b)[^\)\]]*[\)\]]", re.I)
 _QUALIFIED_RE = re.compile(r"\b(unless|contingent|subject to|or upon|until (?:the|such)|if|when)\b", re.I)
 # South Carolina's first text line: "Section effective until July 1, 2027. See, also, section 57-3-20 effective ..."
 _SECTION_EFFECTIVE_LINE_RE = re.compile(r"^Section effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")\.", re.I)
@@ -1469,7 +1470,12 @@ class RunContext:
             status, marker = classify_status(heading, text)
             if status:
                 status_marker = status_marker or marker
-        if status is None:  # a version marker the module did not turn into a status
+        # a version marker the module did not turn into a status: no status, or the generic "in force in the current
+        # compilation" default some modules pass for any entry with text
+        if status is None or (status == "in_force" and status_basis in (None, "current_compilation")
+                              and not status_marker):
+            status = None if status == "in_force" else status
+            status_basis = None if status is None else status_basis
             if effective is not None and (effective.get("start") or effective.get("end")):
                 dated = status_from_dates(effective, version, self.today)
             else:

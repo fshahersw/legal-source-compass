@@ -12,8 +12,10 @@ robots.txt is not published (the path returns the app shell); 1 request/second.
 from __future__ import annotations
 
 import datetime as dt
+import html as _html
 import json
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
@@ -50,6 +52,15 @@ def _date(v: str | None) -> dt.date | None:
         return dt.date.fromisoformat(v[:10])
     except ValueError:
         return None
+
+
+def _text(value) -> str:
+    """lib.html_text, then one more entity decoding: the API double-encodes some entities ("&amp;amp;", "&amp;sect;"),
+    which read as "&amp;" / "&sect;" after one pass (414 sections were refused as markup on 2026-10-23)."""
+    text = lib.html_text(value or "")
+    if re.search(r"&(?:[a-zA-Z][a-zA-Z0-9]{1,30}|#\d+|#x[0-9a-fA-F]+);", text):
+        text = _html.unescape(text)
+    return text
 
 
 def acquire(ctx: lib.RunContext) -> None:
@@ -107,8 +118,8 @@ def acquire(ctx: lib.RunContext) -> None:
                 status, marker = "future_effective", f"effectiveDate {row.get('effectiveDate')}"
             effective = {"start": start.isoformat() if start else None, "end": end.isoformat() if end else None, "note": None}
             multi = counts[number] > 1
-            ctx.section(code="ALC", number=number, heading=lib.html_text(row.get("catchLine") or "") or None,
-                        text=lib.html_text(row.get("content") or ""), history=lib.html_text(row.get("history") or "") or None,
+            ctx.section(code="ALC", number=number, heading=_text(row.get("catchLine")) or None,
+                        text=_text(row.get("content")), history=_text(row.get("history")) or None,
                         source=got, path=path_of(row), status=status, status_marker=marker, effective=effective,
-                        version=lib.html_text(row.get("title") or "") if multi else None,
+                        version=_text(row.get("title")) if multi else None,
                         version_index=seen[number] if multi else None)
