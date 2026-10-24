@@ -212,7 +212,7 @@ describe("judge financial-disclosure summaries", () => {
         { title: "Credit Union Savings Account X", subtitle: null, link: null },
         {
           title: "Total Return Bond Fund",
-          subtitle: "Values inferred during CourtListener extraction",
+          subtitle: "Values inferred during the source extraction",
           link: null,
         },
         {
@@ -306,7 +306,7 @@ describe("judge financial-disclosure summaries", () => {
         facts: [
           [
             "Filing status",
-            "Not linked to a CourtListener person record, so no filing could be looked up",
+            "Not linked to a case-law person record, so no filing could be looked up",
           ],
         ],
       },
