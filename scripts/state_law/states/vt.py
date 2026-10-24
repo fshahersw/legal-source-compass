@@ -104,7 +104,7 @@ def parse_fullchapter(raw: bytes):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]   # e.g. 12/023
-    index = ctx.get(INDEX)
+    index = ctx.get(INDEX, fallback_fresh=True)
     page = lib.norm_ws(lib.html_text(index.body))
     m = re.search(r"The Statutes below now include the actions of the \d{4} session of the General Assembly\.\s*NOTE: "
                   r"The Vermont Statutes Online is an unofficial copy of the Vermont Statutes Annotated that is provided "
@@ -115,7 +115,7 @@ def acquire(ctx):
     for title in titles:
         if only and not any(o.split("/")[0] == title for o in only):
             continue
-        tpage = ctx.get(f"{SITE}/statutes/title/{title}")
+        tpage = ctx.get(f"{SITE}/statutes/title/{title}", fallback_fresh=True)
         thead = None
         th = re.search(r'<h2 class="statute-header">(.*?)</h2>', tpage.text(), re.S)
         if th:
@@ -128,7 +128,7 @@ def acquire(ctx):
         for chapter, name in chapters:
             if only and f"{title}/{chapter}" not in only:
                 continue
-            fetched = ctx.get(f"{SITE}/statutes/fullchapter/{title}/{chapter}")
+            fetched = ctx.get(f"{SITE}/statutes/fullchapter/{title}/{chapter}", fallback_fresh=True)
             parsed = parse_fullchapter(fetched.body)
             path = [{"level": "title", "label": "Title", "number": title, "heading": thead},
                     {"level": "chapter", "label": "Chapter", "number": chapter.lstrip("0") or chapter,

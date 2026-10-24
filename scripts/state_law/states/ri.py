@@ -107,7 +107,7 @@ def hrefs(html: str, pattern: str):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]   # e.g. 9-1
-    index = ctx.get(INDEX)
+    index = ctx.get(INDEX, fallback_fresh=True)
     ctx.edition(edition_label="General Laws of Rhode Island", currency_statement=None, currency_source_url=None)
     titles = hrefs(index.text(), r"TITLE[0-9A-Z.]+/INDEX\.HTM$")
     for t in titles:
@@ -115,16 +115,16 @@ def acquire(ctx):
         title_url = re.sub(r"^http://", "https://", title_url)
         if only and not any(re.search(rf"/TITLE{re.escape(c.split('-')[0])}/", title_url) for c in only):
             continue
-        tpage = ctx.get(title_url)
+        tpage = ctx.get(title_url, fallback_fresh=True)
         for c in hrefs(tpage.text(), r"^[0-9A-Z.\-]+/INDEX\.htm$"):
             if only and c.split("/")[0] not in only:
                 continue
             chap_url = urllib.parse.urljoin(title_url, c)
-            cpage = ctx.get(chap_url)
+            cpage = ctx.get(chap_url, fallback_fresh=True)
             for s in hrefs(cpage.text(), r"^[0-9A-Za-z.\-]+\.htm$"):
                 if s.upper() == "INDEX.HTM":
                     continue
-                fetched = ctx.get(urllib.parse.urljoin(chap_url, s))
+                fetched = ctx.get(urllib.parse.urljoin(chap_url, s), fallback_fresh=True)
                 parsed = parse_section_page(fetched.body)
                 if parsed is None:
                     ctx.log(f"{s}: no section heading printed; skipped")
