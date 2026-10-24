@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TrendBlockData } from "@/lib/analytics/trend";
-import { alignTrends } from "./trendAlign";
+import { alignTrends, subsetStackRows } from "./trendAlign";
 
 const block = (
   xKind: "year" | "fy",
@@ -70,5 +70,20 @@ describe("alignTrends", () => {
     expect(r!.series[0]!.points.map((p) => p.value)).toEqual([50, 55, 60]);
     expect(r!.series[1]!.points[0]!.date).toBe("2019");
     expect(r!.cutAt).toEqual([{ id: "a", label: "A", x: "2019", marker: "Coverage changes" }]);
+  });
+  it("splits a total into its subset and the rest, never guessing a split", () => {
+    const b = block("year", [["117", 100], ["118", 80], ["119", 10, true]]);
+    b.series = [
+      { id: "introduced", label: "Introduced", points: [{ x: "117", value: 100 }, { x: "118", value: 80 }, { x: "119", value: 10, partial: true }, { x: "120", value: 5 }] },
+      { id: "law", label: "Law", points: [{ x: "117", value: 30 }, { x: "118", value: null }, { x: "119", value: 2, partial: true }, { x: "120", value: 9 }] },
+    ];
+    const rows = subsetStackRows(b, "introduced", "law");
+    expect(rows.map((r) => r.values)).toEqual([
+      { part: 30, rest: 70 },
+      { part: null, rest: null },
+      { part: 2, rest: 8 },
+      { part: null, rest: null },
+    ]);
+    expect(rows[2]!.partial).toBe(true);
   });
 });

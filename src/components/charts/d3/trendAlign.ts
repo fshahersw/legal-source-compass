@@ -4,7 +4,7 @@
  * out, so a part-year never reads as a fall; a period a source does not record stays null.
  */
 import type { TrendBlockData, XKind } from "@/lib/analytics/trend";
-import type { Series } from "./maths";
+import type { Series, StackRow } from "./maths";
 
 export type AlignedTrends = {
   xKind: XKind;
@@ -67,4 +67,45 @@ export function alignTrends(
     dates.findIndex((d) => series.every((s) => (s.points.find((p) => p.date === d)?.value ?? 0) > 0)),
   );
   return { xKind, series, leftOut, commonStart, partialDropped: [...partialDropped].sort(), cutAt };
+}
+
+/** A block's series as stacked-bar rows (series must be disjoint parts of a whole); unfinished periods keep their flag. */
+export function blockStackRows(block: TrendBlockData, label: (x: string) => string = (x) => x): StackRow[] {
+  const xs = [...new Set(block.series.flatMap((s) => s.points.map((p) => p.x)))].sort((a, b) =>
+    a.localeCompare(b, "en", { numeric: true }),
+  );
+  return xs.map((x) => {
+    const values: Record<string, number | null> = {};
+    let partial = false;
+    for (const s of block.series) {
+      const p = s.points.find((q) => q.x === x);
+      values[s.id] = p?.value ?? null;
+      if (p?.partial) partial = true;
+    }
+    return { period: label(x), values, ...(partial ? { partial } : {}) };
+  });
+}
+
+/**
+ * Splits a total into a recorded subset and the rest ("became law" and "did not"), for a stacked bar whose height is
+ * the total. Both parts are null when either figure is missing or the subset exceeds the total, never a guessed split.
+ */
+export function subsetStackRows(
+  block: TrendBlockData,
+  totalId: string,
+  partId: string,
+  label: (x: string) => string = (x) => x,
+): StackRow[] {
+  const total = block.series.find((s) => s.id === totalId);
+  const part = block.series.find((s) => s.id === partId);
+  if (!total || !part) return [];
+  return total.points.map((t) => {
+    const p = part.points.find((q) => q.x === t.x);
+    const ok = t.value != null && p?.value != null && p.value <= t.value;
+    return {
+      period: label(t.x),
+      values: { part: ok ? p!.value! : null, rest: ok ? t.value! - p!.value! : null },
+      ...(t.partial || p?.partial ? { partial: true } : {}),
+    };
+  });
 }
