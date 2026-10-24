@@ -475,4 +475,25 @@ describe("GovInfo scheduled runs", () => {
     expect(out.cursorAfter).toEqual({ since: until, exact: true });
     expect(http.urls[0]).toContain("/collections/CHRG/2026-10-22T00:00:00Z/");
   });
+
+  it("holds a listed package of another series, as the full load does", async () => {
+    const http = fakeHttp((url) => {
+      if (url.includes("/summary"))
+        return { packageId: "CHRG-119hhrg3", title: "HEARING", heldDates: [], committees: [] };
+      return {
+        count: 2,
+        packages: [
+          listed("GPO-CHRG-EXAMPLE", "2026-10-22T09:00:00Z"),
+          listed("CHRG-119hhrg3", "2026-10-22T10:00:00Z"),
+        ],
+      };
+    });
+    const out = await govinfoHearings.collect(ctxOf(http, [], { since: "2026-10-22T00:00:00Z" }));
+    expect(out.rows.map((r) => r.id)).toEqual(["CHRG-119hhrg3"]);
+    expect(out.held).toEqual([
+      { key: "GPO-CHRG-EXAMPLE", reason: "package id does not start with CHRG-" },
+    ]);
+    expect(http.urls.some((u) => u.includes("GPO-CHRG-EXAMPLE"))).toBe(false);
+    expect(out.fetched).toBe(2);
+  });
 });

@@ -581,11 +581,17 @@ function packageAdapter(
       const held: HeldRecord[] = [];
       try {
         const {
-          out,
+          out: listedAll,
           complete: listed,
           until,
           bisected,
         } = await readListing(ctx, c, since, schedulePages);
+        // the collection also lists packages of other series (e.g. GPO-CHRG-...); the full load keeps "<C>-" ids only
+        const prefix = `${c}-`;
+        const out = listedAll.filter((x) => x.p.packageId.startsWith(prefix));
+        for (const x of listedAll)
+          if (!x.p.packageId.startsWith(prefix))
+            held.push({ key: x.p.packageId, reason: `package id does not start with ${prefix}` });
         let complete = listed;
         const stored = new Map<string, StoredRow>();
         for (const r of await ctx.corpus.rowsBy(
@@ -645,13 +651,13 @@ function packageAdapter(
         rows.sort((a, b) =>
           String(a.filters["year"] ?? "") < String(b.filters["year"] ?? "") ? 1 : -1,
         );
-        const newest = out.reduce(
+        const newest = listedAll.reduce(
           (m, x) => (x.p.lastModified && x.p.lastModified > m ? x.p.lastModified : m),
           since,
         );
         return {
           rows,
-          fetched: out.length,
+          fetched: listedAll.length,
           held,
           cursorAfter: complete
             ? bisected
