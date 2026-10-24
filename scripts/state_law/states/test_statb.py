@@ -9,6 +9,7 @@ from __future__ import annotations
 import importlib.util
 import pathlib
 import sys
+import datetime as dt
 import unittest
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -232,6 +233,19 @@ class Vermont(unittest.TestCase):
         one = {"number": "6064", "heading": "Claim applied", "text": "The amount ...", "history": "(Added 1969.)"}
         other = dict(one, heading="Claim applied [Effective July 1, 2029 if contingency met]", text="The new amount ...")
         self.assertEqual(vt.unique_copies([one, dict(one), other]), [one, other])
+
+
+class MontanaVersions(unittest.TestCase):
+    def test_temporary_and_contingent_versions_and_rule_numbers(self):
+        mt = load("mt")
+        today = dt.date(2026, 10, 24).isoformat()  # acquire passes ctx.today.isoformat()
+        started = [{"clause": "(Temporary)"}, {"clause": "(Effective October 1, 2026)"}]
+        ahead = [{"clause": "(Temporary)"}, {"clause": "(Effective July 1, 2027)"}]
+        self.assertTrue(mt.temporary_superseded(started, today))
+        self.assertFalse(mt.temporary_superseded(ahead, today))
+        self.assertTrue(mt.CONTINGENT_CLAUSE.match("(Effective on occurrence of contingency)"))
+        self.assertEqual(mt.rule_number("Rule 4", "25", "20"), "25-20 Rule 4")
+        self.assertEqual(mt.rule_number("2-18-704", "2", "18"), "2-18-704")
 
 
 class WestVirginia(unittest.TestCase):

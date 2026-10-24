@@ -120,6 +120,31 @@ def _split_label(text: str | None, word: str):
     return (m.group(1), m.group(2) or None) if m else (None, text)
 
 
+# "(Effective on occurrence of contingency)": whether the contingency has occurred is not printed
+CONTINGENT_CLAUSE = re.compile(r"^\(Effective (?:on|upon) (?:the )?occurrence of (?:a )?contingenc(?:y|ies)\)$", re.I)
+
+
+def temporary_superseded(versions: list[dict], run_date) -> bool:
+    """A page prints a "(Temporary)" version beside one "(Effective <date>)" whose date has come: the temporary text
+    was to apply until then, but its termination is printed only in the history, so it is not recorded as in force."""
+    if not any(v["clause"] == "(Temporary)" for v in versions):
+        return False
+    for v in versions:
+        m = re.match(r"^\(Effective ([A-Z][a-z]+ \d{1,2}, \d{4})\)$", v["clause"] or "")
+        start = sb.parse_us_date(m.group(1)) if m else None
+        if start and start <= run_date:
+            return True
+    return False
+
+
+def rule_number(number: str, title: str | None, chapter: str | None) -> str:
+    """The court rules printed in the MCA (Title 25, chapters 19-21; Title 26, chapter 10; ...) number each set from
+    "Rule 1": the number keeps its title and chapter ("25-20 Rule 4") so rules of different sets stay apart."""
+    if number.startswith("Rule") and title and chapter:
+        return f"{title}-{chapter} {number}"
+    return number
+
+
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only_parts = [p.strip() for p in options.get("parts", "").split(",") if p.strip()]   # e.g. 27-2-2
@@ -164,6 +189,7 @@ def acquire(ctx):
                             {"level": "chapter", "label": "Chapter", "number": c_no, "heading": c_head},
                             {"level": "part", "label": "Part", "number": p_no, "heading": p_head}]
                     versions = [v for v in parsed["versions"] if v["number"]]
+                    superseded = temporary_superseded(versions, run_date)
                     for k, v in enumerate(versions, 1):
                         text_ = "\n".join(v["lines"])
                         effective, status = None, None
@@ -175,6 +201,9 @@ def acquire(ctx):
                                 if effective["start"] and effective["start"] > run_date:
                                     status = {"status": "future_effective", "status_marker": v["clause"],
                                               "status_basis": "publisher_marker"}
+                            elif CONTINGENT_CLAUSE.match(v["clause"]) or (superseded and v["clause"] == "(Temporary)"):
+                                status = {"status": "not_recorded", "status_marker": v["clause"],
+                                          "status_basis": "not_recorded"}
                         heading = v["heading"]
                         sm = STATUS_HEAD.match(heading or "")
                         if status is None and sm and len(text_) <= 400:
@@ -188,7 +217,7 @@ def acquire(ctx):
                             ctx.log(f"MCA {v['number']}: no text and no marker; skipped")
                             continue
                         index_ = k if len(versions) > 1 else None
-                        ctx.section(code="MCA", number=v["number"], heading=heading, text=text_, path=path,
+                        ctx.section(code="MCA", number=rule_number(v["number"], t_no, c_no), heading=heading, text=text_, path=path,
                                     source=fetched, history=parsed["history"], effective=effective,
                                     version=v["clause"] if index_ else None, version_index=index_, **status)
                         if not ctx.want_more():
