@@ -1,64 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import type { ReactNode } from "react";
 import { SECTION_ICONS } from "@/components/atlas/sectionIcons";
 import { EmptyState } from "@/components/kit/EmptyState";
 import { KpiCard, KpiGrid } from "@/components/kit/KpiCard";
 import { LinkTile } from "@/components/kit/LinkTile";
 import { Section } from "@/components/kit/Section";
-import { listDatasets, type DatasetInfo } from "@/lib/external/catalog.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionItem } from "@/lib/atlas/navigation";
+import { recordCount, useCatalog } from "./catalog";
 import { HUBS, type HubCount, type HubLink } from "./hubs";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
-
-/** A dataset's record count as the catalog stores it; null when the catalog does not record one. */
-function recordCount(dataset: DatasetInfo | undefined) {
-  if (!dataset) return undefined;
-  return dataset.records != null && Number.isSafeInteger(dataset.records) && dataset.records >= 0
-    ? dataset.records
-    : null;
-}
-
-/**
- * Starts the catalog query after the first paint (and an idle moment), so a hub's counts never hold up the page
- * above them, such as the map on the overview.
- */
-function useAfterFirstPaint() {
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const w = window as Window & { requestIdleCallback?: (cb: () => void) => number };
-    if (w.requestIdleCallback) {
-      w.requestIdleCallback(() => setReady(true));
-      return;
-    }
-    const t = window.setTimeout(() => setReady(true), 200);
-    return () => window.clearTimeout(t);
-  }, []);
-  return ready;
-}
-
-/** The corpus catalog (same query and cache as useDatasets), optionally started only after the first paint. */
-function useCatalog(deferred: boolean) {
-  const afterPaint = useAfterFirstPaint();
-  const fn = useServerFn(listDatasets);
-  const enabled = !deferred || afterPaint;
-  const datasets = useQuery({
-    queryKey: ["corpus-datasets"],
-    queryFn: () => fn(),
-    staleTime: 10 * 60_000,
-    enabled,
-  });
-  const byId = new Map((datasets.data ?? []).map((d) => [d.id, d]));
-  return {
-    byId,
-    loading: !datasets.data && !datasets.error,
-    error: datasets.error,
-    retry: () => void datasets.refetch(),
-  };
-}
 
 /** A row of headline record counts (KPI cards), each with the dataset it is read from as its source. */
 export function HubKpis({

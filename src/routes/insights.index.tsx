@@ -35,6 +35,7 @@ function Page() {
       description="Headline figures across the platform, what moved most, and the tools to compare, rank and analyse them."
       breadcrumbs={[{ label: "Home", to: "/" }, { label: "Insights" }]}
       actions={<BoardGuide />}
+      sectionTabs={false}
     >
       <OverviewBoard />
     </AppShell>

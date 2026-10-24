@@ -1,185 +1,60 @@
 /**
- * /insights: the KPI board across the eight topics (latest complete value, change against the period before it,
- * sparkline, source), the notable movements computed from those tiles by a stated rule, and the entry points into the
- * workbench. Each tile loads and fails on its own.
+ * /insights as one page (owner feedback 2026-10-24 evening: one scrollable page with a section index instead of a row
+ * of tabs). It opens with the answer: four headline KPIs, then "What moved most" as a chart (the six largest changes,
+ * with every change behind "View data"), then each topic's figures (three shown, the rest behind "Show all"), today's
+ * insight, and the tools, which stay their own views. Each tile loads and fails on its own; nothing is estimated.
  */
 import { useMemo } from "react";
-import { Link } from "@tanstack/react-router";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   Activity,
-  ArrowRight,
   CalendarDays,
   LibrarySquare,
   LineChart,
   Map as MapIcon,
   ScatterChart,
 } from "lucide-react";
-import type { MetricDef, Topic } from "@/lib/insights/contract";
-import { blockDef } from "@/lib/analytics/registry";
+import type { MetricDef } from "@/lib/insights/contract";
 import { analyticsBlockQuery } from "@/components/analytics/hub/blockQuery";
-import { Sparkline } from "@/components/charts/Sparkline";
-import { Card, CardHeader } from "@/components/kit/Card";
+import { BarList } from "@/components/kit/BarList";
+import { SourceFooter } from "@/components/kit/Card";
+import { ChartCard } from "@/components/kit/ChartCard";
+import { EmptyState } from "@/components/kit/EmptyState";
+import { formatSignedPercent, splitChangeText } from "@/components/kit/format";
 import { InfoPopover } from "@/components/kit/InfoPopover";
-import { DeltaPill, KpiCard, KpiGrid } from "@/components/kit/KpiCard";
-import { ListRow } from "@/components/kit/LinkTile";
+import { InsightCallout } from "@/components/kit/InsightCallout";
+import { KpiGrid } from "@/components/kit/KpiCard";
+import { LinkTile, ListRow } from "@/components/kit/LinkTile";
 import { Section } from "@/components/kit/Section";
-import { cn } from "@/lib/utils";
+import { SectionIndex } from "@/components/kit/SectionIndex";
+import { ShowMore } from "@/components/kit/ShowMore";
+import { CardSkeleton } from "@/components/kit/Skeletons";
+import { Button } from "@/components/ui/button";
 import { CatalogNotice, FixtureBanner } from "./controls";
 import { catalogQuery, fixturesOn, seriesQuery } from "./data";
-import { kpiDelta } from "./kpiDelta";
+import { HEADLINE_BLOCKS, hubTileState, tileKey, tileTopic, type TileState } from "./hubTiles";
+import { allDailyInsightsQuery, formatDayKey } from "./insightQueries";
+import { KpiTile } from "./KpiTile";
 import {
   BRIDGE_KPI_METRICS,
   HUB_BLOCK_TOPIC,
   MOVEMENT_RULE,
   TOPIC_LABEL,
   TOPIC_ORDER,
-  kpiFromBlock,
   kpiFromFacts,
   notableMovements,
   type Kpi,
 } from "./kpis";
-
-type TileState =
-  | { kind: "loading"; id: string; topic: Topic; title: string }
-  | { kind: "error"; id: string; topic: Topic; title: string; retry: () => void }
-  | { kind: "empty"; id: string; topic: Topic; title: string; reason: string }
-  | { kind: "ok"; kpi: Kpi };
+import { changeRows, movementTakeaway } from "./movements";
 
 const HUB_IDS = Object.keys(HUB_BLOCK_TOPIC);
+const HEADLINE_IDS = new Set<string>(HEADLINE_BLOCKS.map((id) => `hub:${id}`));
+const isHeadline = (s: TileState) =>
+  s.kind === "ok"
+    ? HEADLINE_IDS.has(s.kpi.id)
+    : (HEADLINE_BLOCKS as readonly string[]).includes(s.id);
 
-function KpiLink({ kpi, className }: { kpi: Kpi; className?: string }) {
-  return (
-    <Link
-      to={kpi.href.to as never}
-      {...(kpi.href.search ? { search: kpi.href.search as never } : {})}
-      {...(kpi.href.hash ? { hash: kpi.href.hash } : {})}
-      className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-0.5 text-[12px] font-medium text-brand hover:underline focus-visible:outline-2 focus-visible:outline-ring",
-        className,
-      )}
-    >
-      Open chart
-      <ArrowRight className="size-3" aria-hidden />
-    </Link>
-  );
-}
-
-export function KpiTile({ state }: { state: TileState }) {
-  if (state.kind !== "ok")
-    return (
-      <KpiCard
-        as="li"
-        label={state.title}
-        state={state.kind}
-        loadingLabel={`Loading ${state.title}`}
-        trend={null}
-        errorText="Could not be read just now. The other tiles are unaffected."
-        onRetry={state.kind === "error" ? state.retry : undefined}
-        emptyText={state.kind === "empty" ? state.reason : undefined}
-      />
-    );
-  const k = state.kpi;
-  return (
-    <KpiCard
-      as="li"
-      label={k.title}
-      value={k.value}
-      unit={k.value && /^[\d,.]+$/.test(k.value) ? k.unit : undefined}
-      meta={[k.seriesLabel, k.periodText].filter(Boolean).join(", ") || undefined}
-      delta={kpiDelta(k)}
-      deltaNote={k.changeNote ?? undefined}
-      partial={k.partialNote ?? undefined}
-      trend={
-        k.spark ? (
-          <Sparkline series={k.spark.series} keys={k.spark.keys} width={128} height={36} />
-        ) : undefined
-      }
-      action={<KpiLink kpi={k} />}
-      source={{ source: { label: k.source.label, href: k.source.url } }}
-    />
-  );
-}
-
-function Movements({ tiles, pending }: { tiles: Kpi[]; pending: number }) {
-  const moves = notableMovements(tiles);
-  return (
-    <Card as="section" aria-labelledby="moves-title" className="flex flex-col">
-      <CardHeader
-        id="moves-title"
-        titleAs="h2"
-        title="Notable movements"
-        description={
-          pending
-            ? `${pending} tile${pending === 1 ? "" : "s"} still loading`
-            : `${tiles.length} tiles compared`
-        }
-        actions={
-          <InfoPopover label="How these are chosen">
-            <p>
-              {MOVEMENT_RULE.text} A change is a difference between two published figures, not a
-              finding that anything caused it; several tiles compare a month with the same month a
-              year earlier, as their text says.
-            </p>
-          </InfoPopover>
-        }
-      />
-      {moves.length ? (
-        <ol className="m-0 list-none divide-y divide-border border-t border-border p-0">
-          {moves.map((k, i) => {
-            const delta = kpiDelta(k);
-            return (
-              <ListRow
-                key={k.id}
-                leading={
-                  <span className="w-4 shrink-0 text-right text-meta tabular-nums text-muted-foreground">
-                    {i + 1}
-                  </span>
-                }
-                title={k.title}
-                meta={
-                  delta ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      <DeltaPill delta={delta} />
-                      <span className="hidden sm:inline">{delta.detail}</span>
-                    </span>
-                  ) : null
-                }
-                trailing={<KpiLink kpi={k} />}
-              />
-            );
-          })}
-        </ol>
-      ) : (
-        <p role="status" className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-          {pending
-            ? "Waiting for the tiles to load."
-            : "No tile has enough complete periods for a comparison."}
-        </p>
-      )}
-    </Card>
-  );
-}
-
-/** The reading guide of the board (formerly an intro paragraph), shown from the page header. */
-export function BoardGuide() {
-  return (
-    <InfoPopover label="How to read these figures" showLabel>
-      <p>
-        Each tile shows the latest complete period the source records and the change against the
-        period before it (or the same month a year earlier, where the tile says so), with links to
-        the full chart, its data table and the source.
-      </p>
-      <p>
-        Partial periods are never the latest value; a period the source does not record is a gap,
-        not zero; nothing is estimated or projected. The change pills are neutral: a rise is not
-        marked good or bad.
-      </p>
-    </InfoPopover>
-  );
-}
-
-const ENTRIES = [
+const TOOLS = [
   {
     to: "/insights/explore",
     label: "Explore",
@@ -218,6 +93,201 @@ const ENTRIES = [
   },
 ] as const;
 
+/** The reading guide of the page (formerly an intro paragraph), shown from the page header. */
+export function BoardGuide() {
+  return (
+    <InfoPopover label="How to read these figures" showLabel>
+      <p>
+        Each tile shows the latest complete period the source records and the change against the
+        period before it (or the same month a year earlier, where the tile says so), with links to
+        the full chart, its data table and the source.
+      </p>
+      <p>
+        Partial periods are never the latest value; a period the source does not record is a gap,
+        not zero; nothing is estimated or projected. The change pills are neutral: a rise is not
+        marked good or bad.
+      </p>
+    </InfoPopover>
+  );
+}
+
+function Movements({ tiles, pending }: { tiles: Kpi[]; pending: number }) {
+  const moves = notableMovements(tiles);
+  const rows = changeRows(tiles);
+  const takeaway = movementTakeaway(moves);
+  return (
+    <ChartCard
+      id="moves-chart"
+      title={takeaway ?? "What moved most"}
+      subtitle={`Percent change between each series' latest complete period and the one before; the ${MOVEMENT_RULE.count} largest among series with at least ${MOVEMENT_RULE.minCompletePeriods} complete periods${pending ? ` (${pending} still loading)` : ""}`}
+      state={moves.length ? "ready" : pending ? "loading" : "empty"}
+      height={240}
+      emptyText="No series has enough complete periods for a comparison."
+      data={{
+        title: "Change on the period before, every Insights series",
+        description:
+          "Each series' latest complete period against the one before, as its tile prints it.",
+        filename: "insights-changes",
+        rows,
+        rowKey: (k) => k.id,
+        searchable: true,
+        searchLabel: "Filter series",
+        columns: [
+          { key: "series", label: "Series", value: (k) => k.title },
+          {
+            key: "pct",
+            label: "Change (%)",
+            align: "right",
+            value: (k) => k.changePercent,
+            render: (k) =>
+              k.changePercent === null ? (
+                <span className="text-muted-foreground">Not recorded</span>
+              ) : (
+                formatSignedPercent(k.changePercent)
+              ),
+          },
+          {
+            key: "abs",
+            label: "Change",
+            align: "right",
+            value: (k) => (k.changeText ? splitChangeText(k.changeText).change : null),
+          },
+          {
+            key: "vs",
+            label: "Compared with",
+            value: (k) => (k.changeText ? splitChangeText(k.changeText).comparison : null),
+          },
+          { key: "latest", label: "Latest", align: "right", value: (k) => k.value },
+          { key: "period", label: "Period", value: (k) => k.periodText },
+          { key: "n", label: "Complete periods", align: "right", value: (k) => k.completePeriods },
+          { key: "source", label: "Source", value: (k) => k.source.label },
+        ],
+        source: {
+          source: "each series' own publisher (Source column)",
+          about: <p>{MOVEMENT_RULE.text}</p>,
+          aboutLabel: "How these are chosen",
+        },
+      }}
+      source={{
+        source: "each series' own publisher (View data)",
+        aboutLabel: "How these are chosen",
+        about: (
+          <p>
+            {MOVEMENT_RULE.text} A change is a difference between two published figures, not a
+            finding that anything caused it; several series compare a month with the same month a
+            year earlier, as their text says.
+          </p>
+        ),
+      }}
+    >
+      <BarList
+        ariaLabel="The largest changes, in percent"
+        diverging
+        items={moves.map((k) => {
+          const comparison = k.changeText ? splitChangeText(k.changeText).comparison : null;
+          return {
+            id: k.id,
+            label: k.title,
+            note: comparison ? `vs ${comparison}` : undefined,
+            value: k.changePercent,
+            display: k.changePercent === null ? "" : formatSignedPercent(k.changePercent),
+            to: k.href.to,
+            search: k.href.search,
+            hash: k.href.hash,
+          };
+        })}
+      />
+    </ChartCard>
+  );
+}
+
+/** Today's insight: the first section's pick as a callout, the other sections' headlines one click away. */
+function Today() {
+  const q = useQuery(allDailyInsightsQuery);
+  if (q.isPending) return <CardSkeleton lines={4} label="Loading the insights of the day" />;
+  if (q.isError || !q.data)
+    return (
+      <EmptyState
+        tone="error"
+        compact
+        title="The insights of the day could not be loaded."
+        action={
+          <Button size="sm" variant="outline" onClick={() => void q.refetch()}>
+            Retry
+          </Button>
+        }
+      />
+    );
+  const { dayKey, sections } = q.data;
+  const featured = sections.find((s) => s.pick && !s.failed);
+  const others = sections.filter((s) => s !== featured && s.pick && !s.failed);
+  if (!featured?.pick)
+    return (
+      <EmptyState
+        compact
+        title="No insight is available today"
+        description="The data behind the insights is not published yet."
+      />
+    );
+  const pick = featured.pick;
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+      <InsightCallout
+        eyebrow={`${featured.title} · ${formatDayKey(dayKey)} (UTC)`}
+        headline={pick.headline}
+        figures={pick.points.slice(0, 4).map((p) => ({
+          label: p.label,
+          value: p.value,
+          detail: p.note,
+        }))}
+        footer={
+          <SourceFooter
+            className="flex-1"
+            source={pick.sources.map((s) => ({ label: s.label, href: s.href }))}
+            period={pick.dataThrough ? `Data through ${pick.dataThrough}` : undefined}
+            about={
+              pick.caveat || featured.partial ? (
+                <>
+                  {pick.caveat ? <p>Note: {pick.caveat}</p> : null}
+                  {featured.partial ? (
+                    <p>
+                      Some data sources for this section could not be read just now; this insight is
+                      chosen from the rest.
+                    </p>
+                  ) : null}
+                </>
+              ) : undefined
+            }
+          />
+        }
+      >
+        {pick.summary.map((line, i) => (
+          <p key={i}>{line}</p>
+        ))}
+      </InsightCallout>
+      {others.length ? (
+        <nav
+          aria-label="Other insights of the day"
+          className="overflow-hidden rounded-xl border border-border bg-card shadow-xs"
+        >
+          <p className="m-0 border-b border-border px-4 py-3 text-label">Other sections today</p>
+          <ul className="m-0 list-none divide-y divide-border p-0">
+            {others.map((s) => (
+              <ListRow
+                key={s.section}
+                to="/insights/today"
+                hash={`insight-${s.section}`}
+                title={s.pick!.headline}
+                description={s.title}
+              />
+            ))}
+          </ul>
+        </nav>
+      ) : null}
+    </div>
+  );
+}
+
 export function OverviewBoard() {
   const hub = useQueries({ queries: HUB_IDS.map((id) => analyticsBlockQuery(id)) });
   const catalog = useQuery(catalogQuery);
@@ -239,19 +309,7 @@ export function OverviewBoard() {
     queries: metricDefs.map((m) => seriesQuery(m, "nation", ["US"])),
   });
 
-  const states: TileState[] = [];
-  HUB_IDS.forEach((id, i) => {
-    const def = blockDef(id);
-    const q = hub[i]!;
-    const topic = HUB_BLOCK_TOPIC[id]!;
-    const title = def?.title ?? id;
-    if (q.isPending) states.push({ kind: "loading", id, topic, title });
-    else if (q.isError)
-      states.push({ kind: "error", id, topic, title, retry: () => void q.refetch() });
-    else if (q.data.status === "empty")
-      states.push({ kind: "empty", id, topic, title, reason: q.data.reason });
-    else states.push({ kind: "ok", kpi: kpiFromBlock(q.data.data, title, topic) });
-  });
+  const states: TileState[] = HUB_IDS.map((id, i) => hubTileState(id, hub[i]!));
   metricDefs.forEach((m, i) => {
     const q = metricQs[i]!;
     const id = `metric:${m.id}`;
@@ -281,42 +339,82 @@ export function OverviewBoard() {
   });
   const loaded = states.flatMap((s) => (s.kind === "ok" ? [s.kpi] : []));
   const pending = states.filter((s) => s.kind === "loading").length;
-  const topicOf = (s: TileState) => (s.kind === "ok" ? s.kpi.topic : s.topic);
-  const keyOf = (s: TileState) => (s.kind === "ok" ? s.kpi.id : s.id);
+  const headlines = HEADLINE_BLOCKS.flatMap((id) => {
+    const s = states.find((t) => tileKey(t) === id || tileKey(t) === `hub:${id}`);
+    return s ? [s] : [];
+  });
+  const topics = TOPIC_ORDER.flatMap((t) => {
+    const tiles = states.filter((s) => tileTopic(s) === t && !isHeadline(s));
+    return tiles.length ? [{ topic: t, tiles }] : [];
+  });
+  const index = [
+    { id: "headlines", label: "Headlines" },
+    { id: "moves", label: "What moved" },
+    ...topics.map((t) => ({ id: `topic-${t.topic}`, label: TOPIC_LABEL[t.topic] })),
+    { id: "today", label: "Today" },
+    { id: "tools", label: "Tools" },
+  ];
 
   return (
     <div className="space-y-8">
+      <SectionIndex items={index} label="On this page" className="-mt-4" />
       <FixtureBanner on={fixturesOn} />
       <CatalogNotice catalog={catalog.data} />
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+      <Section
+        id="headlines"
+        title="Headlines"
+        description="The latest complete period of one headline series per area, with the change on the period before."
+      >
+        <KpiGrid columns={4} label="Headline figures">
+          {headlines.map((s) => (
+            <KpiTile key={tileKey(s)} state={s} trendPlacement="below" />
+          ))}
+        </KpiGrid>
+      </Section>
+      <Section id="moves" title="What moved most">
         <Movements tiles={loaded} pending={pending} />
-        <Card as="nav" aria-labelledby="tools-title">
-          <CardHeader
-            id="tools-title"
-            titleAs="h2"
-            title="Analyse"
-            description="Compare, rank, map and explain"
+      </Section>
+      {topics.map(({ topic, tiles }) => (
+        <Section
+          key={topic}
+          id={`topic-${topic}`}
+          title={TOPIC_LABEL[topic]}
+          description={`${tiles.length} series`}
+        >
+          <ShowMore
+            items={tiles}
+            initial={3}
+            noun={`${TOPIC_LABEL[topic].toLowerCase()} series`}
+            render={(shown) => (
+              <KpiGrid
+                columns={2}
+                className="xl:grid-cols-3"
+                label={`${TOPIC_LABEL[topic]} figures`}
+              >
+                {shown.map((s) => (
+                  <KpiTile key={tileKey(s)} state={s} />
+                ))}
+              </KpiGrid>
+            )}
           />
-          <ul className="m-0 list-none divide-y divide-border border-t border-border p-0">
-            {ENTRIES.map((e) => (
-              <ListRow key={e.to} to={e.to} icon={e.icon} title={e.label} description={e.text} />
-            ))}
-          </ul>
-        </Card>
-      </div>
-      {TOPIC_ORDER.map((t) => {
-        const tiles = states.filter((s) => topicOf(s) === t);
-        if (!tiles.length) return null;
-        return (
-          <Section key={t} id={`topic-${t}`} title={TOPIC_LABEL[t]}>
-            <KpiGrid columns={2} className="xl:grid-cols-3" label={`${TOPIC_LABEL[t]} figures`}>
-              {tiles.map((s) => (
-                <KpiTile key={keyOf(s)} state={s} />
-              ))}
-            </KpiGrid>
-          </Section>
-        );
-      })}
+        </Section>
+      ))}
+      <Section id="today" title="Insight of the day">
+        <Today />
+      </Section>
+      <Section
+        id="tools"
+        title="Tools"
+        description="Each tool opens as its own view, on the same published data."
+      >
+        <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+          {TOOLS.map((t) => (
+            <li key={t.to} className="min-w-0">
+              <LinkTile to={t.to} icon={t.icon} title={t.label} description={t.text} />
+            </li>
+          ))}
+        </ul>
+      </Section>
     </div>
   );
 }

@@ -2,24 +2,15 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  BookOpen,
-  ChevronRight,
-  Clock3,
-  ExternalLink,
-  Landmark,
-  MapPin,
-  Search,
-  UsersRound,
-} from "lucide-react";
+import { BookOpen, Clock3, ExternalLink, Landmark, MapPin, UsersRound } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
+import { BarList } from "@/components/kit/BarList";
 import { SourceFooter } from "@/components/kit/Card";
+import { ChartCard } from "@/components/kit/ChartCard";
 import { LinkTile } from "@/components/kit/LinkTile";
 import { MetricMap, type MapArea } from "@/components/places/MetricMap";
-import { dataRows } from "@/components/places/mapView";
 import { parseMapSearch, resolveMapSelection } from "@/components/places/mapSearch";
-import { StateMark } from "./EntityArtwork";
-import { Input } from "@/components/ui/input";
+import { mapRows, mapTakeaway } from "./placesMapModel";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
@@ -47,6 +38,8 @@ const DESTINATIONS = [
   { id: "judges" as const, label: "Judges", icon: UsersRound },
 ];
 const RANKED = STATES.map((s) => s.fips);
+/** States shown as bars in the ranked panel; every state is in its "View data" table. */
+const TOP = 10;
 
 /** Segmented control (soft pill on a muted track) shared by the map's toggles. */
 const SEGMENTED = "flex rounded-lg border border-border bg-muted p-[3px]";
@@ -77,10 +70,8 @@ export function PlacesMap({
   const navigate = useNavigate();
   const search = parseMapSearch(useSearch({ strict: false }) as Record<string, unknown>);
   const { metric: metricKey, counties: countyMode } = resolveMapSelection(search);
-  const [query, setQuery] = useState("");
   const [tab, setTab] = useState<StateHubTab>("overview");
   const [hover, setHover] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<"name" | "value">("name");
 
   const metricsFn = useServerFn(getStateMapMetrics);
   const layerFn = useServerFn(getCountyMapLayer);
@@ -134,20 +125,6 @@ export function PlacesMap({
     void navigate({ to: home ? "/" : "/places", search: next, replace: true, resetScroll: false });
   };
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = states.filter(
-      (s) => !q || s.name.toLowerCase().includes(q) || s.usps.toLowerCase() === q,
-    );
-    if (sortBy === "value" && metric)
-      return [...list].sort(
-        (a, b) =>
-          (metric.values[b.fips] ?? Number.NEGATIVE_INFINITY) -
-            (metric.values[a.fips] ?? Number.NEGATIVE_INFINITY) || a.name.localeCompare(b.name),
-      );
-    return list;
-  }, [states, query, sortBy, metric]);
-
   const stateArea: MapArea = {
     values: metric?.values ?? {},
     detail: metric?.detail ?? {},
@@ -174,14 +151,18 @@ export function PlacesMap({
       ),
     [corpus.geo],
   );
-  const stateNames = useMemo(() => new Map(STATES.map((s) => [s.fips, s.name])), []);
-  const tableRows = useMemo(
-    () => (metric ? dataRows(stateNames, metric.values, RANKED) : []),
-    [metric, stateNames],
+  const rankRows = useMemo(
+    () => mapRows(STATES, metric?.values ?? {}, metric?.rank ?? {}),
+    [metric],
   );
+  const withValue = rankRows.filter((r) => r.value !== null).length;
+  const topRows = rankRows.filter((r) => r.value !== null).slice(0, TOP);
+  const takeaway = mapTakeaway(rankRows, (v) => formatMapValue(v, def.format), def.unit);
   const loadingMetric = def.key !== "directory_sources" && metrics.isPending;
   const metricFailed = def.key !== "directory_sources" && !metrics.isPending && !metric;
   const failedParts = metrics.data?.unavailable ?? [];
+  const rankingLoading =
+    loadingMetric || (def.key === "directory_sources" && atlas.status === "loading");
 
   const shownSourceUrl = countyMode && layer.data ? layer.data.sourceUrl : metric?.sourceUrl;
   const shownSourceName = countyMode && layer.data ? layer.data.sourceName : metric?.sourceName;
@@ -289,7 +270,6 @@ export function PlacesMap({
               states={stateArea}
               counties={countyArea}
               countyNames={countyNames}
-              selectedState={filtered.length === 1 ? filtered[0]?.usps : undefined}
               onHoverState={setHover}
               onState={(fips) => {
                 const state = stateByFips.get(fips);
@@ -414,172 +394,90 @@ export function PlacesMap({
               {!metric ? <span className="flex-1 truncate">{def.label}</span> : null}
             </SourceFooter>
           </div>
-          <details
-            className="group rounded-xl border border-border bg-card shadow-xs"
-            data-testid="map-data"
-          >
-            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-medium hover:bg-accent/60 focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
-              <ChevronRight
-                className="size-4 text-muted-foreground transition-transform group-open:rotate-90"
-                aria-hidden
+          {!home ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <LinkTile
+                to="/law"
+                icon={BookOpen}
+                title="Federal law & agencies"
+                description="Statutes, rules and regulatory sources."
               />
-              Show data for the states
-            </summary>
-            <div className="max-h-80 overflow-auto border-t border-border">
-              <table className="w-full text-xs">
-                <caption className="sr-only">
-                  {def.label}, {metric?.yearLabel ?? ""}, by state
-                </caption>
-                <thead className="sticky top-0 bg-muted text-left text-[11px] text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-2 font-medium">
-                      Rank
-                    </th>
-                    <th scope="col" className="px-4 py-2 font-medium">
-                      State
-                    </th>
-                    <th scope="col" className="px-4 py-2 text-right font-medium">
-                      {def.unit}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.map((r) => (
-                    <tr key={r.id} className="border-t border-border/70">
-                      <td className="px-4 py-1.5 tabular-nums text-muted-foreground">
-                        {r.rank ?? "—"}
-                      </td>
-                      <td className="px-4 py-1.5">
-                        <Link
-                          to="/places/$state"
-                          params={{ state: stateByFips.get(r.id)?.usps ?? r.id }}
-                          search={{ tab }}
-                          className="font-medium text-foreground underline-offset-2 hover:text-brand hover:underline"
-                        >
-                          {r.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-1.5 text-right tabular-nums">
-                        {formatMapValue(r.value, def.format)}
-                      </td>
-                    </tr>
-                  ))}
-                  {!tableRows.length ? (
-                    <tr>
-                      <td colSpan={3} className="px-4 py-4 text-center text-muted-foreground">
-                        {NOT_RECORDED}
-                      </td>
-                    </tr>
-                  ) : null}
-                </tbody>
-              </table>
+              <LinkTile
+                to="/limitations"
+                icon={Clock3}
+                title="Deadline assessment"
+                description="Cited rules with a guided review."
+              />
             </div>
-          </details>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <LinkTile
-              to="/law"
-              icon={BookOpen}
-              title="Federal law & agencies"
-              description="Statutes, rules and regulatory sources."
-            />
-            <LinkTile
-              to="/limitations"
-              icon={Clock3}
-              title="Deadline assessment"
-              description="Cited rules with a guided review."
-            />
-          </div>
+          ) : null}
         </section>
-        <aside className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-          <div className="border-b border-border p-4">
-            <div className="mb-2.5 flex items-center justify-between">
-              <h2 className="text-label font-semibold">Choose a state</h2>
-              <span className="text-meta tabular-nums text-muted-foreground">
-                {filtered.length} shown
-              </span>
-            </div>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Find a state"
-                placeholder="Name or abbreviation"
-                className="h-9 pl-8 text-[13px] md:h-9"
-              />
-            </div>
-            <div className="mt-2.5 flex items-center justify-between gap-2 text-meta text-muted-foreground">
-              <span className="truncate" title={`${def.short}, ${metric?.yearLabel ?? ""}`}>
-                {def.short}
-              </span>
-              <span
-                className={cn(SEGMENTED, "shrink-0 p-0.5")}
-                role="group"
-                aria-label="Sort states"
-              >
-                {(["name", "value"] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={sortBy === s}
-                    onClick={() => setSortBy(s)}
-                    className={cn(segment(sortBy === s), "h-6 px-2 text-[11px]")}
-                  >
-                    {s === "name" ? "A to Z" : "By value"}
-                  </button>
-                ))}
-              </span>
-            </div>
-          </div>
-          <ul className="max-h-[29rem] divide-y divide-border/70 overflow-y-auto">
-            {filtered.map((state) => {
-              const value = metric?.values[state.fips];
-              const rank = metric?.rank[state.fips];
-              return (
-                <li key={state.usps}>
+        {/* the ranked panel: the top ten as bars, every state (and the search) behind "View data" */}
+        <ChartCard
+          id="map-ranking"
+          title={takeaway ?? `${def.short}: highest states`}
+          subtitle={`${def.label}${metric && shownPeriod ? `, ${shownPeriod}` : ""}. Top ${Math.min(TOP, withValue)} of ${withValue} states with a value.`}
+          state={
+            rankingLoading ? "loading" : metricFailed ? "error" : withValue ? "ready" : "empty"
+          }
+          onRetry={() => void metrics.refetch()}
+          height={360}
+          emptyText={NOT_RECORDED}
+          data={{
+            title: `${def.label}, by state`,
+            description: `${metric && shownPeriod ? `${shownPeriod}. ` : ""}Ranks cover the 50 states and DC; a state without a value is listed as Not recorded.`,
+            filename: `${def.short} by state ${metric?.yearLabel ?? ""}`,
+            rows: rankRows,
+            rowKey: (r) => r.id,
+            searchable: true,
+            searchLabel: "Find a state",
+            columns: [
+              {
+                key: "rank",
+                label: "Rank",
+                align: "right",
+                value: (r) => r.rank,
+                render: (r) => r.rank ?? "—",
+              },
+              {
+                key: "state",
+                label: "State",
+                value: (r) => r.name,
+                render: (r) => (
                   <Link
                     to="/places/$state"
-                    params={{ state: state.usps }}
+                    params={{ state: r.usps }}
                     search={{ tab }}
-                    onMouseEnter={() => setHover(state.usps)}
-                    onMouseLeave={() => setHover(null)}
-                    className={`group flex items-center gap-2.5 px-4 py-2 transition-colors ${hover === state.usps ? "bg-accent" : "hover:bg-accent"}`}
+                    className="font-medium text-foreground underline-offset-2 hover:text-brand hover:underline"
                   >
-                    <StateMark state={state.usps} className="size-7 rounded-md p-1" />
-                    <span className="min-w-0 flex-1 text-[13px] font-medium">{state.name}</span>
-                    <span className="text-right text-[12px] tabular-nums text-foreground/80">
-                      {loadingMetric ||
-                      (def.key === "directory_sources" && atlas.status === "loading")
-                        ? "…"
-                        : value == null
-                          ? "—"
-                          : formatMapValue(value, def.format)}
-                      {rank ? (
-                        <span className="block text-[10.5px] text-muted-foreground">
-                          #{rank.rank}
-                        </span>
-                      ) : null}
-                    </span>
-                    <ChevronRight className="size-3.5 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
+                    {r.name}
                   </Link>
-                </li>
-              );
-            })}
-          </ul>
-          {!filtered.length ? (
-            <p className="px-4 py-8 text-center text-xs text-muted-foreground">
-              No state matches. Try its full name or two-letter abbreviation.
-            </p>
-          ) : null}
-          {atlas.status === "error" && def.key === "directory_sources" ? (
-            <div role="alert" className="border-t border-border p-3 text-xs text-muted-foreground">
-              Source counts unavailable.
-              <button type="button" className="ml-2 underline" onClick={atlas.retryLoad}>
-                Retry
-              </button>
-            </div>
-          ) : null}
-        </aside>
+                ),
+              },
+              {
+                key: "value",
+                label: def.unit.charAt(0).toUpperCase() + def.unit.slice(1),
+                align: "right",
+                value: (r) => r.value,
+                render: (r) => formatMapValue(r.value, def.format),
+              },
+            ],
+            source: { source: sourceLink, period: metric ? shownPeriod : undefined },
+          }}
+        >
+          <BarList
+            ariaLabel={`States with the highest ${def.short.toLowerCase()}`}
+            highlight={hover && topRows.some((r) => r.usps === hover) ? hover : null}
+            items={topRows.map((r) => ({
+              id: r.usps,
+              label: r.name,
+              note: r.rank ? `#${r.rank}` : undefined,
+              value: r.value,
+              display: formatMapValue(r.value, def.format),
+              to: `/places/${r.usps}`,
+              search: { tab },
+            }))}
+          />
+        </ChartCard>
       </div>
       {after ? <div className="mt-8">{after}</div> : null}
     </AppShell>

@@ -93,6 +93,8 @@ export type KpiCardProps = {
   partial?: ReactNode | undefined;
   /** Mini trend slot (e.g. a Sparkline at least 120 × 32). */
   trend?: ReactNode | undefined;
+  /** "side": right of the value (wide cards); "below": its own row under the change (narrow cards). */
+  trendPlacement?: "side" | "below" | undefined;
   /** Header action, e.g. an "Open chart" link. */
   action?: ReactNode | undefined;
   /** Footer line; omit for a card without a footer. */
@@ -136,6 +138,7 @@ export function KpiCard({
   footnote,
   partial,
   trend,
+  trendPlacement = "side",
   action,
   source,
   state = "ready",
@@ -161,7 +164,7 @@ export function KpiCard({
       )}
     >
       <Label
-        className="m-0 line-clamp-2 min-w-0 text-[13px] font-medium leading-5 text-foreground/80"
+        className="m-0 line-clamp-3 min-w-0 text-[13px] font-medium leading-5 text-foreground/80"
         title={typeof label === "string" ? label : undefined}
       >
         {label}
@@ -213,7 +216,7 @@ export function KpiCard({
         <div className="min-w-0">
           <Value value={value} unit={unit} size={size} />
         </div>
-        {trend ? <div className="mb-1 shrink-0">{trend}</div> : null}
+        {trend && trendPlacement === "side" ? <div className="mb-1 shrink-0">{trend}</div> : null}
       </div>
       {delta || deltaNote ? (
         <div className={cn("mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1", pad)}>
@@ -225,6 +228,10 @@ export function KpiCard({
             <span className="text-meta text-muted-foreground">{deltaNote}</span>
           ) : null}
         </div>
+      ) : null}
+      {trend && trendPlacement === "below" ? (
+        // the trend fills a narrow card: the svg shrinks to the card width, keeping its aspect ratio
+        <div className={cn("mt-2.5 [&_svg]:h-auto [&_svg]:max-w-full", pad)}>{trend}</div>
       ) : null}
       {meta || partial ? (
         <div className={cn("mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1", pad)}>
@@ -254,7 +261,7 @@ export function KpiCard({
 const GRID_COLS: Record<2 | 3 | 4 | 5 | 6, string> = {
   2: "sm:grid-cols-2",
   3: "sm:grid-cols-2 lg:grid-cols-3",
-  4: "grid-cols-2 lg:grid-cols-4",
+  4: "sm:grid-cols-2 xl:grid-cols-4",
   5: "grid-cols-2 sm:grid-cols-3 xl:grid-cols-5",
   6: "grid-cols-2 sm:grid-cols-3 xl:grid-cols-6",
 };

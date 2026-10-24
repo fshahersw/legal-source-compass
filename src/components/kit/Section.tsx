@@ -31,7 +31,7 @@ export function Section({
 }) {
   const titleId = id ? `${id}-title` : undefined;
   return (
-    <section id={id} aria-labelledby={titleId} className={cn("min-w-0 scroll-mt-4", className)}>
+    <section id={id} aria-labelledby={titleId} className={cn("min-w-0 scroll-mt-16", className)}>
       <div
         className={cn(
           "mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-1",

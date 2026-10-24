@@ -20,13 +20,16 @@ import {
 import { AppShell } from "@/components/atlas/AppShell";
 import { HubKpis, HubLinks } from "@/components/atlas/hub/SectionHub";
 import { HUBS } from "@/components/atlas/hub/hubs";
-import { KpiTile } from "@/components/insights/OverviewBoard";
-import { HUB_BLOCK_TOPIC, kpiFromBlock } from "@/components/insights/kpis";
+import { hubTileState } from "@/components/insights/hubTiles";
+import { KpiTile } from "@/components/insights/KpiTile";
 import { dailyInsightQuery, formatDayKey } from "@/components/insights/insightQueries";
 import { analyticsBlockQuery } from "@/components/analytics/hub/blockQuery";
 import {
+  BarList,
   Card,
   CardBody,
+  ChartCard,
+  DataDrawer,
   CardFooter,
   CardHeader,
   CardSkeleton,
@@ -45,9 +48,14 @@ import {
   PageTabs,
   PartialPill,
   Section,
+  SectionIndex,
+  ShowMore,
+  ShowMoreText,
   SourceFooter,
   StatusPill,
+  type DataColumn,
 } from "@/components/kit";
+import { MOVEMENT_RULE } from "@/components/insights/kpis";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,7 +84,6 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { blockDef } from "@/lib/analytics/registry";
 import { PRIMARY_NAVIGATION } from "@/lib/atlas/navigation";
 import { listDatasets } from "@/lib/external/catalog.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
@@ -133,16 +140,18 @@ const LIVE_BLOCKS = ["federal-civil", "mdl-pending", "cpsc-recalls"] as const;
 function Specimen({
   name,
   note,
+  id,
   children,
   className,
 }: {
   name: string;
   note?: string;
+  id?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={cn("space-y-2.5", className)}>
+    <div id={id} className={cn("scroll-mt-16 space-y-2.5", className)}>
       <p className="m-0 flex flex-wrap items-baseline gap-x-2 text-meta text-muted-foreground">
         <code className="font-mono text-[11px] font-medium text-foreground">{name}</code>
         {note ? <span>{note}</span> : null}
@@ -157,19 +166,9 @@ function LiveTiles() {
   const qs = useQueries({ queries: LIVE_BLOCKS.map((id) => analyticsBlockQuery(id)) });
   return (
     <KpiGrid columns={2} className="xl:grid-cols-3" label="Live KPI cards">
-      {LIVE_BLOCKS.map((id, i) => {
-        const q = qs[i]!;
-        const title = blockDef(id)?.title ?? id;
-        const topic = HUB_BLOCK_TOPIC[id]!;
-        const state = q.isPending
-          ? ({ kind: "loading", id, topic, title } as const)
-          : q.isError
-            ? ({ kind: "error", id, topic, title, retry: () => void q.refetch() } as const)
-            : q.data.status === "empty"
-              ? ({ kind: "empty", id, topic, title, reason: q.data.reason } as const)
-              : ({ kind: "ok", kpi: kpiFromBlock(q.data.data, title, topic) } as const);
-        return <KpiTile key={id} state={state} />;
-      })}
+      {LIVE_BLOCKS.map((id, i) => (
+        <KpiTile key={id} state={hubTileState(id, qs[i]!)} />
+      ))}
     </KpiGrid>
   );
 }
@@ -207,6 +206,98 @@ function LiveStrip() {
       label="Products & safety record counts"
       cellBasis="basis-[calc(50%-1px)] lg:basis-[calc(25%-1px)]"
     />
+  );
+}
+
+type SafetyRow = { dataset: string; label: string; records: number | null; source: string };
+
+/** Safety record counts from the catalog, largest first (live). */
+function useSafetyRows() {
+  const fn = useServerFn(listDatasets);
+  const q = useQuery({
+    queryKey: ["corpus-datasets"],
+    queryFn: () => fn(),
+    staleTime: 10 * 60_000,
+  });
+  const byId = new Map((q.data ?? []).map((d) => [d.id, d]));
+  const rows: SafetyRow[] = HUBS.safety.kpis
+    .flatMap((k) => {
+      const d = byId.get(k.dataset);
+      if (!d) return [];
+      const n = d.records;
+      return [
+        {
+          dataset: k.dataset,
+          label: k.label,
+          records: n != null && Number.isSafeInteger(n) && n >= 0 ? n : null,
+          source: datasetDisplayName(d.id, d.label),
+        },
+      ];
+    })
+    .sort((a, b) => (b.records ?? -1) - (a.records ?? -1) || a.label.localeCompare(b.label));
+  return { q, rows };
+}
+
+const SAFETY_COLUMNS: DataColumn<SafetyRow>[] = [
+  { key: "label", label: "Collection", value: (r) => r.label },
+  { key: "records", label: "Records", align: "right", value: (r) => r.records },
+  { key: "source", label: "Dataset", value: (r) => r.source },
+];
+
+/** ChartCard + BarList + "View data", live: the Products & safety collections by size. */
+function LiveChart() {
+  const { q, rows } = useSafetyRows();
+  const top = rows.find((r) => r.records !== null);
+  return (
+    <ChartCard
+      title={
+        top ? `${top.label} is the largest safety collection` : "Products & safety collections"
+      }
+      subtitle="Records per collection as the corpus catalog stores them"
+      state={q.isPending ? "loading" : q.isError ? "error" : rows.length ? "ready" : "empty"}
+      onRetry={() => void q.refetch()}
+      height={180}
+      data={{
+        title: "Products & safety collections",
+        rows,
+        rowKey: (r) => r.dataset,
+        columns: SAFETY_COLUMNS,
+        source: { source: { label: "Corpus catalog", href: "/sources" } },
+      }}
+      source={{
+        source: { label: "Corpus catalog", href: "/sources" },
+        about: <p>Counts are the catalog&apos;s stored record counts; they are never added up.</p>,
+      }}
+    >
+      <BarList
+        ariaLabel="Records per safety collection"
+        items={rows.map((r) => ({
+          id: r.dataset,
+          label: r.label,
+          value: r.records,
+          display: r.records === null ? "" : r.records.toLocaleString("en-US"),
+        }))}
+      />
+    </ChartCard>
+  );
+}
+
+/** DataDrawer in inline mode, live. */
+function LiveInlineData() {
+  const { rows } = useSafetyRows();
+  return (
+    <Card className="p-4">
+      <p className="m-0 text-label">Products & safety collections</p>
+      <DataDrawer
+        mode="inline"
+        title="Products & safety collections"
+        rows={rows}
+        rowKey={(r) => r.dataset}
+        columns={SAFETY_COLUMNS}
+        source={{ source: { label: "Corpus catalog", href: "/sources" } }}
+        className="mt-1"
+      />
+    </Card>
   );
 }
 
@@ -268,7 +359,11 @@ function Specimens({ panel }: { panel: string }) {
   const tabItems = PRIMARY_NAVIGATION.map((n) => ({ id: n.id, label: n.label }));
   return (
     <div className="space-y-10">
-      <Specimen name="PageHeader + PageTabs" note="nine tabs: six show, the rest sit under More">
+      <Specimen
+        id={`${panel}-header`}
+        name="PageHeader + PageTabs"
+        note="nine tabs: six show, the rest sit under More"
+      >
         <Card className="p-5">
           <PageHeader
             breadcrumbs={[{ label: "Prototypes", to: "/prototypes" }, { label: "Page kit" }]}
@@ -298,7 +393,11 @@ function Specimens({ panel }: { panel: string }) {
         </Card>
       </Specimen>
 
-      <Specimen name="Section + KpiGrid + KpiCard" note="catalog record counts, live">
+      <Specimen
+        id={`${panel}-kpis`}
+        name="Section + KpiGrid + KpiCard"
+        note="catalog record counts, live"
+      >
         <Section
           title="Courts & judges"
           description="Headline record counts, each linked to its dataset"
@@ -314,6 +413,40 @@ function Specimens({ panel }: { panel: string }) {
 
       <Specimen name="KpiStrip" note="one card, cells divided by hairlines, live">
         <LiveStrip />
+      </Specimen>
+
+      <Specimen
+        id={`${panel}-chart`}
+        name="ChartCard + BarList + DataDrawer"
+        note="takeaway title, bars with values, View data opens the table, source and CSV (live)"
+      >
+        <div className="grid gap-4 lg:grid-cols-2">
+          <LiveChart />
+          <div className="space-y-4">
+            <LiveInlineData />
+            <Card className="p-4">
+              <p className="m-0 mb-2 text-label">ShowMore</p>
+              <ShowMore
+                items={HUBS.overview.links}
+                initial={3}
+                noun="sections"
+                render={(shown) => (
+                  <ul className="m-0 list-none divide-y divide-border rounded-lg border border-border p-0">
+                    {shown.map((l) => (
+                      <ListRow key={l.to} to={l.to} title={l.label} description={l.description} />
+                    ))}
+                  </ul>
+                )}
+              />
+              <p className="m-0 mt-4 mb-1 text-label">ShowMoreText</p>
+              <ShowMoreText lines={2} className="text-[13px] leading-5 text-muted-foreground">
+                {MOVEMENT_RULE.text} A change is a difference between two published figures, not a
+                finding that anything caused it; several series compare a month with the same month
+                a year earlier, as their text says.
+              </ShowMoreText>
+            </Card>
+          </div>
+        </div>
       </Specimen>
 
       <Specimen name="KpiCard states" note="loading, error, empty and not recorded">
@@ -341,11 +474,69 @@ function Specimens({ panel }: { panel: string }) {
         </KpiGrid>
       </Specimen>
 
-      <Specimen name="InsightCallout" note="today's safety insight, live">
+      <Specimen
+        id={`${panel}-states`}
+        name="Recipe states"
+        note="ChartCard loading, empty and error; KpiCard partial; DataDrawer and BarList without values"
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          <ChartCard
+            title="Loading state"
+            subtitle="The card keeps its height"
+            state="loading"
+            height={120}
+          />
+          <ChartCard
+            title="Empty state"
+            subtitle="Nothing is published for the period"
+            state="empty"
+            height={120}
+            emptyText="Not recorded for this period."
+          />
+          <ChartCard
+            title="Error state"
+            subtitle="The read failed; the rest of the page is unaffected"
+            state="error"
+            onRetry={() => undefined}
+            height={120}
+          />
+          <KpiCard
+            label="Partial period"
+            value={null}
+            partial="The latest period is partial and is not the latest value."
+            deltaNote="No complete period to compare with."
+            source={{ source: { label: "Source named here" }, about: <p>Method and caveats.</p> }}
+          />
+          <Card className="p-4">
+            <p className="m-0 text-label">DataDrawer without rows</p>
+            <DataDrawer
+              mode="inline"
+              title="Empty table"
+              rows={[] as SafetyRow[]}
+              rowKey={(r) => r.dataset}
+              columns={SAFETY_COLUMNS}
+              emptyText="Not recorded"
+            />
+          </Card>
+          <Card className="p-4">
+            <p className="m-0 mb-3 text-label">BarList with a missing value</p>
+            <BarList
+              ariaLabel="A value not recorded"
+              items={[{ id: "gap", label: "A state without a value", value: null, display: "" }]}
+            />
+          </Card>
+        </div>
+      </Specimen>
+
+      <Specimen id={`${panel}-insight`} name="InsightCallout" note="today's safety insight, live">
         <LiveInsight />
       </Specimen>
 
-      <Specimen name="Section + LinkTile" note="the Overview's section links with live counts">
+      <Specimen
+        id={`${panel}-links`}
+        name="Section + LinkTile"
+        note="the Overview's section links with live counts"
+      >
         <HubLinks
           links={HUBS.overview.links.slice(0, 3)}
           title="Sections"
@@ -444,7 +635,11 @@ function Specimens({ panel }: { panel: string }) {
         </Specimen>
       </div>
 
-      <Specimen name="ui primitives" note="restyled shadcn components, same APIs">
+      <Specimen
+        id={`${panel}-ui`}
+        name="ui primitives"
+        note="restyled shadcn components, same APIs"
+      >
         <Card>
           <CardBody className="space-y-5 pt-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -559,6 +754,20 @@ function Page() {
         </InfoPopover>
       }
     >
+      <SectionIndex
+        className="-mt-4 mb-6"
+        label="Specimens"
+        items={[
+          { id: "light-header", label: "Header & tabs" },
+          { id: "light-kpis", label: "KPIs" },
+          { id: "light-chart", label: "Chart card & data" },
+          { id: "light-states", label: "States" },
+          { id: "light-insight", label: "Insight" },
+          { id: "light-links", label: "Links" },
+          { id: "light-ui", label: "Primitives" },
+          { id: "kit-dark-panel", label: "Dark theme" },
+        ]}
+      />
       <div className="space-y-8">
         <section
           aria-labelledby="kit-light"
@@ -571,7 +780,8 @@ function Page() {
         </section>
         <section
           aria-labelledby="kit-dark"
-          className="dark rounded-2xl border border-border bg-background p-4 text-foreground sm:p-6"
+          id="kit-dark-panel"
+          className="dark scroll-mt-16 rounded-2xl border border-border bg-background p-4 text-foreground sm:p-6"
         >
           <h2 id="kit-dark" className="mb-6 text-heading">
             Dark

@@ -268,6 +268,7 @@ export function AppShell({
   description,
   actions,
   emblem,
+  sectionTabs = true,
   children,
 }: {
   breadcrumbs: Crumb[];
@@ -275,6 +276,11 @@ export function AppShell({
   description?: string;
   actions?: ReactNode;
   emblem?: ReactNode;
+  /**
+   * false: the page is one scrollable page with its own SectionIndex, so the section's tab row is not shown (the
+   * routes behind the tabs stay reachable from the page). Navigation config is unchanged.
+   */
+  sectionTabs?: boolean;
   children: ReactNode;
 }) {
   const { overlays, bookmarks, localStateWarning, persistWarning } = useAtlas();
@@ -295,7 +301,7 @@ export function AppShell({
     setSidebarCollapsed(next);
   };
   const section = navigationSection(pathname, search);
-  const context = contextualNavigation(pathname, search);
+  const context = sectionTabs ? contextualNavigation(pathname, search) : [];
   const activeTab = activeContextualPath(pathname, search);
   const trail = composeBreadcrumbs(pathname, search, breadcrumbs);
   const badges = { saved: counts.total + Object.keys(bookmarks).length };
