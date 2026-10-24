@@ -3,6 +3,7 @@ verify_series.py). Deterministic; reads only the build directory.
 
   python3 -I -B scripts/enrichment/jpml_history/make_series_report.py
 """
+import gzip
 import json
 from collections import Counter
 from pathlib import Path
@@ -20,7 +21,11 @@ GRAIN = {
 
 
 def load(name):
-    return json.loads((B / name).read_text())
+    """A build file as written (.json) or after gzip (.json.gz)."""
+    p = B / name
+    if not p.exists() and (B / f"{name}.gz").exists():
+        return json.loads(gzip.decompress((B / f"{name}.gz").read_bytes()))
+    return json.loads(p.read_text())
 
 
 def main():

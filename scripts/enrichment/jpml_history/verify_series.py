@@ -30,6 +30,9 @@ OLD = ROOT / "private" / "build" / "jpml_history"
 
 
 def load(p):
+    """A build file as written (.json) or after gzip (.json.gz)."""
+    if not p.exists() and p.with_name(p.name + ".gz").exists():
+        p = p.with_name(p.name + ".gz")
     raw = p.read_bytes()
     return json.loads(gzip.decompress(raw) if p.suffix == ".gz" else raw)
 
