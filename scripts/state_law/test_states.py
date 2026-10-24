@@ -462,6 +462,31 @@ class KentuckyHeadTests(unittest.TestCase):
         self.assertEqual(parsed["number"], "620.072")
         self.assertTrue(parsed["heading"].startswith("Unannounced home visits"))
 
+    def test_catchline_ends_at_its_version_marker(self):
+        ky = load("ky")
+        lines = ["2.015 Age of majority -- Exceptions.           (Effective until January 1, 2027)",
+                 "Persons of the age of eighteen (18) years are of the age of majority for all purposes in this",
+                 "Commonwealth.", "               Effective: July 15, 2026",
+                 "               History: Amended 2026 Ky. Acts ch. 184, sec. 40, effective July 15, 2026."]
+        original = ky.lib.pdf_layout_lines
+        ky.lib.pdf_layout_lines = lambda body: list(lines)
+        try:
+            parsed = ky.parse_pdf(b"%PDF-1.4")
+        finally:
+            ky.lib.pdf_layout_lines = original
+        self.assertEqual(parsed["heading"], "Age of majority -- Exceptions. (Effective until January 1, 2027)")
+        self.assertTrue(parsed["text"].startswith("Persons of the age of eighteen"))
+        self.assertTrue(ky.UNUSED_RE.match("[Number not yet utilized.]"))
+
+    def test_printed_versions_are_kept_as_versions(self):
+        ky = load("ky")
+        now = {"number": "6.905", "effective_line": "Effective: March 12, 2021"}
+        later = {"number": "6.905", "effective_line": "Effective: January 1, 2027"}
+        single = {"number": "6.910", "effective_line": "Effective: July 15, 2016"}
+        out = ky.versions([("a", now), ("b", single), ("c", later)])
+        self.assertEqual([(o[0], o[2], o[3]) for o in out],
+                         [("a", "Effective: March 12, 2021", 1), ("b", None, None), ("c", "Effective: January 1, 2027", 2)])
+
 
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):

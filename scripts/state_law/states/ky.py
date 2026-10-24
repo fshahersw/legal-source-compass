@@ -48,6 +48,8 @@ HEAD_RE = re.compile(r"^(\d+[A-Z]?\.\d+[0-9A-Za-z]*)\s+(.*)$")
 EFFECTIVE_RE = re.compile(r"^Effective:\s*(.+)$")
 MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
 DATE_RE = re.compile(rf"({MONTHS})\s+(\d{{1,2}}),\s+(\d{{4}})")
+CATCHLINE_END_RE = re.compile(r"\.\s+\((?:Effective|Expires|Repealed|Contingent|Operative)[^()]*\)$", re.I)
+UNUSED_RE = re.compile(r"^\[Number not yet utilized\.?\]$", re.I)
 NOTE_RE = re.compile(r"^(?:Legislative Research Commission Note|Catchline at repeal|Formerly codified as|Note:)", re.I)
 
 
@@ -70,8 +72,11 @@ def parse_pdf(body: bytes) -> dict:
         raise RuntimeError(f"no section line: {lines[0][:80]!r}")
     number, heading = head.group(1), lib.norm_ws(head.group(2))
     rest = lines[1:]
-    # a catchline that wraps continues until it ends with a period (the publisher ends every catchline with one)
-    while heading and not heading.endswith(".") and rest and rest[0].strip() and not MARKER_RE.match(rest[0].strip()):
+    # a catchline that wraps continues until it ends with a period (the publisher ends every catchline with one), or
+    # with the version marker printed after that period ("Age of majority -- Exceptions. (Effective until January 1,
+    # 2027)")
+    while (heading and not heading.endswith(".") and not CATCHLINE_END_RE.search(heading) and rest and rest[0].strip()
+           and not MARKER_RE.match(rest[0].strip())):
         heading = lib.norm_ws(heading + " " + rest.pop(0).strip())
     paragraphs: list[str] = []
     start_indent = None
@@ -114,6 +119,24 @@ def parse_pdf(body: bytes) -> dict:
             "history": lib.norm_ws(" ".join(history)) or None, "effective_line": effective_line}
 
 
+def versions(items: list) -> list:
+    """(source, parsed, version, version_index) for a chapter's PDFs. A chapter lists a separate PDF for each printed
+    version of a section (the text in force and an amended text "Effective: January 1, 2027"); a number printed more
+    than once is kept as versions, labelled by their effective lines and numbered in printed order."""
+    counts: dict[str, int] = {}
+    for _source, parsed in items:
+        counts[parsed["number"]] = counts.get(parsed["number"], 0) + 1
+    seen: dict[str, int] = {}
+    out = []
+    for source, parsed in items:
+        if counts[parsed["number"]] > 1:
+            seen[parsed["number"]] = seen.get(parsed["number"], 0) + 1
+            out.append((source, parsed, parsed["effective_line"], seen[parsed["number"]]))
+        else:
+            out.append((source, parsed, None, None))
+    return out
+
+
 def index_structure(page: lib.Fetched) -> tuple[list[tuple[str, str | None, str | None, str]], str | None]:
     """[(chapter number, chapter heading, title label, chapter URL)] in printed order, and the currency statement."""
     text = page.text()
@@ -153,6 +176,7 @@ def acquire(ctx: lib.RunContext) -> None:
             path.append({"level": "title", "label": "Title", "number": title_match.group(1), "heading": title_match.group(2) or None})
         path.append({"level": "chapter", "label": "Chapter", "number": number, "heading": heading})
         ctx.prefetch(BASE + link for link in dict.fromkeys(links))  # retained runs: download the chapter's PDFs ahead
+        items: list[tuple[lib.Fetched, dict]] = []
         for link in dict.fromkeys(links):
             if not ctx.want_more():
                 break
@@ -160,16 +184,18 @@ def acquire(ctx: lib.RunContext) -> None:
             if not pdf.body.startswith(b"%PDF"):
                 raise RuntimeError(f"{pdf.url} is not a PDF")
             try:
-                parsed = parse_pdf(pdf.body)
+                items.append((pdf, parse_pdf(pdf.body)))
             except RuntimeError as error:
                 if ctx.sample is not None:
                     raise
                 # one PDF the parser cannot read is ledgered, never guessed (the loader bounds the share)
                 ctx._rejects.write({"state": "KY", "code": "KRS", "number": None, "reason": str(error)[:300],
                                     "source_url": pdf.url, "source_sha256": pdf.sha256})
-                continue
+        for pdf, parsed, version, index_ in versions(items):
             status = marker = None
             effective = None
+            if UNUSED_RE.match(parsed["heading"] or "") and not parsed["text"]:
+                status, marker = "reserved", parsed["heading"]
             when = _date(parsed["effective_line"] or "")
             if when:
                 effective = {"start": when.isoformat(), "end": None, "note": parsed["effective_line"]}
@@ -177,4 +203,4 @@ def acquire(ctx: lib.RunContext) -> None:
                     status, marker = "future_effective", parsed["effective_line"]
             ctx.section(code="KRS", number=parsed["number"], heading=parsed["heading"], text=parsed["text"],
                         history=parsed["history"], source=pdf, path=path, status=status, status_marker=marker,
-                        effective=effective)
+                        effective=effective, version=version, version_index=index_)
