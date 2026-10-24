@@ -60,7 +60,8 @@ export function divergingDomain(
   return [baseline - half, baseline + half];
 }
 
-export type TreeNode = { name: string; value?: number; children?: TreeNode[] };
+/** `slot` (top level only) pins a categorical colour slot; without it the slot follows size order. */
+export type TreeNode = { name: string; value?: number; slot?: number; children?: TreeNode[] };
 
 /** Radial partition: x = angle in [0, 2π], y = radius in [0, radius]. */
 export function sunburstLayout(

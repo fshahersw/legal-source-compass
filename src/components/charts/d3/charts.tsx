@@ -442,10 +442,28 @@ export function DivergingDots({
 
 // ------------------------------------------------------------------------------------------------ sunburst
 
-export function Sunburst({ root, size = 360 }: { root: TreeNode; size?: number }) {
+export function Sunburst({
+  root,
+  size = 360,
+  focus: focusProp,
+  onFocusChange,
+  centerLabel,
+}: {
+  root: TreeNode;
+  size?: number;
+  /** Controlled focus: the top-level name to highlight. */
+  focus?: string | null;
+  onFocusChange?: (name: string | null) => void;
+  centerLabel?: (value: number) => string;
+}) {
   const r = size / 2;
   const nodes = useMemo(() => sunburstLayout(root, r), [root, r]);
-  const [focus, setFocus] = useState<string | null>(null);
+  const [own, setOwn] = useState<string | null>(null);
+  const focus = focusProp !== undefined ? focusProp : own;
+  const setFocus = (name: string | null) => {
+    setOwn(name);
+    onFocusChange?.(name);
+  };
   const a = d3arc<{ x0: number; x1: number; y0: number; y1: number }>()
     .startAngle((d) => d.x0)
     .endAngle((d) => d.x1)
@@ -468,7 +486,7 @@ export function Sunburst({ root, size = 360 }: { root: TreeNode; size?: number }
         .filter((n) => n.depth > 0)
         .map((n, i) => {
           const t = top(n);
-          const slot = Math.min(5, Math.max(0, tops.indexOf(t!)));
+          const slot = t?.data.slot ?? Math.min(5, Math.max(0, tops.indexOf(t!)));
           return (
             <path
               key={i}
@@ -488,7 +506,9 @@ export function Sunburst({ root, size = 360 }: { root: TreeNode; size?: number }
           );
         })}
       <text textAnchor="middle" dy="-0.2em" className="fill-foreground text-sm font-semibold">
-        {(shown?.value ?? total).toLocaleString("en-US")}
+        {centerLabel
+          ? centerLabel(shown?.value ?? total)
+          : (shown?.value ?? total).toLocaleString("en-US")}
       </text>
       <text textAnchor="middle" dy="1.2em" className="fill-muted-foreground text-[10px]">
         {shown?.data.name ?? root.name}
