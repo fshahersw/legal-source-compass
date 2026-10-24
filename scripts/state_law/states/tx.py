@@ -39,14 +39,18 @@ ARCHIVE_BASE = "https://tcss.legis.texas.gov/resources"
 SITE = "https://statutes.capitol.texas.gov/"
 PARSER = "tx-html/1"
 
-# code key -> (Bluebook-style citation template, citation abbreviations accepted by the resolver)
+# code key -> (Bluebook-style citation template, citation abbreviations accepted by the resolver, including the
+# variants filings use: "Bus. & Comm.", "Bus. Org.", "Civ. Prac. & Remedies", "Gov.")
 CODES = {
     "AG": ("Agriculture Code", "Tex. Agric. Code § {n}", ["tex. agric. code", "tex. agric. code ann."]),
     "AL": ("Alcoholic Beverage Code", "Tex. Alco. Bev. Code § {n}", ["tex. alco. bev. code", "tex. alco. bev. code ann."]),
-    "BC": ("Business & Commerce Code", "Tex. Bus. & Com. Code § {n}", ["tex. bus. & com. code", "tex. bus. & com. code ann."]),
-    "BO": ("Business Organizations Code", "Tex. Bus. Orgs. Code § {n}", ["tex. bus. orgs. code", "tex. bus. orgs. code ann."]),
+    "BC": ("Business & Commerce Code", "Tex. Bus. & Com. Code § {n}", ["tex. bus. & com. code", "tex. bus. & com. code ann.", "tex. bus. & comm. code",
+                                                                     "tex. bus. & comm. code ann."]),
+    "BO": ("Business Organizations Code", "Tex. Bus. Orgs. Code § {n}", ["tex. bus. orgs. code", "tex. bus. orgs. code ann.", "tex. bus. org. code",
+                                                                      "tex. bus. org. code ann."]),
     "CP": ("Civil Practice and Remedies Code", "Tex. Civ. Prac. & Rem. Code § {n}",
-           ["tex. civ. prac. & rem. code", "tex. civ. prac. & rem. code ann."]),
+           ["tex. civ. prac. & rem. code", "tex. civ. prac. & rem. code ann.", "tex. civ. prac. & remedies code",
+            "tex. civ. prac. & remedies code ann."]),
     "CR": ("Code of Criminal Procedure", "Tex. Code Crim. Proc. art. {n}",
            ["tex. code crim. proc. art.", "tex. code crim. proc. ann. art."]),
     "ED": ("Education Code", "Tex. Educ. Code § {n}", ["tex. educ. code", "tex. educ. code ann."]),
@@ -54,7 +58,7 @@ CODES = {
     "ES": ("Estates Code", "Tex. Est. Code § {n}", ["tex. est. code", "tex. est. code ann."]),
     "FA": ("Family Code", "Tex. Fam. Code § {n}", ["tex. fam. code", "tex. fam. code ann."]),
     "FI": ("Finance Code", "Tex. Fin. Code § {n}", ["tex. fin. code", "tex. fin. code ann."]),
-    "GV": ("Government Code", "Tex. Gov't Code § {n}", ["tex. gov't code", "tex. gov't code ann.", "tex. govt code"]),
+    "GV": ("Government Code", "Tex. Gov't Code § {n}", ["tex. gov't code", "tex. gov't code ann.", "tex. govt code", "tex. gov. code"]),
     "HS": ("Health and Safety Code", "Tex. Health & Safety Code § {n}",
            ["tex. health & safety code", "tex. health & safety code ann."]),
     "HR": ("Human Resources Code", "Tex. Hum. Res. Code § {n}", ["tex. hum. res. code", "tex. hum. res. code ann."]),
