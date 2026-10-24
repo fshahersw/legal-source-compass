@@ -9,7 +9,8 @@ calls these and writes the build files. Rules that keep the series honest:
   * if two publications print the same table for the same period end, the first by priority (JB, STFJ, FJCS, BF) is used
     and the other is listed in the source note (never averaged or merged);
   * a change of column set, footnote wording or title between consecutive periods is recorded as a break at that period;
-  * floats are rounded to 6 decimals (the cells carry up to 15 digits; the published display uses 0 to 2).
+  * floats are rounded to 6 decimals (the cells carry up to 15 digits; the published display uses 0 to 2);
+  * a percent-formatted workbook cell (a fraction, displayed times 100) is stored as the printed percentage.
 """
 import re
 from collections import OrderedDict
@@ -27,6 +28,14 @@ def clean_num(v):
         if v.is_integer() and abs(v) < 1e15:
             return int(v)
         return round(v, ROUND)
+    return v
+
+
+def printed_value(v, fmt, from_book=True, flag=None):
+    """The figure as printed. A workbook cell formatted as a percentage holds a fraction (0.901298 is printed 90.1%), so its value
+    is the fraction times 100; every other cell, a text cell and any figure read from a PDF (printed as 90.1) is taken as it is."""
+    if from_book and flag is None and fmt and "%" in fmt and isinstance(v, (int, float)) and not isinstance(v, bool):
+        return v * 100
     return v
 
 
@@ -124,13 +133,15 @@ def series_for(docs, cols, entity_key):
         if row is None:
             continue
         label = row["label"]
+        from_book = (d.get("source") or {}).get("format") != "pdf"
         for ci, c in value_columns(d["norm"]):
             if c["key"] not in data:
                 continue
             pos = d["col_pos"][c["key"]]
             v = row["values"][pos]
             if v is not None:
-                data[c["key"]][i] = clean_num(v)
+                flag = (row["flags"] or [None] * (pos + 1))[pos]
+                data[c["key"]][i] = clean_num(printed_value(v, c.get("fmt"), from_book, flag))
             elif (row["flags"] or [None] * (pos + 1))[pos] == "dash":
                 dash[c["key"]].append(i)
     return data, {k: v for k, v in dash.items() if v}, label

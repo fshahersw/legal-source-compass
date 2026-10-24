@@ -1,6 +1,6 @@
 # U.S. Courts statistical tables: coverage audit (2026-10-24)
 
-Generated 2026-10-24T02:15:49+00:00 by `scripts/enrichment/uscourts_tables/coverage.py` from the listing of https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables (crawled 2026-10-23, the years 2025-2026 re-crawled on 2026-10-24: no table was added), the stream's file store and parse reports, and the built datasets. Each listing row is one table of one publication for one period.
+Generated 2026-10-24T02:56:09+00:00 by `scripts/enrichment/uscourts_tables/coverage.py` from the listing of https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables (crawled 2026-10-23, the years 2025-2026 re-crawled on 2026-10-24: no table was added), the stream's file store and parse reports, and the built datasets. Each listing row is one table of one publication for one period.
 
 Columns: **Listed** rows in the listing; **Acquired** file stored (here or by the stream that publishes that publication); **Parsed** read into a table (here or by that stream); **Published** in a dataset of this stream. Not published splits into **Held** (the edition fails its own printed totals), **Duplicate** (another publication prints the same table for the same period and that one is published), **Other dataset** (published by another stream's dataset) and **Gap**.
 
@@ -35,6 +35,41 @@ Before: the five uscourts_tables_* datasets as published on 2026-10-23 (their ma
 | BAPCPA | BAPCPA 6 | 2019-12-31 | 1 | circuit, ca9, cases_refiled_after_dismissal_3: 2109 vs 2108 | gap |
 | JB | M-4B | 2022-09-30 | 3 | coltotal, national, total: 42016 vs 42017 | gap |
 | JB | V-1 | 2021-09-30 | 2 | national, national, services_provided_to_other_district_courts/civil_cases_terminated: 504 vs 472 | gap |
+
+## Corrections and additions in this build
+
+- Reconciliation: every table-period is tested against the totals it prints (reconcile.py); 3 editions that break their own totals are held (listed above). The roll-up check counted the D.C. row twice in tables that print it as a circuit and as a district (2023 on); that check error is fixed, and no data changed because of it.
+- Units: 'Class A Misdemeanor' columns were typed as ratios (the word 'misdemeanor' contains 'mean'); they are counts.
+- Percentages: 32 percent columns were stored as the fraction a percent-formatted cell holds (0.901 for 90.1%); every percent column now holds the printed percentage in every period. The court trend panel showed these as fractions.
+- Labels: the 2nd Circuit row printed '2nd2' (footnote 2 in plain digits) in Judicial Business B-2, FY2018 was not read as a circuit; it is.
+- New: BAPCPA report tables (2018-2025 workbooks) as uscourts_bapcpa; Wiretap jurisdiction Tables 2-6 (2018-2025) as uscourts_wiretap; uscourts_series_index; 69 more PDF-only court-table editions (H-1, H-7, H-13, E-2, E-3, J-1, J-2, BAPCPA 8) read under the PDF gates.
+- Reachable but not table publications (not acquired): Crime Victims' Rights annual reports (18 PDFs), Delayed-Notice Search Warrant reports (9 report pages), Director's Report on the Foreign Intelligence Surveillance Courts (2 PDFs).
+
+## Verification and cross-checks
+
+Second code path (verify_uscourts_tables.py, no shared parser): 60 of 60 random court cells found again in the source workbook, 60 of 60 category-row cells, 15,230 district sums equal the printed Total (0 mismatches, 3,279 incomplete), 12 of 12 workbook editions agree with their own PDF row for row, 9,667 of 9,667 Wiretap groupings re-added from the stored figures, 11,791 of 15,735 PDF-read figures equal the next edition's prior-year column (the 3,944 others are figures the next edition revised, mostly bankruptcy cases pending; each period keeps its own edition's figure).
+
+Independent reads of the publisher's own files: the PDF text layer (pdftotext -layout) of the edition a held workbook belongs to, and a page-to-text conversion of two PDFs, compared figure by figure with the built datasets. The original file's text layer is authoritative; a conversion is a cross-check only.
+
+| Check | Method | Compared | Match |
+|---|---|---:|---:|
+| [Table F-2 (Three Months), quarter ending September 30, 2026: Total All Chapters for every court](https://www.uscourts.gov/sites/default/files/document/bf_f2.3_0930.2026.pdf) | page-to-text conversion | 93 | 93 |
+| [Table F-2 (Three Months), quarter ending September 30, 2026: national Total row (all chapters, chapters 7, 11, 13, other chapters, business and nonbusiness all chapters)](https://www.uscourts.gov/sites/default/files/document/bf_f2.3_0930.2026.pdf) | page-to-text conversion | 7 | 7 |
+| [Judicial Business Table H-1, FY2010 (an edition published only as PDF, read from its text layer): Total Pretrial Services Cases Activated for every row](https://www.uscourts.gov/sites/default/files/statistics_import_dir/H01Sep10.pdf) | page-to-text conversion | 105 | 105 |
+| [Held: Judicial Business M-4B, FY2022 - the PDF of the same edition prints Total 42,016 while its printed parts add up to 42,017](https://www.uscourts.gov/sites/default/files/data_tables/jb_m4b_0930.2022.pdf) | PDF text layer | 1 | 1 |
+| [Held: Judicial Business V-1, FY2021 - the PDF prints an unlabelled 'Active 1 32 20' row twice (once with zeros, once with dashes) beside the court rows; the Total 504 is not the sum of the labelled courts](https://www.uscourts.gov/sites/default/files/data_tables/jb_v1_0930.2021.pdf) | PDF text layer | 1 | 1 |
+| [Held: BAPCPA Table 6, 2019 - the PDF prints the 9th Circuit's 'cases refiled after dismissal' as 2,109 while its districts add up to 2,108](https://www.uscourts.gov/sites/default/files/data_tables/bapcpa_6_1231.2019.pdf) | PDF text layer | 1 | 1 |
+
+
+## Not acquired
+
+| Publication | Table-periods not stored |
+|---|---:|
+| Statistical Tables for the Federal Judiciary | 559 |
+| Judicial Business of the United States Courts | 781 |
+
+Judicial Business and Statistical Tables editions published only as PDF (mostly category tables, before 2017) were not downloaded once the volume's free space reached the 2.0 GB floor. The same command resumes them (stored copies are reused, one request per second): `python3 -I -B scripts/enrichment/uscourts_tables/acquire.py --pubs 77,78,79 --series ALL --pdf-only --min-free-gb 2.0`. Civil Justice Reform Act table files of older periods are held by that stream as one full report per period.
+
 
 ## Statistical Tables for the Federal Judiciary
 

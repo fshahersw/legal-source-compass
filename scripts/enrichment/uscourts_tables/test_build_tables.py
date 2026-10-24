@@ -225,5 +225,17 @@ class CountyBuildTests(unittest.TestCase):
         self.assertEqual(outside["item"]["ust"]["districts"][0]["outsideAt"], [0, 1])
 
 
+
+
+class PrintedValueTests(unittest.TestCase):
+    def test_percent_formatted_workbook_cells_are_stored_as_the_printed_percentage(self):
+        self.assertAlmostEqual(B.printed_value(0.901298701298701, "0.0%"), 90.1298701298701)
+        self.assertEqual(B.clean_num(B.printed_value(0.5, "0%")), 50)
+        self.assertEqual(B.printed_value(90.1, "0.0%", from_book=False), 90.1)  # a PDF prints the percentage itself
+        self.assertEqual(B.printed_value(45.0, "0%", flag="textpct"), 45.0)  # a text cell "45%" is read as 45
+        self.assertEqual(B.printed_value(12, "#,##0"), 12)
+        self.assertEqual(B.printed_value(3.5, None), 3.5)
+
+
 if __name__ == "__main__":
     unittest.main()

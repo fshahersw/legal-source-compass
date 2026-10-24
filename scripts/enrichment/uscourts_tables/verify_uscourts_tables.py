@@ -160,7 +160,11 @@ def lookup_cell(data, sheet, row_label, col_label, label_year, file_year, occurr
     if not cols:
         return None, f"column not found: {want}"
     holding = [c for c in cols if as_number(ws.cell(r, c).value) is not None or str(ws.cell(r, c).value).strip() in ("-", "–", "—")]
-    return ws.cell(r, (holding or cols)[0]).value, None
+    cell = ws.cell(r, (holding or cols)[0])
+    # a percent-formatted number is printed times 100 (0.9013 shows as 90.1%); the builder stores the printed percentage
+    if isinstance(cell.value, (int, float)) and not isinstance(cell.value, bool) and "%" in (cell.number_format or ""):
+        return cell.value * 100, None
+    return cell.value, None
 
 
 def as_number(v):
@@ -441,7 +445,7 @@ def verify_pdf(n, rng, by_sha):
         rows, rejected = R.rows_from_text(text, width)
         by_label = {}
         for label, tokens in rows:
-            by_label[N.E.clean_label(label).upper()] = tokens
+            by_label.setdefault(N.E.clean_label(label).upper(), tokens)  # the first panel of a multi-panel PDF is the workbook's first sheet
         wb_rows = [r for r in norm["rows"] if not r["section"] and r["entity"] in ("district", "circuit", "national")]
         rng.shuffle(wb_rows)
         picked = None
@@ -455,8 +459,11 @@ def verify_pdf(n, rng, by_sha):
         key = "TOTAL" if picked["entity"] == "national" else picked["label"].upper()
         tokens = by_label.get(key) or by_label.get(picked["label"].upper())
         diffs = []
-        for tok, v in zip(tokens, picked["values"]):
+        for j, (tok, v) in enumerate(zip(tokens, picked["values"])):
             pv, _ = R.to_number(tok)
+            fmt = norm["columns"][j].get("fmt") if j < len(norm["columns"]) else None
+            if isinstance(v, (int, float)) and fmt and "%" in fmt and (picked["flags"] or [None] * (j + 1))[j] is None:
+                v = v * 100  # the PDF prints the percentage a percent-formatted cell displays
             if not same_figure(pv, v):
                 diffs.append((tok, v))
         results.append({"table": e["table"], "pub": e["pub"], "period": e["period_end"], "row": picked["label"], "pdf": pdf_url, "figures": len(tokens),

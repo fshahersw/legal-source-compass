@@ -360,6 +360,61 @@ def before_counts(before_path, inputs):
                     "The parse report of that run was overwritten by the re-parse, so the earlier parsed count is not recorded."}
 
 
+CORRECTIONS = [
+    "Reconciliation: every table-period is tested against the totals it prints (reconcile.py); 3 editions that break their own totals are held "
+    "(listed above). The roll-up check counted the D.C. row twice in tables that print it as a circuit and as a district (2023 on); that check "
+    "error is fixed, and no data changed because of it.",
+    "Units: 'Class A Misdemeanor' columns were typed as ratios (the word 'misdemeanor' contains 'mean'); they are counts.",
+    "Percentages: 32 percent columns were stored as the fraction a percent-formatted cell holds (0.901 for 90.1%); every percent column now "
+    "holds the printed percentage in every period. The court trend panel showed these as fractions.",
+    "Labels: the 2nd Circuit row printed '2nd2' (footnote 2 in plain digits) in Judicial Business B-2, FY2018 was not read as a circuit; it is.",
+    "New: BAPCPA report tables (2018-2025 workbooks) as uscourts_bapcpa; Wiretap jurisdiction Tables 2-6 (2018-2025) as uscourts_wiretap; "
+    "uscourts_series_index; 69 more PDF-only court-table editions (H-1, H-7, H-13, E-2, E-3, J-1, J-2, BAPCPA 8) read under the PDF gates.",
+    "Reachable but not table publications (not acquired): Crime Victims' Rights annual reports (18 PDFs), Delayed-Notice Search Warrant "
+    "reports (9 report pages), Director's Report on the Foreign Intelligence Surveillance Courts (2 PDFs).",
+]
+
+
+def verification_section():
+    ver = _json(BUILD / "verification.json", {}) or {}
+    v = ver.get("summary") or {}
+    lines = ["## Verification and cross-checks", "",
+             "Second code path (verify_uscourts_tables.py, no shared parser): " + ", ".join([
+                 f"{v.get('cells_match', 0)} of {v.get('cells_checked', 0)} random court cells found again in the source workbook",
+                 f"{v.get('category_cells_match', 0)} of {v.get('category_cells_checked', 0)} category-row cells",
+                 f"{v.get('sum_match', 0):,} district sums equal the printed Total ({v.get('sum_mismatch', 0)} mismatches, {v.get('sum_incomplete', 0):,} incomplete)",
+                 f"{v.get('pdf_match', 0)} of {v.get('pdf_checked', 0)} workbook editions agree with their own PDF row for row",
+                 f"{v.get('wiretap_sum_match', 0):,} of {v.get('wiretap_sum_tests', 0):,} Wiretap groupings re-added from the stored figures",
+                 f"{v.get('pdf_period_cells_match', 0):,} of {v.get('pdf_period_cells', 0):,} PDF-read figures equal the next edition's prior-year column "
+                 f"(the {v.get('pdf_period_cells_differ', 0):,} others are figures the next edition revised, mostly bankruptcy cases pending; each period keeps its own edition's figure)",
+             ]) + ".", ""]
+    cross = _json(BUILD / "crosschecks.json", {}) or {}
+    if cross.get("checks"):
+        lines += [cross.get("method", ""), "", "| Check | Method | Compared | Match |", "|---|---|---:|---:|"]
+        for c in cross["checks"]:
+            lines.append(f"| [{c['what']}]({c['file']}) | {c['method']} | {c['compared']} | {c['match']} |")
+        lines.append("")
+    return lines
+
+
+def not_acquired_section(cov):
+    lines = ["## Not acquired", ""]
+    rows = []
+    for p in cov["publications"]:
+        n = sum(1 for t in p["tables"].values() for x in t["periods"] if x["acq"] == "not_acquired")
+        if n:
+            rows.append((p["title"], n))
+    if not rows:
+        return lines + ["Every listed table-period is stored.", ""]
+    lines += ["| Publication | Table-periods not stored |", "|---|---:|"] + [f"| {t} | {n} |" for t, n in rows] + [
+        "",
+        "Judicial Business and Statistical Tables editions published only as PDF (mostly category tables, before 2017) were not downloaded "
+        "once the volume's free space reached the 2.0 GB floor. The same command resumes them (stored copies are reused, one request per second): "
+        "`python3 -I -B scripts/enrichment/uscourts_tables/acquire.py --pubs 77,78,79 --series ALL --pdf-only --min-free-gb 2.0`. "
+        "Civil Justice Reform Act table files of older periods are held by that stream as one full report per period.", ""]
+    return lines
+
+
 def main():
     inputs = load_inputs()
     builds = load_builds()
@@ -381,6 +436,9 @@ def main():
         else:
             sec.append("None.")
         extra.append(sec)
+        extra.append(["## Corrections and additions in this build", ""] + [f"- {c}" for c in CORRECTIONS])
+        extra.append(verification_section())
+        extra.append(not_acquired_section(cov))
         write_markdown(cov, sys.argv[sys.argv.index("--doc") + 1], before, extra)
     print(json.dumps(cov["totals"]))
     for p in cov["publications"]:

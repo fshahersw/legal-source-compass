@@ -83,6 +83,7 @@ NOT_DUPLICATED = {
 }
 METHOD_RULES = [
     "Every figure is the value of a cell in a table the U.S. Courts published; floats are rounded to 6 decimals, nothing else is computed, estimated or interpolated.",
+    "A workbook cell formatted as a percentage holds a fraction that the table prints times 100 (0.901 is printed 90.1%); such cells are stored as the printed percentage, so every percent column is in percentage points in every period (figures read from PDFs are printed that way already). Until 2026-10-24 these cells were stored as fractions.",
     "A period is the publisher's own 'N-month period ending <date>': Judicial Business ends September 30, Statistical Tables for the Federal Judiciary June 30 and December 31, Federal Judicial Caseload Statistics March 31, Bankruptcy Filings every quarter end. Points from different month-ends are separate periods of overlapping 12-month windows and are never added together.",
     "A cell the publisher printed as a dash is kept as a dash position (value not recorded), never as zero; a court, column or period the table does not print is a gap.",
     "Columns that only repeat the previous year's figure beside the current year are not stored as series; the percent-change column the publisher prints is.",
