@@ -184,11 +184,11 @@ function CourtsPage() {
           lead={
             <TrendHeadline
               subject="federal caseloads"
-              unitNote="Civil cases and criminal defendants are counted when filed; MDL actions are counted as pending at the end of each fiscal year. Compare the direction and size of change, not the levels."
+              unitNote="Civil filings count cases and criminal filings count defendants, both when filed; MDL actions are counted as pending at the end of each fiscal year. Compare the direction and size of change, not the levels."
               items={[
-                { id: "federal-civil", label: "Civil cases filed" },
-                { id: "federal-criminal", label: "Criminal defendants filed" },
-                { id: "mdl-pending", label: "Actions pending in MDLs" },
+                { id: "federal-civil", label: "Civil filings" },
+                { id: "federal-criminal", label: "Criminal filings" },
+                { id: "mdl-pending", label: "MDL actions pending" },
               ]}
             />
           }
