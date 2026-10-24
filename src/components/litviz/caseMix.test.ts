@@ -4,7 +4,11 @@ import { caseMixRows, OTHER_KEY, type GroupSeries, type NationalYear } from "./c
 const g = (id: string, values: Record<number, number | null>): GroupSeries => ({
   id,
   label: id.toUpperCase(),
-  years: Object.entries(values).map(([fy, filings]) => ({ fy: Number(fy), partial: false, filings })),
+  years: Object.entries(values).map(([fy, filings]) => ({
+    fy: Number(fy),
+    partial: false,
+    filings,
+  })),
 });
 const nat = (values: Record<number, number | null>, partial: number[] = []): NationalYear[] =>
   Object.entries(values).map(([fy, filings]) => ({

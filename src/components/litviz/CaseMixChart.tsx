@@ -98,9 +98,7 @@ export function CaseMixChart() {
         period={period}
         about={
           <ul className="list-disc space-y-1 pl-4">
-            <li>
-              Fiscal years run October 1 to September 30 and are named for the year they end.
-            </li>
+            <li>Fiscal years run October 1 to September 30 and are named for the year they end.</li>
             <li>
               Case types group the nature-of-suit code each case was filed under. The five largest
               in FY{mix?.latestFy ?? ""} are shown; &ldquo;All other case types&rdquo; is the
@@ -119,7 +117,10 @@ export function CaseMixChart() {
           mix
             ? {
                 caption: "Federal civil filings by case type and fiscal year",
-                columns: [{ label: "Fiscal year" }, ...mix.keys.map((k) => ({ label: mix.labels[k]! }))],
+                columns: [
+                  { label: "Fiscal year" },
+                  ...mix.keys.map((k) => ({ label: mix.labels[k]! })),
+                ],
                 rows: mix.rows.map((r) => ({
                   key: r.period,
                   cells: [
