@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -146,47 +146,39 @@ export function CompanyProfile({
         ) : tab === "overview" ? (
           <OverviewTab profile={p} summary={d?.summary ?? null} onOpen={open} />
         ) : tab === "statements" || tab === "segments" ? (
-          <div className="space-y-8">
-            <ViewPart
-              id="company-statements"
-              title="Financial statements"
-              focus={tab === "statements"}
-            >
-              <StatementsTab cik={cik} profile={p} grain={grain} onGrain={setGrain} />
-            </ViewPart>
-            <ViewPart
-              id="company-segments"
-              title="Segments"
-              focus={tab === "segments"}
-              scrollOnFocus
-            >
-              <SegmentsTab
-                cik={cik}
-                grain={grain}
-                onGrain={setGrain}
-                currency={p?.currency ?? null}
-              />
-            </ViewPart>
-          </div>
+          <ViewParts
+            first={tab === "segments" ? 1 : 0}
+            parts={[
+              <ViewPart key="s" id="company-statements" title="Financial statements">
+                <StatementsTab cik={cik} profile={p} grain={grain} onGrain={setGrain} />
+              </ViewPart>,
+              <ViewPart key="g" id="company-segments" title="Segments">
+                <SegmentsTab
+                  cik={cik}
+                  grain={grain}
+                  onGrain={setGrain}
+                  currency={p?.currency ?? null}
+                />
+              </ViewPart>,
+            ]}
+          />
         ) : tab === "documents" || tab === "filings" ? (
-          <div className="space-y-8">
-            <ViewPart id="company-documents" title="Investor documents" focus={tab === "documents"}>
-              <DocumentsTab
-                cik={cik}
-                docId={search.doc}
-                onDoc={(id) => onNavigate({ tab: "documents", doc: id }, { replace: true })}
-                currency={p?.currency ?? null}
-              />
-            </ViewPart>
-            <ViewPart
-              id="company-filings"
-              title="SEC filings"
-              focus={tab === "filings"}
-              scrollOnFocus
-            >
-              <FilingsTab cik={cik} profile={p} />
-            </ViewPart>
-          </div>
+          <ViewParts
+            first={tab === "filings" ? 1 : 0}
+            parts={[
+              <ViewPart key="d" id="company-documents" title="Investor documents">
+                <DocumentsTab
+                  cik={cik}
+                  docId={search.doc}
+                  onDoc={(id) => onNavigate({ tab: "documents", doc: id }, { replace: true })}
+                  currency={p?.currency ?? null}
+                />
+              </ViewPart>,
+              <ViewPart key="f" id="company-filings" title="SEC filings">
+                <FilingsTab cik={cik} profile={p} />
+              </ViewPart>,
+            ]}
+          />
         ) : d ? (
           <Litigation d={d} />
         ) : detail.isError ? (
@@ -202,31 +194,23 @@ export function CompanyProfile({
   );
 }
 
-/** One part of a view; a former tab address (?tab=segments, ?tab=filings) scrolls to its part. */
+/** The parts of a view, the one a former tab address names (?tab=segments, ?tab=filings) first. */
+function ViewParts({ parts, first }: { parts: readonly React.ReactNode[]; first: number }) {
+  const ordered = [parts[first], ...parts.filter((_, i) => i !== first)];
+  return <div className="space-y-8">{ordered}</div>;
+}
+
 function ViewPart({
   id,
   title,
-  focus,
-  scrollOnFocus = false,
   children,
 }: {
   id: string;
   title: string;
-  focus: boolean;
-  scrollOnFocus?: boolean;
   children: React.ReactNode;
 }) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (focus && scrollOnFocus) ref.current?.scrollIntoView({ block: "start" });
-  }, [focus, scrollOnFocus]);
   return (
-    <section
-      ref={ref}
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="min-w-0 scroll-mt-16 space-y-3"
-    >
+    <section id={id} aria-labelledby={`${id}-title`} className="min-w-0 scroll-mt-16 space-y-3">
       <h2 id={`${id}-title`} className="text-heading text-foreground">
         {title}
       </h2>
