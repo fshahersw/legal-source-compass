@@ -44,15 +44,7 @@ import {
   type SortKey,
   type Tier,
 } from "./companyData";
-import {
-  FlagBadge,
-  Kpi,
-  LoadingBlocks,
-  Notice,
-  RoleText,
-  Spark,
-  TierBadge,
-} from "./CompanyUi";
+import { FlagBadge, Kpi, LoadingBlocks, Notice, RoleText, Spark, TierBadge } from "./CompanyUi";
 import { pendingActionsValue } from "./companyViewNotes";
 
 export const companiesQuery = {
@@ -110,18 +102,20 @@ function Dashboard({ data }: { data: CompaniesData }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>
-          {count(o.companies)} SEC registrants linked to MDLs · {count(o.links)} links · built {o.asOf}
+          {count(o.companies)} SEC registrants linked to MDLs · {count(o.links)} links · built{" "}
+          {o.asOf}
         </span>
         <InfoPopover label="How companies are linked" showLabel>
           <p>
-            Companies are linked to an MDL only when their own SEC filing names it: the MDL number (tier A), the
-            official JPML caption (tier B), or, labelled for review, the caption&apos;s subject next to
-            &ldquo;MDL&rdquo; (tier C). Every link was re-checked against the downloaded filing text.
+            Companies are linked to an MDL only when their own SEC filing names it: the MDL number
+            (tier A), the official JPML caption (tier B), or, labelled for review, the
+            caption&apos;s subject next to &ldquo;MDL&rdquo; (tier C). Every link was re-checked
+            against the downloaded filing text.
           </p>
           <p className="mt-2">
             Links by tier: A {o.tiers.A ?? 0} · B {o.tiers.B ?? 0} · C {o.tiers.C ?? 0}.{" "}
-            {count(o.companiesWithFinancials)} of {count(o.companies)} linked registrants have XBRL financials, the
-            registrant&apos;s own reported facts.
+            {count(o.companiesWithFinancials)} of {count(o.companies)} linked registrants have XBRL
+            financials, the registrant&apos;s own reported facts.
           </p>
           <p className="mt-2">
             Built {o.asOf}; JPML pending counts as of {o.jpmlAsOf ?? NOT_RECORDED}.

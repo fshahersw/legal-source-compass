@@ -306,25 +306,33 @@ export function PlacesMap({
               ) : null}
             </div>
           )}
-          {!countyMode && withValue >= 6 ? (() => {
-            const ranked = rankRows.filter((r) => r.value !== null);
-            const mid = median(ranked.map((r) => r.value as number)) ?? 0;
-            const picks = [...ranked.slice(0, 5), ...ranked.slice(-5)];
-            return (
-              <section aria-label="Highest and lowest states against the median" className="rounded-lg border border-border bg-card p-3">
-                <h3 className="text-sm font-semibold">Highest and lowest 5 states against the median</h3>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  {def.label} · {metric?.yearLabel ?? ""} · {def.unit} · {withValue} states with a value
-                </p>
-                <DivergingDots
-                  items={picks.map((r) => ({ label: r.name, value: r.value }))}
-                  baseline={mid}
-                  baselineLabel="Median"
-                  format={(v) => formatMapValue(v, def.format)}
-                />
-              </section>
-            );
-          })() : null}
+          {!countyMode && withValue >= 6
+            ? (() => {
+                const ranked = rankRows.filter((r) => r.value !== null);
+                const mid = median(ranked.map((r) => r.value as number)) ?? 0;
+                const picks = [...ranked.slice(0, 5), ...ranked.slice(-5)];
+                return (
+                  <section
+                    aria-label="Highest and lowest states against the median"
+                    className="rounded-lg border border-border bg-card p-3"
+                  >
+                    <h3 className="text-sm font-semibold">
+                      Highest and lowest 5 states against the median
+                    </h3>
+                    <p className="mb-2 text-xs text-muted-foreground">
+                      {def.label} · {metric?.yearLabel ?? ""} · {def.unit} · {withValue} states with
+                      a value
+                    </p>
+                    <DivergingDots
+                      items={picks.map((r) => ({ label: r.name, value: r.value }))}
+                      baseline={mid}
+                      baselineLabel="Median"
+                      format={(v) => formatMapValue(v, def.format)}
+                    />
+                  </section>
+                );
+              })()
+            : null}
           {loadingMetric ? (
             <p role="status" className="text-xs text-muted-foreground">
               Loading {def.short.toLowerCase()}…

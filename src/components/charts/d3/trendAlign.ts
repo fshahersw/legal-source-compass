@@ -37,7 +37,8 @@ export function alignTrends(
     const at = new Map<string, number | null>();
     // a marker means what is counted changes there: only the periods from the last marker on are comparable
     const lastMarker = [...b.block.markers].sort((m, n) => byNum(m.x, n.x)).pop();
-    if (lastMarker) cutAt.push({ id: b.id, label: b.label, x: lastMarker.x, marker: lastMarker.label });
+    if (lastMarker)
+      cutAt.push({ id: b.id, label: b.label, x: lastMarker.x, marker: lastMarker.label });
     for (const p of s?.points ?? []) {
       if (lastMarker && byNum(p.x, lastMarker.x) < 0) continue;
       if (p.partial) {
@@ -64,13 +65,18 @@ export function alignTrends(
   }));
   const commonStart = Math.max(
     0,
-    dates.findIndex((d) => series.every((s) => (s.points.find((p) => p.date === d)?.value ?? 0) > 0)),
+    dates.findIndex((d) =>
+      series.every((s) => (s.points.find((p) => p.date === d)?.value ?? 0) > 0),
+    ),
   );
   return { xKind, series, leftOut, commonStart, partialDropped: [...partialDropped].sort(), cutAt };
 }
 
 /** A block's series as stacked-bar rows (series must be disjoint parts of a whole); unfinished periods keep their flag. */
-export function blockStackRows(block: TrendBlockData, label: (x: string) => string = (x) => x): StackRow[] {
+export function blockStackRows(
+  block: TrendBlockData,
+  label: (x: string) => string = (x) => x,
+): StackRow[] {
   const xs = [...new Set(block.series.flatMap((s) => s.points.map((p) => p.x)))].sort((a, b) =>
     a.localeCompare(b, "en", { numeric: true }),
   );

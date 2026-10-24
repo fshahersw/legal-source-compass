@@ -15,7 +15,12 @@ import { alignTrends } from "./trendAlign";
 export type TrendHeadlineItem = { id: string; label: string };
 
 const pctText = (v: number) => `${v > 0 ? "+" : ""}${v.toFixed(Math.abs(v) < 10 ? 1 : 0)}%`;
-const KIND_LABEL = { year: "calendar year", fy: "fiscal year", month: "month", congress: "Congress" } as const;
+const KIND_LABEL = {
+  year: "calendar year",
+  fy: "fiscal year",
+  month: "month",
+  congress: "Congress",
+} as const;
 
 export function TrendHeadline({
   items,
@@ -34,7 +39,9 @@ export function TrendHeadline({
   const blocks = useMemo(
     () =>
       results.flatMap((r, i) =>
-        r.data?.status === "ok" ? [{ id: items[i]!.id, label: items[i]!.label, block: r.data.data }] : [],
+        r.data?.status === "ok"
+          ? [{ id: items[i]!.id, label: items[i]!.label, block: r.data.data }]
+          : [],
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [results.map((r) => r.dataUpdatedAt).join(","), items],
@@ -67,7 +74,11 @@ export function TrendHeadline({
     ? ({ kind: "loading" } as const)
     : !blocks.length
       ? failed
-        ? ({ kind: "error", message: "These trend figures could not be loaded.", onRetry: () => results.forEach((r) => void r.refetch()) } as const)
+        ? ({
+            kind: "error",
+            message: "These trend figures could not be loaded.",
+            onRetry: () => results.forEach((r) => void r.refetch()),
+          } as const)
         : ({ kind: "empty", reason: "None of these series has been published yet." } as const)
       : ({ kind: "ready" } as const);
   const notice =
@@ -81,7 +92,10 @@ export function TrendHeadline({
     ) : undefined;
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" data-testid="trend-headline">
+    <div
+      className="grid gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
+      data-testid="trend-headline"
+    >
       <ChartCard
         variant="editorial"
         title={
@@ -90,7 +104,14 @@ export function TrendHeadline({
             : `How ${subject} changed over time`
         }
         subtitle={`Each series as a % change from the ${aligned ? KIND_LABEL[aligned.xKind] : "period"} you choose`}
-        status={status.kind === "ready" && !aligned ? { kind: "empty", reason: "Fewer than three periods are shared by two or more series." } : status}
+        status={
+          status.kind === "ready" && !aligned
+            ? {
+                kind: "empty",
+                reason: "Fewer than three periods are shared by two or more series.",
+              }
+            : status
+        }
         notice={notice}
         sources={uniqueSources}
         period={start && lastDate ? `${fmtX(dates[0]!)}–${fmtX(lastDate)}` : undefined}
@@ -98,8 +119,8 @@ export function TrendHeadline({
           <>
             <p>{unitNote}</p>
             <p className="mt-2">
-              Lines start at 0% at the period you choose, so large and small series compare on one scale. Periods a
-              source does not record are gaps.
+              Lines start at 0% at the period you choose, so large and small series compare on one
+              scale. Periods a source does not record are gaps.
               {aligned?.cutAt.length
                 ? ` ${aligned.cutAt.map((c) => `${c.label} starts at ${c.x} (${c.marker.toLowerCase()})`).join("; ")}.`
                 : ""}
@@ -116,7 +137,10 @@ export function TrendHeadline({
                 columns: [{ label: "Period" }, ...aligned.series.map((s) => ({ label: s.label }))],
                 rows: dates.map((d, i) => ({
                   key: d,
-                  cells: [fmtX(d), ...aligned.series.map((s) => s.points[i]?.value ?? "Not recorded")],
+                  cells: [
+                    fmtX(d),
+                    ...aligned.series.map((s) => s.points[i]?.value ?? "Not recorded"),
+                  ],
                 })),
               }
             : undefined
@@ -140,12 +164,27 @@ export function TrendHeadline({
             : "Latest period against the one before"
         }
         subtitle="Latest complete period against the one before it"
-        status={status.kind === "ready" && !changes.length ? { kind: "empty", reason: "No series has two complete periods to compare." } : status}
+        status={
+          status.kind === "ready" && !changes.length
+            ? { kind: "empty", reason: "No series has two complete periods to compare." }
+            : status
+        }
         sources={uniqueSources}
-        about={<p>Each dot compares a series&apos; latest complete period with the period before it, as the source counts them.</p>}
+        about={
+          <p>
+            Each dot compares a series&apos; latest complete period with the period before it, as
+            the source counts them.
+          </p>
+        }
         table={{
           caption: "Latest complete period against the one before",
-          columns: [{ label: "Series" }, { label: "Latest period" }, { label: "Value" }, { label: "Before" }, { label: "Change" }],
+          columns: [
+            { label: "Series" },
+            { label: "Latest period" },
+            { label: "Value" },
+            { label: "Before" },
+            { label: "Change" },
+          ],
           rows: changes.map(({ b, c, latest }) => ({
             key: b.id,
             cells: [

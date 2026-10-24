@@ -39,7 +39,8 @@ export function useWidth<T extends Element>(fallback = 640): [RefObject<T | null
 }
 
 /** Clip a label to `max` characters with an ellipsis (full text stays in the <title>). */
-const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, Math.max(1, max - 1)).trimEnd()}…` : s);
+const clip = (s: string, max: number) =>
+  s.length > max ? `${s.slice(0, Math.max(1, max - 1)).trimEnd()}…` : s;
 
 // ------------------------------------------------------------------------------------------------ index chart
 
@@ -63,7 +64,9 @@ export function IndexChart({
   const [baseIdx, setBaseIdx] = useState(initialIndex);
   const base = dates[Math.min(baseIdx, Math.max(0, dates.length - 1))] ?? "";
   const data = useMemo(() => rebase(series.slice(0, 6), base), [series, base]);
-  const vals = data.flatMap((s) => s.points.map((p) => p.value)).filter((v): v is number => v != null);
+  const vals = data
+    .flatMap((s) => s.points.map((p) => p.value))
+    .filter((v): v is number => v != null);
   const narrow = W < 400;
   const gutter = narrow ? Math.min(labelWidth, 92) : labelWidth;
   const right = Math.max(120, W - gutter);
@@ -134,9 +137,29 @@ export function IndexChart({
                 {formatDate(dates[dates.length - 1]!)}
               </text>
             )}
-            <line x1={bx} x2={bx} y1={12} y2={height - 30} style={{ stroke: "var(--chart-ink)" }} opacity={0.45} />
-            <rect x={bx - 32} y={height - 23} width={64} height={18} rx={4} style={{ fill: "var(--chart-ink)" }} />
-            <text x={bx} y={height - 10} textAnchor="middle" style={{ fill: "var(--chart-surface)" }} className="text-[11px] font-medium">
+            <line
+              x1={bx}
+              x2={bx}
+              y1={12}
+              y2={height - 30}
+              style={{ stroke: "var(--chart-ink)" }}
+              opacity={0.45}
+            />
+            <rect
+              x={bx - 32}
+              y={height - 23}
+              width={64}
+              height={18}
+              rx={4}
+              style={{ fill: "var(--chart-ink)" }}
+            />
+            <text
+              x={bx}
+              y={height - 10}
+              textAnchor="middle"
+              style={{ fill: "var(--chart-surface)" }}
+              className="text-[11px] font-medium"
+            >
               {formatDate(base)}
             </text>
             {data.map((s, i) => {
@@ -144,13 +167,20 @@ export function IndexChart({
               const label = last ? `${pct(last.value!)} ${s.label}` : `${s.label}: not recorded`;
               return (
                 <g key={s.id}>
-                  <path d={ln(s.points as never) ?? ""} fill="none" style={{ stroke: seriesVar(i) }} strokeWidth={2} />
+                  <path
+                    d={ln(s.points as never) ?? ""}
+                    fill="none"
+                    style={{ stroke: seriesVar(i) }}
+                    strokeWidth={2}
+                  />
                   <text
                     x={right + 6}
                     y={labelY[i]}
                     dy="0.32em"
                     style={last ? { fill: seriesVar(i) } : undefined}
-                    className={last ? "text-[11px] font-medium" : "fill-muted-foreground text-[11px] italic"}
+                    className={
+                      last ? "text-[11px] font-medium" : "fill-muted-foreground text-[11px] italic"
+                    }
                   >
                     <title>{label}</title>
                     {clip(label, chars)}
@@ -170,7 +200,9 @@ export function IndexChart({
               className="w-full accent-brand"
               aria-valuetext={formatDate(base)}
             />
-            <span className="w-20 shrink-0 text-right font-medium text-foreground tabular-nums">{formatDate(base)}</span>
+            <span className="w-20 shrink-0 text-right font-medium text-foreground tabular-nums">
+              {formatDate(base)}
+            </span>
           </label>
         </>
       ) : null}
@@ -196,12 +228,25 @@ export function StackedBarsOverTime({
   const [box, W] = useWidth<HTMLDivElement>();
   const shown = keys.slice(0, 6);
   const { layers, max } = stackLayers(rows, shown);
-  const x = scaleBand<string>().domain(rows.map((r) => r.period)).range([52, W - 14]).padding(0.22);
-  const y = scaleLinear().domain([0, max || 1]).nice().range([height - 26, 10]);
+  const x = scaleBand<string>()
+    .domain(rows.map((r) => r.period))
+    .range([52, W - 14])
+    .padding(0.22);
+  const y = scaleLinear()
+    .domain([0, max || 1])
+    .nice()
+    .range([height - 26, 10]);
   const every = Math.max(1, Math.ceil((rows.length * 44) / Math.max(1, W - 56)));
   return (
     <figure ref={box} className="m-0 min-w-0">
-      <svg style={chartTokens} width={W} height={height} className="block" role="img" aria-label="Stacked totals by period">
+      <svg
+        style={chartTokens}
+        width={W}
+        height={height}
+        className="block"
+        role="img"
+        aria-label="Stacked totals by period"
+      >
         {y.ticks(4).map((t) => (
           <g key={t}>
             <line x1={52} x2={W - 4} y1={y(t)} y2={y(t)} style={{ stroke: "var(--chart-grid)" }} />
@@ -241,7 +286,10 @@ export function StackedBarsOverTime({
           ) : null,
         )}
       </svg>
-      <figcaption style={chartTokens} className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+      <figcaption
+        style={chartTokens}
+        className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"
+      >
         {shown.map((k, i) => (
           <span key={k} className="inline-flex items-center gap-1.5">
             <span className="size-2.5 rounded-sm" style={{ background: seriesVar(i) }} />
@@ -277,13 +325,31 @@ export function DivergingDots({
   const height = items.length * row + 30;
   const gutter = Math.min(labelWidth, Math.max(110, Math.round(W * 0.42)));
   const x = scaleLinear()
-    .domain(divergingDomain(items.map((i) => i.value), baseline))
+    .domain(
+      divergingDomain(
+        items.map((i) => i.value),
+        baseline,
+      ),
+    )
     .range([gutter + 44, W - 52]);
   const chars = Math.max(8, Math.floor((gutter - 8) / 6.4));
   return (
     <div ref={box} className="min-w-0">
-      <svg style={chartTokens} width={W} height={height} className="block" role="img" aria-label={`Values against ${baselineLabel}`}>
-        <line x1={x(baseline)} x2={x(baseline)} y1={18} y2={height - 4} style={{ stroke: "var(--chart-axis)" }} />
+      <svg
+        style={chartTokens}
+        width={W}
+        height={height}
+        className="block"
+        role="img"
+        aria-label={`Values against ${baselineLabel}`}
+      >
+        <line
+          x1={x(baseline)}
+          x2={x(baseline)}
+          y1={18}
+          y2={height - 4}
+          style={{ stroke: "var(--chart-axis)" }}
+        />
         <text x={x(baseline)} y={11} textAnchor="middle" className={TICK}>
           {baselineLabel}
           {showBaselineValue ? ` ${format(baseline)}` : ""}
@@ -294,14 +360,32 @@ export function DivergingDots({
           return (
             <g key={`${it.label}-${i}`}>
               {i % 2 === 0 ? (
-                <rect x={0} y={cy - row / 2} width={W} height={row} style={{ fill: "var(--chart-mid)" }} opacity={0.35} />
+                <rect
+                  x={0}
+                  y={cy - row / 2}
+                  width={W}
+                  height={row}
+                  style={{ fill: "var(--chart-mid)" }}
+                  opacity={0.35}
+                />
               ) : null}
-              <text x={gutter} y={cy} dy="0.32em" textAnchor="end" className="fill-foreground text-xs">
+              <text
+                x={gutter}
+                y={cy}
+                dy="0.32em"
+                textAnchor="end"
+                className="fill-foreground text-xs"
+              >
                 <title>{it.label}</title>
                 {clip(it.label, chars)}
               </text>
               {it.value == null ? (
-                <text x={x(baseline) + 8} y={cy} dy="0.32em" className="fill-muted-foreground text-[11px] italic">
+                <text
+                  x={x(baseline) + 8}
+                  y={cy}
+                  dy="0.32em"
+                  className="fill-muted-foreground text-[11px] italic"
+                >
                   Not recorded
                 </text>
               ) : (
@@ -315,7 +399,12 @@ export function DivergingDots({
                     strokeOpacity={0.35}
                     strokeWidth={3}
                   />
-                  <circle cx={x(it.value)} cy={cy} r={5.5} style={{ fill: seriesVar(up ? 0 : 1) }} />
+                  <circle
+                    cx={x(it.value)}
+                    cy={cy}
+                    r={5.5}
+                    style={{ fill: seriesVar(up ? 0 : 1) }}
+                  />
                   <text
                     x={x(it.value) + (up ? 10 : -10)}
                     y={cy}
@@ -391,4 +480,3 @@ export function Sunburst({ root, size = 360 }: { root: TreeNode; size?: number }
     </svg>
   );
 }
-

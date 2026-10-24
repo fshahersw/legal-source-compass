@@ -16,7 +16,11 @@ function useBlock(id: string) {
   const status = q.isPending
     ? ({ kind: "loading" } as const)
     : q.isError
-      ? ({ kind: "error", message: "This chart could not be loaded.", onRetry: () => void q.refetch() } as const)
+      ? ({
+          kind: "error",
+          message: "This chart could not be loaded.",
+          onRetry: () => void q.refetch(),
+        } as const)
       : !block
         ? ({ kind: "empty", reason: "This series has not been published yet." } as const)
         : ({ kind: "ready" } as const);
@@ -30,8 +34,12 @@ export function LawHeadline() {
   const bills = useBlock("congress-bills");
 
   const frRows = fr.block ? blockStackRows(fr.block) : [];
-  const frLast = [...frRows].reverse().find((r) => !r.partial && r.values["rules"] != null && r.values["proposed"] != null);
-  const billRows = bills.block ? subsetStackRows(bills.block, "introduced", "law", congressLabel) : [];
+  const frLast = [...frRows]
+    .reverse()
+    .find((r) => !r.partial && r.values["rules"] != null && r.values["proposed"] != null);
+  const billRows = bills.block
+    ? subsetStackRows(bills.block, "introduced", "law", congressLabel)
+    : [];
   const billLast = [...billRows].reverse().find((r) => !r.partial && r.values["part"] != null);
   const billShare =
     billLast && billLast.values["part"] != null && billLast.values["rest"] != null
@@ -96,14 +104,21 @@ export function LawHeadline() {
           bills.block
             ? {
                 caption: "Bills and joint resolutions introduced, by Congress",
-                columns: [{ label: "Congress" }, { label: "Became law" }, { label: "Did not" }, { label: "Introduced" }],
+                columns: [
+                  { label: "Congress" },
+                  { label: "Became law" },
+                  { label: "Did not" },
+                  { label: "Introduced" },
+                ],
                 rows: billRows.map((r) => ({
                   key: r.period,
                   cells: [
                     `${r.period}${r.partial ? " (still sitting)" : ""}`,
                     r.values["part"] ?? "Not recorded",
                     r.values["rest"] ?? "Not recorded",
-                    r.values["part"] != null && r.values["rest"] != null ? r.values["part"] + r.values["rest"] : "Not recorded",
+                    r.values["part"] != null && r.values["rest"] != null
+                      ? r.values["part"] + r.values["rest"]
+                      : "Not recorded",
                   ],
                 })),
               }
