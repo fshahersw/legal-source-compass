@@ -51,15 +51,30 @@ export function AgencyProfileView({ data, after }: { data: AgencyProfileData; af
     source: "Federal Register API; Unified Agenda (reginfo.gov); USAspending",
     period: trends ? `Federal Register to ${trends.asOf}` : null,
     figures: [
-      { label: "Final rules", value: s.rulesLastYear, unit: "documents", period: String(s.lastFullYear) },
+      {
+        label: "Final rules",
+        value: s.rulesLastYear,
+        unit: "documents",
+        period: String(s.lastFullYear),
+      },
       {
         label: "Final rules so far",
         value: s.rulesThisYear,
         unit: "documents",
         period: `${Number(s.lastFullYear) + 1}, partial year`,
       },
-      { label: "Proposed rules", value: s.proposedLastYear, unit: "documents", period: String(s.lastFullYear) },
-      { label: "Notices", value: s.noticesLastYear, unit: "documents", period: String(s.lastFullYear) },
+      {
+        label: "Proposed rules",
+        value: s.proposedLastYear,
+        unit: "documents",
+        period: String(s.lastFullYear),
+      },
+      {
+        label: "Notices",
+        value: s.noticesLastYear,
+        unit: "documents",
+        period: String(s.lastFullYear),
+      },
       { label: "Significant final rules since 1994", value: s.significantRules, unit: "rules" },
       {
         label: "Open comment periods",
@@ -194,227 +209,278 @@ export function AgencyProfileView({ data, after }: { data: AgencyProfileData; af
         note="Each line is computed from the figures below; comparisons name their base period."
       />
 
-      {trends && !active ? (
-        <StateNote>
-          The Federal Register lists no document from this agency since 1995
-          {s.lastActiveYear ? ` (last recorded year: ${s.lastActiveYear})` : ""}. It may be a former
-          agency or one whose documents appear under another name.
-        </StateNote>
-      ) : trends ? (
-        <>
-          <Panel
-            id="agency-activity"
-            title="Federal Register activity"
-            subtitle="Documents published per calendar year since 1995, with the administration in office"
-            footnote={
+      <ProfileSections
+        sections={[
+          {
+            id: "agency-sec-rulemaking",
+            title: "Rulemaking",
+            content: (
               <>
-                Counts are the Federal Register API's facet counts by publication date; a document
-                naming several agencies counts for each, so department totals include documents
-                their components publish with them. Significant = a Unified Agenda entry deemed
-                significant under EO 12866.{" "}
-                <SourceLink href={FR_API_DOCS}>Federal Register API</SourceLink>
+                {trends && !active ? (
+                  <StateNote>
+                    The Federal Register lists no document from this agency since 1995
+                    {s.lastActiveYear ? ` (last recorded year: ${s.lastActiveYear})` : ""}. It may
+                    be a former agency or one whose documents appear under another name.
+                  </StateNote>
+                ) : trends ? (
+                  <>
+                    <Panel
+                      id="agency-activity"
+                      title="Federal Register activity"
+                      subtitle="Documents published per calendar year since 1995, with the administration in office"
+                      footnote={
+                        <>
+                          Counts are the Federal Register API's facet counts by publication date; a
+                          document naming several agencies counts for each, so department totals
+                          include documents their components publish with them. Significant = a
+                          Unified Agenda entry deemed significant under EO 12866.{" "}
+                          <SourceLink href={FR_API_DOCS}>Federal Register API</SourceLink>
+                        </>
+                      }
+                    >
+                      <ActivityChart trends={trends} />
+                    </Panel>
+                    <div className="grid gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+                      <Panel
+                        id="agency-administrations"
+                        title="By administration"
+                        subtitle="Windows run January 20 to January 19 (Amendment XX); counted by publication date"
+                        footnote="A year rate divides the count by the days in the window. Rules published early in a term can stem from the prior administration's work."
+                      >
+                        <AdminTable rows={trends.byAdministration} />
+                      </Panel>
+                      <Panel
+                        title="Last 36 months"
+                        subtitle={`Final and proposed rules per month; ${trends.partialMonth} is partial`}
+                      >
+                        <MonthlyChart rows={months} />
+                      </Panel>
+                    </div>
+                    <div className="grid gap-3 xl:grid-cols-2">
+                      <Panel
+                        title="Significant final rules"
+                        subtitle={`Latest of ${fmt(trends.significantTotals.RULE)} since 1994`}
+                      >
+                        <DocList
+                          docs={trends.latestSignificantRules}
+                          empty="No significant final rules recorded for this agency."
+                        />
+                      </Panel>
+                      <Panel
+                        title="Significant proposed rules"
+                        subtitle={`Latest of ${fmt(trends.significantTotals.PRORULE)} since 1994`}
+                      >
+                        <DocList
+                          docs={trends.latestSignificantProposed}
+                          empty="No significant proposed rules recorded for this agency."
+                        />
+                      </Panel>
+                    </div>
+                    <Panel
+                      id="agency-comments"
+                      title="Open comment periods"
+                      subtitle={`${fmt(trends.openComments.count)} documents accept comments on or after ${trends.openComments.asOf}; ${fmt(trends.openComments.closingWithin30Days)} close within 30 days`}
+                      footnote="Closing dates are the comment dates the Federal Register lists; extensions published later are separate documents."
+                    >
+                      <CommentsTable comments={trends.openComments} />
+                    </Panel>
+                  </>
+                ) : (
+                  <StateNote>Federal Register activity is not recorded for this agency.</StateNote>
+                )}
               </>
-            }
-          >
-            <ActivityChart trends={trends} />
-          </Panel>
-          <div className="grid gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            <Panel
-              id="agency-administrations"
-              title="By administration"
-              subtitle="Windows run January 20 to January 19 (Amendment XX); counted by publication date"
-              footnote="A year rate divides the count by the days in the window. Rules published early in a term can stem from the prior administration's work."
-            >
-              <AdminTable rows={trends.byAdministration} />
-            </Panel>
-            <Panel
-              title="Last 36 months"
-              subtitle={`Final and proposed rules per month; ${trends.partialMonth} is partial`}
-            >
-              <MonthlyChart rows={months} />
-            </Panel>
-          </div>
-          <div className="grid gap-3 xl:grid-cols-2">
-            <Panel
-              title="Significant final rules"
-              subtitle={`Latest of ${fmt(trends.significantTotals.RULE)} since 1994`}
-            >
-              <DocList
-                docs={trends.latestSignificantRules}
-                empty="No significant final rules recorded for this agency."
-              />
-            </Panel>
-            <Panel
-              title="Significant proposed rules"
-              subtitle={`Latest of ${fmt(trends.significantTotals.PRORULE)} since 1994`}
-            >
-              <DocList
-                docs={trends.latestSignificantProposed}
-                empty="No significant proposed rules recorded for this agency."
-              />
-            </Panel>
-          </div>
-          <Panel
-            id="agency-comments"
-            title="Open comment periods"
-            subtitle={`${fmt(trends.openComments.count)} documents accept comments on or after ${trends.openComments.asOf}; ${fmt(trends.openComments.closingWithin30Days)} close within 30 days`}
-            footnote="Closing dates are the comment dates the Federal Register lists; extensions published later are separate documents."
-          >
-            <CommentsTable comments={trends.openComments} />
-          </Panel>
-        </>
-      ) : (
-        <StateNote>Federal Register activity is not recorded for this agency.</StateNote>
-      )}
-
-      <Panel
-        id="agency-agenda"
-        title="Regulatory pipeline (Unified Agenda)"
-        subtitle={
-          profile.agenda
-            ? `${fmt(profile.agenda.total)} actions in publication ${profile.agenda.edition}${profile.agenda.runDate ? ` (file dated ${profile.agenda.runDate.slice(0, 10)})` : ""}`
-            : "No entry in the latest Unified Agenda"
-        }
-        footnote={
-          <>
-            Stages and priorities as the agency reported them to reginfo.gov. Department figures
-            include their components' entries.{" "}
-            <SourceLink href={UA_INDEX}>Unified Agenda XML</SourceLink>
-          </>
-        }
-      >
-        {profile.agenda ? (
-          <AgendaPanelBody agenda={profile.agenda} agencyId={profile.id} />
-        ) : (
-          <p className="px-3 py-3 text-xs text-muted-foreground">
-            The latest Unified Agenda lists no action under this agency's name or its parent's.
-          </p>
-        )}
-      </Panel>
-
-      {!budget && !spending && !profile.subtierObligations ? (
-        <p
-          id="agency-budget"
-          className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground"
-        >
-          Budget and state spending: no USAspending agency carries this agency's name, so neither is
-          recorded here.
-        </p>
-      ) : null}
-      {budget || profile.subtierObligations ? (
-        <Panel
-          id="agency-budget"
-          title="Budget and obligations"
-          subtitle={
-            budget
-              ? `${budget.name}, fiscal years ${budget.years[0]?.fy ?? ""}–${budget.years.at(-1)?.fy ?? ""} (USAspending)`
-              : "USAspending agency budget"
-          }
-          footnote={
-            budget ? (
+            ),
+          },
+          {
+            id: "agency-sec-pipeline",
+            title: "Regulatory pipeline",
+            label: "Pipeline",
+            content: (
               <>
-                Budgetary resources, obligations and outlays as agencies report them under the DATA
-                Act.{" "}
-                {budget.usaspendingUrl ? (
-                  <SourceLink href={budget.usaspendingUrl}>USAspending agency page</SourceLink>
+                <Panel
+                  id="agency-agenda"
+                  title="Regulatory pipeline (Unified Agenda)"
+                  subtitle={
+                    profile.agenda
+                      ? `${fmt(profile.agenda.total)} actions in publication ${profile.agenda.edition}${profile.agenda.runDate ? ` (file dated ${profile.agenda.runDate.slice(0, 10)})` : ""}`
+                      : "No entry in the latest Unified Agenda"
+                  }
+                  footnote={
+                    <>
+                      Stages and priorities as the agency reported them to reginfo.gov. Department
+                      figures include their components' entries.{" "}
+                      <SourceLink href={UA_INDEX}>Unified Agenda XML</SourceLink>
+                    </>
+                  }
+                >
+                  {profile.agenda ? (
+                    <AgendaPanelBody agenda={profile.agenda} agencyId={profile.id} />
+                  ) : (
+                    <p className="px-3 py-3 text-xs text-muted-foreground">
+                      The latest Unified Agenda lists no action under this agency's name or its
+                      parent's.
+                    </p>
+                  )}
+                </Panel>
+              </>
+            ),
+          },
+          {
+            id: "agency-sec-money",
+            title: "Budget and spending",
+            label: "Money",
+            content: (
+              <>
+                {!budget && !spending && !profile.subtierObligations ? (
+                  <p
+                    id="agency-budget"
+                    className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground"
+                  >
+                    Budget and state spending: no USAspending agency carries this agency's name, so
+                    neither is recorded here.
+                  </p>
+                ) : null}
+                {budget || profile.subtierObligations ? (
+                  <Panel
+                    id="agency-budget"
+                    title="Budget and obligations"
+                    subtitle={
+                      budget
+                        ? `${budget.name}, fiscal years ${budget.years[0]?.fy ?? ""}–${budget.years.at(-1)?.fy ?? ""} (USAspending)`
+                        : "USAspending agency budget"
+                    }
+                    footnote={
+                      budget ? (
+                        <>
+                          Budgetary resources, obligations and outlays as agencies report them under
+                          the DATA Act.{" "}
+                          {budget.usaspendingUrl ? (
+                            <SourceLink href={budget.usaspendingUrl}>
+                              USAspending agency page
+                            </SourceLink>
+                          ) : null}
+                        </>
+                      ) : undefined
+                    }
+                  >
+                    {budget ? (
+                      <BudgetPanelBody budget={budget} />
+                    ) : (
+                      <p className="px-3 py-3 text-xs text-muted-foreground">
+                        {profile.subtierObligations
+                          ? `USAspending reports this agency as a sub-agency: ${usd(profile.subtierObligations.obligations)} in FY${profile.subtierObligations.fy} award obligations. Budgetary resources and state award obligations are reported for the parent department.`
+                          : NOT_RECORDED}
+                      </p>
+                    )}
+                  </Panel>
+                ) : null}
+
+                {spending ? (
+                  <Panel
+                    id="agency-spending"
+                    title="Award obligations by state"
+                    subtitle={
+                      spending
+                        ? `FY${spending.fiscalYear} prime award obligations by place of performance, per resident`
+                        : "State comparison"
+                    }
+                    footnote={
+                      spending ? (
+                        <>
+                          Per resident = FY{spending.fiscalYear} obligations ÷{" "}
+                          {spending.denominator?.measure ?? "resident population"}.{" "}
+                          <SourceLink href={CENSUS}>Census population estimates</SourceLink>.
+                          Obligations follow where work is performed, not where money is spent or
+                          who benefits; de-obligations can make a state negative.
+                        </>
+                      ) : undefined
+                    }
+                  >
+                    <SpendingPanelBody spending={spending} />
+                  </Panel>
+                ) : budget ? (
+                  <p className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
+                    State award obligations: USAspending returned no FY2025 awards by place of
+                    performance for this agency.
+                  </p>
                 ) : null}
               </>
-            ) : undefined
-          }
-        >
-          {budget ? (
-            <BudgetPanelBody budget={budget} />
-          ) : (
-            <p className="px-3 py-3 text-xs text-muted-foreground">
-              {profile.subtierObligations
-                ? `USAspending reports this agency as a sub-agency: ${usd(profile.subtierObligations.obligations)} in FY${profile.subtierObligations.fy} award obligations. Budgetary resources and state award obligations are reported for the parent department.`
-                : NOT_RECORDED}
-            </p>
-          )}
-        </Panel>
-      ) : null}
-
-      {spending ? (
-        <Panel
-          id="agency-spending"
-          title="Award obligations by state"
-          subtitle={
-            spending
-              ? `FY${spending.fiscalYear} prime award obligations by place of performance, per resident`
-              : "State comparison"
-          }
-          footnote={
-            spending ? (
+            ),
+          },
+          {
+            id: "agency-sec-law",
+            title: "Law and structure",
+            content: (
               <>
-                Per resident = FY{spending.fiscalYear} obligations ÷{" "}
-                {spending.denominator?.measure ?? "resident population"}.{" "}
-                <SourceLink href={CENSUS}>Census population estimates</SourceLink>. Obligations
-                follow where work is performed, not where money is spent or who benefits;
-                de-obligations can make a state negative.
+                <Panel
+                  id="agency-cfr"
+                  title="Law: CFR footprint"
+                  subtitle="Chapters assigned by eCFR and parts cited by this agency's rules and proposed rules"
+                  footnote={
+                    profile.cfrParts?.corpusRange
+                      ? `Part counts come from the saved Federal Register index (${profile.cfrParts.corpusRange[0]} to ${profile.cfrParts.corpusRange[1]}); a document that cites a part may amend, propose, correct or discuss it.`
+                      : undefined
+                  }
+                >
+                  <CfrPanelBody profile={profile} />
+                </Panel>
+
+                <Panel id="agency-structure" title="Structure and mission">
+                  <StructurePanelBody profile={profile} />
+                </Panel>
               </>
-            ) : undefined
-          }
-        >
-          <SpendingPanelBody spending={spending} />
-        </Panel>
-      ) : budget ? (
-        <p className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
-          State award obligations: USAspending returned no FY2025 awards by place of performance for
-          this agency.
-        </p>
-      ) : null}
-
-      <Panel
-        id="agency-cfr"
-        title="Law: CFR footprint"
-        subtitle="Chapters assigned by eCFR and parts cited by this agency's rules and proposed rules"
-        footnote={
-          profile.cfrParts?.corpusRange
-            ? `Part counts come from the saved Federal Register index (${profile.cfrParts.corpusRange[0]} to ${profile.cfrParts.corpusRange[1]}); a document that cites a part may amend, propose, correct or discuss it.`
-            : undefined
-        }
-      >
-        <CfrPanelBody profile={profile} />
-      </Panel>
-
-      <Panel id="agency-structure" title="Structure and mission">
-        <StructurePanelBody profile={profile} />
-      </Panel>
-
-      <AgencySeriesCards agencyId={profile.id} label={profile.shortName ?? profile.name} />
-
-      <Panel title="Enforcement and program data in this corpus">
-        <EnforcementPanelBody profile={profile} />
-      </Panel>
-
-      <HowToRead
-        measures={[
-          {
-            term: "Final rule / proposed rule",
-            means: "Federal Register document types RULE and PRORULE, counted by publication date.",
-            caveat: "Corrections and technical amendments are rules too.",
+            ),
           },
           {
-            term: "Significant",
-            means:
-              "The rule's Unified Agenda entry was deemed significant under EO 12866 (Federal Register API filter).",
-          },
-          {
-            term: "Administration",
-            means:
-              "January 20 to January 19 windows; the first starts 1995-01-01 because the source types most 1994 documents as uncategorized.",
-            caveat: "Publication timing, not authorship.",
-          },
-          {
-            term: "Obligations",
-            means:
-              "Binding commitments to pay, as reported to USAspending; outlays are payments made.",
-          },
-          {
-            term: "Per resident",
-            means:
-              "State obligations divided by the Census Bureau's July 1 population estimate for the same year.",
-            caveat: "Territories without an estimate show Not recorded.",
+            id: "agency-sec-data",
+            title: "Enforcement and program data",
+            label: "Data",
+            content: (
+              <>
+                <AgencySeriesCards
+                  agencyId={profile.id}
+                  label={profile.shortName ?? profile.name}
+                />
+
+                <Panel title="Enforcement and program data in this corpus">
+                  <EnforcementPanelBody profile={profile} />
+                </Panel>
+
+                {after}
+                <HowToRead
+                  measures={[
+                    {
+                      term: "Final rule / proposed rule",
+                      means:
+                        "Federal Register document types RULE and PRORULE, counted by publication date.",
+                      caveat: "Corrections and technical amendments are rules too.",
+                    },
+                    {
+                      term: "Significant",
+                      means:
+                        "The rule's Unified Agenda entry was deemed significant under EO 12866 (Federal Register API filter).",
+                    },
+                    {
+                      term: "Administration",
+                      means:
+                        "January 20 to January 19 windows; the first starts 1995-01-01 because the source types most 1994 documents as uncategorized.",
+                      caveat: "Publication timing, not authorship.",
+                    },
+                    {
+                      term: "Obligations",
+                      means:
+                        "Binding commitments to pay, as reported to USAspending; outlays are payments made.",
+                    },
+                    {
+                      term: "Per resident",
+                      means:
+                        "State obligations divided by the Census Bureau's July 1 population estimate for the same year.",
+                      caveat: "Territories without an estimate show Not recorded.",
+                    },
+                  ]}
+                />
+              </>
+            ),
           },
         ]}
       />
