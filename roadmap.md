@@ -63,8 +63,10 @@
 - [x] Places: highest/lowest 5 states vs the median, following the selected measure
 - [ ] Places home: tidy header, KPI strip from the selected measure
 - [ ] Courts & judges: dots vs national baseline where a per-court measure exists
+- [x] Litigation: change-since chart of the 5 largest pending MDLs + biggest 12-month rises/falls (JPML)
+- [x] Enforcement: change-since chart by agency (calendar-year series only; FY series named, not mixed; coverage-change markers honoured) + latest-period change dots
+- [x] Products & safety: one recalls change-since chart + latest-period dots; the four per-agency cards kept one click away ("Each agency's recalls by year")
 - [ ] Litigation: stacked bars over time (filings by category)
-- [ ] Enforcement: stacked bars over time by agency
 - [ ] Law: sunburst of code/CFR coverage
 - [ ] Companies / Insights: change-since chart for multi-series trends
 - [ ] Profiles: one identity block (image, name, 4 KPIs, key chart)
