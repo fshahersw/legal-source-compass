@@ -103,7 +103,7 @@ export function EntityPage({
     return false;
   };
   const isNoise = ([k, val]: (typeof v.facts)[number]) =>
-    /\bcount$/i.test(k) && (val === 0 || val === "0");
+    /\bcount$/i.test(k) && String(val) === "0";
   const isId = ([k]: (typeof v.facts)[number]) => /^record id$/i.test(k);
   const moved = v.facts.filter((f) => isNoise(f) || isId(f));
   const facts = v.facts.filter((f) => !isNoise(f) && !isId(f) && !dupe(f));
