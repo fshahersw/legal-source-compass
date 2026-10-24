@@ -30,17 +30,17 @@ export function IndexChart({ series, height = 280 }: { series: readonly Series[]
       }}>
       {y.ticks(5).map((t) => (
         <g key={t}>
-          <line x1={40} x2={W - 90} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeDasharray={t === 0 ? undefined : "2 3"} />
+          <line x1={40} x2={W - 90} y1={y(t)} y2={y(t)} style={{ stroke: "var(--border)" }} strokeDasharray={t === 0 ? undefined : "2 3"} />
           <text x={34} y={y(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px]">{pct(t)}</text>
         </g>
       ))}
-      <line x1={x(base)} x2={x(base)} y1={12} y2={height - 24} stroke="var(--foreground)" opacity={0.4} />
+      <line x1={x(base)} x2={x(base)} y1={12} y2={height - 24} style={{ stroke: "var(--foreground)" }} opacity={0.4} />
       <text x={x(base)} y={height - 8} textAnchor="middle" className="fill-foreground text-[10px] font-medium">{base}</text>
       {data.map((s, i) => {
         const last = [...s.points].reverse().find((p) => p.value != null);
         return (
           <g key={s.id}>
-            <path d={ln(s.points as never) ?? ""} fill="none" stroke={seriesVar(i)} strokeWidth={2} />
+            <path d={ln(s.points as never) ?? ""} fill="none" style={{ stroke: seriesVar(i) }} strokeWidth={2} />
             {last && <text x={(x(last.date) ?? 0) + 6} y={y(last.value!)} dy="0.32em" style={{ fill: seriesVar(i) }} className="text-[10px] font-medium">{s.label} {pct(last.value!)}</text>}
           </g>
         );
@@ -58,12 +58,12 @@ export function StackedBarsOverTime({ rows, keys, labels, height = 260 }: { rows
       <svg style={chartTokens} viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label="Stacked totals by period">
         {y.ticks(4).map((t) => (
           <g key={t}>
-            <line x1={40} x2={W - 10} y1={y(t)} y2={y(t)} stroke="var(--border)" />
+            <line x1={40} x2={W - 10} y1={y(t)} y2={y(t)} style={{ stroke: "var(--border)" }} />
             <text x={34} y={y(t)} dy="0.32em" textAnchor="end" className="fill-muted-foreground text-[10px]">{t.toLocaleString()}</text>
           </g>
         ))}
         {layers.map((l, i) => l.map((d, j) => (
-          <rect key={`${i}-${j}`} x={x(rows[j]!.period)} width={x.bandwidth()} y={y(d[1])} height={Math.max(0, y(d[0]) - y(d[1]))} fill={seriesVar(i)} rx={1}>
+          <rect key={`${i}-${j}`} x={x(rows[j]!.period)} width={x.bandwidth()} y={y(d[1])} height={Math.max(0, y(d[0]) - y(d[1]))} style={{ fill: seriesVar(i) }} rx={1}>
             <title>{`${rows[j]!.period} · ${labels?.[l.key] ?? l.key}: ${rows[j]!.values[l.key] == null ? "Not recorded" : (d[1] - d[0]).toLocaleString()}`}</title>
           </rect>
         )))}
@@ -82,7 +82,7 @@ export function DivergingDots({ items, baseline, baselineLabel, format = (v: num
   const x = scaleLinear().domain(divergingDomain(items.map((i) => i.value), baseline)).range([170, W - 50]);
   return (
     <svg style={chartTokens} viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label={`Values against ${baselineLabel}`}>
-      <line x1={x(baseline)} x2={x(baseline)} y1={14} y2={height - 6} stroke="var(--foreground)" opacity={0.5} />
+      <line x1={x(baseline)} x2={x(baseline)} y1={14} y2={height - 6} style={{ stroke: "var(--foreground)" }} opacity={0.5} />
       <text x={x(baseline)} y={10} textAnchor="middle" className="fill-muted-foreground text-[10px]">{baselineLabel} {format(baseline)}</text>
       {items.map((it, i) => {
         const cy = 24 + i * row + row / 2;
@@ -93,8 +93,8 @@ export function DivergingDots({ items, baseline, baselineLabel, format = (v: num
               <text x={x(baseline) + 6} y={cy} dy="0.32em" className="fill-muted-foreground text-[10px] italic">Not recorded</text>
             ) : (
               <>
-                <line x1={x(baseline)} x2={x(it.value)} y1={cy} y2={cy} stroke="var(--border)" strokeWidth={2} />
-                <circle cx={x(it.value)} cy={cy} r={5} fill={seriesVar(it.value >= baseline ? 0 : 1)} />
+                <line x1={x(baseline)} x2={x(it.value)} y1={cy} y2={cy} style={{ stroke: "var(--border)" }} strokeWidth={2} />
+                <circle cx={x(it.value)} cy={cy} r={5} style={{ fill: seriesVar(it.value >= baseline ? 0 : 1) }} />
                 <text x={x(it.value) + (it.value >= baseline ? 9 : -9)} y={cy} dy="0.32em" textAnchor={it.value >= baseline ? "start" : "end"} className="fill-muted-foreground text-[10px]">{format(it.value)}</text>
               </>
             )}
@@ -121,7 +121,7 @@ export function Sunburst({ root, size = 360 }: { root: TreeNode; size?: number }
         const t = top(n);
         const slot = Math.min(5, tops.indexOf(t!));
         return (
-          <path key={i} d={a(n) ?? ""} fill={seriesVar(slot < 0 ? 0 : slot)} opacity={focus && t?.data.name !== focus ? 0.25 : 1 - (n.depth - 1) * 0.22}
+          <path key={i} d={a(n) ?? ""} style={{ fill: seriesVar(slot < 0 ? 0 : slot) }} opacity={focus && t?.data.name !== focus ? 0.25 : 1 - (n.depth - 1) * 0.22}
             onMouseEnter={() => setFocus(t?.data.name ?? null)} onMouseLeave={() => setFocus(null)}>
             <title>{`${n.ancestors().reverse().slice(1).map((x) => x.data.name).join(" › ")}: ${(n.value ?? 0).toLocaleString()}`}</title>
           </path>
