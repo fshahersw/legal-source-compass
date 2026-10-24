@@ -33,7 +33,9 @@ except Exception:  # pragma: no cover
 SITE = "https://legislature.vermont.gov"
 INDEX = SITE + "/statutes/"
 PARSER = "vt-fullchapter/1"
-HEAD = re.compile(r"^§+\s*([0-9]+[a-zA-Z]?(?:-[0-9]+[a-zA-Z]?)?(?:\.[0-9]+)?[a-z]?)\.\s*(.*)$", re.S)
+# Title 9A (Uniform Commercial Code) prints its numbers with an em dash ("§ 2—101. Short title"); the number is kept
+# with a hyphen ("2-101"), as it is cited
+HEAD = re.compile(r"^§+\s*([0-9]+[a-zA-Z]?(?:[-\u2013\u2014][0-9]+[a-zA-Z]?)?(?:\.[0-9]+)?[a-z]?)\.\s*(.*)$", re.S)
 HISTORY_START = re.compile(r"^\((?:Added|Amended|\d{4}|Derived|Formerly|Recodified|Repealed|P\.L\.|R\.\s?\d|G\.L\.|V\.S\.|"
                            r"Redesignated|Renumbered|Former)")
 
@@ -96,7 +98,7 @@ def parse_fullchapter(raw: bytes):
                 lines.append(t)
         body = "\n".join(lines)
         text, history = split_history(body)
-        out.append({"number": m.group(1), "heading": m.group(2).strip() or None, "text": text,
+        out.append({"number": re.sub("[\u2013\u2014]", "-", m.group(1)), "heading": m.group(2).strip() or None, "text": text,
                     "history": history})
     return {"crumbs": crumbs, "sections": out}
 

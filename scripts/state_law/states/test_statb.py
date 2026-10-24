@@ -209,6 +209,14 @@ class Vermont(unittest.TestCase):
         self.assertEqual(vt.split_history("as provided in (1) above (see subsection (b))"),
                          ("as provided in (1) above (see subsection (b))", None))
 
+    def test_ucc_em_dash_numbers(self):
+        vt = load("vt")
+        page = ('<html><body><ul class="item-list statutes-detail"><li><p></p><div><p style="margin-left:0px"><b>\u00a7 '
+                '2\u2014101. Short title</b></p><p style="text-indent:19.2px">This article shall be known and may be cited '
+                'as Uniform Commercial Code\u2014Sales.</p></div></li></ul></body></html>').encode()
+        sections = vt.parse_fullchapter(page)["sections"]
+        self.assertEqual([(s["number"], s["heading"]) for s in sections], [("2-101", "Short title")])
+
     def test_identical_repeats_kept_once(self):
         vt = load("vt")
         one = {"number": "6064", "heading": "Claim applied", "text": "The amount ...", "history": "(Added 1969.)"}
