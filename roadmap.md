@@ -75,5 +75,7 @@
 - [ ] Companies / Insights: change-since chart for multi-series trends
 - [x] Court profiles: headline strip (cases filed, pending, pending MDLs, sitting judges) with AI summary; five sections (Court, Judges, Caseload, Cases & opinions, Rules & resources) behind a sticky index; sections with nothing for a court are hidden and dropped from the index; record scope note moved into "About this record" on every record page
 - [ ] Court profile: condense the identity facts box (name/type/system repeat the header)
-- [ ] Judge, agency, company, MDL profiles: same headline strip + sectioned page
+- [x] Judge profiles: Career, Practices, Cases & MDLs, Disclosures behind the sticky index; the record's own sections sit under "Record details" (one index, no second sticky strip)
+- [x] Company profiles: six tabs folded into four views (Overview, Financials, Documents & filings, Litigation); every former ?tab= address opens its view with its part first
+- [ ] Agency and MDL profiles: headline strip + sectioned page
 - [ ] Desktop + phone screenshots per page; demoted blocks listed
