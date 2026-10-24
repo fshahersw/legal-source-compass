@@ -124,6 +124,7 @@ export function MetricMap({
     const svg = svgRef.current;
     if (svg && zoomRef.current) select(svg).transition().duration(300).call(zoomRef.current.scaleBy, f);
   }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function fitTo(el: SVGGraphicsElement) {
     const svg = svgRef.current;
     if (!svg || !zoomRef.current) return;
@@ -353,7 +354,6 @@ export function MetricMap({
                 onHoverState?.(null);
               }}
               onClick={() => onState(id.fips)}
-              onDoubleClick={(e) => fitTo(e.currentTarget)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
@@ -399,7 +399,7 @@ export function MetricMap({
             <span className="text-muted-foreground">
               {showCounties
                 ? "Hover a county for its value; select one to open its page."
-                : "Select a state to open it. Double-click to zoom to it; Ctrl + scroll or the buttons zoom, drag to pan."}
+                : "Select a state to open it. Ctrl + scroll or the buttons zoom, drag to pan."}
             </span>
           )}
         </div>
