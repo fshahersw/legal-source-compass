@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
 import { HubLinks, SectionHub } from "@/components/atlas/hub/SectionHub";
+import { LawHeadline } from "@/components/corpus/LawHeadline";
 import { FederalLawCollections, LawLanding } from "@/components/corpus/LawLanding";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid, type FolderItem } from "@/components/corpus/FolderGrid";
