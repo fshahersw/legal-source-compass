@@ -80,3 +80,6 @@
 - [x] Agency profiles: AI summary under the headline figures; overview in five sections (Rulemaking, Pipeline, Money, Law and structure, Data) behind the sticky index; "Rules & notices" and "All documents" merged into one Documents tab (recent 12, then browse all)
 - [x] MDL profiles: seven tabs folded into four views (Overview + lifecycle, Cases & parties, Docket & documents, Evidence & sources; every former ?tab= opens its part first); AI summary under the header; two figures repeated from the header removed from "Membership & coverage"
 - [x] Desktop + phone checks of the 13 main pages (no sideways scroll, no page errors, 2026-10-24); demoted blocks listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md
+- [ ] Places: confirm the median reference line on the state comparison chart is visible in both themes (looked faint in one screenshot)
+- [ ] Sunburst: keyboard focus for ring segments (the case-type list already works with the keyboard)
+- [ ] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)
