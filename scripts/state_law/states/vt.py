@@ -36,6 +36,11 @@ PARSER = "vt-fullchapter/1"
 # Title 9A (Uniform Commercial Code) prints its numbers with an em dash ("§ 2—101. Short title"); the number is kept
 # with a hyphen ("2-101"), as it is cited
 HEAD = re.compile(r"^§+\s*([0-9]+[a-zA-Z]?(?:[-\u2013\u2014][0-9]+[a-zA-Z]?)?(?:\.[0-9]+)?[a-z]?)\.\s*(.*)$", re.S)
+_NUM = r"[0-9]+[a-zA-Z]?(?:[-\u2013\u2014][0-9]+[a-zA-Z]?)?(?:\.[0-9]+)?[a-z]?"
+# "§§ 151, 152. Repealed. 1965, No. 81, § 11." names its numbers (one entry per number); "§§ 151-160. Repealed." is a
+# range (ledgered, never expanded)
+MULTI = re.compile(rf"^§§\s*({_NUM}(?:\s*(?:,|and|&)\s*{_NUM})+)\.\s*(.*)$", re.S)
+RANGE = re.compile(rf"^§§\s*{_NUM}\s*(?:-|\u2013|\u2014|to|through)\s*{_NUM}\.")
 HISTORY_START = re.compile(r"^\((?:Added|Amended|\d{4}|Derived|Formerly|Recodified|Repealed|P\.L\.|R\.\s?\d|G\.L\.|V\.S\.|"
                            r"Redesignated|Renumbered|Former)")
 
@@ -87,8 +92,13 @@ def parse_fullchapter(raw: bytes):
         paras = div.xpath("./p")
         if not paras or not paras[0].xpath("./b"):
             continue
-        m = HEAD.match(sb.one_line(paras[0].text_content()))
-        if not m:
+        head = sb.one_line(paras[0].text_content())
+        # "§§" always names several numbers (a list or a range), never one hyphenated number
+        m = None if head.startswith("§§") else HEAD.match(head)
+        multi = None if m else MULTI.match(head)
+        if not m and not multi:
+            if RANGE.match(head):
+                out.append({"range": head[:200]})
             continue
         lines = [sb.one_line(sb.el_text(p)) for p in paras[1:]]
         lines = [x for x in lines if x]
@@ -98,8 +108,11 @@ def parse_fullchapter(raw: bytes):
                 lines.append(t)
         body = "\n".join(lines)
         text, history = split_history(body)
-        out.append({"number": re.sub("[\u2013\u2014]", "-", m.group(1)), "heading": m.group(2).strip() or None, "text": text,
-                    "history": history})
+        numbers = [m.group(1)] if m else re.split(r"\s*(?:,|and|&)\s*", multi.group(1))
+        heading = (m or multi).group(2).strip() or None
+        for number in numbers:
+            out.append({"number": re.sub("[\u2013\u2014]", "-", number), "heading": heading, "text": text,
+                        "history": history})
     return {"crumbs": crumbs, "sections": out}
 
 
@@ -156,6 +169,11 @@ def acquire(ctx):
             path = [{"level": "title", "label": "Title", "number": title, "heading": thead},
                     {"level": "chapter", "label": "Chapter", "number": chapter.lstrip("0") or chapter,
                      "heading": re.sub(r"^Chapter\s+\S+\s*:\s*", "", sb.one_line(name or "")) or None}]
+            for item in parsed["sections"]:
+                if "range" in item:
+                    ctx._rejects.write({"state": "VT", "code": "VSA", "number": None, "reason": f"range entry: {item['range']}",
+                                        "source_url": fetched.url, "source_sha256": fetched.sha256})
+            parsed["sections"] = [item for item in parsed["sections"] if "range" not in item]
             sections = unique_copies(parsed["sections"])
             if len(sections) < len(parsed["sections"]):
                 ctx.log(f"{title} V.S.A. chapter {chapter}: {len(parsed['sections']) - len(sections)} identical repeated "

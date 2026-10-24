@@ -217,6 +217,16 @@ class Vermont(unittest.TestCase):
         sections = vt.parse_fullchapter(page)["sections"]
         self.assertEqual([(s["number"], s["heading"]) for s in sections], [("2-101", "Short title")])
 
+    def test_listed_and_ranged_status_entries(self):
+        vt = load("vt")
+        page = ('<html><body><ul class="item-list statutes-detail"><li><p></p><div><p style="margin-left:0px"><b>\u00a7\u00a7 '
+                '151, 152. Repealed. 1965, No. 81, \u00a7 11.</b></p></div></li><li><p></p><div><p style="margin-left:0px"><b>'
+                '\u00a7\u00a7 160-169. Repealed. 1971, No. 14.</b></p></div></li></ul></body></html>').encode()
+        sections = vt.parse_fullchapter(page)["sections"]
+        self.assertEqual([s.get("number") for s in sections], ["151", "152", None])
+        self.assertEqual(sections[0]["heading"], "Repealed. 1965, No. 81, \u00a7 11.")
+        self.assertTrue(sections[2]["range"].startswith("\u00a7\u00a7 160-169."))
+
     def test_identical_repeats_kept_once(self):
         vt = load("vt")
         one = {"number": "6064", "heading": "Claim applied", "text": "The amount ...", "history": "(Added 1969.)"}
