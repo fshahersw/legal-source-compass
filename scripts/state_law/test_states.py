@@ -425,6 +425,21 @@ class IdahoNumberTests(unittest.TestCase):
             self.assertEqual(idaho.SECTION_RE.match(head).group(1), number)
 
 
+class KentuckyHeadTests(unittest.TestCase):
+    def test_stray_mark_before_number(self):
+        ky = load("ky")
+        lines = ["`620.072   Unannounced home visits concerning abused or neglected child --",
+                 "Policies.", "The cabinet shall promulgate administrative regulations.", "Effective: July 15, 2026"]
+        original = ky.lib.pdf_layout_lines
+        ky.lib.pdf_layout_lines = lambda body: list(lines)
+        try:
+            parsed = ky.parse_pdf(b"%PDF-1.4")
+        finally:
+            ky.lib.pdf_layout_lines = original
+        self.assertEqual(parsed["number"], "620.072")
+        self.assertTrue(parsed["heading"].startswith("Unannounced home visits"))
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):

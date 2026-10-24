@@ -64,7 +64,8 @@ def parse_pdf(body: bytes) -> dict:
         lines.pop(0)
     if not lines:
         raise RuntimeError("empty KRS PDF")
-    head = HEAD_RE.match(lines[0].strip())
+    # a stray mark the publisher left before the number ("`620.072   Unannounced home visits ...") is not part of it
+    head = HEAD_RE.match(lines[0].strip().lstrip("`'\u2018\u2019"))
     if not head:
         raise RuntimeError(f"no section line: {lines[0][:80]!r}")
     number, heading = head.group(1), lib.norm_ws(head.group(2))
@@ -158,7 +159,15 @@ def acquire(ctx: lib.RunContext) -> None:
             pdf = ctx.get(BASE + link, fallback_fresh=True)
             if not pdf.body.startswith(b"%PDF"):
                 raise RuntimeError(f"{pdf.url} is not a PDF")
-            parsed = parse_pdf(pdf.body)
+            try:
+                parsed = parse_pdf(pdf.body)
+            except RuntimeError as error:
+                if ctx.sample is not None:
+                    raise
+                # one PDF the parser cannot read is ledgered, never guessed (the loader bounds the share)
+                ctx._rejects.write({"state": "KY", "code": "KRS", "number": None, "reason": str(error)[:300],
+                                    "source_url": pdf.url, "source_sha256": pdf.sha256})
+                continue
             status = marker = None
             effective = None
             when = _date(parsed["effective_line"] or "")

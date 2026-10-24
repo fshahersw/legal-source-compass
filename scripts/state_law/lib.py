@@ -620,7 +620,15 @@ _EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:on\s+)?(?:(until|throu
 # a version that applies only once a condition is met: "(Effective Upon Ratification of Proposed Constitutional
 # Amendment)", "(Effective once contingency met. ...)", "(Contingently effective ...)"
 _CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effective\s+(?:upon|once|when|if|on\s+the\s+(?:effective\s+)?date)\b|"
-                                 r"(?:For\s+)?contingent\s+effective\s+date\b)[^\)\]]*[\)\]]", re.I)
+                                 r"(?:For\s+)?contingent\s+effective\s+date\b|"
+                                 # Nevada: "[Effective from the date a court ... enters a judgment ...]", "[Effective 2
+                                 # years after the date of the repeal of 42 U.S.C. § 666 ...]" (the outgoing text's
+                                 # "[Effective until ...]" stays in force)
+                                 r"Effective\s+(?:from|beginning|commencing)\s+(?!" + _DATE_WORDS + r")|"
+                                 r"Effective\s+\d+\s+(?:years?|months?|days?)\s+after\b)[^\)\]]*[\)\]]", re.I)
+# Nevada: "[Effective on the later of January 1, 2027, or the date on which the Director ... notifies ...]" -- not in
+# effect before that date whatever the event; once the date has passed, whether the event occurred is not printed
+_LATER_OF_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:on\s+)?the\s+later\s+of\s+(" + _DATE_WORDS + r")[^\)\]]*[\)\]]", re.I)
 _QUALIFIED_RE = re.compile(r"\b(unless|contingent|subject to|or upon|until (?:the|such)|if|when)\b", re.I)
 # South Carolina's first text line: "Section effective until July 1, 2027. See, also, section 57-3-20 effective ..."
 _SECTION_EFFECTIVE_LINE_RE = re.compile(r"^Section effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")\.", re.I)
@@ -657,6 +665,15 @@ def effective_marker(heading: str | None, today: _dt.date) -> dict:
     condition has occurred is not printed). Returns {} when there is no such marker or the text is in force."""
     found = list(_EFFECTIVE_MARK_RE.finditer(heading or ""))
     if not found:
+        later = _LATER_OF_MARK_RE.search(heading or "")
+        if later:
+            marker = norm_ws(later.group(0))
+            day = _marker_date(later.group(1))
+            if day is not None and day > today:
+                return {"status": "future_effective", "status_basis": "publisher_marker", "status_marker": marker,
+                        "effective": {"start": None, "end": None, "note": marker}}
+            return {"status": "not_recorded", "status_basis": "not_recorded", "status_marker": marker,
+                    "effective": {"start": None, "end": None, "note": marker}}
         contingent = _CONTINGENT_MARK_RE.search(heading or "")
         if contingent:
             marker = norm_ws(contingent.group(0))

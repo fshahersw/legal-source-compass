@@ -211,6 +211,22 @@ class EffectiveMarkerTests(unittest.TestCase):
                                   "entered into pursuant to section 4 of this act.]", today)
         self.assertEqual(nv["status"], "not_recorded")
         self.assertEqual(lib.effective_marker("Powers. [Effective until the effective date of the initial contract.]", today), {})
+        # Nevada's event versions: the outgoing "[Effective until ...]" text stays in force, the incoming one is not
+        # recorded (whether the event occurred is not printed); "on the later of <date>, or <event>" is not yet in
+        # effect while the date is ahead
+        repeal = "the date of the repeal of 42 U.S.C. § 666, the federal law requiring each state to establish procedures.]"
+        self.assertEqual(lib.effective_marker("Fees. [Effective until 2 years after " + repeal, today), {})
+        self.assertEqual(lib.effective_marker("Fees. [Effective 2 years after " + repeal, today)["status"], "not_recorded")
+        court = "a court of competent jurisdiction enters a judgment determining that subsection 2 is unconstitutional.]"
+        self.assertEqual(lib.effective_marker("Deposits. [Effective until the date upon which " + court, today), {})
+        self.assertEqual(lib.effective_marker("Deposits. [Effective from the date " + court, today)["status"], "not_recorded")
+        self.assertEqual(lib.effective_marker("Fees. [Effective from July 1, 2027.]", today), {})
+        notify = "or the date on which the Director notifies the Governor that sufficient resources are available.]"
+        self.assertEqual(lib.effective_marker("Fees. [Effective until the earlier of December 31, 2026, " + notify, today), {})
+        later = lib.effective_marker("Fees. [Effective on the later of January 1, 2027, " + notify, today)
+        self.assertEqual((later["status"], later["effective"]["start"]), ("future_effective", None))
+        self.assertEqual(lib.effective_marker("Fees. [Effective on the later of January 1, 2026, " + notify, today)["status"],
+                         "not_recorded")
         self.assertEqual(lib.effective_marker("(Effective on July 1, 2027) Rates", today)["status"], "future_effective")
 
     def test_first_line_and_module_dates(self):
