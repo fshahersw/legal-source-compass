@@ -50,8 +50,12 @@ NUM = r"(?:[A-Z]-)?[0-9][0-9A-Za-z.\-]*?"
 # "Definitions [Effective until Oct. 21, 2026]." / "Definitions [Effective Oct. 21, 2026]." — the publisher prints the
 # outgoing and the incoming text of a section around an amendment's effective date
 EFFECTIVE_RE = re.compile(r"\s*\[Effective\s+(until\s+)?([A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4})\]\.?\s*$")
-# "§ 8101. Catchline." — the number ends at the first period followed by a space (so "§ 2-101.1. Title" is 2-101.1)
-HEAD_RE = re.compile(rf"^§\s*({NUM})\.(?:\s+(.*))?$")
+# "§ 8101. Catchline." — the number ends at the first period followed by a space (so "§ 2-101.1. Title" is 2-101.1);
+# a few heads print a space before that period ("§ 17-1201 . Law applicable to ...")
+HEAD_RE = re.compile(rf"^§\s*({NUM})\s?\.(?:\s+(.*))?$")
+# a status-only entry whose history ends with the repealing act ("...; repealed by 78 Del. Laws, c. 229, § 2,
+# effective Apr. 19, 2012.") and whose head carries no "[Repealed.]"
+REPEALED_BY_RE = re.compile(r"\brepealed by\s+[^;]*", re.I)
 # "§§ 164,165. [Reserved.]" lists numbers; "§§ 166-169. [Reserved.]" is a range (ledgered, never expanded: section
 # numbers carry hyphens themselves, as in the UCC title's "§ 2-101")
 MULTI_RE = re.compile(rf"^§§\s*({NUM}(?:\s*(?:,|and|&)\s*{NUM})+)\.(?:\s+(.*))?$")
@@ -151,6 +155,12 @@ def effective_fields(heading: str | None, today: _dt.date) -> dict:
     return out
 
 
+def repealed_by(item: dict) -> dict:
+    """Status of a status-only entry (no text) whose history names the repealing act; {} otherwise."""
+    m = REPEALED_BY_RE.search(item.get("history") or "") if not item.get("text") else None
+    return {"status": "repealed", "status_marker": lib.norm_ws(m.group(0)).rstrip(".;, ")} if m else {}
+
+
 def links(page_text: str, pattern: str) -> list[str]:
     """Link targets matching `pattern`, in page order, once each. The publisher wraps hrefs in encoded newlines and
     spaces (href="&#xA;   title1/index.html&#xA; "), so each href is unescaped and trimmed before it is matched."""
@@ -210,6 +220,8 @@ def acquire(ctx: lib.RunContext) -> None:
                                         "source_url": page.url, "source_sha256": page.sha256})
                     continue
                 fields = effective_fields(item["heading"], ctx.today)
+                if "status" not in fields:
+                    fields.update(repealed_by(item))
                 if printed[item["number"]] > 1:  # outgoing and incoming text of one section: both kept, as versions
                     seen[item["number"]] = seen.get(item["number"], 0) + 1
                     fields["version_index"] = seen[item["number"]]

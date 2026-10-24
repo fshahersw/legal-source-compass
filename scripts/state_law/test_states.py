@@ -300,6 +300,18 @@ class DelawareTests(unittest.TestCase):
         self.assertEqual(later["status"], "future_effective")
         self.assertEqual(de.effective_fields("Short title.", today), {"heading": "Short title."})
         self.assertEqual(de.HEAD_RE.match("\u00a7 A-101. Title.").group(1), "A-101")
+        spaced = de.HEAD_RE.match("\u00a7 17-1201 . Law applicable to statutory public benefit limited partnerships.")
+        self.assertEqual((spaced.group(1), spaced.group(2)[:14]), ("17-1201", "Law applicable"))
+
+    def test_repealed_by_history(self):
+        de = load("de")
+        item = {"number": "171", "heading": "Establishment of Corps of Oral Hygienists.", "text": "",
+                "history": "37 Del. Laws, c. 62, \u00a7 1; Code 1935, \u00a7 827; repealed by 78 Del. Laws, c. 229, "
+                           "\u00a7 2, effective Apr. 19, 2012.;"}
+        self.assertEqual(de.repealed_by(item), {"status": "repealed", "status_marker":
+                                                "repealed by 78 Del. Laws, c. 229, \u00a7 2, effective Apr. 19, 2012"})
+        self.assertEqual(de.repealed_by(dict(item, text="(a) Still the law.")), {})
+        self.assertEqual(de.repealed_by(dict(item, history="70 Del. Laws, c. 186, \u00a7 1;")), {})
 
     def test_entity_wrapped_links(self):
         de = load("de")
