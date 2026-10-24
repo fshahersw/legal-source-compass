@@ -1,7 +1,8 @@
 """Idaho — Idaho Legislature, Legislative Services Office, Idaho Statutes (legislature.idaho.gov), state-law/1.
 
 /statutesrules/idstat/ lists the titles (Title5), a title page lists its chapters (Title5/T5CH2; repealed chapters are
-printed without a link), a chapter page lists its sections (Title5/T5CH2/SECT5-219). A section page prints, inside
+printed without a link), a chapter page lists its sections (Title5/T5CH2/SECT5-219) or, for a chapter divided into
+parts, its part pages (Title15/T15CH1PT1), which list the sections (Title15/T15CH1/SECT15-1-101). A section page prints, inside
 div.pgbrk, centered header lines (TITLE 5 / its heading / CHAPTER 2 / its heading, and PART lines where a part starts)
 then "5-219.  <span uppercase>Catchline.</span> text", further paragraphs, a "History:" line and the bracketed history
 ("[(5-219) C.C.P. 1881, sec. 159; …]"). The statutes page states "Idaho Statutes are updated to the website July 1
@@ -45,6 +46,9 @@ META = lib.StateMeta(
 # "5-219", "39-1301.5", and the Uniform Commercial Code title's chapter-article-section "28-2-313", "28-12-101A"
 NUM = r"\d+[A-Z]?-\d+[0-9A-Z]*(?:-\d+[0-9A-Z]*)?(?:\.\d+[A-Z]?)?"
 SECTION_RE = re.compile(rf"^({NUM})\.\s*(.*)$")
+# a section enacted under one number and codified under another prints both: "56-2501 [56-2601]. short title." (the
+# bracketed number is the codified one, the number in the page URL)
+CODIFIED_RE = re.compile(rf"^{NUM}\s*\[({NUM})\]\.\s*(.*)$")
 HEADER_RE = re.compile(r"^(TITLE|CHAPTER|PART|SUBPART|ARTICLE)\s+([0-9A-Z.\-]+)\s*$")
 LEVEL = {"TITLE": "title", "CHAPTER": "chapter", "PART": "part", "SUBPART": "subpart", "ARTICLE": "article"}
 RANK = {"title": 0, "chapter": 1, "article": 2, "part": 2, "subpart": 3}
@@ -81,7 +85,7 @@ def parse_section(page: lib.Fetched) -> dict:
                 elif pending is not None and pending["heading"] is None:
                     pending["heading"] = text
                 continue
-            sm = SECTION_RE.match(text)
+            sm = CODIFIED_RE.match(text) or SECTION_RE.match(text)
             if not sm:
                 raise RuntimeError(f"{page.url}: no section line in {text[:80]!r}")
             number = sm.group(1)
@@ -108,6 +112,14 @@ def parse_section(page: lib.Fetched) -> dict:
     hm = re.match(r"^\[(.*)\]$", hist)
     return {"number": number, "heading": heading or None, "text": "\n".join(lines),
             "history": (hm.group(1) if hm else hist) or None, "headers": headers}
+
+
+def section_links(chapter: str, page_text: str) -> list[str]:
+    return list(dict.fromkeys(re.findall(rf'href="({re.escape(chapter)}/SECT[0-9A-Z.\-]+)/?"', page_text)))
+
+
+def part_links(chapter: str, page_text: str) -> list[str]:
+    return list(dict.fromkeys(re.findall(rf'href="({re.escape(chapter)}PT[0-9A-Z]+)/?"', page_text)))
 
 
 def statement(ctx: lib.RunContext) -> tuple[str | None, str]:
@@ -153,7 +165,12 @@ def acquire(ctx: lib.RunContext) -> None:
             if not ctx.want_more():
                 break
             cpage = ctx.get(f"{BASE}{chapter}/", fallback_fresh=True)
-            sections = list(dict.fromkeys(re.findall(rf'href="({re.escape(chapter)}/SECT[0-9A-Z.\-]+)/?"', cpage.text())))
+            sections = section_links(chapter, cpage.text())
+            # a chapter divided into parts (the Uniform Probate Code, the UCC articles) lists its parts
+            # (".../T15CH1PT1"), and each part page lists the chapter's sections (".../T15CH1/SECT15-1-101")
+            for part in part_links(chapter, cpage.text()):
+                ppage = ctx.get(f"{BASE}{part}/", fallback_fresh=True)
+                sections += [link for link in section_links(chapter, ppage.text()) if link not in sections]
             context: list[dict] = []
             ctx.prefetch(f"{BASE}{link}" for link in sections)  # retained runs: read ahead
             for link in sections:

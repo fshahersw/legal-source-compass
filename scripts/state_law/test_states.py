@@ -488,6 +488,19 @@ class KentuckyHeadTests(unittest.TestCase):
                          [("a", "Effective: March 12, 2021", 1), ("b", None, None), ("c", "Effective: January 1, 2027", 2)])
 
 
+class IdahoPartsTests(unittest.TestCase):
+    def test_part_pages_and_codified_numbers(self):
+        idm = load("id")
+        chapter = "/statutesrules/idstat/Title15/T15CH1"
+        cpage = ('<a href="/statutesrules/idstat/Title15/T15CH1PT1">Part 1</a><a href="/statutesrules/idstat/Title15/T15CH1PT2">'
+                 'Part 2</a><a href="/wp-content/uploads/statutesrules/idstat/Title15/T15CH1.pdf">pdf</a>')
+        self.assertEqual(idm.part_links(chapter, cpage), [chapter + "PT1", chapter + "PT2"])
+        ppage = '<a href="/statutesrules/idstat/Title15/T15CH1/SECT15-1-101">15-1-101</a>'
+        self.assertEqual(idm.section_links(chapter, ppage), [chapter + "/SECT15-1-101"])
+        m = idm.CODIFIED_RE.match("56-2501 [56-2601]. short title. This chapter shall be known")
+        self.assertEqual(m.group(1), "56-2601")
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):
