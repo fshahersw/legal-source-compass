@@ -112,6 +112,12 @@ def acquire(ctx):
     ctx.edition(edition_label="Vermont Statutes Online", currency_statement=m.group(0) if m else None,
                 currency_source_url=INDEX if m else None)
     titles = list(dict.fromkeys(re.findall(r'href="/statutes/title/([0-9A-Za-z]+)"', index.text())))
+    # the "Title N Appendix" entries (fish and wildlife regulations, education charters, municipal charters, executive
+    # orders) are not V.S.A. sections: their numbering restarts in every charter or order, so they are left out
+    appendices = [t for t in titles if "APPENDIX" in t.upper()]
+    if appendices:
+        ctx.log(f"appendix titles not read: {', '.join(appendices)}")
+    titles = [t for t in titles if "APPENDIX" not in t.upper()]
     for title in titles:
         if only and not any(o.split("/")[0] == title for o in only):
             continue
