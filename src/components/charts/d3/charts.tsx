@@ -196,7 +196,7 @@ export function StackedBarsOverTime({
   const [box, W] = useWidth<HTMLDivElement>();
   const shown = keys.slice(0, 6);
   const { layers, max } = stackLayers(rows, shown);
-  const x = scaleBand<string>().domain(rows.map((r) => r.period)).range([52, W - 4]).padding(0.22);
+  const x = scaleBand<string>().domain(rows.map((r) => r.period)).range([52, W - 14]).padding(0.22);
   const y = scaleLinear().domain([0, max || 1]).nice().range([height - 26, 10]);
   const every = Math.max(1, Math.ceil((rows.length * 44) / Math.max(1, W - 56)));
   return (
