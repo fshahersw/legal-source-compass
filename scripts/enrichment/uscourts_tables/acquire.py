@@ -7,14 +7,18 @@ table's HTML page again (the listing row already carries its exact title, table 
 skips the composite "All ... tables" files, and writes private/acq/uscourts_tables/files_index.json:
 one entry per (publication, table, period end) with title, page URL, file URL, format, sha256, bytes.
 
-Usage: python3 -I -B acquire.py [--pubs 77,78,79,32] [--pdf-fallback] [--series B,C,D,...] [--tables C,D-1,...] [--pdf-only]
-                              [--limit N] [--min-year Y]
+Usage: python3 -I -B acquire.py [--pubs 77,78,79,32] [--pdf-fallback] [--series B,C,D,...|ALL] [--tables C,D-1,...] [--pdf-only]
+                              [--limit N] [--min-year Y] [--max-year Y] [--title-re REGEX] [--min-free-gb 2.0]
   --tables     only these listing table numbers (exact, case-insensitive), for the PDF back-fill of selected court tables
   --pdf-only   fetch the PDF of an entry only when the entry has no workbook (the period before spreadsheets were published)
+  --series ALL every table series of the publications (BAPCPA, Wiretap, Judicial Facts and Figures, FCMS documents)
+  --title-re   only listing entries whose title matches (FCMS documents carry no table number; their id comes from the title)
+  --min-free-gb  stop before a download when the volume's free space is below this many GB (default 2.0)
 """
 import argparse
 import json
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -29,13 +33,29 @@ PRIORITY = ["C", "D", "B", "F", "M", "T", "X", "E", "H", "S", "J", "K", "V", "G"
 
 def series_of(table):
     m = re.match(r"^([A-Za-z]+)", table or "")
-    return m.group(1).upper() if m else ""
+    return m.group(1).upper() if m else (table.split(".")[0] if table else "")
+
+
+FCMS_KINDS = {"profiles": "PROFILES", "comparison within circuit": "COMPARISON", "summary": "SUMMARY", "case participations": "PARTICIPATIONS"}
+
+
+def table_id(entry):
+    """The listing's table number; an FCMS document prints none ("N/A"), so its id is the court type and document type of its
+    title: "U.S. Courts of Appeals - Federal Court Management Statistics-Case Participations" -> "FCMS-APPEALS-PARTICIPATIONS"."""
+    table = (entry.get("table") or "").strip()
+    title = entry.get("title") or ""
+    if table.upper() in ("N/A", "N-A") and "Federal Court Management Statistics" in title:
+        court = "APPEALS" if "Courts of Appeals" in title else "DISTRICT" if "District Courts" in title else None
+        kind = re.split(r"Statistics\s*[\u2013\u2014-]\s*", title, maxsplit=1)
+        doc = FCMS_KINDS.get(kind[1].strip().lower()) if len(kind) == 2 else None
+        return f"FCMS-{court}-{doc}" if court and doc else None
+    return table
 
 
 def is_composite(entry):
     title = (entry.get("title") or "").lower()
-    table = (entry.get("table") or "").lower()
-    return title.startswith("all ") or table.startswith("n-a") or table in ("", "all")
+    table = (table_id(entry) or "").lower()
+    return title.startswith("all ") or table.startswith("n-a") or table.startswith("n/a") or table in ("", "all")
 
 
 def pick(entry, pdf_fallback):
@@ -57,10 +77,16 @@ def main():
     ap.add_argument("--pdf-only", action="store_true")
     ap.add_argument("--tables", default="")
     ap.add_argument("--min-year", type=int, default=0)
+    ap.add_argument("--max-year", type=int, default=9999)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--title-re", default="")
+    ap.add_argument("--min-free-gb", type=float, default=2.0)
     args = ap.parse_args()
+    title_re = re.compile(args.title_re) if args.title_re else None
     listing = json.loads((F.ACQ / "listing_index.json").read_text())
-    want_series = [s for s in args.series.split(",") if s] or PRIORITY
+    all_series = args.series.strip().upper() == "ALL"
+    want_series = [s for s in args.series.split(",") if s] if not all_series else []
+    want_series = want_series or ([] if all_series else PRIORITY)
     want_tables = {t.strip().upper() for t in args.tables.split(",") if t.strip()}
     jobs = []
     for pn in args.pubs.split(","):
@@ -68,12 +94,15 @@ def main():
         for entry in listing.get(pn, {}).get("tables", []):
             if is_composite(entry) or not entry.get("period_end"):
                 continue
-            if int(entry["period_end"][:4]) < args.min_year:
+            if not args.min_year <= int(entry["period_end"][:4]) <= args.max_year:
                 continue
-            s = series_of(entry["table"])
-            if s not in want_series:
+            if title_re and not title_re.search(entry.get("title") or ""):
                 continue
-            if want_tables and entry["table"].upper() not in want_tables:
+            tid = table_id(entry)
+            s = series_of(tid)
+            if not all_series and s not in want_series:
+                continue
+            if want_tables and tid.upper() not in want_tables:
                 continue
             if args.pdf_only:
                 if any(f.lower().endswith((".xlsx", ".xls")) for f in entry.get("files", [])):
@@ -83,7 +112,7 @@ def main():
                 url, fmt = pick(entry, args.pdf_fallback)
             if not url:
                 continue
-            jobs.append((want_series.index(s), pub, entry, url, fmt))
+            jobs.append((want_series.index(s) if s in want_series else 0, pub, {**entry, "table": tid}, url, fmt))
     jobs.sort(key=lambda j: (j[0], j[1], j[2]["table"], j[2]["period_end"]))
     if args.limit:
         jobs = jobs[: args.limit]
@@ -93,6 +122,11 @@ def main():
     bad = 0
     for n, (_, pub, entry, url, fmt) in enumerate(jobs, 1):
         key = f"{pub}|{entry['table']}|{entry['period_end']}"
+        if not F.local_path(url, "files").exists():
+            free = shutil.disk_usage(F.ACQ).free / 1e9
+            if free < args.min_free_gb:
+                print(f"stopping before {key}: {free:.2f} GB free is below the {args.min_free_gb} GB floor", flush=True)
+                break
         status, data, path = F.fetch(url, subdir="files")
         if status != 200:
             bad += 1

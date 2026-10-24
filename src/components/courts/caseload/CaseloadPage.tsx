@@ -1,10 +1,12 @@
 import { useRef, type KeyboardEvent } from "react";
-import { ClipboardCheck, Landmark, Layers, Scale } from "lucide-react";
+import { Banknote, ClipboardCheck, Landmark, Layers, Scale, Table2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BankruptcyTab } from "./BankruptcyTab";
 import { DistrictsTab } from "./DistrictsTab";
 import { MdlTab } from "./MdlTab";
 import { MethodTab } from "./MethodTab";
 import { NosTab } from "./NosTab";
+import { SeriesExplorer } from "./SeriesExplorer";
 import {
   CASELOAD_TABS,
   patchSearch,
@@ -17,6 +19,8 @@ const TABS: { id: CaseloadTab; label: string; Icon: typeof Landmark }[] = [
   { id: "districts", label: "Districts", Icon: Landmark },
   { id: "nos", label: "Nature of suit", Icon: Scale },
   { id: "mdl", label: "MDL association", Icon: Layers },
+  { id: "tables", label: "Published tables", Icon: Table2 },
+  { id: "bankruptcy", label: "Bankruptcy filings", Icon: Banknote },
   { id: "method", label: "Method and checks", Icon: ClipboardCheck },
 ];
 
@@ -97,6 +101,10 @@ export function CaseloadPage({
           <NosTab search={search} onSearch={onSearch} />
         ) : tab === "mdl" ? (
           <MdlTab search={search} onSearch={onSearch} />
+        ) : tab === "tables" ? (
+          <SeriesExplorer search={search} onSearch={onSearch} />
+        ) : tab === "bankruptcy" ? (
+          <BankruptcyTab search={search} onSearch={onSearch} />
         ) : (
           <MethodTab />
         )}

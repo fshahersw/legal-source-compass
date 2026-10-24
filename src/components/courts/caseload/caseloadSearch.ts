@@ -3,8 +3,15 @@
  * its own parameters so a stale filter from another tab never lingers in the address.
  */
 
-export type CaseloadTab = "districts" | "nos" | "mdl" | "method";
-export const CASELOAD_TABS: readonly CaseloadTab[] = ["districts", "nos", "mdl", "method"];
+export type CaseloadTab = "districts" | "nos" | "mdl" | "tables" | "bankruptcy" | "method";
+export const CASELOAD_TABS: readonly CaseloadTab[] = [
+  "districts",
+  "nos",
+  "mdl",
+  "tables",
+  "bankruptcy",
+  "method",
+];
 
 export type CaseloadSearch = {
   tab?: CaseloadTab | undefined;
@@ -24,6 +31,17 @@ export type CaseloadSearch = {
   /** Search text and sort, shared by the three tables ("-filings" is descending). */
   q?: string | undefined;
   sort?: string | undefined;
+  /** Published tables: series (table key), periods shown (a publication code or "all"), row, column, compared courts. */
+  series?: string | undefined;
+  pub?: string | undefined;
+  row?: string | undefined;
+  col?: string | undefined;
+  cmp?: string | undefined;
+  /** Published tables list filters: publication and geography. */
+  fpub?: string | undefined;
+  fscope?: string | undefined;
+  /** Bankruptcy filings: the measure charted. */
+  measure?: string | undefined;
 };
 
 type Key = keyof CaseloadSearch;
@@ -32,6 +50,8 @@ const TAB_KEYS: Record<CaseloadTab, readonly Key[]> = {
   districts: ["court", "circuit", "state", "q", "sort"],
   nos: ["nos", "kind", "group", "active", "q", "sort"],
   mdl: ["mdl", "jpml", "pending", "q", "sort"],
+  tables: ["series", "pub", "row", "col", "court", "cmp", "q", "fpub", "fscope"],
+  bankruptcy: ["court", "measure"],
   method: [],
 };
 
@@ -52,6 +72,23 @@ const mdlNumber = (v: unknown) => {
 };
 
 export const COURT_ID = /^[a-z]{2,8}$/;
+/** Court and circuit ids in the published tables ("ca9", "nysd", "arcomb"). */
+export const TABLE_COURT_ID = /^[a-z][a-z0-9]{1,7}$/;
+export const SERIES_KEY = /^[a-z0-9][a-z0-9-]{0,40}$/;
+/** Stored column and row keys: heading words slugged, joined by "/" ("predominant_nature_of_debt/business_filings/total"). */
+export const STORED_KEY = /^[a-z0-9_%~][a-z0-9_%~/.-]{0,199}$/;
+export const PUB_CHOICE = /^(all|[A-Z]{2,8})$/;
+export const MEASURES = ["total", "business", "nonbusiness", "ch7", "ch11", "ch13"] as const;
+
+/** Up to five distinct court ids, comma separated, in the order given. */
+const courtList = (v: unknown) => {
+  const s = text(v, 60);
+  if (!s) return undefined;
+  const ids = [...new Set(s.split(",").map((x) => x.trim()))]
+    .filter((x) => TABLE_COURT_ID.test(x))
+    .slice(0, 5);
+  return ids.length ? ids.join(",") : undefined;
+};
 export const NOS_RECORD_ID = /^(nos:\d{3}|group:[a-z_]{2,40})$/;
 
 export function normalizeCaseloadSearch(raw: Record<string, unknown>): CaseloadSearch {
@@ -70,7 +107,19 @@ export function normalizeCaseloadSearch(raw: Record<string, unknown>): CaseloadS
     pending: raw["pending"] === "yes" ? "yes" : undefined,
     q: text(typeof raw["q"] === "number" ? String(raw["q"]) : raw["q"]),
     sort: matching(raw["sort"], /^-?[a-zA-Z]{2,24}$/),
+    series: matching(raw["series"], SERIES_KEY),
+    pub: matching(raw["pub"], PUB_CHOICE),
+    row: typeof raw["row"] === "string" && STORED_KEY.test(raw["row"]) ? raw["row"] : undefined,
+    col: typeof raw["col"] === "string" && STORED_KEY.test(raw["col"]) ? raw["col"] : undefined,
+    cmp: courtList(raw["cmp"]),
+    fpub: matching(raw["fpub"], /^[A-Z]{2,8}$/),
+    fscope: matching(raw["fscope"], /^(district|bankruptcy|appeals|county|category)$/),
+    measure: (MEASURES as readonly string[]).includes(String(raw["measure"]))
+      ? String(raw["measure"])
+      : undefined,
   };
+  if (active === "tables" || active === "bankruptcy")
+    values.court = matching(raw["court"], TABLE_COURT_ID);
   const out: Record<string, string | number> = {};
   if (tab && tab !== "districts") out["tab"] = tab;
   for (const key of TAB_KEYS[active]) {

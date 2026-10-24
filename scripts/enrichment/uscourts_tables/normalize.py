@@ -33,6 +33,8 @@ def months_of(phrase, default=None):
         return words[m.group(1).lower()]
     if re.search(r"quarter", phrase, re.I):
         return 3
+    if re.search(r"calendar\s+year", phrase, re.I):
+        return 12
     return default
 
 
@@ -117,7 +119,7 @@ def split_title(title_raw):
             rest = re.sub(r"\s+as of [A-Z][a-z]+\.? \d{1,2}, \d{4}\s*$", "", rest)
     rest = re.sub(r"[\s,]+$", "", rest)
     rest = re.sub(r"^[\s.:\-–—]+", "", rest)
-    return (m.group(1) if m else None), rest, phrase
+    return (P.printed_table_id(m) if m else None), rest, phrase
 
 
 def county_code(row, code_pos):

@@ -168,7 +168,9 @@ def parse_pdf_table(text, ref, entry):
     printed = (m.group(1).strip().upper().replace(" ", "") if m else "")
     listed = entry["table"].upper().replace(" ", "")
     base = re.sub(r"(CASES|RETIRED)$", "", listed)
-    if printed and printed not in (listed, base):
+    # "BAPCPA Table 3." prints the number after its publication prefix; the listing names it "BAPCPA 3"
+    unprefixed = re.sub(r"^(BAPCPA|WIRE)", "", listed) if re.match(r"^\s*(BAPCPA|Wiretap)\s+Table", text[:200], re.I) else listed
+    if printed and printed not in (listed, base, unprefixed):
         reasons.append(f"title table {printed} != listing {listed}")
     phrase, end = P.parse_period_phrase(re.sub(r"\s+", " ", text[:1500]))
     if end and end != period_end:

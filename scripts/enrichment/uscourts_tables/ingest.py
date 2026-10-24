@@ -25,7 +25,7 @@ import utx_parse as P  # noqa: E402
 
 OUT = F.ROOT / "private" / "build" / "uscourts_tables" / "parsed"
 # Bump when utx_parse / normalize / the gates change: parsed files written by another version are parsed again.
-PARSER_VERSION = "2026-10-23.12"
+PARSER_VERSION = "2026-10-24.1"
 
 
 def accept(norm):

@@ -24,7 +24,7 @@ import pdf_rows as R  # noqa: E402
 
 BUILD = F.ROOT / "private" / "build" / "uscourts_tables"
 PARSED = BUILD / "parsed"
-PDF_PARSER_VERSION = "pdf-2026-10-23.1"
+PDF_PARSER_VERSION = "pdf-2026-10-24.2"
 COURT_SCOPES = ("district", "bankruptcy", "appeals")
 MAX_REFERENCES = 4
 

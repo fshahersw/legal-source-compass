@@ -11,7 +11,12 @@ listing_index.json (one entry per table page with title, table number, period en
                        year, so paging is stable; rows not seen in pass 1 are added and counted.
 
 Usage: python3 -I -B crawl_listing.py all [pn,...]     pass 1
-       python3 -I -B crawl_listing.py years [pn,...]   pass 2
+       python3 -I -B crawl_listing.py years [pn,...] [--since YYYY] [--refresh]   pass 2
+  --since    only period-end years from YYYY on (to look for newly posted periods)
+  --refresh  request the listing pages again instead of reusing the stored copies (new tables appear on them)
+
+The index is re-read and merged just before every write, so two runs for different publications never drop each other's
+entries (an earlier run lost the Federal Court Management Statistics entries that way).
 """
 import json
 import re
@@ -42,7 +47,8 @@ CELL = re.compile(r"<td[^>]*>(.*?)</td>", re.S)
 HREF = re.compile(r'href="([^"]+)"')
 SIZE = re.compile(r"(pdf|xlsx|xls|csv|zip|docx?)\s*,\s*([\d.,]+)\s*(KB|MB|B)", re.I)
 DATE = re.compile(r"^([A-Z][a-z]+) (\d{1,2}), (\d{4})$")
-YEARS = {"77": (1996, 2026), "78": (2001, 2026), "79": (2001, 2026), "32": (2001, 2026), "531": (2007, 2026), "529": (1997, 2026), "34": (2005, 2026)}
+YEARS = {"77": (1996, 2026), "78": (2001, 2026), "79": (2001, 2026), "32": (2001, 2026), "531": (2007, 2026), "529": (1997, 2026), "34": (2005, 2026),
+         "33": (1997, 2026)}
 ORDERS = [None, "field_current_table_number"]
 
 
@@ -74,14 +80,14 @@ def parse_rows(html):
     return out
 
 
-def fetch_pages(params, subdir, max_pages=400):
+def fetch_pages(params, subdir, max_pages=400, refresh=False):
     rows = []
     for page in range(max_pages):
         p = dict(params)
         if page:
             p["page"] = str(page)
         url = LISTING + "?" + urllib.parse.urlencode(p, safe="[]")
-        status, body, _ = F.fetch(url, subdir=subdir)
+        status, body, _ = F.fetch(url, subdir=subdir, force=refresh)
         if status != 200:
             print(f"  {params} page={page}: HTTP {status}", flush=True)
             return rows, status
@@ -92,6 +98,18 @@ def fetch_pages(params, subdir, max_pages=400):
         if len(batch) < 50:
             break
     return rows, 200
+
+
+def write_merged(pn, entry):
+    """Write one publication's entry into listing_index.json, re-reading the file first so other publications' entries stay."""
+    index_path = F.ACQ / "listing_index.json"
+    current = json.loads(index_path.read_text()) if index_path.exists() else {}
+    current[pn] = entry
+    F.ACQ.mkdir(parents=True, exist_ok=True)
+    tmp = index_path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(current, indent=1, sort_keys=True))
+    tmp.replace(index_path)
+    return current
 
 
 def pass_all(pns):
@@ -107,23 +125,27 @@ def pass_all(pns):
             counts.append(len(rows))
             for r in rows:
                 union.setdefault((r["page"], r["period_end"]), r)
-        index[pn] = {"publication": PUBLICATIONS.get(pn, pn), "per_order_rows": counts, "tables": list(union.values())}
-        print(f"{PUBLICATIONS.get(pn, pn)}: rows per order {counts}, distinct table pages {len(union)}", flush=True)
-        F.ACQ.mkdir(parents=True, exist_ok=True)
-        index_path.write_text(json.dumps(index, indent=1, sort_keys=True))
+        previous = index.get(pn, {})
+        entry = {**previous, "publication": PUBLICATIONS.get(pn, pn), "per_order_rows": counts}
+        known = {(t["page"], t["period_end"]) for t in previous.get("tables", [])}
+        entry["tables"] = list(previous.get("tables", [])) + [r for k, r in union.items() if k not in known]
+        print(f"{PUBLICATIONS.get(pn, pn)}: rows per order {counts}, distinct table pages {len(union)}, union now {len(entry['tables'])}", flush=True)
+        index = write_merged(pn, entry)
 
 
-def pass_years(pns):
+def pass_years(pns, since=None, refresh=False):
     index_path = F.ACQ / "listing_index.json"
     index = json.loads(index_path.read_text()) if index_path.exists() else {}
     for pn in pns:
         first, last = YEARS[pn]
+        if since:
+            first = max(first, since)
         entry = index.setdefault(pn, {"publication": PUBLICATIONS.get(pn, pn), "tables": []})
         known = {(t["page"], t["period_end"]) for t in entry["tables"]}
         by_year, added, total = {}, [], 0
         for year in range(last, first - 1, -1):
             params = {"pn": pn, "y[min]": f"{year}-01-01", "y[max]": f"{year}-12-31", "order": "field_current_table_number", "sort": "asc"}
-            rows, status = fetch_pages(params, "listing_by_year", max_pages=20)
+            rows, status = fetch_pages(params, "listing_by_year", max_pages=20, refresh=refresh)
             if status != 200:
                 continue
             distinct = {}
@@ -136,15 +158,33 @@ def pass_years(pns):
                     entry["tables"].append(r)
                     known.add(key)
                     added.append(r)
-        entry["by_year_rows_distinct"] = by_year
-        entry["added_by_year_crawl"] = len(added)
-        entry["by_year_distinct_total"] = total
+        if since:  # a partial re-crawl keeps the full crawl's per-year counts and adds the refreshed years
+            entry.setdefault("by_year_rows_distinct", {}).update(by_year)
+            entry.setdefault("refreshes", []).append({"since": since, "added": len(added), "at": F.now_iso(), "years": by_year})
+        else:
+            entry["by_year_rows_distinct"] = by_year
+            entry["added_by_year_crawl"] = len(added)
+            entry["by_year_distinct_total"] = total
+        for r in added:
+            r["first_seen"] = F.now_iso()
         print(f"{PUBLICATIONS.get(pn, pn)}: by-year distinct {total}, added to the earlier union {len(added)}, union now {len(entry['tables'])}", flush=True)
-        index_path.write_text(json.dumps(index, indent=1, sort_keys=True))
+        for r in added:
+            print(f"   new: {r['table']} {r['period_end']} {r['title'][:80]}", flush=True)
+        index = write_merged(pn, entry)
     print("listing_index.json written:", sum(len(v["tables"]) for v in index.values()), "tables")
 
 
 if __name__ == "__main__":
-    mode = sys.argv[1] if len(sys.argv) > 1 else "all"
-    pns = sys.argv[2].split(",") if len(sys.argv) > 2 else list(YEARS if mode == "years" else PUBLICATIONS)
-    (pass_years if mode == "years" else pass_all)(pns)
+    argv = list(sys.argv[1:])
+    since = None
+    if "--since" in argv:
+        at = argv.index("--since")
+        since = int(argv[at + 1])
+        del argv[at:at + 2]
+    args = [a for a in argv if not a.startswith("--")]
+    mode = args[0] if args else "all"
+    pns = args[1].split(",") if len(args) > 1 else list(YEARS if mode == "years" else PUBLICATIONS)
+    if mode == "years":
+        pass_years(pns, since=since, refresh="--refresh" in sys.argv)
+    else:
+        pass_all(pns)

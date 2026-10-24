@@ -36,6 +36,9 @@ def clean_label(value):
     match = re.match(r"^([A-Z]{2},[A-Z])\s?\d$", text)
     if match:
         return match.group(1)
+    match = re.match(r"^(\d{1,2}(?:st|nd|rd|th|ST|ND|RD|TH))\s?\d$", text)  # "2nd2": the 2nd Circuit with footnote 2 in plain digits
+    if match:
+        return match.group(1)
     match = re.match(r"^([A-Z]{2})\s?\d$", text)
     if match and match.group(1) not in ("DC",):
         return match.group(1)

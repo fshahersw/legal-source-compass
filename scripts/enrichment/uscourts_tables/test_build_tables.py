@@ -203,26 +203,38 @@ class CountyBuildTests(unittest.TestCase):
             entry = {"pub": "BF", "table": "F-5A", "period_end": period, "title": "listing", "page": "https://example.test/p"}
             norm = T.N.normalize(sheets[0], entry)
             docs.append({"norm": norm, "source": {"page": "https://example.test/" + period, "url": "https://example.test/f.xlsx", "sha256": "0" * 64, "format": "xlsx"}})
-        out = {"county": []}
+        out = {("tables", "county"): []}
         BU.build_county_group(docs, out, {"unknown_courts": set()})
-        ids = [r["id"] for r in out["county"]]
+        ids = [r["id"] for r in out[("tables", "county")]]
         self.assertEqual(len(ids), 97)  # 96 counties + the table record that holds what they share
         self.assertEqual(len(set(ids)), len(ids))
         self.assertIn("table:f-5a", ids)
         self.assertIn("01001:f-5a", ids)
-        rec = next(r for r in out["county"] if r["id"] == "01001:f-5a")
+        rec = next(r for r in out[("tables", "county")] if r["id"] == "01001:f-5a")
         ust = rec["item"]["ust"]
         self.assertEqual((ust["scope"], ust["fips"], ust["state"], ust["ref"]), ("county", "01001", "AL", "table:f-5a"))
         self.assertEqual([e["district"] for e in ust["districts"]], ["dcd"])
         self.assertEqual(ust["districts"][0]["data"]["total_all_chapters"], [4, 4])
         self.assertNotIn("src", ust)  # the periods, columns and sources are in the shared record, not repeated in every county
         self.assertEqual(rec["state"], "AL")
-        shared = next(r for r in out["county"] if r["id"] == "table:f-5a")["item"]["ust"]
+        shared = next(r for r in out[("tables", "county")] if r["id"] == "table:f-5a")["item"]["ust"]
         self.assertEqual(shared["districtRows"]["dcd"]["data"]["total_all_chapters"], [5, 5])
         self.assertEqual([p["end"] for p in shared["periods"]], ["2025-06-30", "2026-06-30"])
         self.assertEqual(len(shared["src"]), 2)
-        outside = next(r for r in out["county"] if r["id"].startswith("12113:"))
+        outside = next(r for r in out[("tables", "county")] if r["id"].startswith("12113:"))
         self.assertEqual(outside["item"]["ust"]["districts"][0]["outsideAt"], [0, 1])
+
+
+
+
+class PrintedValueTests(unittest.TestCase):
+    def test_percent_formatted_workbook_cells_are_stored_as_the_printed_percentage(self):
+        self.assertAlmostEqual(B.printed_value(0.901298701298701, "0.0%"), 90.1298701298701)
+        self.assertEqual(B.clean_num(B.printed_value(0.5, "0%")), 50)
+        self.assertEqual(B.printed_value(90.1, "0.0%", from_book=False), 90.1)  # a PDF prints the percentage itself
+        self.assertEqual(B.printed_value(45.0, "0%", flag="textpct"), 45.0)  # a text cell "45%" is read as 45
+        self.assertEqual(B.printed_value(12, "#,##0"), 12)
+        self.assertEqual(B.printed_value(3.5, None), 3.5)
 
 
 if __name__ == "__main__":

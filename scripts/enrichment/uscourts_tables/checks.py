@@ -5,11 +5,15 @@ circuit row is the sum of its districts (the D.C. row is both a circuit and a di
 count (its heading has no percent / median / mean / average / rate / per words) the identities below are tested:
     sum(circuit rows incl. DC) == Total        and        sum(districts of a circuit) == that circuit row
 A published table can break an identity for a stated reason (a footnote saying a court is excluded), so a failure is
-reported, never repaired; the builder records the failure count per table.
-"""
-import re
+reported, never repaired. The tests themselves live in reconcile.py (which also tests category and column totals and
+decides which table-periods are held); this module keeps the court roll-up view the PDF gates and the build report use.
 
-NON_ADDITIVE = re.compile(r"percent|median|mean|average|\bper\b|rate|weighted|ratio|%|months|days|time|length|interval|index|share|\bpct\b|\bjudges\b", re.I)
+Two corrections of 2026-10-24: heading words are matched as whole words ("misdemeanor" no longer reads as "mean"), and a
+row printed twice with the same figures (the D.C. row printed as a circuit and as a district since 2023) is counted once.
+"""
+import reconcile as R
+
+NON_ADDITIVE = R.NON_ADDITIVE
 
 
 def additive_columns(norm):
@@ -20,43 +24,6 @@ def rollup_failures(norm):
     """[(column key, entity, published, summed)] for count columns where a roll-up row differs from the sum of its parts."""
     if norm["scope"] not in ("district", "bankruptcy"):
         return []
-    cols = additive_columns(norm)
-    rows = [r for r in norm["rows"] if not r["section"]]
-    total = next((r for r in rows if r["entity"] == "national"), None)
-    circuits, current = [], None
-    for r in rows:
-        if r["entity"] == "circuit":
-            current = {"row": r, "districts": []}
-            circuits.append(current)
-        elif r["entity"] == "district":
-            if r["entity_id"] in ("dcd", "dcb") and current is None:
-                circuits.append({"row": r, "districts": [r], "is_dc": True})
-                continue
-            if current is not None:
-                current["districts"].append(r)
-    fails = []
-
-    def value(row, i):
-        return row["values"][i] if row["values"] else None
-
-    for ci in cols:
-        key = norm["columns"][ci]["key"]
-        for c in circuits:
-            if c.get("is_dc"):
-                continue
-            parts = [value(d, ci) for d in c["districts"]]
-            published = value(c["row"], ci)
-            if published is None or any(p is None and (d["flags"] or [None])[ci] != "dash" for p, d in zip(parts, c["districts"])):
-                continue
-            summed = sum(p for p in parts if p is not None)
-            if abs(summed - published) > 1e-9:
-                fails.append((key, c["row"]["entity_id"], published, summed))
-        if total is not None and value(total, ci) is not None:
-            # a table without circuit roll-up rows (X-1A prints districts only) adds its districts straight to the Total
-            circuits_used = circuits if any(not c.get("is_dc") for c in circuits) else [{"row": d} for d in rows if d["entity"] == "district"]
-            vals = [value(c["row"], ci) for c in circuits_used]
-            if all(v is not None for v in vals) or all(v is not None or (c["row"]["flags"] or [None])[ci] == "dash" for v, c in zip(vals, circuits_used)):
-                summed = sum(v for v in vals if v is not None)
-                if abs(summed - value(total, ci)) > 1e-9:
-                    fails.append((key, "national", value(total, ci), summed))
-    return fails
+    results = []
+    R.court_tests(norm, additive_columns(norm), results)
+    return [(t["col"], t["entity"], t["printed"], t["sum"]) for t in results if not t["ok"]]
