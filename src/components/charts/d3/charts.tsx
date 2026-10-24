@@ -61,7 +61,7 @@ export function IndexChart({
   const base = dates[Math.min(baseIdx, Math.max(0, dates.length - 1))] ?? "";
   const data = useMemo(() => rebase(series.slice(0, 6), base), [series, base]);
   const vals = data.flatMap((s) => s.points.map((p) => p.value)).filter((v): v is number => v != null);
-  const narrow = W < 480;
+  const narrow = W < 400;
   const gutter = narrow ? Math.min(labelWidth, 92) : labelWidth;
   const right = Math.max(120, W - gutter);
   const x = scalePoint<string>().domain(dates).range([44, right]);
@@ -270,7 +270,7 @@ export function DivergingDots({
   const [box, W] = useWidth<HTMLDivElement>();
   const row = 26;
   const height = items.length * row + 30;
-  const gutter = W < 480 ? Math.min(labelWidth, 120) : labelWidth;
+  const gutter = W < 400 ? Math.min(labelWidth, 120) : labelWidth;
   const x = scaleLinear()
     .domain(divergingDomain(items.map((i) => i.value), baseline))
     .range([gutter + 44, W - 52]);

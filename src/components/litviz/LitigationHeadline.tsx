@@ -28,6 +28,14 @@ export function shortMdl(m: Pick<MdlRow, "mdl" | "title">, max = 22): string {
   return cut ? `MDL ${m.mdl} ${cut}` : `MDL ${m.mdl}`;
 }
 
+/** "Depo-Provera (3140)": the product or subject first, so a narrow label keeps the part readers scan for. */
+export function productLabel(m: Pick<MdlRow, "mdl" | "title">, max = 16): string {
+  const inner = /\((.*)\)$/.exec(mdlName(m.mdl, m.title))?.[1] ?? "";
+  const words = inner.replace(/\s*\(.*$/, "").replace(/,?\s*(Inc|LLC|Corp|Co)\.?.*$/i, "").trim();
+  const cut = words.length > max ? `${words.slice(0, max - 1).trimEnd()}…` : words;
+  return cut ? `${cut} (${m.mdl})` : `MDL ${m.mdl}`;
+}
+
 /** Top `n` pending MDLs by actions pending, each as a series over every report date (absent months stay null). */
 export function largestMdlSeries(data: MdlAnalytics, n = 5): { series: Series[]; picked: MdlRow[] } {
   const dates = data.overview.portfolio.map((p) => p.date);
@@ -39,7 +47,7 @@ export function largestMdlSeries(data: MdlAnalytics, n = 5): { series: Series[];
     const at = new Map(m.series.map((p) => [p.date, p.pending]));
     return {
       id: String(m.mdl),
-      label: shortMdl(m, 16),
+      label: productLabel(m, 14),
       points: dates.map((date) => ({ date, value: at.get(date) ?? null })),
     };
   });
@@ -137,7 +145,7 @@ export function LitigationHeadline() {
       >
         {movers.length ? (
           <DivergingDots
-            items={movers.map((m) => ({ label: shortMdl(m), value: m.change12m }))}
+            items={movers.map((m) => ({ label: productLabel(m, 18), value: m.change12m }))}
             baseline={0}
             baselineLabel="No change"
             showBaselineValue={false}
