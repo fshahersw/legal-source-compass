@@ -5,7 +5,6 @@ import {
   CircleAlert,
   Loader2,
   Maximize2,
-  MessageCircle,
   Mic,
   Minimize2,
   Minus,
@@ -29,7 +28,6 @@ import {
   MAX_ATTACHMENT_BYTES,
   type AssistantAttachment,
 } from "@/lib/assistant/protocol";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { SectionContext } from "@/lib/assistant/sectionContext";
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "./AssistantMarkdown";
@@ -443,29 +441,8 @@ export function AssistantPanel() {
   if (!mounted) return null;
   const style = place ? { left: place.x, top: place.y } : { right: 16, bottom: 16 };
 
-  // A compact round icon button. At 32 px and 6 px from the right edge it covers only the page gutter and a card's
-  // 16 px padding, never the text inside a card (cards pad their text at least 16 px, which puts it 40 px from the
-  // viewport edge; the button starts 38 px from it); the page container pads its bottom so the last content scrolls
-  // clear of it. On a phone it grows to the 40 px touch size. The name, Ctrl+J and keyboard focus are unchanged.
-  const launcher = (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={() => setMode("open")}
-            className="fixed bottom-3 right-3 z-50 grid size-10 place-items-center rounded-full border border-border bg-surface text-foreground shadow-md transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:right-1.5 md:size-8 print:hidden"
-            aria-label="Open the research assistant (Ctrl+J)"
-            data-assistant-launcher
-          >
-            <MessageCircle className="size-4 text-primary" aria-hidden />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="left">Ask AI about this page · Ctrl+J</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-  if (mode === "closed") return createPortal(launcher, document.body);
+  // Closed: nothing floats over the page. The header strip's Ask AI button and Ctrl+J open the panel.
+  if (mode === "closed") return null;
 
   const headerButton =
     "grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring";
