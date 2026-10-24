@@ -119,8 +119,8 @@ function DayGrid({
         <ActivityHeatmap
           key={view}
           data={recorded}
-          days={grid.length}
-          endDate={`${year}-12-31`}
+          days={Math.round((Date.parse(lastRecorded) - Date.UTC(year, 0, 1)) / 86_400_000) + 1}
+          endDate={lastRecorded}
           view={view}
           color="var(--chart-1)"
           unit={series.unit}
@@ -136,6 +136,7 @@ function DayGrid({
           data={recorded.map((d) => ({ date: d.date, count: d.value }))}
           endDate={lastRecorded}
           defaultView="3d"
+          showStats={false}
           palette={SKYLINE_PALETTE}
           title={`${series.label}: ${fmtInt(recorded.reduce((n, d) => n + d.value, 0))} ${series.unit}, ${year}`}
           unit={series.unit.replace(/s$/, "")}
