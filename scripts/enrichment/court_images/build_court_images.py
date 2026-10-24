@@ -337,7 +337,8 @@ def build(workbook_path=WORKBOOK, acq=ACQ, out=BUILD, now=None):
          ("author", "Author")],
         [("license", "Licence", {"public_domain": "Public domain", "cc0": "CC0", "cc_by": "CC BY",
                                  "cc_by_sa": "CC BY-SA"}),
-         ("system", "System", {"federal": "Federal", "state": "State"}),
+         ("system", "System", {v: v.replace("_", " ").capitalize()
+                               for v in sorted({r["filters"]["system"][0] for r in rows})}),
          ("lead", "Workbook sheet", {"top_courts": "Top Courts", "court_directory": "Court Directory",
                                      "federal_offices": "Federal Offices", "buildings": "Buildings"})],
     )

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
@@ -5,6 +6,9 @@ import { SectionHub } from "@/components/atlas/hub/SectionHub";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { CourtArtwork } from "@/components/corpus/CourtArtwork";
+import { CourtPhotoThumbnail } from "@/components/courts/hero/CourtPhotoThumbnail";
+import { PhotoCredit } from "@/components/courts/hero/parts";
+import { courtPhotoThumbsQuery } from "@/components/courts/hero/queries";
 import { StateMark } from "@/components/corpus/EntityArtwork";
 import { Input } from "@/components/ui/input";
 import { CourtHierarchy } from "@/components/litviz/CourtHierarchy";
@@ -189,6 +193,10 @@ function CourtsPage() {
 
 function CourtList({ rows }: { rows: CourtRow[] }) {
   const [q, setQ] = useState("");
+  // Building thumbnails with verified licences; a failed or empty lookup leaves the rows as they were.
+  // The rows wait for the lookup so that thumbnails and credit lines do not shift them after they are drawn.
+  const photosQ = useQuery(courtPhotoThumbsQuery);
+  const photos = photosQ.data ?? {};
   // Separate court records can carry the same printed name (e.g. two source ids for one court);
   // they stay separate rows, and their links are told apart by the recorded court id.
   const sharedTitles = useMemo(() => {
@@ -202,6 +210,9 @@ function CourtList({ rows }: { rows: CourtRow[] }) {
       .slice()
       .sort((a, b) => a.title.localeCompare(b.title));
   }, [rows, q]);
+  if (photosQ.isPending)
+    return <p className="text-[13px] text-muted-foreground">Loading the court directory…</p>;
+  const anyPhoto = shown.slice(0, 500).some((r) => photos[r.id]);
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-2">
@@ -225,41 +236,55 @@ function CourtList({ rows }: { rows: CourtRow[] }) {
             </tr>
           </thead>
           <tbody>
-            {shown.slice(0, 500).map((r) => (
-              <tr key={r.id} className="border-t border-border hover:bg-muted/40">
-                <td className="px-3 py-1.5">
-                  <span className="flex items-center gap-2.5">
-                    <CourtArtwork
-                      courtId={r.id}
-                      title={r.title}
-                      system={r.system}
-                      type={r.type}
-                      compact
-                    />
-                    <Link
-                      to="/courts/$id"
-                      params={{ id: r.id }}
-                      className="min-w-0 font-medium hover:underline"
-                      aria-label={
-                        sharedTitles.has(r.title) ? `${r.title} (court ID ${r.id})` : undefined
-                      }
-                    >
-                      {r.title}
-                    </Link>
-                    {sharedTitles.has(r.title) ? (
-                      <span
-                        className="shrink-0 font-mono text-[10.5px] text-muted-foreground"
-                        title="Another court record has the same name; the court ID tells them apart."
-                      >
-                        ID {r.id}
+            {shown.slice(0, 500).map((r) => {
+              const photo = photos[r.id];
+              return (
+                <tr key={r.id} className="border-t border-border hover:bg-muted/40">
+                  <td className="px-3 py-1.5">
+                    <span className="flex items-center gap-2.5">
+                      <CourtArtwork
+                        courtId={r.id}
+                        title={r.title}
+                        system={r.system}
+                        type={r.type}
+                        compact
+                      />
+                      {photo ? (
+                        <CourtPhotoThumbnail photo={photo} title={r.title} />
+                      ) : anyPhoto ? (
+                        // Keeps court names aligned with rows that show a thumbnail.
+                        <span aria-hidden="true" className="block aspect-[3/2] h-9 shrink-0" />
+                      ) : null}
+                      <span className="min-w-0">
+                        <Link
+                          to="/courts/$id"
+                          params={{ id: r.id }}
+                          className="font-medium hover:underline"
+                          aria-label={
+                            sharedTitles.has(r.title) ? `${r.title} (court ID ${r.id})` : undefined
+                          }
+                        >
+                          {r.title}
+                        </Link>
+                        {photo ? (
+                          <PhotoCredit photo={photo} compact className="max-w-[20rem]" />
+                        ) : null}
                       </span>
-                    ) : null}
-                  </span>
-                </td>
-                <td className="px-3 py-1.5 text-muted-foreground">{r.type}</td>
-                <td className="px-3 py-1.5 text-muted-foreground">{stateLabel(r.state)}</td>
-              </tr>
-            ))}
+                      {sharedTitles.has(r.title) ? (
+                        <span
+                          className="shrink-0 font-mono text-[10.5px] text-muted-foreground"
+                          title="Another court record has the same name; the court ID tells them apart."
+                        >
+                          ID {r.id}
+                        </span>
+                      ) : null}
+                    </span>
+                  </td>
+                  <td className="px-3 py-1.5 text-muted-foreground">{r.type}</td>
+                  <td className="px-3 py-1.5 text-muted-foreground">{stateLabel(r.state)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

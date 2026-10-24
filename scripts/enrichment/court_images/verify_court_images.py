@@ -111,6 +111,31 @@ def offline(rows, spine, parsed):
     return failures
 
 
+def contract(build):
+    """The build-file rules of CONTRACT.md: id format, required keys, unique ids, dataset/category, no ordinal,
+    a source_url and a title on every row, JSON round-trip stable."""
+    failures = []
+    ds = build.get("dataset", "")
+    if not re.fullmatch(r"[a-z0-9_]{1,80}", ds):
+        failures.append(("build", "bad dataset id"))
+    for key in ("label", "listing_block", "summary", "rows", "built_at", "inputs"):
+        if key not in build:
+            failures.append(("build", f"missing {key}"))
+    rows = build.get("rows") or []
+    if len({r.get("id") for r in rows}) != len(rows):
+        failures.append(("build", "duplicate ids"))
+    for r in rows:
+        if r.get("dataset") != ds or r.get("category") != ds or "ordinal" in r:
+            failures.append((r.get("id"), "dataset/category/ordinal"))
+        if not str(r.get("source_url") or "").startswith(("http://", "https://", "/")):
+            failures.append((r.get("id"), "no source_url"))
+        if not str(r.get("title") or "").strip():
+            failures.append((r.get("id"), "empty title"))
+    if json.loads(json.dumps(rows)) != rows:
+        failures.append(("build", "rows not JSON round-trip stable"))
+    return failures
+
+
 def get(url):
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=60) as r:
@@ -178,7 +203,7 @@ def main(argv=None):
     build = json.loads((BUILD / "court_images.json").read_text())
     spine = {r["id"]: r for r in json.load(open(BUILD / "lookups" / "court_spine.json"))}
     rows = build["rows"]
-    failures = offline(rows, spine, second_parse())
+    failures = contract(build) + offline(rows, spine, second_parse())
     print(json.dumps({"rows": len(rows), "offline_failures": len(failures)}))
     for f in failures[:40]:
         print("  OFFLINE", f)
