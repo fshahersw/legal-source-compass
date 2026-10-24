@@ -33,6 +33,8 @@ export const SERIES_DATASETS = [
   "uscourts_tables_bankruptcy_county",
   "uscourts_bapcpa",
   "uscourts_wiretap",
+  "uscourts_dnsw",
+  "uscourts_fisc",
 ] as const;
 export type SeriesDataset = (typeof SERIES_DATASETS)[number];
 export type SeriesScope = "district" | "bankruptcy" | "appeals" | "county" | "category";
@@ -44,11 +46,13 @@ export const PUB_NAMES: Record<string, string> = {
   BF: "Bankruptcy Filings",
   BAPCPA: "BAPCPA report",
   WIRETAP: "Wiretap report",
+  DNSW: "Delayed-Notice Search Warrant report",
+  FISC: "Director's report on the FISA courts",
   JFF: "Judicial Facts and Figures",
   FCMS: "Federal Court Management Statistics",
   CJRA: "Civil Justice Reform Act report",
 };
-const PUB_ORDER = ["JB", "STFJ", "FJCS", "BF", "BAPCPA", "WIRETAP"];
+const PUB_ORDER = ["JB", "STFJ", "FJCS", "BF", "BAPCPA", "WIRETAP", "DNSW", "FISC"];
 export const GEOGRAPHY: Record<SeriesScope, string> = {
   district: "U.S. district courts",
   bankruptcy: "U.S. bankruptcy courts",
@@ -238,7 +242,13 @@ export function cardFromCatalog(e: UstCatalogEntry): SeriesCard {
   };
 }
 
-export type SeriesPeriod = { end: string; months: number | null; pub: string; fmt: string | null };
+export type SeriesPeriod = {
+  end: string;
+  months: number | null;
+  pub: string;
+  fmt: string | null;
+  phrase?: string;
+};
 export type SeriesColumn = { k: string; label: string; unit: UstUnit; dec: number | null };
 export type SeriesRow = { k: string; label: string; depth: number };
 export type Reconciliation = {
@@ -310,11 +320,13 @@ export function parseSeriesDetail(v: unknown): SeriesDetail | null {
     const pub = str(r?.["pub"]);
     if (!r || !end || !pub) continue;
     const months = num(r["months"]);
+    const phrase = str(r["phrase"]);
     periods.push({
       end,
       months: months != null && months > 0 ? months : null,
       pub,
       fmt: str(r["fmt"]),
+      ...(phrase ? { phrase: phrase.slice(0, 160) } : {}),
     });
   }
   if (!periods.length) return null;
@@ -392,6 +404,8 @@ export type LatestTable = {
   scope: string;
   cols: SeriesColumn[];
   courts: Record<string, Record<string, number>>;
+  /** Rows that print several courts as one ("arcomb": E.D. and W.D. Arkansas), with the courts they cover and their label. */
+  combined?: Record<string, { covers: string[]; label: string }>;
 };
 
 export function parseLatest(v: unknown): LatestTable | null {
@@ -412,9 +426,19 @@ export function parseLatest(v: unknown): LatestTable | null {
       const n = num(val);
       if (n != null && keys.has(k)) vals[k] = n;
     }
-    courts[court] = vals;
+    if (Object.keys(vals).length) courts[court] = vals;
   }
-  return { table, tableKey, title, end, scope: str(o["scope"]) ?? "", cols, courts };
+  const combined: NonNullable<LatestTable["combined"]> = {};
+  for (const [court, info] of Object.entries(obj(o["combined"]) ?? {})) {
+    const c = obj(info);
+    const label = str(c?.["label"]);
+    const covers = arr(c?.["covers"]).filter(
+      (x): x is string => typeof x === "string" && /^[a-z0-9]{2,8}$/.test(x),
+    );
+    if (/^[a-z0-9]{2,8}$/.test(court) && label && covers.length && court in courts)
+      combined[court] = { covers, label };
+  }
+  return { table, tableKey, title, end, scope: str(o["scope"]) ?? "", cols, courts, combined };
 }
 
 export type CoverageCounts = Record<string, number>;
@@ -576,10 +600,26 @@ const MONTH_ABBR = [
 ];
 
 /** "12 months ending September 30, 2025", "3 months ending ...", "As of ..." for one published period. */
-export function periodText(p: Pick<UstPeriod, "end" | "months">): string {
+export function periodText(p: Pick<UstPeriod, "end" | "months" | "phrase">): string {
   if (p.months === 0) return `As of ${longDate(p.end)}`;
+  if (p.months == null && p.phrase) return p.phrase;
   if (p.months == null) return `Period ending ${longDate(p.end)}`;
   return `${p.months} ${p.months === 1 ? "month" : "months"} ending ${longDate(p.end)}`;
+}
+
+/**
+ * Chosen periods that are shorter than the others: no month count but the publisher's own description (the 2006 interim period of
+ * the delayed-notice warrant report, the first FISA-court report from June 8, 2015). Empty when every chosen period is alike.
+ */
+export function shortPeriods(
+  periods: readonly Pick<UstPeriod, "end" | "months" | "phrase">[],
+  idx: readonly number[],
+): { end: string; text: string }[] {
+  const chosen = idx.map((i) => periods[i]).filter((p): p is (typeof periods)[number] => !!p);
+  if (!chosen.some((p) => p.months != null)) return [];
+  return chosen
+    .filter((p) => p.months == null && p.phrase)
+    .map((p) => ({ end: p.end, text: p.phrase! }));
 }
 
 /** Quarter ends from the first to the last date, inclusive (every key a chart may need for "all published periods"). */

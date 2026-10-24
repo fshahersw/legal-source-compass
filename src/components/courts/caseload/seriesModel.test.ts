@@ -21,6 +21,7 @@ import {
   sameQuarterYearEarlier,
   seriesPoints,
   shortName,
+  shortPeriods,
   spliceColumns,
 } from "./seriesModel";
 
@@ -357,5 +358,29 @@ describe("column headings over many editions", () => {
     ).toBe("Not Terminated as of September 30 (this period) / Total");
     expect(columnDisplay("Total Filings", "total_filings")).toBe("Total Filings");
     expect(columnDisplay("A / B", "a")).toBe("A / B");
+  });
+});
+
+describe("periods that are not N months", () => {
+  const fisc = [
+    {
+      end: "2015-12-31",
+      months: null,
+      pub: "FISC",
+      phrase: "From June 8, 2015, to December 31, 2015",
+    },
+    { end: "2016-12-31", months: 12, pub: "FISC" },
+    { end: "2017-12-31", months: 12, pub: "FISC" },
+  ];
+  it("uses the publisher's own words for the period", () => {
+    expect(periodText(fisc[0]!)).toBe("From June 8, 2015, to December 31, 2015");
+    expect(periodText({ end: "2015-12-31", months: null })).toBe("Period ending December 31, 2015");
+  });
+  it("lists the short periods among full ones, and none when all are alike", () => {
+    expect(shortPeriods(fisc, [0, 1, 2])).toEqual([
+      { end: "2015-12-31", text: "From June 8, 2015, to December 31, 2015" },
+    ]);
+    expect(shortPeriods(fisc, [1, 2])).toEqual([]);
+    expect(shortPeriods([{ end: "2023-12-31", months: null }], [0])).toEqual([]);
   });
 });

@@ -46,7 +46,8 @@ def series_payload(info, builds, dsid, coverage_by_table):
     cols = B.collect_columns(chosen)
     payload = {
         "v": 1, "tableKey": tkey, "table": last["table"], "title": last.get("title") or last.get("title_listing") or "", "scope": scope, "geography": GEO.get(scope, scope), "family": family,
-        "periods": [{"end": d["norm"]["period_end"], "months": d["norm"].get("months"), "pub": d["norm"]["pub"], "fmt": d["source"].get("format")} for d in chosen],
+        "periods": [{"end": d["norm"]["period_end"], "months": d["norm"].get("months"), "pub": d["norm"]["pub"], "fmt": d["source"].get("format"),
+                     **({"phrase": p["phrase"]} if p.get("phrase") else {})} for d, p in zip(chosen, B.periods_block(chosen)[0])],
         "pubs": sorted({d["norm"]["pub"] for d in chosen}),
         "cols": [{"k": c["k"], "label": c["label"], "unit": c["unit"], "dec": c["dec"]} for c in cols.values()],
         "national": {"dataset": national_ds, "id": tkey} if national else None,
