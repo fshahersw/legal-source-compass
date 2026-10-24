@@ -1,56 +1,93 @@
 import { useQuery } from "@tanstack/react-query";
 import { AgencyMark } from "@/components/corpus/EntityArtwork";
-import { AGENCY_ID } from "@/lib/visuals/agencyImages";
-import { agencyArtwork } from "@/lib/visuals/registry";
+import { AGENCY_ID, agencyMarkLabel, primaryAgencyMark } from "@/lib/visuals/agencyImages";
+import { hostOf, mimeLabel } from "@/lib/visuals/common";
+import { cn } from "@/lib/utils";
+import { AboutImage } from "./AboutImage";
 import { useImageFailed } from "./failedImages";
-import { MarkCredit } from "./ImageCredit";
+import { creditLinkClass, CreditText, LicenceText } from "./ImageCredit";
 import { agencyImagesQuery } from "./queries";
 
-/** The first seal or logo agency_images records for the agency, only when the site has no GSA mark for it. */
-function useFallbackMark(agencyId: string, name: string, ready: boolean) {
-  const wanted = ready && AGENCY_ID.test(agencyId) && !agencyArtwork(name);
-  const q = useQuery({ ...agencyImagesQuery(agencyId), enabled: wanted });
-  return wanted ? (q.data?.marks[0] ?? null) : null;
+/**
+ * The agency's recorded seal (else its logo) from agency_images, whatever the registry's rights label says (owner
+ * decision 2026-10-24, night), and whether it is still being read.
+ */
+function useRegistryMark(agencyId: string) {
+  const valid = AGENCY_ID.test(agencyId);
+  const q = useQuery({ ...agencyImagesQuery(agencyId), enabled: valid });
+  return {
+    mark: valid ? primaryAgencyMark(q.data?.marks ?? []) : null,
+    pending: valid && q.isPending,
+  };
 }
 
-/** Page-header emblem: the GSA mark when the site has one, else the recorded seal or logo, else the building icon. */
+/**
+ * Page-header emblem: the agency's recorded seal, else its logo, else the GSA mark when the site has one, else the
+ * building icon. `ready` is false until the agency's name is known, so the GSA lookup waits for it.
+ */
 export function AgencyEmblem({
   agencyId,
   name,
-  ready,
+  ready = true,
 }: {
   agencyId: string;
   name: string;
-  /** False until the agency's name is known, so a recorded mark never flashes before a GSA mark. */
-  ready: boolean;
+  ready?: boolean;
 }) {
-  const mark = useFallbackMark(agencyId, name, ready);
-  return <AgencyMark name={name} fallback={mark} />;
+  const { mark, pending } = useRegistryMark(agencyId);
+  return <AgencyMark name={name} registry={mark} holdGsa={!ready || pending} />;
 }
 
-/** Credit for the recorded seal or logo in the header; nothing when the GSA mark (or no mark) is shown. */
+/**
+ * One short credit line under the header for the recorded seal or logo: its source site, plus author and licence only
+ * when the record has them, and an "About this image" button with the file facts and the source page. Nothing when the
+ * agency has no recorded mark.
+ */
 export function AgencyMarkCaption({
   agencyId,
-  name,
-  ready,
   className,
 }: {
   agencyId: string;
-  name: string;
-  ready: boolean;
   className?: string;
 }) {
-  const mark = useFallbackMark(agencyId, name, ready);
+  const { mark } = useRegistryMark(agencyId);
   const failed = useImageFailed(mark?.url);
   if (!mark) return null;
+  const label = agencyMarkLabel(mark);
+  const page = new URL(mark.sourcePage);
   return (
-    <div className={className}>
-      {failed ? (
-        <p className="m-0 text-[11px] leading-snug text-muted-foreground">
-          The agency mark did not load from its source.
-        </p>
+    <p
+      className={cn(
+        "m-0 text-[11px] leading-snug text-muted-foreground [overflow-wrap:anywhere]",
+        className,
+      )}
+    >
+      {failed ? `The ${label.toLowerCase()} did not load from its source. ` : null}
+      {label} ·{" "}
+      <a href={mark.sourcePage} target="_blank" rel="noreferrer" className={creditLinkClass}>
+        {hostOf(mark.sourcePage)}
+      </a>
+      {mark.author ? (
+        <>
+          {" "}
+          · <CreditText value={mark.author} />
+        </>
       ) : null}
-      <MarkCredit mark={mark} label="Agency mark" />
-    </div>
+      {mark.license ? (
+        <>
+          {" "}
+          · <LicenceText license={mark.license} url={mark.licenseUrl} />
+        </>
+      ) : null}{" "}
+      <AboutImage
+        notes={[`Image file: ${mimeLabel(mark.mime)}, ${mark.width} × ${mark.height} px.`]}
+        links={[
+          {
+            label: `Source page · ${hostOf(mark.sourcePage)}${page.pathname === "/" ? "" : page.pathname}`,
+            href: mark.sourcePage,
+          },
+        ]}
+      />
+    </p>
   );
 }

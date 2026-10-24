@@ -8,6 +8,7 @@
 import {
   httpsLink,
   IMAGE_HOSTS,
+  licenceFamily,
   parseFilePage,
   recordedLicence,
   sourceLabel,
@@ -54,7 +55,6 @@ export type CourtPhotoThumb = Pick<
   | "state"
 >;
 
-const FAMILIES: readonly LicenceFamily[] = ["public domain", "cc0", "cc by", "cc by-sa", "other"];
 export const COURT_ID = /^[a-z0-9_-]{1,40}$/;
 const MAX_PX = 20000;
 
@@ -92,10 +92,8 @@ const absent = (v: unknown) => v === undefined || v === null || v === "";
 export function parseCourtPhoto(raw: unknown, courtId: string): CourtPhoto | null {
   const p = obj(raw);
   if (!p || !COURT_ID.test(courtId)) return null;
-  const family = absent(p["license_family"])
-    ? null
-    : (str(p["license_family"]) as LicenceFamily | null);
-  if (!absent(p["license_family"]) && (!family || !FAMILIES.includes(family))) return null;
+  const family = licenceFamily(p["license_family"]);
+  if (family === undefined) return null;
   const display = parseRendition(p["display"]);
   const thumb = parseRendition(p["thumb"]);
   const page = parseFilePage(p["source_page"]);

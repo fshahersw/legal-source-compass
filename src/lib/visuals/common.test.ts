@@ -5,6 +5,7 @@ import {
   IMAGE_HOSTS,
   imageSrcSet,
   isWideMark,
+  mimeLabel,
   optionalText,
   parseFilePage,
   parseLicence,
@@ -149,8 +150,16 @@ describe("parseLicence", () => {
     expect(parseLicence({})?.licenseFamily).toBeNull();
   });
 
-  it("drops unknown families and malformed flags", () => {
-    for (const family of ["cc by-nc", "gfdl", "", 7])
+  it("filters on no licence family: an unfamiliar one reads as 'other'; only malformed values drop", () => {
+    for (const family of ["cc by-nc", "gfdl", "Apache License 2.0"])
+      expect(parseLicence({ ...COMMONS_IMAGE, license_family: family })?.licenseFamily).toBe(
+        "other",
+      );
+    expect(parseLicence({ ...COMMONS_IMAGE, license_family: "CC BY-SA" })?.licenseFamily).toBe(
+      "cc by-sa",
+    );
+    expect(parseLicence({ ...COMMONS_IMAGE, license_family: "" })?.licenseFamily).toBeNull();
+    for (const family of [7, "<b>cc</b>", "x".repeat(60)])
       expect(parseLicence({ ...COMMONS_IMAGE, license_family: family })).toBeNull();
     expect(parseLicence({ ...COMMONS_IMAGE, license_url_is_deed: "true" })).toBeNull();
     expect(parseLicence({ ...COMMONS_IMAGE, license: "<a>CC</a>" })).toBeNull();
@@ -216,6 +225,12 @@ describe("parseMarkImage", () => {
   it("keeps a mark from a registry host with its source page", () => {
     const m = parseMarkImage(MARK)!;
     expect(m.sourcePage).toContain("federalregister.gov");
+    expect(m.kind).toBeNull();
+    expect(parseMarkImage({ ...MARK, asset_type: "seal" })?.kind).toBe("seal");
+    expect(parseMarkImage({ ...MARK, asset_type: "logo" })?.kind).toBe("logo");
+    expect(parseMarkImage({ ...MARK, asset_type: "wordmark" })?.kind).toBeNull();
+    expect(mimeLabel("image/svg+xml")).toBe("SVG");
+    expect(mimeLabel("image/png")).toBe("PNG");
     expect(m.license).toBeNull();
     expect(isWideMark(m)).toBe(true);
     expect(hostOf(m.sourcePage)).toBe("federalregister.gov");
@@ -242,6 +257,7 @@ describe("helpers", () => {
     expect(yearOf("2012-01-01")).toBe("2012");
     expect(yearOf("2008 July.")).toBe("2008");
     expect(yearOf("July 2008")).toBe("2008");
+    expect(yearOf("2018-02-27.")).toBe("2018");
     expect(yearOf("2023-02-03T10:00:00Z")).toBe("2023");
     expect(yearOf("[between 1980 and 2006]")).toBeNull();
     expect(yearOf("ca. 1950")).toBeNull();

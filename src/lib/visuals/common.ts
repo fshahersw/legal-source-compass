@@ -206,6 +206,17 @@ export function recordedLicence(license: string | null | undefined): string | nu
 }
 
 /**
+ * The licence family as recorded: one of the known families, or "other" for any other plain-text value (nothing is
+ * filtered on it, owner decision 2026-10-24). Absent reads null; a value that is not plain text is undefined (malformed).
+ */
+export function licenceFamily(v: unknown): LicenceFamily | null | undefined {
+  if (v === undefined || v === null || v === "") return null;
+  const t = text(v, 40)?.toLowerCase();
+  if (!t) return undefined;
+  return (LICENCE_FAMILIES as readonly string[]).includes(t) ? (t as LicenceFamily) : "other";
+}
+
+/**
  * Licence fields as recorded. All may be absent (the credit then names the source only); what is present must be well
  * formed: a known family, plain text, an https link, and a link flagged as a deed only on creativecommons.org or
  * commons.wikimedia.org.
@@ -213,13 +224,8 @@ export function recordedLicence(license: string | null | undefined): string | nu
 export function parseLicence(
   p: Record<string, unknown>,
 ): Pick<ImageCredit, "license" | "licenseFamily" | "licenseUrl" | "licenseUrlIsDeed"> | null {
-  const rawFamily = p["license_family"];
-  const family =
-    rawFamily === undefined || rawFamily === null
-      ? null
-      : (text(rawFamily, 20) as LicenceFamily | null);
-  if (family === null && rawFamily !== undefined && rawFamily !== null) return null;
-  if (family !== null && !LICENCE_FAMILIES.includes(family)) return null;
+  const family = licenceFamily(p["license_family"]);
+  if (family === undefined) return null;
   const license = optionalText(p["license"], 160);
   const deedRaw = p["license_url_is_deed"];
   if (deedRaw !== undefined && deedRaw !== null && typeof deedRaw !== "boolean") return null;
@@ -286,10 +292,16 @@ export const MARK_MIMES: ReadonlySet<string> = new Set([
   "image/jpeg",
   "image/webp",
   "image/gif",
+  "image/bmp",
 ]);
+
+/** What the registry calls the mark: an official seal, a logo, or something else (a wordmark, for example). */
+export type MarkKind = "seal" | "logo";
 
 /** A seal, logo or wordmark served as one image from its source site. */
 export type MarkImage = {
+  /** "seal" or "logo" as the record's asset_type says; null when it says neither or nothing. */
+  kind: MarkKind | null;
   url: string;
   width: number;
   height: number;
@@ -302,7 +314,11 @@ export type MarkImage = {
   rightsStatus: string | null;
 };
 
-/** url, size, type, source page and the recorded licence, author and rights status of one mark. */
+/**
+ * url, size, type, kind, source page and the recorded licence, author and rights status of one mark. Nothing here
+ * filters on rights status or licence family (owner decisions 2026-10-24: agency seals and logos are used whatever the
+ * registry's rights label says).
+ */
 export function parseMarkImage(raw: unknown): MarkImage | null {
   const m = obj(raw);
   if (!m) return null;
@@ -314,6 +330,8 @@ export function parseMarkImage(raw: unknown): MarkImage | null {
   const license = optionalText(m["license"], 160);
   const author = optionalText(m["author"], 400);
   const rights = optionalText(m["rights_status"], 200);
+  const kindRaw = m["asset_type"];
+  const kind: MarkKind | null = kindRaw === "seal" || kindRaw === "logo" ? kindRaw : null;
   const urlRaw = m["license_url"];
   const hasLicenceUrl = urlRaw !== undefined && urlRaw !== null && urlRaw !== "";
   const licenseUrl = hasLicenceUrl ? httpsLink(urlRaw) : null;
@@ -321,6 +339,7 @@ export function parseMarkImage(raw: unknown): MarkImage | null {
   if (!license.ok || !author.ok || !rights.ok || (hasLicenceUrl && !licenseUrl)) return null;
   const named = recordedLicence(license.value);
   return {
+    kind,
     url,
     width,
     height,
@@ -331,6 +350,12 @@ export function parseMarkImage(raw: unknown): MarkImage | null {
     author: author.value,
     rightsStatus: rights.value,
   };
+}
+
+/** "PNG", "SVG", "JPEG" ... for a mark's image type. */
+export function mimeLabel(mime: string): string {
+  const sub = mime.split("/")[1] ?? mime;
+  return sub.replace(/\+xml$/, "").toUpperCase();
 }
 
 /** Wide wordmarks get a plate; square seals a square frame. */
@@ -369,7 +394,8 @@ const EXACT_YEAR = [
  * looser ("[between 1980 and 2006]", "ca. 1950", "1930s"), so a range or an estimate is never narrowed to a year.
  */
 export function yearOf(v: string | null): string | null {
-  const s = v?.trim();
+  // A recorded date often ends with a full stop ("2018-02-27.", "2008 July."); that is punctuation, not a range.
+  const s = v?.trim().replace(/\.$/, "");
   if (!s) return null;
   for (const re of EXACT_YEAR) {
     const m = re.exec(s);

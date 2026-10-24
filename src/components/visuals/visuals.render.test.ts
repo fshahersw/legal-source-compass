@@ -24,6 +24,8 @@ vi.mock("@/lib/visuals/visuals.functions", () => ({
 
 import { AboutImage } from "./AboutImage";
 import { AgencyBuildingPhoto } from "./AgencyBuildingPhoto";
+import { AgencyEmblem, AgencyMarkCaption } from "./AgencyEmblem";
+import { agencyArtwork } from "@/lib/visuals/registry";
 import { CommitteeMarkCaption } from "./CommitteeMark";
 import { CourtBuildingsPanel } from "./CourtBuildingsPanel";
 import { OpenImageCredit } from "./ImageCredit";
@@ -213,5 +215,45 @@ describe("AboutImage", () => {
     );
     expect(html(createElement(AboutImage, {}))).toBe("");
     expect(html(createElement(AboutImage, { notes: [], links: [] }))).toBe("");
+  });
+});
+
+describe("agency seal", () => {
+  const row = agency_images.find((r) => r.id === "160")!.item;
+  const name = "Federal Bureau of Investigation";
+  const gsa = agencyArtwork(name)!.path;
+  const seal = parseAgencyImages("160", row["photos"], row["marks"]);
+  const noMarks = parseAgencyImages("160", row["photos"], []);
+
+  it("heads the page ahead of the GSA mark, whatever the registry's rights label says", () => {
+    state.result = { data: seal };
+    const out = html(createElement(AgencyEmblem, { agencyId: "160", name }));
+    expect(out).toContain("agency-logos.federalregister.gov/160/");
+    expect(out).toContain(`alt="${name} seal"`);
+    expect(out).not.toContain(gsa);
+  });
+
+  it("keeps the GSA mark only when the agency has no registry mark, and waits while reading", () => {
+    state.result = { data: noMarks };
+    expect(html(createElement(AgencyEmblem, { agencyId: "160", name }))).toContain(gsa);
+    state.result = { data: null, isPending: true };
+    const waiting = html(createElement(AgencyEmblem, { agencyId: "160", name }));
+    expect(waiting).not.toContain(gsa);
+    expect(waiting).not.toContain("<img");
+    state.result = { data: seal };
+    expect(html(createElement(AgencyEmblem, { agencyId: "160", name, ready: false }))).toContain(
+      "agency-logos.federalregister.gov/160/",
+    );
+  });
+
+  it("credits it on one short line with the source host and an About button, and no rights warning", () => {
+    state.result = { data: seal };
+    const out = html(createElement(AgencyMarkCaption, { agencyId: "160" }));
+    expect(out).toContain("Agency seal ·");
+    expect(out).toContain(">federalregister.gov</a>");
+    expect(out).toContain('aria-label="About this image"');
+    expect(out).not.toMatch(/restricted|permission|rights|review|licen[cs]e/i);
+    state.result = { data: noMarks };
+    expect(html(createElement(AgencyMarkCaption, { agencyId: "160" }))).toBe("");
   });
 });

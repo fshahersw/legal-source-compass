@@ -22,7 +22,7 @@ describe("parseCompanyLogo", () => {
     expect(parseCompanyLogo("0000066740", { ...logo, wikidata: "3M" })).toBeNull();
   });
 
-  it("drops a bad CIK, renditions that do not match a Commons page, and an unknown family", () => {
+  it("drops a bad CIK and renditions that do not match a Commons page", () => {
     expect(parseCompanyLogo("66740", logo)).toBeNull();
     expect(
       parseCompanyLogo("0000066740", {
@@ -30,9 +30,13 @@ describe("parseCompanyLogo", () => {
         thumb: { url: "https://storage.googleapis.com/x.png", width: 330, height: 174 },
       }),
     ).toBeNull();
+  });
+
+  it("filters on no licence family", () => {
     expect(
-      parseCompanyLogo("0000066740", { ...logo, license_family: "copyrighted free use" }),
-    ).toBeNull();
+      parseCompanyLogo("0000066740", { ...logo, license_family: "copyrighted free use" })
+        ?.licenseFamily,
+    ).toBe("other");
   });
 
   it("keeps a logo whose licence is recorded as 'other'", () => {

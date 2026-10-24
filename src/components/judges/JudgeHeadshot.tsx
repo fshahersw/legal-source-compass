@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { AboutImage } from "@/components/visuals/AboutImage";
 import { ImageLoadFailed, OpenImageCredit } from "@/components/visuals/ImageCredit";
 import { openJudgePortraitQuery } from "@/components/visuals/queries";
 import { fileUrl } from "@/lib/external/groups";
@@ -136,6 +137,14 @@ function OpenPortrait({
       )}
       <figcaption className="mt-1">
         <OpenImageCredit image={portrait} label="Portrait" compact className="text-[10px]" />
+        {portrait.identity.basis === "exact_name_same_state" && portrait.identity.state ? (
+          <AboutImage
+            notes={[
+              `Matched to this profile by an exact name, unique within ${portrait.identity.state}; no other identifier.`,
+            ]}
+            className="mt-0.5"
+          />
+        ) : null}
       </figcaption>
     </figure>
   );
