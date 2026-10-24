@@ -150,6 +150,8 @@ def acquire(ctx):
                                           f"title_{int(p.split('-')[0]) * 10:04d}/" in part_url for p in only_parts):
                     continue
                 ppage = ctx.get(part_url, fallback_fresh=True)
+                ctx.prefetch(urllib.parse.urljoin(part_url, h.replace(" ", "%20"))  # retained runs: read ahead
+                             for h in links(ppage.text(), r"^(?:\./)?section_\w+/[\w-]+ ?\.html$"))
                 for sec_href in links(ppage.text(), r"^(?:\./)?section_\w+/[\w-]+ ?\.html$"):
                     sec_url = urllib.parse.urljoin(part_url, sec_href.replace(" ", "%20"))
                     fetched = ctx.get(sec_url, fallback_fresh=True)

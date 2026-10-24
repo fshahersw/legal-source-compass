@@ -1033,6 +1033,8 @@ class RetainedStore:
     Downloads are read-only GETs; every object is checked against its recorded sha256. The original capture time is
     kept as retrieved_at, so an edition built this way states when the publisher bytes were actually read."""
 
+    PREFETCH_WORKERS = 8
+
     def __init__(self, state: str, rows: Iterable[dict]):
         self.state = state
         self.by_url: dict[str, dict] = {}
@@ -1041,6 +1043,8 @@ class RetainedStore:
             if prior is None or row["retrieved_at"] > prior["retrieved_at"]:
                 self.by_url[row["url"]] = row
         self.downloads = 0
+        self._pool = None
+        self._pending: dict[str, Any] = {}
 
     @classmethod
     def from_jsonl(cls, state: str, path: pathlib.Path) -> "RetainedStore":
@@ -1060,10 +1064,32 @@ class RetainedStore:
     def urls(self, prefix: str = "") -> list[str]:
         return sorted(u for u in self.by_url if u.startswith(prefix))
 
+    def prefetch(self, urls: Iterable[str]) -> None:
+        """Start downloading these retained originals (the pages a module is about to read, in its own order) on a
+        small thread pool; get() then takes the downloaded bytes. Only a speed-up: every object is still checked
+        against its recorded sha256 in get(), and a URL that is never read just costs one download."""
+        import concurrent.futures
+        if self._pool is None:
+            self._pool = concurrent.futures.ThreadPoolExecutor(max_workers=self.PREFETCH_WORKERS)
+        for url in urls:
+            if url in self.by_url and url not in self._pending:
+                self._pending[url] = self._pool.submit(self._download, url)
+
     def get(self, url: str) -> Fetched:
         row = self.by_url.get(url)
         if row is None:
             raise KeyError(f"no retained original for {url}")
+        pending = self._pending.pop(url, None)
+        body = pending.result() if pending is not None else self._download(url)
+        digest = hashlib.sha256(body).hexdigest()
+        if digest != row["sha256"]:
+            raise RuntimeError(f"retained object for {url} does not match its recorded sha256")
+        self.downloads += 1
+        return Fetched(url=url, final_url=url, status=200, headers={}, body=body, sha256=digest, bytes=len(body),
+                       retrieved_at=row["retrieved_at"], method="retained_original")
+
+    def _download(self, url: str) -> bytes:
+        row = self.by_url[url]
         base = os.environ.get("EXTERNAL_SUPABASE_URL", "").rstrip("/")
         key = os.environ.get("EXTERNAL_SUPABASE_KEY", "")
         if not base or not key:
@@ -1083,12 +1109,7 @@ class RetainedStore:
                 if attempt == 4:
                     raise
             time.sleep(2 ** attempt)
-        digest = hashlib.sha256(body).hexdigest()
-        if digest != row["sha256"]:
-            raise RuntimeError(f"retained object for {url} does not match its recorded sha256")
-        self.downloads += 1
-        return Fetched(url=url, final_url=url, status=200, headers={}, body=body, sha256=digest, bytes=len(body),
-                       retrieved_at=row["retrieved_at"], method="retained_original")
+        return body
 
 
 def _admin_rpc(name: str, payload: dict) -> Any:
@@ -1247,6 +1268,12 @@ class RunContext:
         fetched = self.fetcher.get(url, data=data, headers=headers, method=method, accept_status=accept_status)
         self._record_source(fetched, keep_raw=keep_raw)
         return fetched
+
+    def prefetch(self, urls: Iterable[str]) -> None:
+        """Hint for retained runs: the pages about to be read with get(), downloaded ahead on a small pool. A no-op for
+        runs that read from the publisher (those keep the publisher's request interval)."""
+        if self.retained is not None:
+            self.retained.prefetch(urls)
 
     def get(self, url: str, fallback_fresh: bool = False, keep_raw: bool = True, **kwargs: Any) -> Fetched:
         """fetch() from the publisher, or the retained original of the same URL when the run uses a RetainedStore

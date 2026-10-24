@@ -151,6 +151,7 @@ def acquire(ctx: lib.RunContext) -> None:
         if title_match:
             path.append({"level": "title", "label": "Title", "number": title_match.group(1), "heading": title_match.group(2) or None})
         path.append({"level": "chapter", "label": "Chapter", "number": number, "heading": heading})
+        ctx.prefetch(BASE + link for link in dict.fromkeys(links))  # retained runs: download the chapter's PDFs ahead
         for link in dict.fromkeys(links):
             if not ctx.want_more():
                 break

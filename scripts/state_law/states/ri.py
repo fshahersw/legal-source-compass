@@ -121,6 +121,8 @@ def acquire(ctx):
                 continue
             chap_url = urllib.parse.urljoin(title_url, c)
             cpage = ctx.get(chap_url, fallback_fresh=True)
+            ctx.prefetch(urllib.parse.urljoin(chap_url, s) for s in hrefs(cpage.text(), r"^[0-9A-Za-z.\-]+\.htm$")
+                         if s.upper() != "INDEX.HTM")  # retained runs: read ahead
             for s in hrefs(cpage.text(), r"^[0-9A-Za-z.\-]+\.htm$"):
                 if s.upper() == "INDEX.HTM":
                     continue

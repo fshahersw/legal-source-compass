@@ -125,6 +125,7 @@ def acquire(ctx):
                                    tpage.text(), re.S):
             if ch not in [c[0] for c in chapters]:
                 chapters.append((ch, sb.one_line(re.sub(r"<[^>]+>", " ", name)) or None))
+        ctx.prefetch(f"{SITE}/statutes/fullchapter/{title}/{c}" for c, _n in chapters)  # retained runs: read ahead
         for chapter, name in chapters:
             if only and f"{title}/{chapter}" not in only:
                 continue
