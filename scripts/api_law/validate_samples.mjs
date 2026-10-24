@@ -15,6 +15,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import readline from "node:readline";
 import zlib from "node:zlib";
 import { ACQ, BUILD, flag, nowIso, politeClient } from "./lib/node.mjs";
 
@@ -48,13 +49,24 @@ const FILES = {
   gao_legal_decisions: "gao/gao_legal_decisions",
 };
 
-function sample(dataset) {
+/** Lines of a gzip JSONL file, streamed (a bill-versions build decompresses past the largest string Node allows). */
+async function* gzLines(file) {
+  yield* readline.createInterface({ input: fs.createReadStream(file).pipe(zlib.createGunzip()), crlfDelay: Infinity });
+}
+
+async function sample(dataset) {
   const file = path.join(BUILD, `${FILES[dataset]}.rows.jsonl.gz`);
   if (!fs.existsSync(file)) return [];
-  const lines = zlib.gunzipSync(fs.readFileSync(file)).toString("utf8").split("\n").filter(Boolean);
-  const step = Math.max(1, Math.floor(lines.length / per));
+  let count = 0;
+  for await (const line of gzLines(file)) if (line) count += 1;
+  const step = Math.max(1, Math.floor(count / per));
   const out = [];
-  for (let i = 0; i < lines.length && out.length < per; i += step) out.push(JSON.parse(lines[i]));
+  let i = 0;
+  for await (const line of gzLines(file)) {
+    if (!line) continue;
+    if (i % step === 0 && out.length < per) out.push(JSON.parse(line));
+    i += 1;
+  }
   return out;
 }
 const day = (v) => (typeof v === "string" ? v.slice(0, 10) : v ?? null);
@@ -192,7 +204,7 @@ async function govinfoPackage(r) {
 const results = [];
 for (const dataset of Object.keys(FILES)) {
   if (only && !only.includes(dataset)) continue;
-  const rows = sample(dataset);
+  const rows = await sample(dataset);
   let bad = 0;
   for (const r of rows) {
     try {

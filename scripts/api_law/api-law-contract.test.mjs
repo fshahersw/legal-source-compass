@@ -8,6 +8,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import readline from "node:readline";
 import zlib from "node:zlib";
 import { pathToFileURL } from "node:url";
 
@@ -65,14 +66,19 @@ function builtFiles() {
   }
   return out;
 }
-const readRows = (file, limit) =>
-  zlib
-    .gunzipSync(fs.readFileSync(file))
-    .toString("utf8")
-    .split("\n")
-    .filter(Boolean)
-    .slice(0, limit)
-    .map((l) => JSON.parse(l));
+/** The first `limit` rows of a gzip JSONL build, streamed (a full bill-versions build decompresses past the largest
+ * string Node allows). */
+async function readRows(file, limit) {
+  const out = [];
+  const input = fs.createReadStream(file).pipe(zlib.createGunzip());
+  for await (const line of readline.createInterface({ input, crlfDelay: Infinity })) {
+    if (!line) continue;
+    out.push(JSON.parse(line));
+    if (out.length >= limit) break;
+  }
+  input.destroy();
+  return out;
+}
 
 const db = new PGlite();
 const one = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -149,7 +155,7 @@ test("api-law contract", async (t) => {
     for (const [source, [dataset]] of Object.entries(SOURCES)) {
       const files = BUILT.get(dataset);
       if (!files) continue;
-      const rows = readRows(files.rows, SAMPLE);
+      const rows = await readRows(files.rows, SAMPLE);
       const s = await one("select category, id_pattern from ingest.sources where id = $1", [source]);
       const problems = await all(
         `select x->>'id' as id, ingest.row_problem(x, $2, $3, $4) as problem
@@ -167,7 +173,7 @@ test("api-law contract", async (t) => {
     const files = BUILT.get("gao_legal_decisions");
     if (!files) return;
     const header = JSON.parse(fs.readFileSync(files.header, "utf8"));
-    const rows = readRows(files.rows, SAMPLE);
+    const rows = await readRows(files.rows, SAMPLE);
     await publish("gao_legal_decisions", rows.slice(1), header);
     const open = (await one("select public.ingest_open_run_v1('gao_legal_decisions', 'manual') as r")).r;
     assert.ok(open.run_id);
@@ -191,8 +197,8 @@ test("api-law contract", async (t) => {
     const docs = BUILT.get("regulations_gov_documents");
     const dockets = BUILT.get("regulations_gov_dockets");
     if (!docs || !dockets) return;
-    await publish("regulations_gov_documents", readRows(docs.rows, 100000), JSON.parse(fs.readFileSync(docs.header, "utf8")));
-    await publish("regulations_gov_dockets", readRows(dockets.rows, 100000), JSON.parse(fs.readFileSync(dockets.header, "utf8")));
+    await publish("regulations_gov_documents", await readRows(docs.rows, 100000), JSON.parse(fs.readFileSync(docs.header, "utf8")));
+    await publish("regulations_gov_dockets", await readRows(dockets.rows, 100000), JSON.parse(fs.readFileSync(dockets.header, "utf8")));
     const r = (await one("select public.api_law_regs_overview_v1() as r")).r;
     assert.match(r.as_of, /^\d{4}-\d{2}-\d{2}$/);
     assert.ok(Array.isArray(r.agencies) && r.agencies.length > 0 && r.agencies.length <= 12);
@@ -232,10 +238,10 @@ test("api-law contract", async (t) => {
     await db.exec(GOV2);
     for (const d of need.slice(1)) {
       const files = BUILT.get(d);
-      await publish(d, readRows(files.rows, 100000), JSON.parse(fs.readFileSync(files.header, "utf8")));
+      await publish(d, await readRows(files.rows, 100000), JSON.parse(fs.readFileSync(files.header, "utf8")));
     }
     // the spine: the nation, the twelve agencies' Federal Register ids, the CIKs of the 10-K sample (one left out)
-    const ciks = [...new Set(readRows(BUILT.get("company_sec_legal_proceedings").rows, 100000).map((r) => r.item.filing.cik))].sort();
+    const ciks = [...new Set((await readRows(BUILT.get("company_sec_legal_proceedings").rows, 100000)).map((r) => r.item.filing.cik))].sort();
     const absentCik = ciks.pop();
     await db.query(
       `insert into insights.entities (entity_type, entity_id, label, source_dataset)
