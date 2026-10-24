@@ -72,7 +72,7 @@
 - [x] Companies: method paragraph into "How companies are linked"; two duplicate KPI tiles folded into the summary line (listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md)
 - [x] Litigation: federal civil filings by case type, FY2007–latest (five largest groups + national remainder, FJC IDB), with AI summary; stacked-bar axis ticks compact and year labels spaced to fit
 - [x] Sunburst: no affordable two-level CFR/code aggregate exists (per-title counts only), so it went where the data partitions exactly — Litigation, FY civil filings by case type → nature-of-suit code (groups sum to the national total, codes to their group; verified against the corpus)
-- [ ] Companies / Insights: change-since chart for multi-series trends
+- [x] Insights › Trends: "Values | Change since" switch (counts and amounts only; partial periods left out; slider picks the comparison point; `?chg=1`). Companies has no multi-series trend of one unit across entities, so no change-since chart there
 - [x] Court profiles: headline strip (cases filed, pending, pending MDLs, sitting judges) with AI summary; five sections (Court, Judges, Caseload, Cases & opinions, Rules & resources) behind a sticky index; sections with nothing for a court are hidden and dropped from the index; record scope note moved into "About this record" on every record page
 - [x] Record identity box: facts the header already prints (title, a subtitle part) move to "More details"; facts pack at the top beside the photo
 - [x] Judge profiles: Career, Practices, Cases & MDLs, Disclosures behind the sticky index; the record's own sections sit under "Record details" (one index, no second sticky strip)
