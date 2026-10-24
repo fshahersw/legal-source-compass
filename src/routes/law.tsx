@@ -115,7 +115,7 @@ function LawPage() {
   const savedLawError = datasets.error;
   const err = s.scope === "states" ? stateSources.error : savedLawError;
   const landing = (
-    <SectionHub section="law">
+    <SectionHub section="law" lead={<LawHeadline />}>
       <LawLanding
         datasets={lawDs}
         metadataState={datasets.error ? "error" : datasets.isLoading ? "loading" : "ready"}
