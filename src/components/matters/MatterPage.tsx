@@ -91,7 +91,7 @@ export function MatterPage({
                   params={{ id: o.mdl }}
                   // The active view keeps the current search; the others reset transient filters.
                   search={on ? true : first === "overview" ? {} : { tab: first }}
-                  aria-current={on ? "page" : undefined}
+                  activeOptions={{ exact: true, includeSearch: true }}
                   className={`whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${
                     on
                       ? "border-primary text-foreground"
