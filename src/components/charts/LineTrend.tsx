@@ -46,7 +46,10 @@ export type LineTrendProps = {
   colorSlot?: ((seriesId: string, index: number) => number) | undefined;
   /** Series to emphasise; the others are drawn in a muted grey. */
   highlight?: string | null | undefined;
-  /** Label line ends with the series name (default: 2–4 series and room for it). */
+  /**
+   * Label line ends directly: the last value (one series) or name and last value (two to four series). Default: on
+   * when there is room (not compact, at most four series, at least 420 px wide).
+   */
   directLabels?: boolean | undefined;
   /** Fewer ticks and no direct labels (sparklines, small multiples). */
   compact?: boolean | undefined;
@@ -113,9 +116,16 @@ export function LineTrend({
     >
       {(w) => {
         const wantLabels =
-          directLabels ?? (!compact && series.length >= 2 && series.length <= 4 && w >= 520);
+          directLabels ?? (!compact && series.length >= 1 && series.length <= 4 && w >= 420);
+        const ends0 = series.map((_, si) => lastCompleteIndexOrAny(aligned[si]!));
+        const endText = (si: number) => {
+          const ei = ends0[si]!;
+          if (ei < 0) return "";
+          const v = formatter.full(aligned[si]![ei]!.value as number);
+          return series.length === 1 ? v : `${truncate(series[si]!.label, 18)} ${v}`;
+        };
         const labelRoom = wantLabels
-          ? Math.min(140, Math.max(...series.map((s) => textWidth(s.label, 10.5))) + 14)
+          ? Math.min(170, Math.max(...series.map((_, si) => textWidth(endText(si), 12))) + 16)
           : 8;
         const plotRight = w - labelRoom;
         const xs = pointPositions(axis.keys.length, [leftMargin, plotRight]);
@@ -132,10 +142,10 @@ export function LineTrend({
             if (Math.abs(xs[i]! - px) < Math.abs(xs[best]! - px)) best = i;
           return best;
         };
-        const ends = series.map((_, si) => lastCompleteIndexOrAny(aligned[si]!));
+        const ends = ends0;
         const endYs = dodgeLabels(
           ends.map((ei, si) => (ei >= 0 ? y(aligned[si]![ei]!.value as number) : height / 2)),
-          12,
+          14,
           MARGIN.top,
           height - MARGIN.bottom,
         );
@@ -286,10 +296,11 @@ export function LineTrend({
                       x={plotRight + 8}
                       y={endYs[si]}
                       dy="0.32em"
-                      fontSize={10.5}
+                      fontSize={12}
                       fill="var(--chart-ink)"
+                      className="tabular-nums"
                     >
-                      {truncate(s.label, 22)}
+                      {endText(si)}
                     </text>
                   ) : null,
                 )

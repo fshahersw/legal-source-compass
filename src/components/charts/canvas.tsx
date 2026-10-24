@@ -43,8 +43,11 @@ export function useMeasuredWidth<T extends HTMLElement>(): [
   return [ref, width];
 }
 
-/** Rough rendered width of a label (Public Sans averages about 0.56 em per character). */
-export function textWidth(text: string, fontSize = 10): number {
+/** Axis tick font size (px): the chart standard's muted 12 px ticks. */
+export const AXIS_FONT = 12;
+
+/** Rough rendered width of a label (Public Sans averages about 0.56 em per character); default size: axis ticks. */
+export function textWidth(text: string, fontSize = AXIS_FONT): number {
   return text.length * fontSize * 0.56;
 }
 
@@ -82,7 +85,7 @@ export function ChartTooltip({
     <div
       aria-hidden
       data-chart-tooltip=""
-      className="pointer-events-none absolute z-20 w-max min-w-32 max-w-[220px] rounded-md border border-border bg-popover px-2.5 py-1.5 text-[11px] leading-4 text-popover-foreground shadow-md"
+      className="pointer-events-none absolute z-20 w-max min-w-32 max-w-[220px] rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs leading-4 text-popover-foreground shadow-md"
       style={{ left, top: Math.max(0, y - 10) }}
     >
       <p className="font-semibold">{content.title}</p>
@@ -221,7 +224,6 @@ export function localPoint(e: { clientX: number; clientY: number; currentTarget:
   return { x: e.clientX - rect.left, y: e.clientY - rect.top };
 }
 
-export const AXIS_FONT = 10;
 export const axisText = {
   fontSize: AXIS_FONT,
   fill: "var(--chart-axis)",

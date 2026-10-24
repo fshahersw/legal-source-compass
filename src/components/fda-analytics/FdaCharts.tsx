@@ -14,6 +14,12 @@ import {
 } from "recharts";
 
 import {
+  ChartCard as BaseChartCard,
+  type ChartSource,
+  type KpiItem,
+  type TableSpec,
+} from "@/components/charts/ChartCard";
+import {
   chartDateLabel,
   FDA_COLORS,
   numberLabel,
@@ -26,6 +32,10 @@ const compact = (value: number) =>
   new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 const axis = { fontSize: 12, fill: "var(--muted-foreground)" };
 
+/**
+ * Card around a chart: the shared ChartCard look (takeaway title, measure subtitle, footer line), with an optional
+ * source-and-coverage button in the header. Kept for the many callers of this API.
+ */
 export function ChartCard({
   title,
   subtitle,
@@ -34,45 +44,51 @@ export function ChartCard({
   className = "",
   footnote,
   id,
+  kpis,
+  table,
+  about,
+  sources,
 }: {
   title: string;
-  subtitle: string;
+  subtitle: ReactNode;
   children: ReactNode;
   onSource?: (() => void) | undefined;
   className?: string;
   footnote?: ReactNode;
   /** Anchor target for in-page links such as "Key takeaways". */
   id?: string | undefined;
+  kpis?: readonly KpiItem[] | undefined;
+  table?: TableSpec | undefined;
+  about?: ReactNode;
+  sources?: readonly ChartSource[] | undefined;
 }) {
   return (
-    <section
+    <BaseChartCard
+      title={title}
+      subtitle={subtitle}
       id={id}
-      className={`min-w-0 overflow-hidden rounded-md border border-border bg-surface ${id ? "scroll-mt-4 focus:outline-none" : ""} ${className}`}
-      aria-label={title}
-    >
-      <div className="flex min-h-14 items-start justify-between gap-2 border-b border-border/70 px-3 py-2">
-        <div className="min-w-0">
-          <h3 className="font-sans text-sm font-semibold leading-5">{title}</h3>
-          <p className="text-xs leading-4 text-muted-foreground">{subtitle}</p>
-        </div>
-        {onSource && (
+      className={className}
+      padded={false}
+      kpis={kpis}
+      table={table}
+      about={about}
+      sources={sources}
+      footer={footnote}
+      actions={
+        onSource ? (
           <button
             type="button"
-            className="-my-1 flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+            className="-my-1 flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
             aria-label={`Source and coverage for ${title}`}
             onClick={onSource}
           >
             <Info className="size-4" aria-hidden />
           </button>
-        )}
-      </div>
+        ) : undefined
+      }
+    >
       {children}
-      {footnote && (
-        <div className="border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
-          {footnote}
-        </div>
-      )}
-    </section>
+    </BaseChartCard>
   );
 }
 

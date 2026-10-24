@@ -3,7 +3,7 @@
  * with a rounded data end and a square baseline; a partial period is drawn hatched; a period the source does not record
  * gets a short hatched grey stub at the baseline so it never reads as zero. Each period is one hover/keyboard target.
  */
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { ChartCanvas, axisText, localPoint, textWidth, type TipSpec } from "./canvas";
 import type { ValueFormatter } from "./format";
 import { valueText } from "./LineTrend";
@@ -246,6 +246,23 @@ export function BarTrend({
                 </g>
               );
             })}
+            {lastLabel(aligned, stacked, series.length, (li, v) => (
+              <text
+                x={centre(li)}
+                y={y(Math.max(0, v)) - 5}
+                textAnchor="middle"
+                fontSize={12}
+                fontWeight={600}
+                fill="var(--chart-ink)"
+                stroke="var(--chart-surface)"
+                strokeWidth={3}
+                paintOrder="stroke"
+                className="tabular-nums"
+                pointerEvents="none"
+              >
+                {formatter.tick(v)}
+              </text>
+            ))}
             {annotations.map((a) => {
               const i = axis.keys.indexOf(a.key);
               if (i < 0) return null;
@@ -318,4 +335,22 @@ export function BarTrend({
       }}
     </ChartCanvas>
   );
+}
+
+/** The latest complete value of a single-series column chart gets its value on the cap (one label, never all). */
+function lastLabel(
+  aligned: readonly (readonly (
+    { value: number | null; partial?: boolean | undefined } | undefined
+  )[])[],
+  stacked: boolean,
+  seriesCount: number,
+  draw: (index: number, value: number) => ReactNode,
+): ReactNode {
+  if (stacked || seriesCount !== 1) return null;
+  const a = aligned[0]!;
+  for (let k = a.length - 1; k >= 0; k--) {
+    const d = a[k];
+    if (d && typeof d.value === "number" && !d.partial) return draw(k, d.value);
+  }
+  return null;
 }

@@ -19,15 +19,30 @@ export function linearScale(domain: [number, number], range: [number, number]): 
   return f;
 }
 
-/** A "nice" step (1, 2, 2.5 or 5 times a power of ten) giving about `count` intervals over [lo, hi]. */
+/**
+ * A "nice" step (1, 2 or 5 times a power of ten) giving about `count` intervals over [lo, hi]. Ticks on these steps
+ * read at a glance (0, 50K, 100K) where an even split of the range does not (0, 65K, 130K).
+ */
 export function niceStep(lo: number, hi: number, count = 5): number {
   const span = Math.abs(hi - lo);
   if (!Number.isFinite(span) || span === 0) return 1;
-  const raw = span / Math.max(1, count);
-  const power = 10 ** Math.floor(Math.log10(raw));
-  const err = raw / power;
-  const mult = err >= 7.5 ? 10 : err >= 3.5 ? 5 : err >= 2.25 ? 2.5 : err >= 1.5 ? 2 : 1;
-  return mult * power;
+  const a = Math.min(lo, hi);
+  const b = Math.max(lo, hi);
+  const target = Math.max(1, count);
+  const p = Math.floor(Math.log10(span / target));
+  // Candidates around the raw step; pick the one whose rounded-out interval count is closest to the target, then
+  // the one that overshoots the data least (the tightest frame).
+  let best: { step: number; diff: number; over: number } | null = null;
+  for (let k = p - 1; k <= p + 1; k++)
+    for (const m of [1, 2, 5]) {
+      const step = m * 10 ** k;
+      const n = Math.ceil(b / step - 1e-9) - Math.floor(a / step + 1e-9);
+      const diff = Math.abs(n - target);
+      const over = Math.ceil(b / step - 1e-9) * step - Math.floor(a / step + 1e-9) * step - span;
+      if (!best || diff < best.diff || (diff === best.diff && over < best.over - 1e-9))
+        best = { step, diff, over };
+    }
+  return best ? Number(best.step.toPrecision(12)) : 1;
 }
 
 /**

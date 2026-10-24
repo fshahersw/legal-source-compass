@@ -1,7 +1,9 @@
 /**
- * Ranked horizontal bars with optional reference lines (national value, peer median). Entities without a value are not
- * drawn as zero: they are listed under the chart as not recorded. Values may be negative (residuals): bars then grow
- * from a zero line, the negative arm in the diverging orange. Ranks use competition ranking (ties share a rank).
+ * Ranked horizontal bars, sorted, with the value written at each bar end, optional reference lines (national value,
+ * peer median) labelled inline, and a focus highlight: with `highlight`, that bar keeps the accent and the others are
+ * muted, so "where does this one sit" reads at a glance. Entities without a value are not drawn as zero: they are
+ * listed under the chart as not recorded. Values may be negative (residuals): bars then grow from a zero line, the
+ * negative arm in the diverging orange. Ranks use competition ranking (ties share a rank).
  */
 import { useMemo, useState } from "react";
 import { ChartCanvas, axisText, textWidth, type TipSpec } from "./canvas";
@@ -54,7 +56,7 @@ export function RankedBars({
   highlight = null,
   ascending = false,
   diverging = false,
-  rowHeight = 18,
+  rowHeight = 22,
   width,
   onSelect,
   limit,
@@ -89,10 +91,10 @@ export function RankedBars({
   const values = [...shown.map((r) => r.value), ...references.map((r) => r.value)];
   const domainFor = (plot: number) =>
     niceDomain(values, { zero: true, count: Math.max(2, Math.min(5, Math.floor(plot / 70))) });
-  const labelW = Math.min(170, Math.max(60, ...shown.map((r) => textWidth(r.label, 11) + 26)));
-  const valueW = Math.max(40, ...shown.map((r) => textWidth(formatter.full(r.value), 10.5) + 8));
-  const top = references.length ? 26 : 8;
-  const height = top + shown.length * rowHeight + 20;
+  const labelW = Math.min(190, Math.max(60, ...shown.map((r) => textWidth(r.label, 12) + 28)));
+  const valueW = Math.max(44, ...shown.map((r) => textWidth(formatter.full(r.value), 12) + 10));
+  const top = references.length ? 14 + references.length * 13 : 8;
+  const height = top + shown.length * rowHeight + 22;
   const describe = (i: number) => {
     const r = shown[i]!;
     return `Rank ${r.rank} of ${ranked.length}: ${r.label}, ${formatter.full(r.value)}${unit ? ` ${unit}` : ""}.`;
@@ -132,7 +134,7 @@ export function RankedBars({
               ))}
               {shown.map((r, i) => {
                 const yy = top + i * rowHeight;
-                const bh = Math.min(12, rowHeight - 5);
+                const bh = Math.min(24, rowHeight - 8);
                 const x1 = x(r.value);
                 const isHi = highlight === r.id;
                 const fill = diverging
@@ -140,10 +142,11 @@ export function RankedBars({
                     ? "var(--chart-2)"
                     : "var(--chart-1)"
                   : highlight && !isHi
-                    ? "color-mix(in srgb, var(--chart-1) 55%, var(--chart-surface))"
+                    ? "var(--chart-muted-mark)"
                     : "var(--chart-1)";
                 const left = Math.min(zeroX, x1);
                 const bw = Math.abs(x1 - zeroX);
+                const by = yy + (rowHeight - bh) / 2;
                 return (
                   <g
                     key={r.id}
@@ -163,37 +166,34 @@ export function RankedBars({
                       x={4}
                       y={yy + rowHeight / 2}
                       dy="0.32em"
-                      fontSize={10}
+                      fontSize={11}
                       fill="var(--chart-axis)"
                       className="tabular-nums"
                     >
                       {r.rank}
                     </text>
                     <text
-                      x={22}
+                      x={24}
                       y={yy + rowHeight / 2}
                       dy="0.32em"
-                      fontSize={11}
+                      fontSize={12}
                       fontWeight={isHi ? 600 : 400}
                       fill="var(--chart-ink)"
                     >
-                      {truncate(r.label, Math.floor((labelW - 26) / 6))}
+                      {truncate(r.label, Math.floor((labelW - 28) / 6.7))}
                     </text>
                     {bw >= 0.5 ? (
-                      <rect
-                        x={left}
-                        y={yy + (rowHeight - bh) / 2}
-                        width={bw}
-                        height={bh}
-                        rx={2}
+                      <path
+                        d={barPath(left, by, bw, bh, r.value < 0 ? "left" : "right")}
                         fill={fill}
                       />
                     ) : null}
                     <text
-                      x={r.value < 0 ? left - 4 : Math.max(x1, zeroX) + 4}
+                      x={r.value < 0 ? left - 5 : Math.max(x1, zeroX) + 5}
                       y={yy + rowHeight / 2}
                       dy="0.32em"
-                      fontSize={10.5}
+                      fontSize={12}
+                      fontWeight={isHi ? 600 : 400}
                       textAnchor={r.value < 0 ? "end" : "start"}
                       fill="var(--chart-ink)"
                       stroke="var(--chart-surface)"
@@ -219,9 +219,9 @@ export function RankedBars({
                   />
                   <text
                     x={x(ref.value)}
-                    y={ri === 0 ? 9 : 20}
+                    y={10 + ri * 13}
                     textAnchor={x(ref.value) > w - 120 ? "end" : "middle"}
-                    fontSize={10}
+                    fontSize={11}
                     fill="var(--chart-ink)"
                   >
                     {`${ref.label}: ${formatter.full(ref.value)}`}
@@ -268,6 +268,14 @@ export function RankedBars({
       ) : null}
     </div>
   );
+}
+
+/** A horizontal bar with a 4 px rounded data end and a square baseline end. */
+function barPath(x: number, y: number, w: number, h: number, end: "left" | "right"): string {
+  const r = Math.min(4, w, h / 2);
+  if (end === "right")
+    return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+  return `M${x + w},${y}H${x + r}Q${x},${y} ${x},${y + r}V${y + h - r}Q${x},${y + h} ${x + r},${y + h}H${x + w}Z`;
 }
 
 const truncate = (s: string, n: number) =>

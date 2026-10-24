@@ -60,8 +60,8 @@ describe("format", () => {
   it("compacts ticks and dollars", () => {
     expect(compactNumber(0)).toBe("0");
     expect(compactNumber(950)).toBe("950");
-    expect(compactNumber(1200)).toBe("1.2k");
-    expect(compactNumber(12000)).toBe("12k");
+    expect(compactNumber(1200)).toBe("1.2K");
+    expect(compactNumber(12000)).toBe("12K");
     expect(compactNumber(1_400_000)).toBe("1.4M");
     expect(compactNumber(2_000_000, "$")).toBe("$2M");
     expect(formatUsd(497000)).toBe("$497,000");

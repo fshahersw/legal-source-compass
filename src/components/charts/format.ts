@@ -36,7 +36,7 @@ export function formatUsd(v: number | null | undefined): string {
   return `${sign}$${abs.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
-/** Compact tick: 0, 950, 1.2k, 12k, 1.4M, 2.1B. */
+/** Compact tick: 0, 950, 1.2K, 12K, 1.4M, 2.1B. */
 export function compactNumber(v: number, prefix = ""): string {
   const abs = Math.abs(v);
   const sign = v < 0 ? "−" : "";
@@ -47,7 +47,7 @@ export function compactNumber(v: number, prefix = ""): string {
   if (abs >= 1e12) return pick(abs / 1e12, "T");
   if (abs >= 1e9) return pick(abs / 1e9, "B");
   if (abs >= 1e6) return pick(abs / 1e6, "M");
-  if (abs >= 1e3) return pick(abs / 1e3, "k");
+  if (abs >= 1e3) return pick(abs / 1e3, "K");
   const small = abs < 10 && abs % 1 !== 0 ? abs.toFixed(1) : abs.toFixed(0);
   return `${sign}${prefix}${small}`;
 }

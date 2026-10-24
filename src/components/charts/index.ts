@@ -1,6 +1,9 @@
 /** Shared chart primitives: one visual language for every chart on the platform. See README notes in each file. */
 export { ChartFrame, ChartLegend, SourceLinks } from "./ChartFrame";
 export type { ChartFrameProps, ChartSource, ChartStatus, TableSpec } from "./ChartFrame";
+export { ChartCard, KpiStrip, DeltaPill, AboutData, DataTableView } from "./ChartCard";
+export type { ChartCardProps, KpiItem } from "./ChartCard";
+export * from "./takeaway";
 export { LineTrend, valueText } from "./LineTrend";
 export { BarTrend } from "./BarTrend";
 export { Sparkline } from "./Sparkline";
