@@ -74,7 +74,7 @@ export function CourtHeroStrip({ courtId, title }: { courtId: string; title: str
               ? "Looking up the court building photograph…"
               : q.isError
                 ? "The building photograph could not be looked up."
-                : "No building photograph with a verified open licence is recorded for this court."}
+                : "No building photograph is recorded for this court."}
           </p>
         )}
       </div>

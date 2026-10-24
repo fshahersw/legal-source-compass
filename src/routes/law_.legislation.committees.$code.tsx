@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/atlas/AppShell";
 import { StateNote } from "@/components/enforcement/parts";
 import { CommitteeView } from "@/components/legislation/CommitteeView";
+import { CommitteeMarkCaption, CommitteeMarkEmblem } from "@/components/visuals/CommitteeMark";
 import { pageHead } from "@/lib/corpus/head";
 import { COMMITTEE_CODE } from "@/lib/external/congressMembers";
 import { getCommittee } from "@/lib/external/congressMembers.functions";
@@ -38,6 +39,7 @@ function CommitteePage() {
         { label },
       ]}
       title={label}
+      emblem={q.data ? <CommitteeMarkEmblem code={code} name={q.data.committee.name} /> : undefined}
     >
       {!valid ? (
         <StateNote>
@@ -70,7 +72,10 @@ function CommitteePage() {
           This committee could not be loaded.
         </StateNote>
       ) : q.data ? (
-        <CommitteeView committee={q.data.committee}>{q.data.children}</CommitteeView>
+        <>
+          <CommitteeMarkCaption code={code} className="mb-3" />
+          <CommitteeView committee={q.data.committee}>{q.data.children}</CommitteeView>
+        </>
       ) : (
         <StateNote>
           No committee with system code {code} is stored. The collection holds the committees the
