@@ -11,3 +11,4 @@ export * from "./context";
 export * from "./blocks";
 export { BlockCard } from "./BlockCard";
 export { tableDrawer, cellCsv } from "../tableData";
+export * from "../editorial";

@@ -15,6 +15,8 @@ import {
   type TrendBlockData,
 } from "@/lib/analytics/trend";
 import type { TableSpec } from "../ChartCard";
+import type { ValueFormatter } from "../format";
+import type { PeriodAxis, TrendSeriesInput } from "../series";
 import { trendTakeaway, type TakeawayPoint } from "../takeaway";
 import type { ChartSeriesSpec } from "./charts";
 import { periodTable } from "./tables";
@@ -160,4 +162,45 @@ export function subjectOf(
   const l = primaryLabel.trim();
   if (/^[A-Za-z]+ed$/.test(l)) return `${capitalize(measure)} ${l.toLowerCase()}`;
   return l;
+}
+
+/**
+ * The same block as period-axis series for the SVG forms (stacked area, annotated trend): one datum per axis key,
+ * `null` where the source does not record the period, `partial` where it is still in progress.
+ */
+export function blockSeries(data: TrendBlockData): {
+  series: TrendSeriesInput[];
+  axis: PeriodAxis;
+  formatter: ValueFormatter;
+} {
+  const keys = [...new Set(data.series.flatMap((s) => s.points.map((p) => p.x)))].sort((a, b) =>
+    /^\d+$/.test(a) && /^\d+$/.test(b) ? Number(a) - Number(b) : a.localeCompare(b),
+  );
+  const series = data.series.map((s) => ({
+    id: s.id,
+    label: s.label,
+    points: keys.map((k) => {
+      const p = s.points.find((q) => q.x === k);
+      return {
+        key: k,
+        value: p && typeof p.value === "number" ? p.value : null,
+        partial: !!p?.partial,
+      };
+    }),
+  }));
+  const signed = (d: number) =>
+    `${d > 0 ? "+" : d < 0 ? "−" : ""}${formatValue(Math.abs(d), data.format)}`;
+  return {
+    series,
+    axis: {
+      keys,
+      label: (k) => periodLabel(k, data.xKind),
+      tick: (k) => tickLabel(k, data.xKind),
+    },
+    formatter: {
+      full: (v) => formatValue(v, data.format),
+      tick: (v) => formatTick(v, data.format).replace(/k$/, "K"),
+      delta: signed,
+    },
+  };
 }
