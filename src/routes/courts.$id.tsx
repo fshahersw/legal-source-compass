@@ -20,6 +20,8 @@ import { CriminalCaseloadPanel } from "@/components/judiciary/CriminalCaseloadPa
 import { CourtCollectionPanel } from "@/components/courts/clb/CourtCollectionPanel";
 import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import { AppellatePanel } from "@/components/courts/clb/AppellatePanel";
+import { CourtAppealRoutesNote } from "@/components/courts/clb/CourtAppealRoutesNote";
+import { CourtSearchTopicsPanel } from "@/components/courts/clb/CourtSearchTopicsPanel";
 import { BankruptcyActivityPanel } from "@/components/courts/clb/BankruptcyActivityPanel";
 import { OralArgumentsPanel } from "@/components/courts/clb/OralArgumentsPanel";
 import { DistrictGlancePanel } from "@/components/courts/clb/DistrictGlancePanel";
@@ -91,6 +93,7 @@ function Page() {
       extra={(record) => (
         <>
           <CourtStructurePanel courtId={id} />
+          <CourtAppealRoutesNote courtId={id} />
           <CourtLocationsPanel courtId={id} />
           <CourtRulesPanel courtId={id} />
           <CourtJudgesRosterPanel courtId={id} />
@@ -109,6 +112,7 @@ function Page() {
           {COURT_ID.test(id) ? <DocumentsPanel type="court" id={id} className="mb-6" /> : null}
           <BankruptcyActivityPanel courtId={id} />
           <AppellatePanel courtId={id} />
+          <CourtSearchTopicsPanel courtId={id} />
           <OralArgumentsPanel courtId={id} />
           <CourtResources raw={record} courtId={id} system={system} />
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
