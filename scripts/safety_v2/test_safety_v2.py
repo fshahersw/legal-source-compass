@@ -57,6 +57,15 @@ class CommonTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 c.ChunkWriter(d, "x", max_rows=1).add_group([{"a": 1}, {"a": 2}])
 
+    def test_chunk_rows_keep_unicode_line_separators(self):
+        with tempfile.TemporaryDirectory() as d:
+            w = c.ChunkWriter(d, "series-u", max_rows=5)
+            text = "BRAKES FAILED\u2028SEE ATTACHED\x85\x1cEND"
+            w.add_group([{"summary": text}, {"summary": "next"}])
+            res = w.close()
+            rows, _sha = c.read_chunk(Path(d) / res["chunks"][0]["file"])
+            self.assertEqual(rows, [{"summary": text}, {"summary": "next"}])
+
 
 class MdlMapTests(unittest.TestCase):
     def test_every_entry_has_tokens_basis_and_one_search(self):

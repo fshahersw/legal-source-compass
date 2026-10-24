@@ -253,7 +253,9 @@ class ChunkWriter:
 def read_chunk(path):
     with gzip.open(path, "rb") as f:
         data = f.read()
-    rows = [json.loads(line) for line in data.decode("utf-8").splitlines() if line.strip()]
+    # rows are separated by "\n" only: str.splitlines() would also split inside a value at U+2028, U+0085 or \x1c-\x1e,
+    # which complaint narratives contain
+    rows = [json.loads(line) for line in data.decode("utf-8").split("\n") if line.strip()]
     return rows, sha256_bytes(data)
 
 
