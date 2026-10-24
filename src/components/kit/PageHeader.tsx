@@ -94,7 +94,7 @@ export function PageHeader({
           <div className="min-w-0">
             <Title className="text-title text-foreground">{title}</Title>
             {description ? (
-              <p className="measure mt-1.5 text-body text-muted-foreground">{description}</p>
+              <p className="measure mt-1 text-body text-muted-foreground">{description}</p>
             ) : null}
             {meta ? <div className="mt-1 text-meta text-muted-foreground">{meta}</div> : null}
           </div>

@@ -15,7 +15,7 @@
  * text-heading 17/24 semibold (section heading) · text-label 14/20 medium (card title) · text-body 13/20 (reading
  * text) · text-meta 11/16 (muted meta, footers) · text-kpi 26/32 and text-kpi-sm 22/28 semibold for KPI values (sans;
  * pair with tabular-nums). Monospace only for ids and citations. Utilities `measure` (prose at most 68ch),
- * `stack-section` (32 px between sections) and `stack-block` (48 px between page blocks) set the vertical rhythm.
+ * `stack-section` (24 px between sections) and `stack-block` (36 px between page blocks) set the vertical rhythm.
  *
  * Chart surfaces: src/components/charts/palette.ts maps chart chrome onto --surface (plot surface), --border (grid),
  * --muted-foreground (axes), --foreground (ink), --muted (diverging midpoint) and the map ramp --map-low → --map-high;
@@ -399,12 +399,12 @@
 @utility stack-section {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 @utility stack-block {
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 2.25rem;
 }
 
 /* Small-caps section label used across views. */
@@ -462,4 +462,9 @@
   &[data-status="active"] > svg {
     color: var(--color-sidebar-accent-foreground);
   }
+}
+
+/* Header photo backdrop: the photo sits right; a surface gradient keeps the title readable in both modes. */
+@utility header-backdrop-fade {
+  background: linear-gradient(90deg, var(--surface) 0%, color-mix(in oklab, var(--surface) 92%, transparent) 38%, color-mix(in oklab, var(--surface) 35%, transparent) 75%, color-mix(in oklab, var(--surface) 10%, transparent) 100%);
 }

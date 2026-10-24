@@ -317,6 +317,7 @@ export function HeaderStrip({
   askAi,
   trailing,
   defaultOpenMenu,
+  backdrop,
   className,
 }: {
   title: ReactNode;
@@ -344,6 +345,8 @@ export function HeaderStrip({
   /** Far right: theme toggle, mobile search. */
   trailing?: ReactNode | undefined;
   defaultOpenMenu?: string | undefined;
+  /** Decorative section photo behind the title band (no alt text; it carries no information). */
+  backdrop?: string | undefined;
   className?: string | undefined;
 }) {
   const hasMenu = Boolean(menu?.length);
@@ -353,7 +356,7 @@ export function HeaderStrip({
       className={cn("relative z-30 border-b border-border bg-surface", className)}
     >
       <div className="border-b border-border/70">
-        <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center gap-2 px-[var(--workspace-gutter)]">
+        <div className="mx-auto flex h-12 w-full max-w-[1440px] items-center gap-2 px-[var(--workspace-gutter)]">
           {leading}
           <Breadcrumbs items={breadcrumbs} className="min-w-0 flex-1" />
           {search}
@@ -361,10 +364,18 @@ export function HeaderStrip({
           {trailing}
         </div>
       </div>
+      <div className="relative">
+      {backdrop ? (
+        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <img src={backdrop} alt="" width={1920} height={640} className="absolute inset-y-0 right-0 h-full w-full object-cover object-right opacity-90 md:w-[75%]" />
+          <div className="header-backdrop-fade absolute inset-0" />
+        </div>
+      ) : null}
       <div
         className={cn(
-          "mx-auto w-full max-w-[1440px] px-[var(--workspace-gutter)] pt-6",
-          hasMenu ? "pb-0" : "pb-6",
+          "relative mx-auto w-full max-w-[1440px] px-[var(--workspace-gutter)]",
+          backdrop ? "pt-7 md:pt-9" : "pt-4",
+          hasMenu ? "pb-0" : backdrop ? "pb-7 md:pb-9" : "pb-4",
         )}
       >
         <PageHeader
@@ -384,8 +395,9 @@ export function HeaderStrip({
               />
             ) : undefined
           }
-          tabsClassName="mt-5"
+          tabsClassName={backdrop ? "mt-5" : "mt-3"}
         />
+      </div>
       </div>
     </header>
   );

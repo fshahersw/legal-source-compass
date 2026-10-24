@@ -38,6 +38,7 @@ import {
   type SearchParams,
 } from "@/lib/atlas/navigation";
 import { SECTION_ICONS } from "./sectionIcons";
+import { SECTION_BACKDROPS } from "./sectionBackdrops";
 import { THEME_SCRIPT, applyTheme, readTheme, storeTheme, type Theme } from "./theme";
 
 /**
@@ -351,6 +352,7 @@ export function AppShell({
           breadcrumbs={trail}
           menu={menu}
           menuTitle={sectionLabel}
+          backdrop={section ? SECTION_BACKDROPS[section] : undefined}
           leading={
             <>
               <button
