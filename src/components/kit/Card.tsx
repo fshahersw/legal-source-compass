@@ -172,7 +172,7 @@ export function SourceFooter({
     !sources.length && source != null && !Array.isArray(source) && !isSourceRef(source)
       ? (source as ReactNode)
       : null;
-  const sourceTitle = sources.length ? sources.map((x) => x.label).join("; ") : undefined;
+  void 0;
   const items: { key: string; node: ReactNode; className?: string; title?: string | undefined }[] =
     [];
   if (sources.length || custom)
@@ -182,7 +182,6 @@ export function SourceFooter({
       // here too: its links become inline and its truncation is lifted
       className:
         "line-clamp-2 [&_.truncate]:overflow-visible [&_.truncate]:whitespace-normal [&_a]:inline",
-      title: sourceTitle,
       node: (
         <>
           Source:{" "}
