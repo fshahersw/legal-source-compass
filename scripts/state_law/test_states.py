@@ -501,6 +501,14 @@ class IdahoPartsTests(unittest.TestCase):
         self.assertEqual(m.group(1), "56-2601")
 
 
+class MarylandMarkTests(unittest.TestCase):
+    def test_decimal_numbers(self):
+        md = load("md")
+        self.assertEqual(md.MARK_RE.match("§2\u2013103.1.").group(1), "2\u2013103.1")
+        m = md.MARK_RE.match("§ 5-101. Definitions apply.")
+        self.assertEqual((m.group(1), m.group(2)), ("5-101", "Definitions apply."))
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):

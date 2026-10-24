@@ -84,7 +84,8 @@ META = lib.StateMeta(
     update_cadence="Statutes in effect as of October 1 (enactments=true); refresh each October and after special sessions.",
 )
 
-MARK_RE = re.compile(r"^§\s*([0-9][0-9A-Za-z.–\-]*?)\.\s*(.*)$")
+# the number ends at the first period followed by a space or the line end ("§2–103.1." is 2–103.1, not 2–103)
+MARK_RE = re.compile(r"^§\s*([0-9][0-9A-Za-z.–\-]*?)\.(?:\s+(.*))?$")
 
 
 def parse_section(page: lib.Fetched) -> tuple[str, str]:
