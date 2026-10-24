@@ -209,6 +209,12 @@ class Vermont(unittest.TestCase):
         self.assertEqual(vt.split_history("as provided in (1) above (see subsection (b))"),
                          ("as provided in (1) above (see subsection (b))", None))
 
+    def test_identical_repeats_kept_once(self):
+        vt = load("vt")
+        one = {"number": "6064", "heading": "Claim applied", "text": "The amount ...", "history": "(Added 1969.)"}
+        other = dict(one, heading="Claim applied [Effective July 1, 2029 if contingency met]", text="The new amount ...")
+        self.assertEqual(vt.unique_copies([one, dict(one), other]), [one, other])
+
 
 class Utah(unittest.TestCase):
     XML = (b'<title number="78B"><catchline>Judicial Code</catchline><chapter number="78B-2"><catchline>Statutes of '

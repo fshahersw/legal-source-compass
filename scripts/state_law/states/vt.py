@@ -101,6 +101,20 @@ def parse_fullchapter(raw: bytes):
     return {"crumbs": crumbs, "sections": out}
 
 
+def unique_copies(sections: list[dict]) -> list[dict]:
+    """A chapter printed in two versions (32 V.S.A. chapter 154 "[Effective until contingency met; see also ... effective
+    July 1, 2029 if contingency met, set out below]") repeats sections whose text is the same in both; an exact repeat
+    (number, heading, text and history) is the same law and is kept once. Copies that differ stay as versions."""
+    out, seen = [], set()
+    for s in sections:
+        key = (s["number"], s["heading"], s["text"], s["history"])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(s)
+    return out
+
+
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]   # e.g. 12/023
@@ -140,11 +154,15 @@ def acquire(ctx):
             path = [{"level": "title", "label": "Title", "number": title, "heading": thead},
                     {"level": "chapter", "label": "Chapter", "number": chapter.lstrip("0") or chapter,
                      "heading": re.sub(r"^Chapter\s+\S+\s*:\s*", "", sb.one_line(name or "")) or None}]
+            sections = unique_copies(parsed["sections"])
+            if len(sections) < len(parsed["sections"]):
+                ctx.log(f"{title} V.S.A. chapter {chapter}: {len(parsed['sections']) - len(sections)} identical repeated "
+                        "section(s) kept once")
             counts: dict[str, int] = {}
-            for s in parsed["sections"]:
+            for s in sections:
                 counts[s["number"]] = counts.get(s["number"], 0) + 1
             seen: dict[str, int] = {}
-            for s in parsed["sections"]:
+            for s in sections:
                 status = sb.status_kwargs(s["heading"], s["text"])
                 if status is None:
                     ctx.log(f"{title} V.S.A. § {s['number']}: no text and no marker; skipped")

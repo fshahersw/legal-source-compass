@@ -616,10 +616,14 @@ _DATE_WORDS = r"(?:[A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\
 # "(Effective until January 1, 2026)", "[Effective until Oct. 21, 2026]", "[Effective through June 30, 2027.]",
 # "(Effective July 1, 2026; Effective until October 1, 2026)", "(Effective until September 30, 2025, Unless Extended by
 # the Legislature)"
-_EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:on\s+)?(?:(until|through)\s+)?(" + _DATE_WORDS + r")((?:[^\)\]])*)[\)\]]", re.I)
+# Vermont also prints "[Section 5206 effective until July 1, 2027; see also section 5206 effective July 1, 2027, set
+# out below]": the "see also" clause names the other version and is not part of this one's marker
+_EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*(?:Section\s+[0-9A-Za-z.\-]+\s+)?Effective\s+(?:on\s+)?(?:(until|through)\s+)?(" + _DATE_WORDS
+                                + r")((?:[^\)\]])*)[\)\]]", re.I)
+_SEE_ALSO_RE = re.compile(r";\s*see\s+also\b.*$", re.I | re.S)
 # a version that applies only once a condition is met: "(Effective Upon Ratification of Proposed Constitutional
 # Amendment)", "(Effective once contingency met. ...)", "(Contingently effective ...)"
-_CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effective\s+(?:upon|once|when|if|on\s+the\s+(?:effective\s+)?date)\b|"
+_CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+(?:effective|enacted)|Effective\s+(?:upon|once|when|if|on\s+the\s+(?:effective\s+)?date)\b|"
                                  r"(?:For\s+)?contingent\s+effective\s+date\b|"
                                  # Nevada: "[Effective from the date a court ... enters a judgment ...]", "[Effective 2
                                  # years after the date of the repeal of 42 U.S.C. § 666 ...]" (the outgoing text's
@@ -690,7 +694,8 @@ def effective_marker(heading: str | None, today: _dt.date) -> dict:
             end, inclusive = day, m.group(1).lower() == "through"
         else:
             start = day
-        for extra in re.finditer(r"Effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")", m.group(3) or "", re.I):
+        own = _SEE_ALSO_RE.sub("", m.group(3) or "")
+        for extra in re.finditer(r"Effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")", own, re.I):
             other = _marker_date(extra.group(2))  # "(Effective July 1, 2026; Effective until October 1, 2026)"
             if other is not None:
                 if extra.group(1):
@@ -698,7 +703,7 @@ def effective_marker(heading: str | None, today: _dt.date) -> dict:
                 else:
                     start = other
     marker = norm_ws(" ".join(m.group(0) for m in found))
-    if any(_QUALIFIED_RE.search(_EFFECTIVE_MARK_RE.sub(lambda x: x.group(3) or "", m.group(0))) for m in found):
+    if any(_QUALIFIED_RE.search(_SEE_ALSO_RE.sub("", m.group(3) or "")) for m in found):
         return {"status": "not_recorded", "status_basis": "not_recorded", "status_marker": marker,
                 "effective": {"start": start.isoformat() if start else None, "end": end.isoformat() if end else None,
                               "note": marker}}

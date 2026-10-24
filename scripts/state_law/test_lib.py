@@ -211,6 +211,20 @@ class EffectiveMarkerTests(unittest.TestCase):
                                   "entered into pursuant to section 4 of this act.]", today)
         self.assertEqual(nv["status"], "not_recorded")
         self.assertEqual(lib.effective_marker("Powers. [Effective until the effective date of the initial contract.]", today), {})
+        # Vermont: "[Section N effective until <date>; see also section N effective <date>, set out below]"
+        vt_out = lib.effective_marker("Citation of 16- to 18-year-olds [Section 5206 effective until July 1, 2027; see also "
+                                      "section 5206 effective July 1, 2027, set out below]", today)
+        self.assertEqual(vt_out, {})
+        vt_in = lib.effective_marker("Citation of 16- to 19-year-olds [Section 5206 effective July 1, 2027; see also section "
+                                     "5206 effective until July 1, 2027, set out above]", today)
+        self.assertEqual((vt_in["status"], vt_in["effective"]["start"], vt_in["effective"]["end"]),
+                         ("future_effective", "2027-07-01", None))
+        vt_cond = lib.effective_marker("Definitions [Effective July 1, 2029 if contingency met; see also 32 V.S.A. chapter 154 "
+                                       "effective until contingency met, set out above]", today)
+        self.assertEqual(vt_cond["status"], "not_recorded")
+        self.assertEqual(lib.effective_marker("Purpose [Contingently enacted]", today)["status"], "not_recorded")
+        self.assertEqual(lib.effective_marker("Purpose and policy [Contingently repealed; effective until contingency met]",
+                                              today), {})
         # Nevada's event versions: the outgoing "[Effective until ...]" text stays in force, the incoming one is not
         # recorded (whether the event occurred is not printed); "on the later of <date>, or <event>" is not yet in
         # effect while the date is ahead
