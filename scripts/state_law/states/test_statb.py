@@ -291,6 +291,17 @@ class EarlierModules(unittest.TestCase):
         got = nv.parse_chapter(raw)["sections"]
         self.assertEqual([(s["number"], s["heading"]) for s in got], [("388C.140", "Rules for academic advancement of pupils.")])
 
+    def test_in_act_naming_version_notes(self):
+        ind = load("in")
+        dated = ind.NOTE_RE.match("Note: This version of section amended by P.L.152-2026, SEC.497, effective 7-1-2027. "
+                                  "See also preceding version of this section amended by P.L.145-2026, SEC.248.")
+        self.assertEqual(dated.groups(), (None, "7", "1", "2027"))
+        undated = ind.NOTE_RE.match("Note: This version of section amended by P.L.248-2017, SEC.8. See also preceding "
+                                    "version of this section amended by P.L.229-2017, SEC.40.")
+        self.assertIsNotNone(undated)
+        self.assertIsNone(undated.group(4))
+        self.assertEqual(ind.NOTE_RE.match("Note: This version of section effective until 7-1-2027.").group(1), "until ")
+
     def test_nj_section(self):
         nj = load("nj")
         got = nj.split_section("2A:14-1. Actions of trespass to real property.",

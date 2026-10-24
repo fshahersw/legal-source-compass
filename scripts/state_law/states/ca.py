@@ -95,6 +95,9 @@ DATE = rf"({MONTHS}) (\d{{1,2}}), (\d{{4}})"
 OPERATIVE_RE = re.compile(rf"(?<![Ii]n)(?:Section )?[Oo]perative (?:on )?{DATE}[^.]*\.?")
 INOPERATIVE_RE = re.compile(rf"[Ii]noperative (?:on )?{DATE}[^.]*\.?")
 REPEALED_RE = re.compile(rf"Repealed (?:as of|on) {DATE}[^.]*\.?")
+# a version that becomes operative only when a condition is met: "Conditionally operative as prescribed by its own
+# provisions.", "Section operative on date prescribed by its own provisions." (no date printed)
+CONDITIONAL_RE = re.compile(r"(?:(?:Section|Amended section) )?(?:[Cc]onditionally operative|operative on date prescribed)[^.]*\.?")
 
 
 def _date(match: re.Match) -> dt.date:
@@ -151,6 +154,9 @@ def status_of(history: str | None, effective_date: str | None, today: dt.date) -
             out = {"status": "repealed", "marker": repealed.group(0).strip()}
         else:
             end = min(end, when.isoformat()) if end else when.isoformat()
+    conditional = CONDITIONAL_RE.search(history) if out["status"] is None and not operative else None
+    if conditional:  # whether the condition has occurred is not printed: not called in force
+        out = {"status": "not_recorded", "marker": conditional.group(0).strip()}
     out["effective"] = {"start": start or None, "end": end, "note": None}
     return out
 

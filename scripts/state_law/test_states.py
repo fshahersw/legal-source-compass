@@ -49,6 +49,11 @@ class CaliforniaTests(unittest.TestCase):
     def test_status_from_history_line(self):
         ca = load("ca")
         today = dt.date(2026, 10, 24)
+        cond = ca.status_of("Repealed (in Sec. 5) and added by Stats. 1980, Ch. 899, Sec. 5.5. Effective September 17, "
+                            "1980. Conditionally operative as prescribed by its own provisions.", "1980-09-17", today)
+        self.assertEqual(cond["status"], "not_recorded")
+        self.assertIsNone(ca.status_of("Added by Stats. 1980, Ch. 899, Sec. 5. Effective September 17, 1980. Repealed on "
+                                       "date prescribed by its own provisions.", "1980-09-17", today)["status"])
         self.assertEqual(ca.status_of("Added by Stats. 2002, Ch. 448, Sec. 2.   Effective January 1, 2003.",
                                       "2003-01-01 00:00:00", today)["status"], None)
         future = ca.status_of("Repealed (in Sec. 4) and added by Stats. 2025, Ch. 563, Sec. 5.   (AB 747)   Effective "

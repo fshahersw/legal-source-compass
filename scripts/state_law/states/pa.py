@@ -151,6 +151,10 @@ def list_titles(index_html: str):
     seen, out = set(), []
     for t in re.findall(r"view-statute\?txtType=HTM&(?:amp;)?ttl=(\d+)", index_html):
         n = str(int(t))
+        # ttl=0 is the Constitution of Pennsylvania served by the same viewer: not a title of Pa.C.S. (its article
+        # sections would collide as "0:1", "0:23"); the constitution is kept in its own dataset
+        if n == "0":
+            continue
         if n not in seen:
             seen.add(n)
             out.append(n)

@@ -613,10 +613,16 @@ def classify_status(heading: str | None, text: str | None) -> tuple[str | None, 
 
 
 _DATE_WORDS = r"(?:[A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\d{4})"
-# "(Effective until January 1, 2026)", "[Effective until Oct. 21, 2026]", "(Effective July 1, 2026; Effective until
-# October 1, 2026)", "(Effective until September 30, 2025, Unless Extended by the Legislature)"
-_EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(until\s+)?(" + _DATE_WORDS + r")((?:[^\)\]])*)[\)\]]", re.I)
+# "(Effective until January 1, 2026)", "[Effective until Oct. 21, 2026]", "[Effective through June 30, 2027.]",
+# "(Effective July 1, 2026; Effective until October 1, 2026)", "(Effective until September 30, 2025, Unless Extended by
+# the Legislature)"
+_EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")((?:[^\)\]])*)[\)\]]", re.I)
+# a version that applies only once a condition is met: "(Effective Upon Ratification of Proposed Constitutional
+# Amendment)", "(Effective once contingency met. ...)", "(Contingently effective ...)"
+_CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effective\s+(?:upon|once|when|if|on\s+the\s+date)\b)[^\)\]]*[\)\]]", re.I)
 _QUALIFIED_RE = re.compile(r"\b(unless|contingent|subject to|or upon|until (?:the|such)|if|when)\b", re.I)
+# South Carolina's first text line: "Section effective until July 1, 2027. See, also, section 57-3-20 effective ..."
+_SECTION_EFFECTIVE_LINE_RE = re.compile(r"^Section effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")\.", re.I)
 
 
 def _marker_date(value: str) -> _dt.date | None:
@@ -629,41 +635,86 @@ def _marker_date(value: str) -> _dt.date | None:
     return None
 
 
-def effective_marker(heading: str | None, today: _dt.date) -> dict:
-    """Status from a publisher's dated version marker in a heading, for modules that do not read it themselves:
-    "(Effective until <date>)" on or before today is expired; "(Effective <date>)" after today is not yet in effect;
-    a marker with a condition ("..., Unless Extended by the Legislature") is not_recorded (whether it still applies is
-    not printed). Returns {} when the heading carries no dated marker or the dates put the text in force."""
-    found = list(_EFFECTIVE_MARK_RE.finditer(heading or ""))
-    if not found:
-        return {}
-    start = end = None
-    for m in found:
-        day = _marker_date(m.group(2))
-        if day is None:
-            return {}
-        if m.group(1):
-            end = day
-        else:
-            start = day
-        tail = m.group(3) or ""
-        for extra in re.finditer(r"Effective\s+(until\s+)?(" + _DATE_WORDS + r")", tail, re.I):  # "...; Effective until ..."
-            other = _marker_date(extra.group(2))
-            if other is not None:
-                if extra.group(1):
-                    end = other
-                else:
-                    start = other
-    marker = norm_ws(" ".join(m.group(0) for m in found))
+def _dated_status(start: _dt.date | None, end: _dt.date | None, inclusive_end: bool, marker: str,
+                  today: _dt.date) -> dict:
     effective = {"start": start.isoformat() if start else None, "end": end.isoformat() if end else None, "note": marker}
-    if any(_QUALIFIED_RE.search(_EFFECTIVE_MARK_RE.sub(lambda x: x.group(3) or "", m.group(0))) for m in found):
-        return {"status": "not_recorded", "status_basis": "not_recorded", "status_marker": marker, "effective": effective}
-    if end is not None and end <= today:
+    if end is not None and (end < today if inclusive_end else end <= today):
         return {"status": "expired", "status_basis": "publisher_marker", "status_marker": marker, "effective": effective}
     if start is not None and start > today:
         return {"status": "future_effective", "status_basis": "publisher_marker", "status_marker": marker,
                 "effective": effective}
     return {}
+
+
+def effective_marker(heading: str | None, today: _dt.date) -> dict:
+    """Status from a publisher's version marker in a heading or version line, for modules that do not read it:
+    "(Effective until <date>)" on or before today ("through <date>": before today) is expired; "(Effective <date>)"
+    after today is not yet in effect; a marker with a condition ("..., Unless Extended by the Legislature") and a
+    version that applies once a condition is met ("(Effective once contingency met)") are not_recorded (whether the
+    condition has occurred is not printed). Returns {} when there is no such marker or the text is in force."""
+    found = list(_EFFECTIVE_MARK_RE.finditer(heading or ""))
+    if not found:
+        contingent = _CONTINGENT_MARK_RE.search(heading or "")
+        if contingent:
+            marker = norm_ws(contingent.group(0))
+            return {"status": "not_recorded", "status_basis": "not_recorded", "status_marker": marker,
+                    "effective": {"start": None, "end": None, "note": marker}}
+        return {}
+    start = end = None
+    inclusive = False
+    for m in found:
+        day = _marker_date(m.group(2))
+        if day is None:
+            return {}
+        if m.group(1):
+            end, inclusive = day, m.group(1).lower() == "through"
+        else:
+            start = day
+        for extra in re.finditer(r"Effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")", m.group(3) or "", re.I):
+            other = _marker_date(extra.group(2))  # "(Effective July 1, 2026; Effective until October 1, 2026)"
+            if other is not None:
+                if extra.group(1):
+                    end, inclusive = other, extra.group(1).lower() == "through"
+                else:
+                    start = other
+    marker = norm_ws(" ".join(m.group(0) for m in found))
+    if any(_QUALIFIED_RE.search(_EFFECTIVE_MARK_RE.sub(lambda x: x.group(3) or "", m.group(0))) for m in found):
+        return {"status": "not_recorded", "status_basis": "not_recorded", "status_marker": marker,
+                "effective": {"start": start.isoformat() if start else None, "end": end.isoformat() if end else None,
+                              "note": marker}}
+    return _dated_status(start, end, inclusive, marker, today)
+
+
+def effective_line(text: str | None, today: _dt.date) -> dict:
+    """The same rule for a text whose first line is the publisher's version note ("Section effective until July 1,
+    2027. See, also, ...")."""
+    m = _SECTION_EFFECTIVE_LINE_RE.match((text or "").lstrip())
+    if not m:
+        return {}
+    day = _marker_date(m.group(2))
+    if day is None:
+        return {}
+    marker = norm_ws(m.group(0))
+    if m.group(1):
+        return _dated_status(None, day, m.group(1).lower() == "through", marker, today)
+    return _dated_status(day, None, False, marker, today)
+
+
+def status_from_dates(effective: dict, marker: str | None, today: _dt.date) -> dict:
+    """Status from dates a module parsed itself but passed without a status: an end on or before the run date is
+    expired, a start after it is not yet in effect."""
+    def iso(value):
+        try:
+            return _dt.date.fromisoformat(value) if value else None
+        except ValueError:
+            return None
+    start, end = iso(effective.get("start")), iso(effective.get("end"))
+    note = norm_ws(marker or effective.get("note") or "") or (f"effective until {end.isoformat()}" if end else
+                                                               f"effective {start.isoformat()}" if start else "")
+    out = _dated_status(start, end, False, note, today)
+    if out:
+        out["effective"] = dict(effective)
+    return out
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -1418,8 +1469,14 @@ class RunContext:
             status, marker = classify_status(heading, text)
             if status:
                 status_marker = status_marker or marker
-        if status is None and effective is None:  # a dated "(Effective until ...)" marker the module did not read
-            dated = effective_marker(heading, self.today)
+        if status is None:  # a version marker the module did not turn into a status
+            if effective is not None and (effective.get("start") or effective.get("end")):
+                dated = status_from_dates(effective, version, self.today)
+            else:
+                dated = (effective_marker(heading, self.today) or effective_marker(version, self.today)
+                         or effective_line(text, self.today))
+                if dated and effective is not None and effective.get("note") and not dated["effective"].get("note"):
+                    dated["effective"]["note"] = effective["note"]
             if dated:
                 status, status_basis = dated["status"], dated["status_basis"]
                 status_marker, effective = dated["status_marker"], dated["effective"]

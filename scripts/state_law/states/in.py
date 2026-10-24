@@ -53,7 +53,12 @@ META = lib.StateMeta(
 
 HISTORY_RE = re.compile(r"^(?:As added by|Amended by|Repealed by|As amended by|Formerly|Expired|Acts \d{4}|"
                         r"Renumbered|Recodified|Transferred|As added and amended|Added by)")
-NOTE_RE = re.compile(r"^Note: This version of section effective (until )?(\d{1,2})-(\d{1,2})-(\d{4})")
+# "Note: This version of section effective until 7-1-2027. ...", and the notes naming the act:
+# "Note: This version of section amended by P.L.152-2026, SEC.497, effective 7-1-2027. See also preceding ..." and the
+# undated "... amended by P.L.248-2017, SEC.8. See also preceding version ..." (two acts amended the section; both
+# versions are printed and both apply)
+NOTE_RE = re.compile(r"^Note: This version of section (?:(?:amended|added) by P\.L\.\s?[0-9]+-[0-9]+, SEC\.\s?[0-9A-Za-z.]+"
+                     r"(?:, |\.\s|$))?(?:effective (until )?(\d{1,2})-(\d{1,2})-(\d{4}))?")
 HEADER_KINDS = ("title", "article", "chapter", "section")
 
 
@@ -66,7 +71,7 @@ def _p_kind(p) -> str:
         return "skip"
     italic = "".join(i.text_content() for i in p.iter("i"))
     if lib.norm_ws(italic) == text:
-        if NOTE_RE.match(text):
+        if text.startswith("Note: This version of section") and NOTE_RE.match(text):
             return "note"
         if HISTORY_RE.match(text):
             return "history"
@@ -114,7 +119,7 @@ def parse_title(body: bytes, today: dt.date) -> list[dict]:
         item["superseded"] = False
         note = item["note"]
         nm = NOTE_RE.match(note or "")
-        if nm:
+        if nm and nm.group(4):
             when = dt.date(int(nm.group(4)), int(nm.group(2)), int(nm.group(3)))
             if nm.group(1):  # effective until <date>
                 item["effective"] = {"start": None, "end": when.isoformat(), "note": note}

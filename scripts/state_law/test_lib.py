@@ -199,6 +199,44 @@ class EffectiveMarkerTests(unittest.TestCase):
         self.assertEqual(lib.effective_marker("(Effective January 1, 2027) New text", today)["status"], "future_effective")
         self.assertEqual(lib.effective_marker("[Effective until October 1, 2027] Screening", today), {})
         self.assertEqual(lib.effective_marker("Contract of Employment Effective until Superseded or Cancelled.", today), {})
+        thru = lib.effective_marker("License: Expiration; renewal. [Effective through June 30, 2027.]", today)
+        self.assertEqual(thru, {})
+        self.assertEqual(lib.effective_marker("License. [Effective through October 23, 2026.]", today)["status"], "expired")
+        self.assertEqual(lib.effective_marker("License. [Effective July 1, 2027.]", today)["status"], "future_effective")
+        for contingent in ("(Effective Upon Ratification of Proposed Constitutional Amendment) Dispositions of Proceeds",
+                           "(Effective once contingency met. Contingent expiration, see note.)"):
+            self.assertEqual(lib.effective_marker(contingent, today)["status"], "not_recorded", contingent)
+        self.assertEqual(lib.effective_marker("(Effective until contingency met)", today), {})
+
+    def test_first_line_and_module_dates(self):
+        import datetime as _dt
+        today = _dt.date(2026, 10, 24)
+        line = lib.effective_line("Section effective July 1, 2027. See, also, section 57-3-20 effective until July 1, "
+                                  "2027.\nThe responsibilities ...", today)
+        self.assertEqual((line["status"], line["effective"]["start"]), ("future_effective", "2027-07-01"))
+        self.assertEqual(lib.effective_line("Section effective until July 1, 2027. See, also, ...", today), {})
+        done = lib.status_from_dates({"start": None, "end": "2026-07-01", "note": None}, "(Effective until July 1, 2026)", today)
+        self.assertEqual((done["status"], done["status_marker"]), ("expired", "(Effective until July 1, 2026)"))
+        self.assertEqual(lib.status_from_dates({"start": "2026-07-01", "end": None, "note": None}, None, today), {})
+
+    def test_section_applies_the_rules_when_the_module_passes_no_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = lib.RunContext(META, pathlib.Path(tmp, "out"), None, sample=10,
+                                 fetcher=FakeFetcher({"https://law.example.gov/v": b"<p>x</p>"}), log=lambda m: None,
+                                 today=__import__("datetime").date(2026, 10, 24))
+            ctx.edition(edition_label=None, currency_statement=None)
+            src = ctx.fetch("https://law.example.gov/v")
+            ctx.section(code="TS", number="9.01", heading="Report", text="Old text.", source=src, path=[],
+                        version="(Effective until July 1, 2026)", version_index=1,
+                        effective={"start": None, "end": "2026-07-01", "note": None})
+            ctx.section(code="TS", number="9.01", heading="Report", text="New text.", source=src, path=[],
+                        version="(Effective July 1, 2026)", version_index=2,
+                        effective={"start": "2026-07-01", "end": None, "note": None})
+            ctx.section(code="TS", number="9.02", heading="Duties.", text="Section effective July 1, 2027. See, also, ...\nX.",
+                        source=src, path=[])
+            ctx.finish()
+            rows = list(lib.read_jsonl(ctx.dir / "sections.jsonl.gz"))
+            self.assertEqual([r["status"] for r in rows], ["expired", "in_force", "future_effective"])
 
 
 class VectorTests(unittest.TestCase):
