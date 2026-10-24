@@ -1,7 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { HowToRead } from "@/components/analysis/HowToRead";
+import { ProfileSections } from "@/components/kit/ProfileSections";
+import { AiSummary } from "@/components/kit/ai/AiSummary";
+import { AskAiButton } from "@/components/kit/ai/AskAiButton";
+import { buildSectionContext } from "@/components/kit/ai/buildSectionContext";
 import { Kpi, Panel, SourceLink, StateNote } from "@/components/enforcement/parts";
 import type { AgencyProfileData } from "@/lib/external/agencyProfile.functions";
 import { ActivityChart } from "./ActivityChart";
@@ -25,8 +29,12 @@ import { agencyTakeaways, fmt, KIND_LABEL, monthRows, usd } from "./agencyView";
 const UA_INDEX = "https://www.reginfo.gov/public/do/eAgendaXmlReport";
 const CENSUS = "https://www.census.gov/data/tables/time-series/demo/popest/2020s-state-total.html";
 
-/** The analytical overview of one agency: KPIs, takeaways, activity, pipeline, money, law and structure. */
-export function AgencyProfileView({ data }: { data: AgencyProfileData }) {
+/**
+ * The analytical overview of one agency: KPIs with an AI summary, takeaways, then one scrollable page in sections
+ * (rulemaking, pipeline, money, law and structure, enforcement and data) behind a sticky index. `after` renders at
+ * the end of the last section (the oversight panel).
+ */
+export function AgencyProfileView({ data, after }: { data: AgencyProfileData; after?: ReactNode }) {
   const { profile, trends, budget, spending } = data;
   const takeaways = useMemo(() => agencyTakeaways(data), [data]);
   const months = useMemo(() => (trends ? monthRows(trends) : []), [trends]);
@@ -36,6 +44,47 @@ export function AgencyProfileView({ data }: { data: AgencyProfileData }) {
   const active =
     !!trends && Object.entries(trends.yearly.ALL).some(([y, n]) => y >= "1995" && n > 0);
   const isComponentWithParentBudget = !budget && profile.subtierObligations;
+  const aiContext = buildSectionContext({
+    id: "agency-glance",
+    title: `${profile.name}: headline figures`,
+    scope: profile.name,
+    source: "Federal Register API; Unified Agenda (reginfo.gov); USAspending",
+    period: trends ? `Federal Register to ${trends.asOf}` : null,
+    figures: [
+      { label: "Final rules", value: s.rulesLastYear, unit: "documents", period: String(s.lastFullYear) },
+      {
+        label: "Final rules so far",
+        value: s.rulesThisYear,
+        unit: "documents",
+        period: `${Number(s.lastFullYear) + 1}, partial year`,
+      },
+      { label: "Proposed rules", value: s.proposedLastYear, unit: "documents", period: String(s.lastFullYear) },
+      { label: "Notices", value: s.noticesLastYear, unit: "documents", period: String(s.lastFullYear) },
+      { label: "Significant final rules since 1994", value: s.significantRules, unit: "rules" },
+      {
+        label: "Open comment periods",
+        value: s.openComments,
+        unit: "documents",
+        period: trends ? `as of ${trends.openComments.asOf}` : undefined,
+      },
+      { label: "Unified Agenda actions", value: s.agendaActions, unit: "actions" },
+      {
+        label: "Economically significant agenda actions",
+        value: s.agendaEconomicallySignificant,
+        unit: "actions",
+      },
+      {
+        label: "Obligations",
+        value: fy ? usd(fy.obligated) : null,
+        period: `FY${s.latestFy}`,
+      },
+      {
+        label: "Budgetary resources",
+        value: fy ? usd(fy.budgetaryResources) : null,
+        period: `FY${s.latestFy}`,
+      },
+    ],
+  });
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -121,6 +170,22 @@ export function AgencyProfileView({ data }: { data: AgencyProfileData }) {
           }
         />
       </div>
+
+      <AiSummary
+        context={aiContext}
+        actions={
+          <AskAiButton
+            sectionId="agency-glance"
+            title={`${profile.name}: headline figures`}
+            context={aiContext}
+            questions={[
+              "Is this agency issuing more or fewer rules than usual?",
+              "What is in its regulatory pipeline?",
+              "How large is its budget, and where does the money go?",
+            ]}
+          />
+        }
+      />
 
       <KeyTakeaways
         title="What stands out"
