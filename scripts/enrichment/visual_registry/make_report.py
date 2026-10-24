@@ -122,11 +122,14 @@ def main():
                        d.get("origin_url", "")))
         lines += [md_table(["Dataset", "Row", "Field", "Registry", "Origin", "Origin page"], ex[:8]), ""]
     if spot:
-        ok = sum(1 for s in spot if s["match"])
+        ok = sum(1 for s in spot if s["match"] is True)
+        limited = sum(1 for s in spot if s["match"] is None)
         lines += ["## Live URL spot check", "",
-                  f"{len(spot)} sampled display/thumbnail/mark URLs requested once (bytes not stored): {ok} returned "
-                  "HTTP 200 with the stated pixel size (SVG: an SVG content type).", ""]
-        bad = [s for s in spot if not s["match"]]
+                  f"{len(spot)} sampled display/thumbnail/mark URLs requested once (bytes not stored; fjc.gov not "
+                  f"sampled): {ok} returned HTTP 200 with the stated pixel size (SVG: an SVG content type); {limited} "
+                  "were refused with HTTP 429 (the host's rate limit for this shared address, after polite retries) "
+                  "and are not checked.", ""]
+        bad = [s for s in spot if s["match"] is False]
         if bad:
             lines += [md_table(["Dataset", "URL", "Status", "Stated", "Decoded"],
                                [(s["dataset"], s["url"], s["status"], s["stated"], s["decoded"]) for s in bad]), ""]
@@ -163,6 +166,24 @@ def main():
               "- House Intelligence (IG00, 2 marks) is held: our id is hlig00, not hs + code; the house_judiciary "
               "wordmark has no committee code.",
               "- The workbook's Page Visuals default for one state page is a map, not a photograph (held).", ""]
+    lines += ["## Open risks", "",
+              "- Rights: images are published with the registry's recorded rights status, including agency seals and "
+              "logos recorded as restricted or review_required (some agency emblems are protected by statute or "
+              "agency policy), FJC-hosted courthouse photos recorded as 'Not assessed', and committee marks whose "
+              "recorded licence is 'Pending file-specific policy and visual review'. The UI should show rights_status "
+              "and, for marks, branding_note. AGENTS.md (owner decision 2026-10-22) still excludes non-commercial "
+              "licences; the published sets contain no NC/ND licence text (table above), but 'other' covers licence "
+              "texts nobody has assessed.",
+              "- No visual review: a photograph could show an interior, a different building or a group; only the "
+              "title-based ARTWORK rule ran.",
+              "- verified_at carries the registry's own retrieval time (fetched_at), not a verification by this build.",
+              "- Derived Wikimedia thumbnail heights are scaled from the recorded original size with MediaWiki's "
+              "rounding; the live spot check compares a sample.",
+              "- court_images: new rows hosted on fjc.gov / gsa.gov / tile.loc.gov, or with license_family 'other', are "
+              "dropped by the current src/lib/courts/photos.ts parser (Commons hosts and kept families only) until "
+              "the UI parser accepts them.",
+              "- Wikimedia answered HTTP 429 to this shared address during the build; visitors' browsers fetch "
+              "thumbnails from their own addresses, so this affects checking, not display.", ""]
     (BUILD / "REPORT.md").write_text("\n".join(lines) + "\n")
     print("wrote", BUILD / "REPORT.md")
 
