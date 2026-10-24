@@ -32,7 +32,13 @@ export function ProfileSections({ sections }: { sections: readonly ProfileSectio
       />
       <div className="space-y-10">
         {sections.map((s) => (
-          <Section key={s.id} id={s.id} title={s.title} description={s.description} className={EMPTY_HIDDEN}>
+          <Section
+            key={s.id}
+            id={s.id}
+            title={s.title}
+            description={s.description}
+            className={EMPTY_HIDDEN}
+          >
             {s.content}
           </Section>
         ))}

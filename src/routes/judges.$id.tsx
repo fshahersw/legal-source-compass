@@ -72,7 +72,8 @@ function Page() {
               {
                 id: "judge-career",
                 title: "Career",
-                description: "Appointments, nomination and service as the official records list them.",
+                description:
+                  "Appointments, nomination and service as the official records list them.",
                 content: (
                   <>
                     <JudgeFjcPanel judgeId={id} />
