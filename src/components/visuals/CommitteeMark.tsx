@@ -1,16 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { COMMITTEE_CODE } from "@/lib/external/congressMembers";
 import { hostOf, isWideMark } from "@/lib/visuals/common";
 import { cn } from "@/lib/utils";
 import { markImageFailed, useImageFailed } from "./failedImages";
 import { creditLinkClass, LicenceText } from "./ImageCredit";
-import { committeeMarkQuery } from "./queries";
-
-function useMark(code: string) {
-  const valid = COMMITTEE_CODE.test(code);
-  const q = useQuery({ ...committeeMarkQuery(code), enabled: valid });
-  return valid ? (q.data ?? null) : null;
-}
+import { useMark } from "./useCommitteeMark";
 
 /**
  * The committee's mark from its own website (dataset committee_marks), for the page-header emblem slot. Square seals
@@ -69,13 +61,17 @@ export function CommitteeMarkCaption({ code, className }: { code: string; classN
             <LicenceText license={mark.license} url={mark.licenseUrl} />
           </>
         ) : null}
-        {mark.brandingNote ? <> · {mark.brandingNote}</> : null}
       </p>
+      {mark.brandingNote ? (
+        <p className="m-0 line-clamp-2 max-w-4xl" title={mark.brandingNote}>
+          {mark.brandingNote}
+        </p>
+      ) : null}
       {mark.policyUrl && mark.policyQuote ? (
         <details className="group">
           <summary className="cursor-pointer list-none rounded-sm focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
             <span className="underline decoration-dotted underline-offset-2 hover:text-foreground">
-              Use statement on the committee&rsquo;s site
+              Policy text recorded from the committee&rsquo;s site
             </span>
           </summary>
           <p className="m-0 mt-1 max-w-3xl">

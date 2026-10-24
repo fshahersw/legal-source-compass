@@ -224,10 +224,12 @@ export function PhotoCredit({
         )}
       >
         <span className="shrink-0">Photo:</span>
-        <span className="min-w-0 truncate" title={author}>
+        <span className="min-w-0 shrink truncate" title={author}>
           {author}
         </span>
-        <span className="shrink-0">· {links}</span>
+        <span className="min-w-0 max-w-[60%] shrink-0 truncate" title={photo.license}>
+          · {links}
+        </span>
       </p>
     );
   return (
