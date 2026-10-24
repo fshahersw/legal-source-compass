@@ -76,22 +76,26 @@ export function StateFlag({ state, className }: { state: string; className?: str
   );
 }
 /**
- * An agency's mark. The GSA image-repository mark wins; only when the site has none is `fallback` (a seal or logo
- * recorded for the agency in the agency_images dataset) drawn, credited on the page that passes it.
+ * An agency's mark. A seal or logo recorded for the agency (`registry`, from the agency_images dataset) comes first
+ * (owner decision 2026-10-24, night); the GSA image-repository mark is drawn only when there is none, or when the
+ * recorded image fails to load. `holdGsa` keeps the GSA mark back while the recorded mark is still being read, so the
+ * emblem never flashes the wrong mark.
  */
 export function AgencyMark({
   name,
   className,
-  fallback,
+  registry,
+  holdGsa = false,
 }: {
   name: string;
   className?: string | undefined;
-  fallback?: { url: string; sourcePage: string } | null;
+  registry?: { url: string; sourcePage: string; kind: "seal" | "logo" | null } | null;
+  holdGsa?: boolean;
 }) {
-  const asset = agencyArtwork(name);
   const [failed, setFailed] = useState<string | null>(null);
-  const extraFailed = useImageFailed(fallback?.url);
-  const extra = !asset && fallback && !extraFailed ? fallback : null;
+  const registryFailed = useImageFailed(registry?.url);
+  const recorded = registry && !registryFailed ? registry : null;
+  const asset = !recorded && !holdGsa ? agencyArtwork(name) : null;
   return (
     <span
       className={cn(
@@ -99,30 +103,30 @@ export function AgencyMark({
         className,
       )}
       title={
-        asset
-          ? `${name} · GSA image repository; no endorsement implied`
-          : extra
-            ? `${name} · mark from ${new URL(extra.sourcePage).hostname.replace(/^www\./, "")}`
+        recorded
+          ? `${name} · ${recorded.kind ?? "mark"} from ${new URL(recorded.sourcePage).hostname.replace(/^www\./, "")}`
+          : asset
+            ? `${name} · GSA image repository; no endorsement implied`
             : name
       }
     >
-      {asset && failed !== asset.path ? (
+      {recorded ? (
+        <img
+          src={recorded.url}
+          alt={`${name} ${recorded.kind ?? "mark"}`}
+          className="size-full object-contain"
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => markImageFailed(recorded.url)}
+        />
+      ) : asset && failed !== asset.path ? (
         <img
           src={asset.path}
           alt={`${name} mark`}
           className="size-full object-contain"
           loading="lazy"
           onError={() => setFailed(asset.path)}
-        />
-      ) : extra ? (
-        <img
-          src={extra.url}
-          alt={`${name} mark`}
-          className="size-full object-contain"
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={() => markImageFailed(extra.url)}
         />
       ) : (
         <Building2

@@ -230,7 +230,7 @@ function AgencyPage() {
       ) : null}
       {known && !loading ? (
         <>
-          <AgencyMarkCaption agencyId={id} name={name} ready className="mb-2" />
+          <AgencyMarkCaption agencyId={id} className="mb-2" />
           <AgencyBuildingPhoto agencyId={id} name={name} />
           <div className="flex flex-wrap gap-1 border-b border-border text-[13px]">
             {TABS.map((t) => (

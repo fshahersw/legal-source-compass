@@ -140,6 +140,7 @@ export const judge_portraits_open: FixtureRow[] = [
         fjc_slug: "sweeney-charlotte-noelle",
         fjc_nid: "12007541",
         fjc_url: "https://www.fjc.gov/history/judges/sweeney-charlotte-noelle",
+        basis: "fjc_node_id",
       },
     },
   },
@@ -167,7 +168,7 @@ export const agency_images: FixtureRow[] = [
           verified_at: "2026-10-24T05:45:00Z",
         },
       ],
-      // The FBI has a GSA mark on the site, which wins over this one.
+      // The recorded seal heads the page; the site's GSA mark is used only when an agency has none.
       marks: [
         {
           url: "https://agency-logos.federalregister.gov/160/medium.png?1321992917",
@@ -178,6 +179,7 @@ export const agency_images: FixtureRow[] = [
           license: null,
           author: null,
           rights_status: "restricted",
+          asset_type: "seal",
         },
       ],
     },
@@ -197,6 +199,7 @@ export const agency_images: FixtureRow[] = [
           license: null,
           author: null,
           rights_status: "review_required",
+          asset_type: "logo",
         },
       ],
     },

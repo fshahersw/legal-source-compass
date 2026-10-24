@@ -55,8 +55,11 @@ describe("parseCourtPhoto", () => {
     expect(p.author).toBe("James Brooks from Juneau, Alaska");
   });
 
-  it("drops a record with an unknown licence family; 'other' and an unrecorded licence are kept", () => {
-    expect(parseCourtPhoto({ ...PHOTO, license_family: "cc by-nc" }, "alaska")).toBeNull();
+  it("filters on no licence family: an unfamiliar one reads as 'other'; an unrecorded licence is kept", () => {
+    expect(parseCourtPhoto({ ...PHOTO, license_family: "cc by-nc" }, "alaska")?.licenseFamily).toBe(
+      "other",
+    );
+    expect(parseCourtPhoto({ ...PHOTO, license_family: 5 }, "alaska")).toBeNull();
     // Owner decision 2026-10-24: shown whatever the rights status; the credit then names the source only.
     const other = parseCourtPhoto(
       { ...PHOTO, license_family: "other", license: null, license_url: null },
@@ -210,12 +213,13 @@ describe("server reads", () => {
       rows: [
         { id: "alaska", p: PHOTO },
         { id: "ala", p: { ...PHOTO, license_family: "cc by-nd" } },
+        { id: "ak", p: { ...PHOTO, display: { ...PHOTO.display, width: 0 } } },
         { id: "BAD", p: PHOTO },
       ],
       total: null,
     });
     const index = await readCourtPhotoThumbs();
-    expect(Object.keys(index)).toEqual(["alaska"]);
+    expect(Object.keys(index)).toEqual(["alaska", "ala"]);
     expect(index["alaska"]!.thumb.width).toBe(330);
   });
 });

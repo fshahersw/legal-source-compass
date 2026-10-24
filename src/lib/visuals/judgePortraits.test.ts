@@ -14,6 +14,8 @@ describe("parseJudgePortrait", () => {
     expect(p.author).toBe("Noot Noots");
     expect(p.imageDate).toBe("2023-02-03");
     expect(p.identity).toEqual({
+      basis: "fjc_node_id",
+      state: null,
       wikidata: "Q107938370",
       fjcSlug: "sweeney-charlotte-noelle",
       fjcNid: "12007541",
@@ -21,11 +23,44 @@ describe("parseJudgePortrait", () => {
     });
   });
 
-  it("accepts a numeric node id and an absent identity", () => {
+  it("accepts the two bases the build uses, each with its own evidence", () => {
+    // A numeric node id reads the same as a string one.
+    const numeric = parseJudgePortrait(row.id, portrait, { ...identity, fjc_nid: 12007541 });
+    expect(numeric?.identity.fjcNid).toBe("12007541");
+    // A state or special-court judge: no FJC id, a unique exact name within the recorded state.
+    const byName = parseJudgePortrait("5225f03f7fba3440bf18acc9a6f8d53b", portrait, {
+      wikidata: "Q131937885",
+      fjc_slug: null,
+      fjc_nid: null,
+      fjc_url: null,
+      basis: "exact_name_same_state",
+      state: "Wisconsin",
+    })!;
+    expect(byName.identity).toEqual({
+      basis: "exact_name_same_state",
+      state: "Wisconsin",
+      wikidata: "Q131937885",
+      fjcSlug: null,
+      fjcNid: null,
+      fjcUrl: null,
+    });
+  });
+
+  it("drops a record whose identity basis is missing, unknown or lacks its evidence", () => {
+    const { basis: _basis, ...noBasis } = identity;
+    expect(parseJudgePortrait(row.id, portrait, noBasis)).toBeNull();
+    expect(parseJudgePortrait(row.id, portrait, undefined)).toBeNull();
+    expect(parseJudgePortrait(row.id, portrait, { ...identity, basis: "fuzzy_name" })).toBeNull();
+    // fjc_node_id needs the node id; exact_name_same_state needs the state.
+    expect(parseJudgePortrait(row.id, portrait, { ...identity, fjc_nid: null })).toBeNull();
     expect(
-      parseJudgePortrait(row.id, portrait, { ...identity, fjc_nid: 12007541 })?.identity.fjcNid,
-    ).toBe("12007541");
-    expect(parseJudgePortrait(row.id, portrait, undefined)?.identity.fjcNid).toBeNull();
+      parseJudgePortrait(row.id, portrait, {
+        ...identity,
+        basis: "exact_name_same_state",
+        fjc_nid: null,
+        state: null,
+      }),
+    ).toBeNull();
   });
 
   it("drops malformed identity values instead of repairing them", () => {
@@ -39,11 +74,20 @@ describe("parseJudgePortrait", () => {
     expect(parseJudgePortrait(row.id, portrait, "Q107938370")).toBeNull();
   });
 
-  it("drops a bad judge id, a non-kept licence and a portrait off the allowed hosts", () => {
+  it("keeps a portrait whose recorded image date is not a short plain date, without the date", () => {
+    const messy =
+      "between 1965 and 1966 date QS:P,+1965-00-00T00:00:00Z/8,P1319,+1965-00-00T00:00:00Z/9,P1326";
+    const p = parseJudgePortrait(row.id, { ...portrait, image_date: messy }, identity)!;
+    expect(p.imageDate).toBeNull();
+    expect(p.author).toBe("Noot Noots");
+  });
+
+  it("drops a bad judge id and a portrait off the allowed hosts, but filters on no licence family", () => {
     expect(parseJudgePortrait("cl:people:1250", portrait, identity)).toBeNull();
     expect(
-      parseJudgePortrait(row.id, { ...portrait, license_family: "cc by-nc" }, identity),
-    ).toBeNull();
+      parseJudgePortrait(row.id, { ...portrait, license_family: "cc by-nc" }, identity)
+        ?.licenseFamily,
+    ).toBe("other");
     expect(
       parseJudgePortrait(
         row.id,

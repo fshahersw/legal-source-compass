@@ -57,6 +57,25 @@ function firstValid<T>(
   return out;
 }
 
+/**
+ * The mark that heads the agency's page: a seal first, then a logo, then any other mark; the first recorded within a
+ * kind. Null when the agency has no mark.
+ */
+export function primaryAgencyMark(marks: readonly MarkImage[]): MarkImage | null {
+  return (
+    marks.find((m) => m.kind === "seal") ?? marks.find((m) => m.kind === "logo") ?? marks[0] ?? null
+  );
+}
+
+/** "Agency seal" / "Agency logo" / "Agency mark", for a caption. */
+export function agencyMarkLabel(mark: Pick<MarkImage, "kind">): string {
+  return mark.kind === "seal"
+    ? "Agency seal"
+    : mark.kind === "logo"
+      ? "Agency logo"
+      : "Agency mark";
+}
+
 /** item.photos and item.marks of an agency_images record, primary first; null when neither has a valid image. */
 export function parseAgencyImages(
   agencyId: string,
