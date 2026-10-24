@@ -114,7 +114,7 @@ export function IndexChart({
           max={dates.length - 1}
           value={baseIdx}
           onChange={(e) => setBaseIdx(Number(e.target.value))}
-          className="w-full accent-[var(--brand)]"
+          className="w-full accent-brand"
           aria-valuetext={formatDate(base)}
         />
         <span className="w-16 shrink-0 text-right font-medium text-foreground tabular-nums">{formatDate(base)}</span>
