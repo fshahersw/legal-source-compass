@@ -212,7 +212,7 @@ describe("judge financial-disclosure summaries", () => {
         { title: "Credit Union Savings Account X", subtitle: null, link: null },
         {
           title: "Total Return Bond Fund",
-          subtitle: "Values inferred during the source extraction",
+          subtitle: "Values inferred during extraction",
           link: null,
         },
         {

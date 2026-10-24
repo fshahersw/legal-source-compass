@@ -227,7 +227,7 @@ function disclosureSections(
       sample: holdings.map((h) => {
         const flags = [
           h["redacted"] === true ? "Row contains redactions" : null,
-          h["inferred"] === true ? "Values inferred during the source extraction" : null,
+          h["inferred"] === true ? "Values inferred during extraction" : null,
         ].filter((f): f is string => !!f);
         return {
           title:
