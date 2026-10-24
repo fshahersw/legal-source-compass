@@ -364,11 +364,11 @@ export function EnforcementCalendar() {
           }}
           actions={
             data.series.length > 1 ? (
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <div className="flex min-w-0 max-w-full items-center gap-1.5 text-[11px] text-muted-foreground">
                 <label htmlFor="lawviz-calendar-series">Series</label>
                 <select
                   id="lawviz-calendar-series"
-                  className={control}
+                  className={`${control} min-w-0 max-w-[14rem] truncate sm:max-w-none`}
                   value={overview.id}
                   onChange={(e) => setOverviewSeries(e.target.value)}
                 >
