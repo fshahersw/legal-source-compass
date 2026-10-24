@@ -192,7 +192,8 @@ def main() -> None:
             continue
         seen.add(fid)
         facts.append(f)
-    facts.sort(key=lambda f: (f.report_id, f.series, f.dimension, f.period, f.aggregate))
+    # reading order: by report, then page; within a page the extraction order (table by table, row by row) is kept
+    facts.sort(key=lambda f: (f.report_id, f.pdf_page))
     ck = checks(facts, rep_by)
     n_by = collections.Counter(f.report_id for f in facts)
     tab_by = collections.defaultdict(list)

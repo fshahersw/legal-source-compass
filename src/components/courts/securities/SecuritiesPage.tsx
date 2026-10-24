@@ -30,6 +30,7 @@ import {
   QueryPanel,
 } from "@/components/courts/collection/CollectionParts";
 import { RhoMark } from "@/components/courts/collection/CollectionVisuals";
+import { ResearchReports } from "./ResearchReports";
 import { RankScatter } from "@/components/courts/firms/FirmVisuals";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import type {
@@ -76,6 +77,7 @@ export function SecuritiesPage() {
       <TrendsPanel />
       <TopTens />
       <AlignmentPanel />
+      <ResearchReports />
     </div>
   );
 }

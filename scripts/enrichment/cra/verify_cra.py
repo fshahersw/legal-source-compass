@@ -5,7 +5,9 @@ last word of its label); facts whose label is spread over several lines ("Averag
 page. For a text fact: the value must appear on the page. Each report's file is checked against the manifest sha256
 first. Prints failure counts; the list of failures goes to private/build/cra/verification/verify.json.
 
-    python3 -I -B scripts/enrichment/cra/verify_cra.py
+    python3 -I -B scripts/enrichment/cra/verify_cra.py [report id substring]
+
+With a substring, only the matching reports are checked and the list goes to verify-<substring>.json.
 """
 from __future__ import annotations
 
@@ -43,7 +45,7 @@ def row_key(label: str) -> str | None:
     return words[-1]
 
 
-def main() -> None:
+def main(only: str = "") -> None:
     build = json.load(gzip.open(os.path.join(OUT, "cra_facts.json.gz"), "rt", encoding="utf-8"))
     reps = {r["id"]: r for r in cra_inventory.reports()}
     man = {r["sha256"]: r for r in cra_fetch.load_manifest().values() if r.get("sha256")}
@@ -55,6 +57,8 @@ def main() -> None:
     failures = []
     os.makedirs(TMP, exist_ok=True)
     for rid, facts in sorted(by.items()):
+        if only and only not in rid:
+            continue
         rep = reps[rid]
         data = cra_fetch.read(man[rep["sha256"]])  # raises on a sha256 mismatch
         with tempfile.NamedTemporaryFile(dir=TMP, suffix=".pdf", delete=False) as h:
@@ -98,7 +102,8 @@ def main() -> None:
         finally:
             os.unlink(path)
     os.makedirs(os.path.join(OUT, "verification"), exist_ok=True)
-    json.dump({"stats": stats, "failures": failures}, open(os.path.join(OUT, "verification", "verify.json"), "w"), indent=1)
+    name = f"verify-{only}.json" if only else "verify.json"
+    json.dump({"stats": stats, "failures": failures}, open(os.path.join(OUT, "verification", name), "w"), indent=1)
     print(json.dumps(stats))
     print("failures:", len(failures))
     for x in failures[:25]:
@@ -106,4 +111,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else "")
