@@ -221,6 +221,9 @@ const PREFIXES: readonly [string, CategoryId][] = [
   ["federal_register", "law"],
   ["citation_", "law"],
   ["govinfo_", "law"],
+  ["congress_", "law"],
+  ["regulations_gov_", "law"],
+  ["gao_legal_", "law"],
   ["regulatory_epa_", "enforcement"],
   ["epa_echo_", "enforcement"],
   ["osha_", "enforcement"],
@@ -269,6 +272,7 @@ export type AppPath =
   | "/law/monitoring"
   | "/enforcement"
   | "/law/legislation"
+  | "/law/rulemaking"
   | "/agencies"
   | "/safety"
   | "/safety/signals"
@@ -308,6 +312,7 @@ const P = {
   codes: { to: "/law/codes", label: "State codes" },
   enforcement: { to: "/enforcement", label: "Enforcement" },
   legislation: { to: "/law/legislation", label: "Legislation" },
+  rulemaking: { to: "/law/rulemaking", label: "Rulemaking" },
   agencies: { to: "/agencies", label: "Agencies" },
   safety: { to: "/safety", label: "Products & safety" },
   signals: { to: "/safety/signals", label: "Safety signals" },
@@ -409,6 +414,13 @@ const USED_ON: Readonly<Record<string, readonly AppLink[]>> = {
   ecfr_agencies: [P.law],
   crs_reports: [P.legislation],
   "govinfo_*": [P.legislation],
+  congress_amendments: [P.legislation],
+  congress_nominations: [P.legislation],
+  congress_treaties: [P.legislation],
+  congress_committee_reports: [P.legislation],
+  gao_legal_decisions: [P.legislation],
+  regulations_gov_documents: [P.rulemaking],
+  regulations_gov_dockets: [P.rulemaking],
   state_bills: [P.legislation, P.states],
   oig_leie_exclusions: [P.enforcement],
   oversight_reports: [P.enforcement],
