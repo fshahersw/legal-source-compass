@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Clock3 } from "lucide-react";
 import { SECTION_ICONS } from "@/components/atlas/sectionIcons";
+import { HeadlineSummary } from "@/components/insights/HeadlineAi";
 import { HeadlineTiles } from "@/components/insights/KpiTile";
 import { DataDrawer } from "@/components/kit/DataDrawer";
 import { InfoPopover } from "@/components/kit/InfoPopover";
@@ -35,6 +36,7 @@ export function OverviewBriefing() {
       }
     >
       <HeadlineTiles deferred />
+      <HeadlineSummary className="mt-3" />
     </Section>
   );
 }

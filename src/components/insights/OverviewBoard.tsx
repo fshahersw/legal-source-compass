@@ -30,11 +30,14 @@ import { SectionIndex } from "@/components/kit/SectionIndex";
 import { ShowMore } from "@/components/kit/ShowMore";
 import { CardSkeleton } from "@/components/kit/Skeletons";
 import { Button } from "@/components/ui/button";
+import { AiSummary } from "@/components/kit/ai/AiSummary";
+import { AskAiButton } from "@/components/kit/ai/AskAiButton";
 import { CatalogNotice, FixtureBanner } from "./controls";
 import { catalogQuery, fixturesOn, seriesQuery } from "./data";
 import { HEADLINE_BLOCKS, hubTileState, tileKey, tileTopic, type TileState } from "./hubTiles";
 import { allDailyInsightsQuery, formatDayKey } from "./insightQueries";
 import { KpiTile } from "./KpiTile";
+import { HEADLINE_QUESTIONS, kpiContext } from "./kpiContext";
 import {
   BRIDGE_KPI_METRICS,
   HUB_BLOCK_TOPIC,
@@ -343,6 +346,7 @@ export function OverviewBoard() {
     const s = states.find((t) => tileKey(t) === id || tileKey(t) === `hub:${id}`);
     return s ? [s] : [];
   });
+  const headlineContext = kpiContext("Headline figures", headlines);
   const topics = TOPIC_ORDER.flatMap((t) => {
     const tiles = states.filter((s) => tileTopic(s) === t && !isHeadline(s));
     return tiles.length ? [{ topic: t, tiles }] : [];
@@ -370,6 +374,18 @@ export function OverviewBoard() {
             <KpiTile key={tileKey(s)} state={s} />
           ))}
         </KpiGrid>
+        <AiSummary
+          context={headlineContext}
+          className="mt-3"
+          actions={
+            <AskAiButton
+              sectionId="headlines"
+              title="Headline figures"
+              context={headlineContext}
+              questions={HEADLINE_QUESTIONS}
+            />
+          }
+        />
       </Section>
       <Section id="moves" title="What moved most">
         <Movements tiles={loaded} pending={pending} />

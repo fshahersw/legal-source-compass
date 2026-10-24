@@ -44,3 +44,11 @@ export {
 } from "./format";
 export type { DeltaDirection, DeltaTone, GoodDirection, ChangeParts } from "./format";
 export { MAX_TABS, splitTabs } from "./tabs";
+export { AiSummary, AiSummaryView, AskAiButton, buildSectionContext, figuresFromRows } from "./ai";
+export type {
+  AiSummaryProps,
+  AskAiButtonProps,
+  BuildSectionContextInput,
+  FigureInput,
+  SectionContext,
+} from "./ai";

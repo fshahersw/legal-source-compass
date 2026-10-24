@@ -16,6 +16,13 @@ export function crossSiteRequest(request: Request): boolean {
   return !!site && site !== "same-origin" && site !== "none";
 }
 
+/** Whole seconds until the oldest request in the window expires (1 when the client has none), for a "try again in" message. */
+export function retryAfterSeconds(key: string, windowMs: number, now = Date.now()): number {
+  const recent = (windows.get(key) ?? []).filter((t) => now - t < windowMs);
+  if (!recent.length) return 1;
+  return Math.max(1, Math.ceil((Math.min(...recent) + windowMs - now) / 1000));
+}
+
 /** True when the client is under `max` requests in the last `windowMs`; records the request when allowed. */
 export function allow(key: string, max: number, windowMs: number, now = Date.now()): boolean {
   const recent = (windows.get(key) ?? []).filter((t) => now - t < windowMs);
