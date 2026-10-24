@@ -48,14 +48,14 @@ export const CHART_MARGIN = { top: 8, right: 12, bottom: 0, left: 0 } as const;
 /** Hairline horizontal grid for columns and lines. */
 export const gridProps = {
   stroke: "var(--border)",
-  strokeOpacity: 0.8,
+  strokeOpacity: 0.55,
   vertical: false,
 } as const;
 
 /** Hairline vertical grid for horizontal bars. */
 export const gridPropsVertical = {
   stroke: "var(--border)",
-  strokeOpacity: 0.8,
+  strokeOpacity: 0.55,
   horizontal: false,
 } as const;
 
@@ -126,7 +126,7 @@ export function yCategoryAxis(width: number, overrides: Record<string, unknown> 
   };
 }
 
-/** A 2 px line, no dots unless the series is short, a ringed active dot. Gaps stay gaps. */
+/** A 1.75 px line (1.25 px for context series), no dots unless the series is short, a ringed active dot. Gaps stay gaps. */
 export function lineProps(
   color: string,
   options: {
@@ -138,7 +138,7 @@ export function lineProps(
   return {
     type: "linear" as const,
     stroke: color,
-    strokeWidth: options.muted ? 1.5 : 2,
+    strokeWidth: options.muted ? 1.25 : 1.75,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     ...(options.dashed ? { strokeDasharray: "4 3" } : {}),

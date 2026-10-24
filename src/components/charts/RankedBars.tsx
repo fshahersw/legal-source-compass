@@ -125,6 +125,7 @@ export function RankedBars({
                     y1={top - 4}
                     y2={height - 18}
                     stroke={t === 0 ? "var(--border-strong)" : "var(--chart-grid)"}
+                    strokeOpacity={t === 0 ? 1 : 0.55}
                     shapeRendering="crispEdges"
                   />
                   <text x={x(t)} y={height - 6} textAnchor="middle" {...axisText}>

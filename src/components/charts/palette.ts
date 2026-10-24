@@ -48,6 +48,29 @@ export function slotColor(index: number): string {
   return `light-dark(${CATEGORICAL_HEX[index]}, ${CATEGORICAL_HEX_DARK[index]})`;
 }
 
+/**
+ * Label ink for text set inside a slot's fill (a stacked area, a bar segment): white or near-black, whichever gives
+ * the higher WCAG ratio on that fill (checked 2026-10-24 with the dataviz validator's contrast()). Light theme:
+ * slot 1 white 6.1, slot 2 ink 6.1, slot 3 ink 5.3, slot 4 white 5.8, slot 5 ink 6.4, slot 6 white 4.7. Dark theme:
+ * every fill is lighter, so all six take ink (4.7 to 5.9). Text outside a fill never wears a series colour.
+ */
+export const SLOT_INK_LIGHT = [
+  "#ffffff",
+  "#111418",
+  "#111418",
+  "#ffffff",
+  "#111418",
+  "#ffffff",
+] as const;
+export const SLOT_INK_DARK = [
+  "#111418",
+  "#111418",
+  "#111418",
+  "#111418",
+  "#111418",
+  "#111418",
+] as const;
+
 export const MAX_SERIES = CATEGORICAL_HEX.length;
 /** Forms where every mark can sit beside every other (scatter, maps, small multiples) use at most this many hues. */
 export const MAX_ALL_PAIRS_SERIES = 3;
@@ -57,6 +80,13 @@ export function seriesVar(index: number): string {
   if (!Number.isInteger(index) || index < 0 || index >= MAX_SERIES)
     throw new RangeError(`Series slot ${index} is outside the ${MAX_SERIES}-slot palette.`);
   return `var(--chart-${index + 1})`;
+}
+
+/** Label ink for text inside slot `index`'s fill: `var(--chart-on-N)`, set on every chart root by `chartTokens`. */
+export function seriesOn(index: number): string {
+  if (!Number.isInteger(index) || index < 0 || index >= MAX_SERIES)
+    throw new RangeError(`Series slot ${index} is outside the ${MAX_SERIES}-slot palette.`);
+  return `var(--chart-on-${index + 1})`;
 }
 
 /** Sequential shade for t in [0, 1] (light → dark), from the shared map ramp. */
@@ -80,6 +110,14 @@ export const chartTokens: CSSProperties = {
   ["--chart-4" as string]: slotColor(3),
   ["--chart-5" as string]: slotColor(4),
   ["--chart-6" as string]: slotColor(5),
+  ["--chart-on-1" as string]: `light-dark(${SLOT_INK_LIGHT[0]}, ${SLOT_INK_DARK[0]})`,
+  ["--chart-on-2" as string]: `light-dark(${SLOT_INK_LIGHT[1]}, ${SLOT_INK_DARK[1]})`,
+  ["--chart-on-3" as string]: `light-dark(${SLOT_INK_LIGHT[2]}, ${SLOT_INK_DARK[2]})`,
+  ["--chart-on-4" as string]: `light-dark(${SLOT_INK_LIGHT[3]}, ${SLOT_INK_DARK[3]})`,
+  ["--chart-on-5" as string]: `light-dark(${SLOT_INK_LIGHT[4]}, ${SLOT_INK_DARK[4]})`,
+  ["--chart-on-6" as string]: `light-dark(${SLOT_INK_LIGHT[5]}, ${SLOT_INK_DARK[5]})`,
+  /** A folded tail ("Other"): neutral grey, never a categorical slot; its label ink is the page ink. */
+  ["--chart-other" as string]: "color-mix(in srgb, var(--muted-foreground) 50%, var(--surface))",
   ["--chart-mid" as string]: "var(--muted)",
   ["--chart-grid" as string]: "var(--border)",
   ["--chart-axis" as string]: "var(--muted-foreground)",
