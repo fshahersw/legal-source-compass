@@ -32,13 +32,28 @@ sys.path.insert(0, str(HERE))
 import fetchlib as F  # noqa: E402
 
 BUILD = F.ROOT / "private" / "build" / "uscourts_tables"
-COURT_DATASETS = ["uscourts_tables_district", "uscourts_tables_bankruptcy", "uscourts_tables_circuit"]
-NON_ADDITIVE = re.compile(r"percent|median|mean|average|\bper\b|rate|weighted|ratio|%|months|days|time|length|interval|index|share|\bjudges\b", re.I)
+COURT_DATASETS = ["uscourts_tables_district", "uscourts_tables_bankruptcy", "uscourts_tables_circuit", "uscourts_bapcpa"]
+CATEGORY_DATASETS = ["uscourts_tables_national", "uscourts_bapcpa", "uscourts_wiretap"]
+# whole words, written independently of reconcile.py ("misdemeanor" is a count column)
+NON_ADDITIVE = re.compile(r"\b(?:percent|percentage|median|means?|averages?|avg|per|rates?|weighted|ratios?|months?|days?|times?|length|intervals?|index|shares?|judges?|judgeships?|costs?|dollars?)\b|%|\$", re.I)
 SUPER = "¹²³⁴⁵⁶⁷⁸⁹⁰"
 
 
+_LOADED = {}
+
+
 def load(dataset):
-    return json.loads((BUILD / f"{dataset}.json").read_text())
+    """A build file, gzip-compressed (<dataset>.json.gz) or plain; an absent dataset is empty."""
+    if dataset not in _LOADED:
+        import gzip
+        gz, plain = BUILD / f"{dataset}.json.gz", BUILD / f"{dataset}.json"
+        if gz.exists():
+            _LOADED[dataset] = json.loads(gzip.decompress(gz.read_bytes()))
+        elif plain.exists():
+            _LOADED[dataset] = json.loads(plain.read_text())
+        else:
+            _LOADED[dataset] = {"rows": []}
+    return _LOADED[dataset]
 
 
 def clean(text):
@@ -245,7 +260,7 @@ def tables_with_other_rows():
 def verify_sums():
     out = {"cells": 0, "match": 0, "mismatch": [], "incomplete": 0, "tables": 0, "skipped_tables_with_non_court_rows": []}
     non_court = tables_with_other_rows()
-    for ds in ("uscourts_tables_district", "uscourts_tables_bankruptcy"):
+    for ds in ("uscourts_tables_district", "uscourts_tables_bankruptcy", "uscourts_bapcpa"):
         by_table = {}
         for row in load(ds)["rows"]:
             ust = row["item"].get("ust")
@@ -289,6 +304,98 @@ def verify_sums():
                         out["match"] += 1
                     else:
                         out["mismatch"].append({"dataset": ds, "table": tkey, "col": k, "period": p["end"], "sum_of_courts": total, "published_total": nat})
+    return out
+
+
+# ------------------------------------------------------------------------------------------------------------ 2b. category cells
+def label_count(data, sheet, label):
+    wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
+    ws = wb[sheet] if sheet in wb.sheetnames else wb.worksheets[0]
+    return sum(1 for r in range(1, ws.max_row + 1) if any(row_label_matches(ws.cell(r, c).value, label) for c in (1, 2)))
+
+
+def verify_category_cells(n, rng, by_sha):
+    """Stored values of category rows (national tables, BAPCPA national tables, Wiretap jurisdiction rows) looked up again in the
+    source workbook by the row's published label and the column's published heading. Only labels printed exactly once in the sheet are
+    sampled (a label printed twice, such as "Other" under two headings or a county name in two states, cannot be found by label alone)."""
+    pool = []
+    for ds in CATEGORY_DATASETS:
+        for row in load(ds)["rows"]:
+            ust = row["item"].get("ust")
+            if not ust or ust.get("scope") != "national" or not ust.get("rows") or ust.get("rowScope") not in ("category", None):
+                continue
+            for r in ust["rows"]:
+                for ck, values in r["data"].items():
+                    for i, v in enumerate(values):
+                        if v is not None and ust["src"][ust["periods"][i]["src"]].get("fmt") in ("xlsx", "xls"):
+                            pool.append((ds, row["id"], r["k"], ck, i))
+    rng.shuffle(pool)
+    results, cache = [], {}
+    for ds, rid, rk, ck, i in pool:
+        if len(results) >= n:
+            break
+        rec = next(r for r in load(ds)["rows"] if r["id"] == rid)
+        ust = rec["item"]["ust"]
+        row = next(r for r in ust["rows"] if r["k"] == rk)
+        src = ust["src"][ust["periods"][i]["src"]]
+        entry = by_sha.get(src["sha256"])
+        if not entry:
+            continue
+        data = cache.get(src["sha256"]) or workbook_bytes(entry)
+        cache[src["sha256"]] = data
+        if label_count(data, src["sheet"], row["label"]) != 1:
+            continue
+        col = next(c for c in ust["cols"] if c["k"] == ck)
+        stored = row["data"][ck][i]
+        got, err = lookup_cell(data, src["sheet"], row["label"], col["label"], int((col.get("le") or ust["periods"][-1]["end"])[:4]), int(ust["periods"][i]["end"][:4]))
+        num = as_number(got)
+        status = err or (f"source cell is not a number: {got!r}" if num is None else ("match" if abs(num - stored) <= 5e-7 * max(1.0, abs(stored)) else f"MISMATCH source {num} stored {stored}"))
+        results.append({"dataset": ds, "id": rid, "row": row["label"], "col": ck, "col_label": col["label"], "period": ust["periods"][i]["end"], "pub": src["pub"], "file": src["url"],
+                        "sha256": src["sha256"], "stored": stored, "source_cell": got if not err else None, "status": status})
+    return results
+
+
+def verify_wiretap_sums():
+    """Second path over the stored Wiretap rows: Federal Total equals its federal rows, each state row its jurisdictions, and Federal Total
+    plus the state rows (or, where an edition prints no state rows, plus the jurisdiction rows) equals Total, column by column (count
+    columns, a blank counted as no orders)."""
+    out = {"tests": 0, "match": 0, "mismatch": []}
+    for row in load("uscourts_wiretap")["rows"]:
+        ust = row["item"].get("ust")
+        if not ust or ust.get("scope") != "national" or not ust.get("rows"):
+            continue
+        n = len(ust["periods"])
+        rows = ust["rows"]
+        for c in ust["cols"]:
+            if c["unit"] != "count" or NON_ADDITIVE.search(c["label"]):
+                continue
+            k = c["k"]
+            for i in range(n):
+                def v(r):
+                    return (r["data"].get(k) or [None] * n)[i]
+                present = [r for r in rows if v(r) is not None or i in (r.get("dash") or {}).get(k, [])]
+                if not present:
+                    continue
+                total = next((r for r in rows if r["k"] == "national"), None)
+                fed = next((r for r in rows if r["path"] == ["Federal Total"]), None)
+                if total is None or fed is None or v(total) is None:
+                    continue
+                groups = {}
+                for r in rows:
+                    if len(r["path"]) == 2:
+                        groups.setdefault(r["path"][0], []).append(r)
+                tops = [r for r in rows if len(r["path"]) == 1 and r["k"] not in ("national",) and r["path"] != ["Federal Total"]]
+                checks = [("Federal Total", v(fed) or 0, sum(v(r) or 0 for r in groups.get("Federal Total", [])))]
+                for t in tops:
+                    if t["path"][0] in groups:
+                        checks.append((t["label"], v(t) or 0, sum(v(r) or 0 for r in groups[t["path"][0]])))
+                checks.append(("Total", v(total), (v(fed) or 0) + sum(v(t) or 0 for t in tops)))
+                for name, printed, summed in checks:
+                    out["tests"] += 1
+                    if printed == summed:
+                        out["match"] += 1
+                    else:
+                        out["mismatch"].append({"table": ust["tableKey"], "col": k, "period": ust["periods"][i]["end"], "row": name, "printed": printed, "sum": summed})
     return out
 
 
@@ -435,6 +542,8 @@ def main():
     rng = random.Random(args.seed)
     by_sha = index_by_sha()
     cells = verify_cells(args.cells, rng, by_sha)
+    cat_cells = verify_category_cells(args.cells, rng, by_sha)
+    wire = verify_wiretap_sums()
     sums = verify_sums()
     pdf = [] if args.no_pdf else verify_pdf(args.pdf, rng, by_sha)
     pdf_periods = verify_pdf_periods()
@@ -446,13 +555,21 @@ def main():
         "pdf_checked": len(pdf), "pdf_match": sum(1 for p in pdf if p["status"] == "match"),
         "pdf_periods": pdf_periods["pdf_periods"], "pdf_periods_with_next_edition": pdf_periods["with_prior_year_edition"],
         "pdf_period_cells": pdf_periods["cells"], "pdf_period_cells_match": pdf_periods["match"], "pdf_period_cells_differ": len(pdf_periods["differ"]),
+        "category_cells_checked": len(cat_cells), "category_cells_match": sum(1 for c in cat_cells if c["status"] == "match"),
+        "wiretap_sum_tests": wire["tests"], "wiretap_sum_match": wire["match"], "wiretap_sum_mismatch": len(wire["mismatch"]),
         "seed": args.seed,
     }
-    (BUILD / "verification.json").write_text(json.dumps({"summary": summary, "cells": cells, "sums": sums, "pdf": pdf, "pdf_periods": pdf_periods}, indent=1))
+    (BUILD / "verification.json").write_text(json.dumps({"summary": summary, "cells": cells, "category_cells": cat_cells, "wiretap_sums": wire, "sums": sums, "pdf": pdf,
+                                                        "pdf_periods": pdf_periods}, indent=1))
     print(json.dumps(summary, indent=1))
     for c in cells:
         if c["status"] != "match":
             print("  CELL", c["id"], c["col"], c["period"], c["status"])
+    for c in cat_cells:
+        if c["status"] != "match":
+            print("  CATEGORY CELL", c["dataset"], c["id"], c["row"], c["col"], c["period"], c["status"])
+    for m in wire["mismatch"][:10]:
+        print("  WIRETAP SUM", m)
     for m in sums["mismatch"][:15]:
         print("  SUM", m)
     for p in pdf:

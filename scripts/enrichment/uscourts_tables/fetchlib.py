@@ -100,5 +100,9 @@ def fetch(url, subdir="files", attempts=4, method="direct urllib GET", force=Fal
     return status, data, (target if status == 200 and data else None)
 
 
+def now_iso():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
 def sha256_of(data):
     return hashlib.sha256(data).hexdigest()

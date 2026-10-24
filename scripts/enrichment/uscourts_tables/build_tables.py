@@ -39,6 +39,7 @@ def decimals_of(fmt):
 
 
 def unit_of(path, fmt):
+    """Unit of a column from its heading words (whole words: "misdemeanor" is not "mean") and its number format."""
     words = " ".join(path).lower()
     if "percent" in words or "%" in words or (fmt and "%" in fmt):
         return "percent"
@@ -46,7 +47,7 @@ def unit_of(path, fmt):
         return "months"
     if re.search(r"\bdays?\b", words):
         return "days"
-    if re.search(r"per (authorized )?judgeship|per panel|weighted|ratio|average|mean|per case|per judge", words):
+    if re.search(r"\bper (?:authorized )?judgeships?\b|\bper panel\b|\bweighted\b|\bratios?\b|\baverages?\b|\bmeans?\b|\bper case\b|\bper judge\b", words):
         return "ratio"
     d = decimals_of(fmt)
     return "count" if d in (0, None) else "number"

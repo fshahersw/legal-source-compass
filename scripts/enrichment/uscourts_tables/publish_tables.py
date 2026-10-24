@@ -6,8 +6,11 @@ written), then the publisher runs unchanged. The one difference is the write bat
 so the shared writer's batch of 500 rows is lowered to USTABLES_BATCH (default 40) to keep each request under the gateway's
 body limit; the stored rows are identical and the publisher's own readback compares every stored row with what was sent.
 
-Usage: python3 -I -B publish_tables.py [--check|--publish] private/build/uscourts_tables/<dataset>.json ...
+Build files may be gzip-compressed (<dataset>.json.gz, as build_uscourts_tables.py writes them); they are read in memory.
+
+Usage: python3 -I -B publish_tables.py [--check|--publish] private/build/uscourts_tables/<dataset>.json.gz ...
 """
+import gzip
 import os
 import re
 import runpy
@@ -25,7 +28,21 @@ def load_env():
             os.environ[m.group(1)] = m.group(2).strip().strip('"').strip("'")
 
 
+def read_gzip_builds():
+    """Build files are stored gzip-compressed (<dataset>.json.gz); the publisher reads them with Path.read_text, so a .gz path is
+    decompressed in memory here (no uncompressed copy is written). Other paths read as before."""
+    plain = Path.read_text
+
+    def read_text(self, *args, **kwargs):
+        if self.suffix == ".gz":
+            return gzip.decompress(self.read_bytes()).decode("utf-8")
+        return plain(self, *args, **kwargs)
+
+    Path.read_text = read_text
+
+
 def main():
+    read_gzip_builds()
     load_env()
     sys.path.insert(0, str(ROOT / "scripts" / "enrichment"))
     import corpus_writer as cw  # the same module the publisher imports

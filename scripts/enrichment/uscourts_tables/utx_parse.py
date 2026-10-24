@@ -22,7 +22,21 @@ SUPER = "¹²³⁴⁵⁶⁷⁸⁹⁰⁺*†‡§"
 DASHES = {"-", "--", "—", "–", "−", "‐"}
 NA_TEXT = {"N/A", "NA", "(NA)", "n/a", "NR", "(NR)"}
 MONTHS = {m: i for i, m in enumerate(["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], 1)}
-TABLE_ID = re.compile(r"^\s*(?:Table|Report)\s+([A-Z]{1,4}(?:-?\d+[A-Z]?(?:-\d+)?)?(?:-[A-Za-z]+)*)\s*[.\-:–—]?", re.I)
+# "Table C-4A.", "BAPCPA Table 1A.", "Wiretap Table 2—", "Table 1.1" (Judicial Facts and Figures)
+TABLE_ID = re.compile(
+    r"^\s*(?:(BAPCPA|Wiretap)\s+)?(?:Table|Report)\s+([A-Z]{1,4}(?:-?\d+[A-Z]?(?:-\d+)?)?(?:-[A-Za-z]+)*|\d+(?:\.\d+)?[A-Z]?)\s*[.\-:–—]?",
+    re.I,
+)
+PREFIX_ID = {"BAPCPA": "BAPCPA", "WIRETAP": "WIRE"}
+
+
+def printed_table_id(match):
+    """The table id a TABLE_ID match names, upper case, with the publication prefix the listing uses ("BAPCPA 1A", "WIRE 2")."""
+    prefix = match.group(1)
+    ident = (match.group(2) or "").upper()
+    return f"{PREFIX_ID[prefix.upper()]} {ident}" if prefix else ident
+
+
 PERIOD_PHRASE = re.compile(
     r"((?:During|For)\s+the\s+(\d+|[A-Za-z]+)[-\s]Months?\s+Periods?\s+Ending|(?:During|For)\s+the\s+(?:\d+|[A-Za-z]+)[-\s]Month\s+Period\s+Ending|Quarter\s+Ended|Period\s+Ending|As\s+of|Ended|Ending)\s+"
     r"([A-Z][a-z]+\.?)\s+(\d{1,2}),?\s+(\d{4})"
@@ -121,6 +135,9 @@ PERIOD_NO_DAY = re.compile(
 )
 
 
+CALENDAR_YEAR = re.compile(r"(?:During|For|In)\s+(?:the\s+)?Calendar\s+Year\s+((?:19|20)\d{2})\b", re.I)
+
+
 def _month_number(name):
     name = name.rstrip(".")
     return MONTHS.get(name) or next((n for m, n in MONTHS.items() if m.lower().startswith(name[:3].lower())), None)
@@ -133,6 +150,9 @@ def parse_period_phrase(text):
     after it); "as of <date>" is the period itself only for point-in-time tables (cases pending as of a date). A phrase with a
     month and year but no day ("Period Ending September, 2020") ends on that month's last day."""
     flat = re.sub(r"\s+", " ", text)
+    cal = CALENDAR_YEAR.search(flat)
+    if cal and not PERIOD_PHRASE.search(flat):
+        return cal.group(0), f"{cal.group(1)}-12-31"
     matches = list(PERIOD_PHRASE.finditer(flat))
     chosen = next((m for m in matches if not m.group(1).lower().startswith("as")), None)
     if chosen is None:
@@ -226,7 +246,7 @@ def parse_sheet(ws, problems):
         if looks_title and (m or title_lines) and row[0] is not None and norm_text(row[0]):
             title_lines.append(first)
             if m and table_id is None:
-                table_id = m.group(1).upper()
+                table_id = printed_table_id(m)
             header_start = i + 1
             continue
         header_start = i

@@ -11,6 +11,7 @@ Datasets (one corpus record per court x table, or per national table):
 Every figure is a cell the publisher printed; the only arithmetic is rounding floats to 6 decimals. Series are keyed by
 the period end date; the publication and file of every period are in the record's `src` list.
 Usage: python3 -I -B build_uscourts_tables.py [--tables c,d,...] [--out private/build/uscourts_tables/partial] [--county]
+Build files are written as private/build/uscourts_tables/<dataset>.json.gz.
 """
 import gzip
 import hashlib
@@ -27,6 +28,7 @@ import build_tables as B  # noqa: E402
 import checks as C  # noqa: E402
 import corpus_writer as cw  # noqa: E402
 import fetchlib as F  # noqa: E402
+import reconcile as R  # noqa: E402
 import save_lookups  # noqa: E402
 
 BUILD = F.ROOT / "private" / "build" / "uscourts_tables"
@@ -36,7 +38,9 @@ LISTING_URL = "https://www.uscourts.gov/statistics-reports/caseload-statistics-d
 PUB_NAMES = {"JB": "Judicial Business of the United States Courts (12 months ending September 30)",
              "STFJ": "Statistical Tables for the Federal Judiciary (12 months ending June 30 and December 31)",
              "FJCS": "Federal Judicial Caseload Statistics (12 months ending March 31)",
-             "BF": "Bankruptcy Filings statistics (quarterly)"}
+             "BF": "Bankruptcy Filings statistics (quarterly)",
+             "BAPCPA": "Bankruptcy Abuse Prevention and Consumer Protection Act report tables (12 months ending December 31)",
+             "WIRETAP": "Wiretap report tables (calendar year, January 1 through December 31)"}
 DATASETS = {
     "district": ("uscourts_tables_district", "U.S. district courts - published statistical tables by court and period (U.S. Courts: Judicial Business, Statistical Tables, Caseload Statistics)"),
     "bankruptcy": ("uscourts_tables_bankruptcy", "U.S. bankruptcy courts - published statistical tables by district and period (U.S. Courts: Judicial Business, Statistical Tables, Bankruptcy Filings)"),
@@ -44,6 +48,23 @@ DATASETS = {
     "county": ("uscourts_tables_bankruptcy_county", "U.S. bankruptcy courts - cases commenced by county and chapter, by FIPS code and period (U.S. Courts: Bankruptcy Filings, Table F-5A)"),
     "national": ("uscourts_tables_national", "Federal courts - national published statistical tables by period (U.S. Courts: Judicial Business, Statistical Tables, Caseload Statistics, Bankruptcy Filings)"),
 }
+# A publication whose tables are a family of their own is published as one dataset holding its court, circuit, national and
+# latest-period records (the record ids are distinct: "<court>:<table>", "<table>", "latest:<table>").
+FAMILIES = {
+    "bapcpa": ("uscourts_bapcpa", "U.S. bankruptcy courts - BAPCPA report tables by district and period (U.S. Courts: Bankruptcy Abuse Prevention and Consumer Protection Act statistics)"),
+    "wiretap": ("uscourts_wiretap", "Court-authorized intercepts - Wiretap report tables by jurisdiction and calendar year (U.S. Courts: Wiretap Reports)"),
+}
+FAMILY_OF_PUB = {"BAPCPA": "bapcpa", "WIRETAP": "wiretap"}
+
+
+def dsid(kind, family="tables"):
+    """Dataset id a record of this kind (district, bankruptcy, circuit, county, national) is published under."""
+    return DATASETS[kind][0] if family == "tables" else FAMILIES[family][0]
+
+
+def family_of(docs):
+    fams = {FAMILY_OF_PUB.get(d["norm"]["pub"], "tables") for d in docs}
+    return fams.pop() if len(fams) == 1 else "tables"
 FIPS_STATE = {
     "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO", "09": "CT", "10": "DE", "11": "DC", "12": "FL", "13": "GA", "15": "HI",
     "16": "ID", "17": "IL", "18": "IN", "19": "IA", "20": "KS", "21": "KY", "22": "LA", "23": "ME", "24": "MD", "25": "MA", "26": "MI", "27": "MN",
@@ -54,6 +75,12 @@ FIPS_STATE = {
 LISTING_COLUMNS = [("court", "Court"), ("table", "Table"), ("title", "Table title"), ("first", "First period ends"), ("last", "Last period ends"), ("periods", "Periods")]
 ARCOMB = "arcomb"
 ARCOMB_TITLE = "U.S. Bankruptcy Court, Arkansas (Eastern and Western districts, reported as one court)"
+NOT_DUPLICATED = {
+    "court_stats_district_nos / _district_times / _circuits / _national": "Judicial Business C, C-2A, C-3, C-5, C-6, C-11, X-1A, B, B-4, B-7 for FY2014-FY2025 (product-liability orientation); the same tables here add the Statistical Tables and Caseload Statistics periods and every other column.",
+    "court_jb_districts / _circuits / _civil_nos / _bankruptcy": "Judicial Business C-4, C-4A, F-2, S-19, S-20 and T-1 for FY2005-FY2025; not re-published here for the periods those datasets hold.",
+    "fcms_court_profiles / fcms_circuit_rollups / fcms_analytics": "Federal Court Management Statistics profiles (weighted filings per judgeship, vacant judgeship months, median times, civil cases over three years old) 1999-2026; not re-acquired.",
+    "court_cjra_*, court_jff_series, judicial_vacancies, fjc_*": "Civil Justice Reform Act reports, Judicial Facts and Figures (30 series), vacancies and the FJC Integrated Database; not re-acquired.",
+}
 METHOD_RULES = [
     "Every figure is the value of a cell in a table the U.S. Courts published; floats are rounded to 6 decimals, nothing else is computed, estimated or interpolated.",
     "A period is the publisher's own 'N-month period ending <date>': Judicial Business ends September 30, Statistical Tables for the Federal Judiciary June 30 and December 31, Federal Judicial Caseload Statistics March 31, Bankruptcy Filings every quarter end. Points from different month-ends are separate periods of overlapping 12-month windows and are never added together.",
@@ -61,7 +88,9 @@ METHOD_RULES = [
     "Columns that only repeat the previous year's figure beside the current year are not stored as series; the percent-change column the publisher prints is.",
     "A change of column set, table title or footnote wording between consecutive periods of the same publication is recorded as a break at that period (breaks[]), and footnotes attached to a court's row or column heading are kept with the periods they apply to (marks[]).",
     "Bankruptcy courts are keyed by the id of their district; the combined Arkansas court is the record arcomb. Circuit rows are the roll-ups the publisher prints (the D.C. Circuit is the D.C. district row).",
-    "Where two publications print the same table for the same period end, the higher-priority one (Judicial Business, then Statistical Tables, Caseload Statistics, Bankruptcy Filings) is stored and the other is listed in the build report.",
+    "Where two publications print the same table for the same period end, the higher-priority one (Judicial Business, then Statistical Tables, Caseload Statistics, Bankruptcy Filings) that is not held is stored and the other is listed in the build report.",
+    "Every table-period is reconciled against the totals it prints: the Total row over the circuit rows, each circuit over its districts, each district over its counties, each category row over the rows indented under it, and each Total column over the other columns of its heading group, on count columns only and with exact arithmetic (a printed dash counts as no cases). A relation counts as one of the table's printed totals when it holds in at least three of every four tests across the table's editions (for one column, and for one court or row when it has four tests or more).",
+    "A table-period that breaks one of its printed totals is held: it is not published, and the period, its file and the failing figures are listed in the record (rec.held) and in the method record. A held period another publication prints for the same date is taken from that publication. Parts adding up to more than their total, and a court roll-up that differs in either direction, hold the period; a category or column total larger than its printed parts means the total also counts parts the table does not print, so it is counted (rec.exceedsParts) and does not hold the period; a failure the period's own footnote explains ('Totals include ...') is counted as explained.",
     "Editions published only as PDF (before 2017 and 2018) are read for court-by-court tables only, from the PDF text layer, and a period is kept only if the table id and period match the listing, the court set equals the spreadsheet edition that names the columns, every row carries the full figure count, the years printed over the columns are in the reference order and every roll-up sum holds; otherwise the period is a gap. These periods are marked fmt 'pdf' in the record's sources and by a 'source' break where spreadsheets begin; their footnotes are not transcribed.",
     "Bankruptcy Filings workbooks before 2009 are mainframe printouts whose column headings cannot be read without guessing; those periods are left out.",
     "Each period keeps the figure printed in its own edition. The next edition's prior-year column can show a revised figure (mostly for cases pending); it is not used to replace the earlier figure.",
@@ -141,7 +170,7 @@ def court_record(dataset, court_id, court_title, payload, docs, bankruptcy_court
                        source_page(docs), filters)
 
 
-def national_payload(info, title, docs, cols, rows, totals, row_scope):
+def national_payload(info, title, docs, cols, rows, totals, row_scope, rec=None):
     periods, sources = B.periods_block(docs)
     used = [c for c in cols.values() if any(any(v is not None for v in r["data"].get(c["k"], [])) for r in rows)]
     keys = {c["k"] for c in used}
@@ -150,12 +179,12 @@ def national_payload(info, title, docs, cols, rows, totals, row_scope):
         "periods": periods, "cols": [{k: c[k] for k in ("k", "label", "unit", "dec", "le")} for c in used],
         "rows": [{**r, "data": {k: v for k, v in r["data"].items() if k in keys}, "marks": [m for m in r.get("marks", []) if m["col"] is None or m["col"] in keys]} for r in rows],
         "totals": {k: v for k, v in totals.items() if k in keys and any(x is not None for x in v)},
-        "notes": B.note_groups(docs), "breaks": B.find_breaks(docs), "src": sources,
+        "notes": B.note_groups(docs), "breaks": B.find_breaks(docs), "src": sources, **({"rec": rec} if rec else {}),
     }
 
 
-def national_record(payload, page):
-    dataset = DATASETS["national"][0]
+def national_record(payload, page, family="tables"):
+    dataset = dsid("national", family)
     table, tkey, title = payload["table"], payload["tableKey"], payload["title"]
     first, last = payload["periods"][0]["end"], payload["periods"][-1]["end"]
     cells = {"court": "United States", "table": table, "title": title, "first": first, "last": last, "periods": len(payload["periods"])}
@@ -169,7 +198,7 @@ def display_name(label):
     return " ".join(w[:1].upper() + w[1:].lower() if w[:1].isalpha() else (w[:2].upper() + w[2:].lower() if len(w) > 1 else w) for w in label.split())
 
 
-def build_county_group(docs, out, report):
+def build_county_group(docs, out, report, rec=None):
     """County table (F-5A): one `table:<key>` record holding what every county shares (periods, columns, sources, footnotes, breaks,
     the national Total row and each district's own row), and one record per county FIPS code holding that county's series under each
     district whose bankruptcy court received its cases (a county's filers can file in another district: the `*` rows)."""
@@ -201,8 +230,9 @@ def build_county_group(docs, out, report):
     heading_marks = B.marks_block(docs, set(cols), ("county", "none"))
     heading_keys = {(m["col"], m["text"], tuple(m["at"])) for m in heading_marks}
     shared = {"v": 1, "kind": "county-table", "marks": heading_marks, "scope": "county", "table": info["table"], "tableKey": tkey, "title": title, "periods": periods, "cols": col_list,
-              "nat": nat[0], "natDash": nat[1], "districtRows": district_rows, "notes": B.note_groups(docs), "breaks": B.find_breaks(docs), "src": sources}
-    out["county"].append(make_record(dataset, f"table:{tkey}", f"Table {info['table']}: {title} (shared periods, columns, sources and totals)",
+              "nat": nat[0], "natDash": nat[1], "districtRows": district_rows, "notes": B.note_groups(docs), "breaks": B.find_breaks(docs), "src": sources,
+              **({"rec": rec} if rec else {})}
+    out[("tables", "county")].append(make_record(dataset, f"table:{tkey}", f"Table {info['table']}: {title} (shared periods, columns, sources and totals)",
                                      f"{len(periods)} periods ending {periods[0]['end']} to {periods[-1]['end']}", f"{info['table']} {title}",
                                      {"court": "All counties", "table": info["table"], "title": title, "first": periods[0]["end"], "last": periods[-1]["end"], "periods": len(periods), "fips": ""},
                                      [["Table", f"{info['table']} - {title}"], ["Counties", str(len(by_fips))]], [{"url": page, "label": "U.S. Courts table page (latest period)"}], shared, page,
@@ -238,10 +268,10 @@ def build_county_group(docs, out, report):
                           f"{name} county {usps or ''} {fips} {info['table']} {title}", cells, facts, links, payload, page,
                           {"table": [info["table"]], "fips": [fips], "state": [usps] if usps else [], "district": sorted({e["district"] for e in entries})})
         rec["state"] = usps or ""
-        out["county"].append(rec)
+        out[("tables", "county")].append(rec)
 
 
-def build_court_group(scope, docs, out, report, latest):
+def build_court_group(scope, docs, out, report, latest, family="tables", rec=None):
     """Records for a district / bankruptcy / appeals table: one per court, plus circuit roll-up records."""
     docs = B.prepare(docs)
     cols = B.collect_columns(docs)
@@ -259,10 +289,17 @@ def build_court_group(scope, docs, out, report, latest):
     tkey = info["table_key"]
     nat_rows = [{"k": "total", "label": "Total", "path": ["Total"], "depth": 0, "data": {k: v for k, v in nat[0].items() if any(x is not None for x in v)}, "dash": nat[1],
                  "marks": B.marks_block(docs, set(cols), ("national", "national"))}]
-    out["national"].append(national_record(national_payload(info, title, docs, cols, nat_rows, nat[0], scope), source_page(docs)))
+    out[(family, "national")].append(national_record(national_payload(info, title, docs, cols, nat_rows, nat[0], scope, rec), source_page(docs), family))
     page = source_page(docs)
+    lkey = (family, scope if scope != "appeals" else "circuit", tkey)
+
+    def with_rec(payload):
+        if payload is not None and rec:
+            payload["rec"] = rec
+        return payload
+
     if scope in ("district", "bankruptcy"):
-        dataset = DATASETS[scope][0]
+        dataset = dsid(scope, family)
         for (kind, eid) in present:
             if kind == "district":
                 if eid == "arcomb":
@@ -280,26 +317,26 @@ def build_court_group(scope, docs, out, report, latest):
                     circ = B.series_for(docs, cols, ("circuit", circuit_id))[0]
                 elif circuit_id == "cadc":
                     circ = B.series_for(docs, cols, ("district", "dcd"))[0]
-                payload = B.drop_empty(B.court_payload(scope, eid, docs, cols, info, title, nat_pair, circuit_id, circ, ("district", eid)))
+                payload = with_rec(B.drop_empty(B.court_payload(scope, eid, docs, cols, info, title, nat_pair, circuit_id, circ, ("district", eid))))
                 if not payload:
                     continue
                 bk = TITLES["district_to_bankruptcy"].get(eid) if scope == "bankruptcy" else None
-                out[scope].append(court_record(dataset, eid, court_title, payload, docs, bankruptcy_court=bk, circuit_id=circuit_id, link_court=eid != "arcomb"))
-                latest[(scope, tkey)].setdefault("courts", {})[eid] = {k: v[-1] for k, v in payload["data"].items() if v and v[-1] is not None}
-                latest[(scope, tkey)].update({"cols": cols, "end": docs[-1]["norm"]["period_end"], "title": title, "table": info["table"], "page": page})
+                out[(family, scope)].append(court_record(dataset, eid, court_title, payload, docs, bankruptcy_court=bk, circuit_id=circuit_id, link_court=eid != "arcomb"))
+                latest[(family, scope, tkey)].setdefault("courts", {})[eid] = {k: v[-1] for k, v in payload["data"].items() if v and v[-1] is not None}
+                latest[(family, scope, tkey)].update({"cols": cols, "end": docs[-1]["norm"]["period_end"], "title": title, "table": info["table"], "page": page})
         for (kind, eid) in present:  # circuit roll-up rows the publisher prints
             if kind == "circuit":
                 circuit_title = TITLES["circuit_titles"].get(eid)
                 if not circuit_title:
                     report["unknown_courts"].add(eid)
                     continue
-                payload = B.drop_empty(B.court_payload("circuit", eid, docs, cols, info, title, nat_pair, eid, None, ("circuit", eid), rollup_of=scope))
+                payload = with_rec(B.drop_empty(B.court_payload("circuit", eid, docs, cols, info, title, nat_pair, eid, None, ("circuit", eid), rollup_of=scope)))
                 if payload:
-                    out["circuit"].append(court_record(DATASETS["circuit"][0], eid, circuit_title, payload, docs, circuit_id=eid))
+                    out[(family, "circuit")].append(court_record(dsid("circuit", family), eid, circuit_title, payload, docs, circuit_id=eid))
         if ("district", "dcd") in present:  # the D.C. Circuit's row is the D.C. district row
-            payload = B.drop_empty(B.court_payload("circuit", "cadc", docs, cols, info, title, nat_pair, "cadc", None, ("district", "dcd"), rollup_of=scope))
+            payload = with_rec(B.drop_empty(B.court_payload("circuit", "cadc", docs, cols, info, title, nat_pair, "cadc", None, ("district", "dcd"), rollup_of=scope)))
             if payload:
-                out["circuit"].append(court_record(DATASETS["circuit"][0], "cadc", TITLES["circuit_titles"]["cadc"], payload, docs, circuit_id="cadc"))
+                out[(family, "circuit")].append(court_record(dsid("circuit", family), "cadc", TITLES["circuit_titles"]["cadc"], payload, docs, circuit_id="cadc"))
     else:  # appeals
         for (kind, eid) in present:
             if kind == "circuit":
@@ -307,16 +344,16 @@ def build_court_group(scope, docs, out, report, latest):
                 if not circuit_title:
                     report["unknown_courts"].add(eid)
                     continue
-                payload = B.drop_empty(B.court_payload("appeals", eid, docs, cols, info, title, nat_pair, eid, None, ("circuit", eid)))
+                payload = with_rec(B.drop_empty(B.court_payload("appeals", eid, docs, cols, info, title, nat_pair, eid, None, ("circuit", eid))))
                 if payload:
-                    out["circuit"].append(court_record(DATASETS["circuit"][0], eid, circuit_title, payload, docs, circuit_id=eid))
-                    latest[("circuit", tkey)].setdefault("courts", {})[eid] = {k: v[-1] for k, v in payload["data"].items() if v and v[-1] is not None}
-                    latest[("circuit", tkey)].update({"cols": cols, "end": docs[-1]["norm"]["period_end"], "title": title, "table": info["table"], "page": page})
+                    out[(family, "circuit")].append(court_record(dsid("circuit", family), eid, circuit_title, payload, docs, circuit_id=eid))
+                    latest[lkey].setdefault("courts", {})[eid] = {k: v[-1] for k, v in payload["data"].items() if v and v[-1] is not None}
+                    latest[lkey].update({"cols": cols, "end": docs[-1]["norm"]["period_end"], "title": title, "table": info["table"], "page": page})
 
 
 def latest_records(latest, out):
     """One record per court-level table with every court's value in the table's latest period, for rankings and maps."""
-    for (scope, tkey), info in sorted(latest.items()):
+    for (family, scope, tkey), info in sorted(latest.items()):
         courts = info.get("courts")
         if not courts:
             continue
@@ -324,18 +361,19 @@ def latest_records(latest, out):
         used = [c for c in cols.values() if any(c["k"] in v for v in courts.values())]
         payload = {"v": 1, "kind": "latest", "scope": scope, "table": info["table"], "tableKey": tkey, "title": info["title"], "end": info["end"],
                    "cols": [{k: c[k] for k in ("k", "label", "unit", "dec", "le")} for c in used], "courts": courts}
-        dataset = DATASETS[scope][0]
+        dataset = dsid(scope, family)
         rec = make_record(dataset, f"latest:{tkey}", f"Latest period, all courts - Table {info['table']}: {info['title']}", f"Period ending {info['end']} · {len(courts)} courts",
                           f"latest {info['table']} {info['title']}", {"court": "All courts", "table": info["table"], "title": info["title"], "first": info["end"], "last": info["end"], "periods": 1},
                           [["Scope", "All courts, latest period"], ["Table", f"{info['table']} - {info['title']}"], ["Period ends", info["end"]], ["Courts", str(len(courts))]],
                           [{"url": info["page"], "label": "U.S. Courts table page (latest period)"}], payload, info["page"], {"table": [info["table"]], "scope": ["latest"]})
-        out[scope].append(rec)
+        out[(family, scope)].append(rec)
 
 
-def catalog_of(groups):
+def catalog_of(chosen_by_group):
     cat = OrderedDict()
-    for (tkey, scope), gdocs in sorted(groups.items()):
-        chosen, _ = B.pick_docs(gdocs)
+    for (tkey, scope), chosen in sorted(chosen_by_group.items()):
+        if not chosen:
+            continue
         e = cat.setdefault(tkey, {"tableKey": tkey, "table": chosen[-1]["norm"]["table"], "title": chosen[-1]["norm"]["title"], "scopes": [], "ends": set(), "pubs": set()})
         if scope not in e["scopes"]:
             e["scopes"].append(scope)
@@ -351,14 +389,13 @@ def listing_block(rows):
     return cw.listing(LISTING_COLUMNS, filters=[("table", "Table", {t: t for t in tables})])
 
 
-def finish(key, rows, inputs, report, verification):
-    dataset, label = DATASETS[key]
+def finish(dataset, label, rows, inputs, verification, publications=None):
     first = min((r["item"]["cells"]["first"] for r in rows if r["item"]["cells"].get("first")), default=None)
     last = max((r["item"]["cells"]["last"] for r in rows if r["item"]["cells"].get("last")), default=None)
     rows = sorted(rows, key=lambda r: r["id"])
     summary = {
         "source": "U.S. Courts, Administrative Office: statistical tables at https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables",
-        "publications": [pub_text(p) for p in PUB_NAMES],
+        "publications": [pub_text(p) for p in (publications or PUB_NAMES)],
         "records": len(rows), "first_period_end": first, "last_period_end": last,
         "rules": METHOD_RULES,
         "published_by": "enrich/publish_build",
@@ -366,6 +403,20 @@ def finish(key, rows, inputs, report, verification):
     }
     return {"dataset": dataset, "label": label, "listing_block": listing_block(rows), "summary": summary, "rows": rows,
             "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "inputs": inputs}
+
+
+def held_entry(doc, period):
+    return {"end": doc["norm"]["period_end"], "pub": doc["norm"]["pub"], "tableNumber": doc["norm"]["table"], "url": doc["source"]["url"], "page": doc["source"].get("page"),
+            "sha256": doc["source"].get("sha256"), "failures": period["failures"][:5], "failureCount": period["failure_count"]}
+
+
+def rec_summary(rec, chosen, held):
+    """What the payload says about the table's own totals: the series status, the tests on the published periods and the held periods."""
+    used = {(d["norm"]["pub"], d["norm"]["period_end"]) for d in chosen}
+    pub_periods = [p for p in rec["periods"] if (p["pub"], p["end"]) in used]
+    return {"status": rec["status"], "tests": sum(p["tests"] for p in pub_periods), "passed": sum(p["passed"] for p in pub_periods),
+            "exceedsParts": sum(p["total_exceeds_parts"] for p in pub_periods), "explained": sum(p["explained"] for p in pub_periods),
+            "noTotals": sum(1 for p in pub_periods if p["status"] in ("no_totals", "not_sums")), "held": held}
 
 
 def main():
@@ -379,7 +430,8 @@ def main():
     groups = group_docs(docs)
     if only:
         groups = {k: v for k, v in groups.items() if k[0] in only}
-    report = {"circuit_conflicts": [], "unknown_courts": set(), "duplicate_periods": [], "groups": {}, "rollup_failures": {}, "entity_conflicts": [], "dropped_groups": []}
+    report = {"circuit_conflicts": [], "unknown_courts": set(), "duplicate_periods": [], "groups": {}, "rollup_failures": {}, "entity_conflicts": [], "dropped_groups": [],
+              "held": [], "reconciliation": {}}
     # One table key is one table. If a workbook position ("-s5") holds a different kind of sheet in a few editions, the scope with the
     # most periods is the table and the stray sheets are reported, not published under the same key.
     by_key = defaultdict(list)
@@ -392,24 +444,43 @@ def main():
                 if scope != keep:
                     report["dropped_groups"].append({"table": tkey, "scope": scope, "periods": n, "kept_scope": keep})
                     del groups[(tkey, scope)]
-    out = {k: [] for k in DATASETS}
+    out = defaultdict(list)
     latest = defaultdict(dict)
-    used_sources = {}
+    used_sources = defaultdict(dict)
+    chosen_by_group, series_info = {}, []
     for (tkey, scope), gdocs in sorted(groups.items()):
-        chosen, dropped = B.pick_docs(gdocs)
+        family = family_of(gdocs)
+        ordered = sorted(gdocs, key=lambda d: (d["norm"]["period_end"], B.PUB_PRIORITY.get(d["norm"]["pub"], 9)))
+        rec = R.reconcile_series([d["norm"] for d in ordered])
+        status = {(p["pub"], p["end"]): p for p in rec["periods"]}
+        held_docs = [d for d in ordered if status[(d["norm"]["pub"], d["norm"]["period_end"])]["status"] == "held"]
+        usable = [d for d in ordered if d not in held_docs]
+        chosen, dropped = B.pick_docs(usable)
+        # a held edition whose period another publication prints is replaced by that publication's figures; otherwise the period is a gap
+        held = [held_entry(d, status[(d["norm"]["pub"], d["norm"]["period_end"])]) for d in held_docs]
+        for h in held:
+            h["replacedBy"] = next((d["norm"]["pub"] for d in chosen if d["norm"]["period_end"] == h["end"]), None)
+            report["held"].append({"table": tkey, "scope": scope, **h})
+        report["reconciliation"][f"{tkey}|{scope}"] = {"status": rec["status"], "identities": rec["identities"],
+                                                       "periods": {f"{p['pub']} {p['end']}": p["status"] for p in rec["periods"]}}
         if dropped:
-            report["duplicate_periods"].extend({"table": tkey, **x} for x in dropped)
+            report["duplicate_periods"].extend({"table": tkey, "tableNumber": ordered[-1]["norm"]["table"], **x} for x in dropped)
+        if not chosen:
+            report["dropped_groups"].append({"table": tkey, "scope": scope, "periods": 0, "reason": "every period held"})
+            continue
+        chosen_by_group[(tkey, scope)] = chosen
+        rs = rec_summary(rec, chosen, held)
         for d in chosen:
-            used_sources[d["source"]["sha256"]] = {"url": d["source"]["url"], "path": d["path"], "sha256": d["source"]["sha256"]}
+            used_sources[family][d["source"]["sha256"]] = {"url": d["source"]["url"], "path": d["path"], "sha256": d["source"]["sha256"]}
         if scope == "county":
             if "--county" in sys.argv:  # the county dataset is large; it is rebuilt only on request
-                build_county_group([dict(d) for d in chosen], out, report)
+                build_county_group([dict(d) for d in chosen], out, report, rs)
         elif scope in ("district", "bankruptcy", "appeals"):
             fails = 0
             for d in chosen:
                 fails += len(C.rollup_failures(d["norm"]))
             report["rollup_failures"][f"{tkey}|{scope}"] = fails
-            build_court_group(scope, [dict(d) for d in chosen], out, report, latest)
+            build_court_group(scope, [dict(d) for d in chosen], out, report, latest, family, rs)
         else:
             docs_p = B.prepare([dict(d) for d in chosen])
             cols = B.collect_columns(docs_p)
@@ -417,8 +488,9 @@ def main():
             rows = B.category_rows(docs_p, cols)
             if rows:
                 totals = rows[0]["data"] if rows[0]["label"].lower().startswith("total") else {}
-                out["national"].append(national_record(national_payload(info, latest_title(docs_p), docs_p, cols, rows, totals, scope), source_page(docs_p)))
-        report["groups"][f"{tkey}|{scope}"] = {"periods": len(chosen), "first": chosen[0]["norm"]["period_end"], "last": chosen[-1]["norm"]["period_end"]}
+                out[(family, "national")].append(national_record(national_payload(info, latest_title(docs_p), docs_p, cols, rows, totals, scope, rs), source_page(docs_p), family))
+        report["groups"][f"{tkey}|{scope}"] = {"periods": len(chosen), "first": chosen[0]["norm"]["period_end"], "last": chosen[-1]["norm"]["period_end"], "family": family}
+        series_info.append({"tableKey": tkey, "scope": scope, "family": family, "chosen": chosen, "held": held, "dropped": dropped, "rec": rs})
         # rows a table prints twice with different figures are left out of that period; list them (court-level entities only)
         for d in chosen:
             _, dup = B.row_index(d["norm"])
@@ -426,57 +498,85 @@ def main():
             if dup:
                 report["entity_conflicts"].append({"table": tkey, "scope": scope, "period": d["norm"]["period_end"], "pub": d["norm"]["pub"], "entities": dup})
     latest_records(latest, out)
-    # one record per table in the national dataset: a district-table Total and a category table with the same key cannot coexist
-    ids = [r["id"] for r in out["national"]]
-    dup = sorted({i for i in ids if ids.count(i) > 1})
-    report["duplicate_national_ids"] = dup
-    if dup:
-        seen, keep = set(), []
-        for r in out["national"]:
-            if r["id"] in seen:
-                continue
-            seen.add(r["id"])
-            keep.append(r)
-        out["national"] = keep
-    catalog = catalog_of(groups)
-    out["national"].append(cw.record(DATASETS["national"][0], "summary:catalog", "Table catalog", source_url=LISTING_URL, cells={"court": "All", "table": "Catalog", "title": f"{len(catalog)} tables",
+    # one record per table in a national dataset: a district-table Total and a category table with the same key cannot coexist
+    report["duplicate_national_ids"] = []
+    for key in [k for k in out if k[1] == "national"]:
+        ids = [r["id"] for r in out[key]]
+        dup = sorted({i for i in ids if ids.count(i) > 1})
+        report["duplicate_national_ids"].extend(dup)
+        if dup:
+            seen, keep = set(), []
+            for r in out[key]:
+                if r["id"] in seen:
+                    continue
+                seen.add(r["id"])
+                keep.append(r)
+            out[key] = keep
+    verification_path = BUILD / "verification.json"
+    verification = json.loads(verification_path.read_text()).get("summary") if verification_path.exists() else None
+    for family in ["tables"] + sorted(FAMILIES):
+        fam_groups = {k: v for k, v in chosen_by_group.items() if family_of(v) == family}
+        if not fam_groups:
+            continue
+        catalog = catalog_of(fam_groups)
+        target = (family, "national")
+        out[target].append(cw.record(dsid("national", family), "summary:catalog", "Table catalog", source_url=LISTING_URL, cells={"court": "All", "table": "Catalog", "title": f"{len(catalog)} tables",
                                      "first": min(c["firstEnd"] for c in catalog), "last": max(c["lastEnd"] for c in catalog), "periods": len(catalog)},
                                      facts=[["Tables", str(len(catalog))]], text="catalog of tables", filters={"table": ["catalog"], "scope": ["summary"]}, subtitle=f"{len(catalog)} tables",
                                      links=[{"url": LISTING_URL, "label": "U.S. Courts caseload statistics data tables"}], extra={"catalog": {"tables": catalog}}))
-    verification_path = BUILD / "verification.json"
-    verification = json.loads(verification_path.read_text()).get("summary") if verification_path.exists() else None
-    per_scope = defaultdict(lambda: {"tables": 0, "periods_first": None, "periods_last": None})
-    for c in catalog:
-        for sc in c["scopes"]:
-            e = per_scope[sc]
-            e["tables"] += 1
-            e["periods_first"] = min(filter(None, [e["periods_first"], c["firstEnd"]]))
-            e["periods_last"] = max(filter(None, [e["periods_last"], c["lastEnd"]]))
-    method = {
-        "rules": METHOD_RULES, "publications": PUB_NAMES, "scopes": dict(per_scope), "verification": verification,
-        "not_duplicated": {
-            "court_stats_district_nos / _district_times / _circuits / _national": "Judicial Business C, C-2A, C-3, C-5, C-6, C-11, X-1A, B, B-4, B-7 for FY2014-FY2025 (product-liability orientation); the same tables here add the Statistical Tables and Caseload Statistics periods and every other column.",
-            "court_jb_districts / _circuits / _civil_nos / _bankruptcy": "Judicial Business C-4, C-4A, F-2, S-19, S-20 and T-1 for FY2005-FY2025; not re-published here for the periods those datasets hold.",
-            "fcms_court_profiles / fcms_circuit_rollups / fcms_analytics": "Federal Court Management Statistics profiles (weighted filings per judgeship, vacant judgeship months, median times, civil cases over three years old) 1999-2026; not re-acquired.",
-            "court_cjra_*, court_jff_series, judicial_vacancies, fjc_*": "Civil Justice Reform Act reports, Judicial Facts and Figures (30 series), vacancies and the FJC Integrated Database; not re-acquired.",
-        },
-    }
-    out["national"].append(cw.record(DATASETS["national"][0], "summary:method", "Method and coverage", source_url=LISTING_URL,
+        per_scope = defaultdict(lambda: {"tables": 0, "periods_first": None, "periods_last": None})
+        for c in catalog:
+            for sc in c["scopes"]:
+                e = per_scope[sc]
+                e["tables"] += 1
+                e["periods_first"] = min(filter(None, [e["periods_first"], c["firstEnd"]]))
+                e["periods_last"] = max(filter(None, [e["periods_last"], c["lastEnd"]]))
+        held_here = [h for h in report["held"] if family_of(groups[(h["table"], h["scope"])]) == family]
+        method = {
+            "rules": METHOD_RULES, "publications": {k: v for k, v in PUB_NAMES.items() if (family == "tables") == (k not in FAMILY_OF_PUB)},
+            "scopes": dict(per_scope), "verification": verification, "held": held_here,
+        }
+        if family == "tables":
+            method["not_duplicated"] = NOT_DUPLICATED
+        out[target].append(cw.record(dsid("national", family), "summary:method", "Method and coverage", source_url=LISTING_URL,
                                      cells={"court": "All", "table": "Method", "title": "How the tables are read", "first": min(c["firstEnd"] for c in catalog), "last": max(c["lastEnd"] for c in catalog), "periods": len(catalog)},
-                                     facts=[["Rules", str(len(METHOD_RULES))], ["Tables", str(len(catalog))]], text="method coverage rules", filters={"table": ["method"], "scope": ["summary"]},
+                                     facts=[["Rules", str(len(METHOD_RULES))], ["Tables", str(len(catalog))], ["Held table-periods", str(len(held_here))]], text="method coverage rules",
+                                     filters={"table": ["method"], "scope": ["summary"]},
                                      subtitle="Rules, publications and coverage", links=[{"url": LISTING_URL, "label": "U.S. Courts caseload statistics data tables"}], extra={"method": method}))
-    inputs = sorted(used_sources.values(), key=lambda x: x["url"])
+    builds = {}
     for key in DATASETS:
         if key == "county" and "--county" not in sys.argv:
             continue
-        build = finish(key, out[key], inputs, report, verification)
-        path = out_dir / f"{DATASETS[key][0]}.json"
-        path.write_text(json.dumps(build, sort_keys=True))
+        rows = out[("tables", key)]
+        if rows:
+            builds[DATASETS[key][0]] = finish(DATASETS[key][0], DATASETS[key][1], rows, sorted(used_sources["tables"].values(), key=lambda x: x["url"]), verification,
+                                              [p for p in PUB_NAMES if p not in FAMILY_OF_PUB])
+    for family, (dataset, label) in FAMILIES.items():
+        rows = [r for (fam, _), rs in out.items() if fam == family for r in rs]
+        if rows:
+            builds[dataset] = finish(dataset, label, rows, sorted(used_sources[family].values(), key=lambda x: x["url"]), verification,
+                                     [p for p, f in FAMILY_OF_PUB.items() if f == family])
+    try:
+        import series_index as SI
+    except ImportError:  # the index builder is optional for partial builds
+        SI = None
+    if SI is not None and not only:
+        index_build = SI.build_index(series_info, builds, report, verification)
+        if index_build:
+            builds[index_build["dataset"]] = index_build
+    for dataset, build in builds.items():
+        # written gzip-compressed (the volume is nearly full); publish_tables.py reads .json.gz build files as they are
+        path = out_dir / f"{dataset}.json.gz"
+        path.write_bytes(gzip.compress(json.dumps(build, sort_keys=True).encode(), compresslevel=6, mtime=0))
+        stale = out_dir / f"{dataset}.json"
+        if stale.exists():
+            stale.unlink()
         sizes = sorted((len(json.dumps(r)) for r in build["rows"]), reverse=True)
-        print(f"{DATASETS[key][0]}: {len(build['rows'])} rows, {path.stat().st_size / 1e6:.1f} MB, largest record {sizes[0] / 1e3:.0f} KB" if sizes else f"{key}: none")
+        print(f"{dataset}: {len(build['rows'])} rows, {path.stat().st_size / 1e6:.1f} MB, largest record {sizes[0] / 1e3:.0f} KB" if sizes else f"{dataset}: none")
     report["unknown_courts"] = sorted(report["unknown_courts"])
     (out_dir / "build_report.json").write_text(json.dumps(report, indent=1, sort_keys=True))
-    print("groups", len(groups), "unknown courts", report["unknown_courts"], "circuit conflicts", len(report["circuit_conflicts"]), "duplicate periods", len(report["duplicate_periods"]))
+    print("groups", len(groups), "unknown courts", report["unknown_courts"], "circuit conflicts", len(report["circuit_conflicts"]), "duplicate periods", len(report["duplicate_periods"]),
+          "held table-periods", len(report["held"]))
 
 
 if __name__ == "__main__":
