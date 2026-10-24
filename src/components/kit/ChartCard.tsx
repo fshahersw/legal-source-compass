@@ -16,6 +16,7 @@ import { Card, CardFooter, SourceFooter, type SourceFooterProps } from "./Card";
 import { DataDrawer, type DataDrawerProps } from "./DataDrawer";
 import { EmptyState } from "./EmptyState";
 import { ChartSkeleton } from "./Skeletons";
+import { ChartExplorer } from "@/components/charts/explore/ChartExplorer";
 
 export function ChartCard<T>({
   title,
@@ -60,7 +61,7 @@ export function ChartCard<T>({
       aria-labelledby={titleId}
       className={cn("m-0 flex flex-col", className)}
     >
-      <figcaption className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-4 pb-3">
+      <figcaption className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-3.5 pb-2.5">
         <div className="min-w-0 flex-[1_1_14rem]">
           <h3 id={titleId} className="text-label font-semibold text-foreground">
             {title}
@@ -70,6 +71,9 @@ export function ChartCard<T>({
         {actions || (data && state === "ready") ? (
           <div className="flex max-w-full flex-wrap items-center gap-2">
             {actions}
+            {data && state === "ready" && data.rows.length > 1 ? (
+              <ChartExplorer title={data.title} columns={data.columns} rows={data.rows} />
+            ) : null}
             {data && state === "ready" ? <DataDrawer {...data} /> : null}
           </div>
         ) : null}
