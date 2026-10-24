@@ -1462,6 +1462,12 @@ class RunContext:
         return nid
 
     # sections ---------------------------------------------------------------------------------------------
+    def reject(self, *, code: str, number: str, reason: str, source: Any) -> None:
+        """Record a section the module refuses to emit (rejects.jsonl.gz) without building it."""
+        src = source.source() if isinstance(source, Fetched) else (source or {})
+        self._rejects.write({"state": self.state, "code": code, "number": number, "reason": reason[:500],
+                             "source_url": src.get("url"), "source_sha256": src.get("sha256")})
+
     def section(self, **fields: Any) -> str | None:
         """Emit one section (see _section). Sample runs are strict (a ModelError stops the run); full runs record
         the rejected record in rejects.jsonl.gz with the reason and continue, so one odd page never hides others."""

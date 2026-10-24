@@ -144,6 +144,15 @@ class IllinoisTests(unittest.TestCase):
             self.assertTrue(verify_mod.verify(c.ctx.dir, pathlib.Path(tmp) / "raw")["ok"])
 
 
+class MissouriChapterGuardTests(unittest.TestCase):
+    def test_numbers_belong_to_their_chapter_page(self):
+        mo = load("mo")
+        self.assertTrue(mo.belongs_to_chapter("135.753", "135"))
+        self.assertTrue(mo.belongs_to_chapter("400.2-313", "400"))
+        self.assertFalse(mo.belongs_to_chapter("595.200", "135"))
+        self.assertFalse(mo.belongs_to_chapter("1350.1", "135"))
+
+
 class IllinoisCatchlineTests(unittest.TestCase):
     @staticmethod
     def section(cite: str, sec_line: str, body: str = "") -> str:

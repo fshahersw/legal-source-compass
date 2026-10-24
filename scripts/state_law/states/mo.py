@@ -163,6 +163,11 @@ def chapter_page(ctx, chapter: str):
     raise RuntimeError(f"chapter {chapter}: {problem} after four requests")
 
 
+def belongs_to_chapter(number: str, chapter: str) -> bool:
+    """RSMo numbers start with their chapter ("516.120", "400.2-313")."""
+    return number.split(".", 1)[0] == chapter
+
+
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
@@ -193,6 +198,13 @@ def acquire(ctx):
         if not sections:
             ctx.log(f"chapter {chapter}: no sections printed")
             continue
+        # a chapter page prints only its own sections: a number that belongs to another chapter means the page mixed
+        # in another section's text, so the row is refused rather than loaded under the wrong number
+        strays = [s for s in sections if not belongs_to_chapter(s["number"], chapter)]
+        for s in strays:
+            ctx.reject(code="RSMO", number=s["number"], source=fetched,
+                       reason=f"RSMo {s['number']}: printed on the chapter {chapter} page, whose sections are numbered {chapter}.*")
+        sections = [s for s in sections if belongs_to_chapter(s["number"], chapter)]
         counts: dict[str, int] = {}
         for s in sections:
             counts[s["number"]] = counts.get(s["number"], 0) + 1
