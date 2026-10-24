@@ -5,7 +5,8 @@
     python3 -I -B scripts/caselaw_v2/load.py text   --run all --build v2-1 --scope prefix --prefix-words 1000 --tiers 4,5
     python3 -I -B scripts/caselaw_v2/load.py status
 
-Order (each step checkpointed in <run>/load_state.json; a rerun skips finished steps, and every RPC is idempotent):
+Order (each step checkpointed in <run>/load_state.json under its rows file's name and content digest, so rows rebuilt
+for other tiers load as new steps; a rerun skips finished steps, and every RPC is idempotent):
   1 courts   caselaw_load_courts_v2(rows/courts.json)
   2 objects  caselaw_load_objects_v1(rows/objects.jsonl) — only objects whose verified upload is recorded in
              <run>/objects.jsonl (state uploaded/already_present, readback_ok); anything else stops the load
@@ -97,6 +98,16 @@ def plan(run_dir: str) -> dict:
             "case_rows": cases, "attach_rows": attach, "report": read_json(os.path.join(rows, "rows_report.json"))}
 
 
+def file_tag(path: str) -> str:
+    """First 16 hex digits of a rows file's sha256: rows.py rewrites the same file names for other tiers (objects.jsonl,
+    cases-pNN, attach-uNN), so a finished step is recorded under its file's content, never its name alone."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()[:16]
+
+
 def cmd_load(a) -> int:
     run_dir = os.path.join(WORK, "runs", a.run)
     rows = os.path.join(run_dir, "rows")
@@ -118,13 +129,14 @@ def cmd_load(a) -> int:
     if "courts" not in st["steps"]:
         n = sum(rpc.call("caselaw_load_courts_v2", {"p_rows": b}) for b in chunks(read_json(os.path.join(rows, "courts.json")), 2000))
         done("courts", {"rows": n})
-    if "objects" not in st["steps"]:
+    objects_step = "objects:" + file_tag(os.path.join(rows, "objects.jsonl"))
+    if objects_step not in st["steps"]:
         ids = {}
         for b in chunks(read_jsonl(os.path.join(rows, "objects.jsonl")), 2000):
             ids.update(rpc.call("caselaw_load_objects_v1", {"p_rows": b}))
-        done("objects", {"registered": len(ids)})
+        done(objects_step, {"registered": len(ids)})
     for path in sorted(glob.glob(os.path.join(rows, "cases-p*.jsonl.gz"))):
-        step = "cases:" + os.path.basename(path)
+        step = f"cases:{os.path.basename(path)}:{file_tag(path)}"
         if step in st["steps"]:
             continue
         data = read_jsonl(path)
@@ -137,7 +149,7 @@ def cmd_load(a) -> int:
                 n += f.result()
         done(step, {"rows": len(data), "changed": n})
     for path in sorted(glob.glob(os.path.join(rows, "attach-u*.jsonl.gz"))):
-        step = "attach:" + os.path.basename(path)
+        step = f"attach:{os.path.basename(path)}:{file_tag(path)}"
         if step in st["steps"]:
             continue
         agg: dict = {}

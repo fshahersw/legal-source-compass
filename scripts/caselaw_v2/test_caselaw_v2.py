@@ -185,5 +185,18 @@ class Files(unittest.TestCase):
             self.assertEqual(common.read_jsonl(p), [{"t": "a b"}])
 
 
+    def test_load_steps_follow_file_content(self):
+        import load
+
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "cases-p00.jsonl.gz")
+            with open(p, "wb") as h:
+                h.write(b"tiers 4,5")
+            first = load.file_tag(p)
+            with open(p, "wb") as h:
+                h.write(b"tiers 6,7")
+            self.assertNotEqual(load.file_tag(p), first)  # same name, other rows: a new load step
+            self.assertRegex(first, r"^[0-9a-f]{16}$")
+
 if __name__ == "__main__":
     unittest.main()
