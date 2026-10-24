@@ -9,9 +9,10 @@ const rows: DistrictSpeedInput[] = Array.from({ length: 12 }, (_, i) => ({
 }));
 
 describe("districtSpeed", () => {
-  it("picks the slowest and fastest districts against the national median", () => {
-    const s = districtSpeed(rows, 150, { n: 2 })!;
-    expect(s.baseline).toBe(150);
+  it("picks the slowest and fastest districts against the median district", () => {
+    const s = districtSpeed(rows, 452, { n: 2 })!;
+    expect(s.baseline).toBe(155);
+    expect(s.national).toBe(452);
     expect(s.slowest.map((d) => d.value)).toEqual([210, 200]);
     expect(s.fastest.map((d) => d.value)).toEqual([110, 100]);
   });
@@ -31,8 +32,8 @@ describe("districtSpeed", () => {
     expect(s.excluded).toBe(2);
   });
 
-  it("returns nothing without a national median or enough districts", () => {
-    expect(districtSpeed(rows, null)).toBeNull();
+  it("returns nothing without enough districts; a missing national median stays missing", () => {
+    expect(districtSpeed(rows, null)!.national).toBeNull();
     expect(districtSpeed(rows.slice(0, 3), 150, { n: 2 })).toBeNull();
   });
 });

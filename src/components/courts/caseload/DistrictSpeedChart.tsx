@@ -19,6 +19,7 @@ const SOURCE = {
 const MIN_CLOSED = 500;
 const TITLE = "Time to disposition by district";
 const days = (v: number) => `${Math.round(v).toLocaleString("en-US")} days`;
+const short = (name: string) => name.replace(/^District Court, /, "");
 
 export function DistrictSpeedChart() {
   const districts = useQuery(districtsQuery);
@@ -76,10 +77,10 @@ export function DistrictSpeedChart() {
         variant="editorial"
         title={
           slowest && fastest && speed
-            ? `FY${fy}: civil cases took a median ${days(speed.baseline)} nationally, from ${days(fastest.value)} in ${fastest.name} to ${days(slowest.value)} in ${slowest.name}`
+            ? `FY${fy}: the typical district closed civil cases in a median ${days(speed.baseline)}, from ${days(fastest.value)} in ${short(fastest.name)} to ${days(slowest.value)} in ${short(slowest.name)}`
             : TITLE
         }
-        subtitle={`Median days from filing to disposition, slowest and fastest 5 districts against the national median${period ? ` · ${period}` : ""}`}
+        subtitle={`Median days from filing to disposition, slowest and fastest 5 districts against the median district${period ? ` · ${period}` : ""}`}
         status={status}
         sources={[SOURCE]}
         period={period}
@@ -95,8 +96,10 @@ export function DistrictSpeedChart() {
               with a handful of closings does not top the list.
             </li>
             <li>
-              The national median is over all civil cases closed nationally, not the median of the
-              district medians. Mass-tort dockets can move a district&apos;s median sharply.
+              The line is the median of the compared districts&apos; medians (the typical district).
+              {speed?.national != null
+                ? ` Over all civil cases closed nationally the median was ${days(speed.national)}: mass-tort dockets closed in a few districts pull that figure up.`
+                : ""}
             </li>
           </ul>
         }
@@ -116,9 +119,9 @@ export function DistrictSpeedChart() {
       >
         {speed ? (
           <DivergingDots
-            items={picks.map((d) => ({ label: d.name, value: d.value }))}
+            items={picks.map((d) => ({ label: short(d.name), value: d.value }))}
             baseline={speed.baseline}
-            baselineLabel="National median"
+            baselineLabel="Median district"
             format={(v) => Math.round(v).toLocaleString("en-US")}
             labelWidth={200}
           />
@@ -134,7 +137,7 @@ export function DistrictSpeedChart() {
             questions={[
               "Why do some districts take much longer to resolve civil cases?",
               "How does a slow district affect where a case should be filed?",
-              "What does the national median include?",
+              "Why is the national all-case median so different from the typical district?",
             ]}
           />
         }
