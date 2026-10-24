@@ -201,7 +201,10 @@ export function SourceFooter({
   return (
     <div
       data-slot="source-footer"
-      className={cn("flex min-w-0 items-center justify-end gap-2 text-meta text-muted-foreground", className)}
+      className={cn(
+        "flex min-w-0 items-center justify-end gap-2 text-meta text-muted-foreground",
+        className,
+      )}
     >
       <div data-slot="source-text" className="min-w-0 flex-1 truncate" title={sourceTitle}>
         {period ? <span data-item="period">{period}</span> : null}
@@ -210,8 +213,15 @@ export function SourceFooter({
         {partial ? <PartialPill note={partial} /> : null}
         {children}
         {hasInfo ? (
-          <InfoPopover label={sourceNode ? "Source and notes" : aboutLabel} title={aboutTitle ?? (sourceNode ? "Source" : undefined)}>
-            {sourceNode ? <p data-item="source" className="m-0">{sourceNode}</p> : null}
+          <InfoPopover
+            label={sourceNode ? "Source and notes" : aboutLabel}
+            title={aboutTitle ?? (sourceNode ? "Source" : undefined)}
+          >
+            {sourceNode ? (
+              <p data-item="source" className="m-0">
+                {sourceNode}
+              </p>
+            ) : null}
             {asOf ? <p className="m-0">As of {asOf}</p> : null}
             {about}
           </InfoPopover>
