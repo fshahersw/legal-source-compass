@@ -18,42 +18,62 @@ export const suggestEncoding = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) return { ok: false as const, message: "AI suggestions are not available right now." };
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "X-Lovable-AIG-SDK": "fetch",
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Map the user's chart request onto the given fields. x is the axis, y must be a quantitative field, color is optional. Use only the given keys.",
-          },
-          { role: "user", content: `Fields: ${JSON.stringify(data.fields)}\nRequest: ${data.prompt}` },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "encode",
-              parameters: {
-                type: "object",
-                properties: { x: { type: "string" }, y: { type: "string" }, color: { type: "string" } },
-                required: ["x", "y"],
-              },
+        model: "openai/gpt-6-astra",
+        stream: true,
+        store: false,
+        reasoning: { effort: "low" },
+        instructions:
+          "Map the user's chart request onto the given fields. x is the axis, y must be a quantitative field, color is optional (empty string if none). Use only the given keys.",
+        input: `Fields: ${JSON.stringify(data.fields)}\nRequest: ${data.prompt}`,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "encoding",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: { x: { type: "string" }, y: { type: "string" }, color: { type: "string" } },
+              required: ["x", "y", "color"],
+              additionalProperties: false,
             },
           },
-        ],
-        tool_choice: { type: "function", function: { name: "encode" } },
+        },
       }),
     });
     if (res.status === 429) return { ok: false as const, message: "Too many requests; try again shortly." };
-    if (!res.ok) return { ok: false as const, message: "The suggestion could not be made." };
-    const body = (await res.json()) as {
-      choices?: { message?: { tool_calls?: { function?: { arguments?: string } }[] } }[];
-    };
+    if (res.status === 402) return { ok: false as const, message: "AI credits are used up." };
+    if (!res.ok || !res.body) return { ok: false as const, message: "The suggestion could not be made." };
+    let text = "";
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i;
+      while ((i = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, i).trim();
+        buf = buf.slice(i + 1);
+        if (!line.startsWith("data:")) continue;
+        try {
+          const ev = JSON.parse(line.slice(5)) as { type?: string; delta?: string };
+          if (ev.type === "response.output_text.delta" && ev.delta) text += ev.delta;
+        } catch {
+          /* keep-alive or partial line */
+        }
+      }
+    }
     try {
-      const args = JSON.parse(body.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? "{}") as Record<string, unknown>;
+      const args = JSON.parse(text || "{}") as Record<string, unknown>;
       const keys = new Set(data.fields.map((f) => f.key));
       const pick = (v: unknown) => (typeof v === "string" && keys.has(v) ? v : undefined);
       const x = pick(args["x"]);
