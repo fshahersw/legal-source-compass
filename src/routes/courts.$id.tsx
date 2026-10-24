@@ -30,6 +30,8 @@ import { SentencingPanel } from "@/components/enforcement/extra/SentencingPanel"
 import { CourtJudgesRosterPanel } from "@/components/courts/CourtJudgesRosterPanel";
 import { CourtBuildingsPanel } from "@/components/visuals/CourtBuildingsPanel";
 import { courtBuildingsQuery } from "@/components/visuals/queries";
+import { CourtGlance } from "@/components/courts/glance/CourtGlance";
+import { ProfileSections } from "@/components/kit/ProfileSections";
 
 /** Court ids the filings index accepts (documents_for_entity_v1). */
 const COURT_ID = /^[a-z0-9_-]{1,40}$/;
@@ -98,30 +100,88 @@ function Page() {
       )}
       extra={(record) => (
         <>
-          <CourtStructurePanel courtId={id} />
-          <CourtAppealRoutesNote courtId={id} />
-          <CourtLocationsPanel courtId={id} />
-          {COURT_ID.test(id) ? <CourtBuildingsPanel courtId={id} /> : null}
-          <CourtRulesPanel courtId={id} />
-          <CourtJudgesRosterPanel courtId={id} />
-          <CourtAnalyticsPanel courtId={id} />
-          <CaseloadHistoryPanel courtId={id} />
-          <CourtStatsTrendsPanel courtId={id} />
-          <CourtJudgesPanel courtId={id} />
-          <CourtVacanciesPanel courtId={id} />
-          <AppealsOutcomesPanel courtId={id} />
-          <CriminalCaseloadPanel courtId={id} />
-          <BankruptcyFilingsPanel courtId={id} />
-          <DistrictGlancePanel courtId={id} />
-          <SentencingPanel courtId={id} />
-          <ProsecutionsPanel courtId={id} />
-          <CourtCollectionPanel courtId={id} />
-          {COURT_ID.test(id) ? <DocumentsPanel type="court" id={id} className="mb-6" /> : null}
-          <BankruptcyActivityPanel courtId={id} />
-          <AppellatePanel courtId={id} />
-          <CourtSearchTopicsPanel courtId={id} />
-          <OralArgumentsPanel courtId={id} />
-          <CourtResources raw={record} courtId={id} system={system} />
+          <div className="mb-6">
+            <CourtGlance courtId={id} courtName={view.title} />
+          </div>
+          <ProfileSections
+            after={[{ id: "entity-record", label: "Record" }]}
+            sections={[
+              {
+                id: "court-overview",
+                title: "Court",
+                description: "Structure, appeal routes and courthouses.",
+                content: (
+                  <>
+                    <CourtStructurePanel courtId={id} />
+                    <CourtAppealRoutesNote courtId={id} />
+                    <CourtLocationsPanel courtId={id} />
+                    {COURT_ID.test(id) ? <CourtBuildingsPanel courtId={id} /> : null}
+                  </>
+                ),
+              },
+              {
+                id: "court-judges",
+                title: "Judges",
+                description:
+                  "The bench as the court and the Federal Judicial Center list it, and vacancies.",
+                content: (
+                  <>
+                    <CourtJudgesRosterPanel courtId={id} />
+                    <CourtJudgesPanel courtId={id} />
+                    <CourtVacanciesPanel courtId={id} />
+                  </>
+                ),
+              },
+              {
+                id: "court-caseload",
+                title: "Caseload",
+                description:
+                  "Filings, pending cases, appeals, criminal, bankruptcy and sentencing figures over time.",
+                content: (
+                  <>
+                    <CourtAnalyticsPanel courtId={id} />
+                    <CaseloadHistoryPanel courtId={id} />
+                    <CourtStatsTrendsPanel courtId={id} />
+                    <AppealsOutcomesPanel courtId={id} />
+                    <CriminalCaseloadPanel courtId={id} />
+                    <BankruptcyFilingsPanel courtId={id} />
+                    <DistrictGlancePanel courtId={id} />
+                    <SentencingPanel courtId={id} />
+                    <ProsecutionsPanel courtId={id} />
+                  </>
+                ),
+              },
+              {
+                id: "court-cases",
+                title: "Cases & opinions",
+                description:
+                  "Dockets, filings, opinions, citations and oral arguments collected for this court.",
+                content: (
+                  <>
+                    <CourtCollectionPanel courtId={id} />
+                    {COURT_ID.test(id) ? (
+                      <DocumentsPanel type="court" id={id} className="mb-6" />
+                    ) : null}
+                    <BankruptcyActivityPanel courtId={id} />
+                    <AppellatePanel courtId={id} />
+                    <CourtSearchTopicsPanel courtId={id} />
+                    <OralArgumentsPanel courtId={id} />
+                  </>
+                ),
+              },
+              {
+                id: "court-rules",
+                title: "Rules & resources",
+                description: "Local rules, orders, forms, fees and services.",
+                content: (
+                  <>
+                    <CourtRulesPanel courtId={id} />
+                    <CourtResources raw={record} courtId={id} system={system} />
+                  </>
+                ),
+              },
+            ]}
+          />
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             {state ? (
               <Link

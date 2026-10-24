@@ -161,10 +161,13 @@ export function WhatChangedSlot({ section }: { section: string }) {
 export function SectionHub({
   section,
   deferred = false,
+  lead,
   children,
 }: {
   section: keyof typeof HUBS;
   deferred?: boolean;
+  /** The section's lead charts, shown right under the headline figures and above the links. */
+  lead?: ReactNode;
   children?: ReactNode;
 }) {
   const hub = HUBS[section];
@@ -175,6 +178,7 @@ export function SectionHub({
         deferred={deferred}
         label={`${sectionItem(section).label} figures`}
       />
+      {lead}
       {hub.links.length ? <HubLinks links={hub.links} deferred={deferred} /> : null}
       <WhatChangedSlot section={section} />
       {children}

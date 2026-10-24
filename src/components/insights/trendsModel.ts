@@ -2,6 +2,7 @@
 import type { EntityType, Fact, MetricDef } from "@/lib/insights/contract";
 import { comparePeriods, densePeriods, periodLabel, periodTick } from "@/components/charts/format";
 import type { PeriodAxis, TrendSeriesInput } from "@/components/charts/series";
+import type { Series } from "@/components/charts/d3/maths";
 
 export type TrendsSearch = {
   view?: "compare" | "national" | undefined;
@@ -14,6 +15,8 @@ export type TrendsSearch = {
   pc?: "1" | undefined;
   scale?: "own" | undefined;
   us?: "0" | undefined;
+  /** "1" = show change since a chosen period (series rebased) instead of values. */
+  chg?: "1" | undefined;
 };
 
 export const MAX_COMPARE = 6;
@@ -83,4 +86,39 @@ export function seriesFrom(
       .sort((a, b) => comparePeriods(a.period, b.period))
       .map((f) => ({ key: f.period, value: f.value, partial: f.partial, moe: f.moe, n: f.n })),
   }));
+}
+
+/**
+ * Series for the change-since chart: one date per axis period, partial periods left out (a part-year never reads as a
+ * fall), a period a source does not record stays null. `commonStart` is the first period where every series has a
+ * positive value (the default comparison point), or 0. Null when fewer than three complete periods remain.
+ */
+export function changeSeries(
+  series: readonly TrendSeriesInput[],
+  axis: PeriodAxis,
+): { series: Series[]; commonStart: number; partialDropped: string[] } | null {
+  const partial = new Set(
+    series.flatMap((s) => s.points.filter((p) => p.partial).map((p) => p.key)),
+  );
+  const keys = axis.keys.filter((k) => !partial.has(k));
+  if (keys.length < 3 || !series.length) return null;
+  const out: Series[] = series.map((s) => {
+    const at = new Map(s.points.map((p) => [p.key, p.value] as const));
+    return {
+      id: s.id,
+      label: s.label,
+      points: keys.map((k) => ({ date: k, value: at.get(k) ?? null })),
+    };
+  });
+  const start = keys.findIndex((_, i) =>
+    out.every((s) => {
+      const v = s.points[i]?.value;
+      return v != null && v > 0;
+    }),
+  );
+  return {
+    series: out,
+    commonStart: Math.max(0, start),
+    partialDropped: axis.keys.filter((k) => partial.has(k)),
+  };
 }

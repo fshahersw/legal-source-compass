@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { validateMatterSearch, withEntry, withView } from "./search";
+import {
+  MATTER_TABS,
+  MATTER_VIEWS,
+  matterViewOf,
+  validateMatterSearch,
+  withEntry,
+  withView,
+} from "./search";
 
 describe("matter page URL state", () => {
   it("keeps valid tabs, entry numbers and viewer keys", () => {
@@ -40,5 +47,16 @@ describe("URL state updates", () => {
       view: "docketbird|x",
     });
     expect("view" in withView({ view: "docketbird|x" }, null)).toBe(false);
+  });
+});
+
+describe("matter views", () => {
+  it("keeps every former tab address inside one of four views", () => {
+    expect(MATTER_VIEWS).toHaveLength(4);
+    for (const tab of MATTER_TABS)
+      expect(matterViewOf(tab).tabs as readonly string[]).toContain(tab);
+    expect(matterViewOf("parties").id).toBe("cases");
+    expect(matterViewOf("documents").id).toBe("docket");
+    expect(matterViewOf("lifecycle").id).toBe("overview");
   });
 });

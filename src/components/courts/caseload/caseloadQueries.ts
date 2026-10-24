@@ -6,6 +6,7 @@ import {
   getCaseloadMethod,
   getCaseloadNational,
   getCaseloadNos,
+  getCaseloadGroupTrends,
   getCaseloadNosDetail,
   getCaseloadStates,
 } from "@/lib/external/courtCaseload.functions";
@@ -117,3 +118,8 @@ export const publicationCoverageQuery = (code: string) => ({
   queryFn: () => getPublicationCoverage({ data: { code } }),
   staleTime,
 });
+export const groupTrendsQuery = {
+  queryKey: ["caseload", "group-trends"],
+  queryFn: () => getCaseloadGroupTrends(),
+  staleTime,
+};

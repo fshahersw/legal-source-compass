@@ -17,17 +17,52 @@ export type SectionIndexItem = { id: string; label: string };
 const READING_LINE = 96;
 
 export function SectionIndex({
-  items,
+  items: allItems,
   label = "On this page",
   className,
+  hideMissing = false,
 }: {
   items: readonly SectionIndexItem[];
   label?: string | undefined;
   className?: string | undefined;
+  /** Leave out items whose section is absent or not displayed (a section whose panels all had nothing to show). */
+  hideMissing?: boolean | undefined;
 }) {
+  const [shown, setShown] = useState<string | null>(null);
+  const items =
+    hideMissing && shown !== null
+      ? allItems.filter((i) => shown.split("|").includes(i.id))
+      : allItems;
   const [active, setActive] = useState<string | null>(items[0]?.id ?? null);
   const stripRef = useRef<HTMLDivElement>(null);
   const ids = items.map((i) => i.id).join("|");
+  const allIds = allItems.map((i) => i.id).join("|");
+
+  // which sections are on the page and displayed; re-read as their panels load
+  useEffect(() => {
+    if (!hideMissing) return;
+    let frame = 0;
+    const read = () => {
+      frame = 0;
+      const present = allIds.split("|").filter((id) => {
+        const el = document.getElementById(id);
+        return !!el && el.getClientRects().length > 0;
+      });
+      setShown(present.join("|"));
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(read);
+    };
+    read();
+    const root =
+      document.getElementById(allIds.split("|")[0] ?? "")?.parentElement ?? document.body;
+    const mo = new MutationObserver(schedule);
+    mo.observe(root, { childList: true, subtree: true });
+    return () => {
+      mo.disconnect();
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [allIds, hideMissing]);
 
   useEffect(() => {
     let frame = 0;

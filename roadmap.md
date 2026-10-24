@@ -54,5 +54,32 @@
 - [x] California compact-v3 import: run 124b4562 completed, 162,526 sections, readback exact (docs/audits/2026-10-09-ca-import.md)
 - [ ] California publication: needs title/division/part/chapter/article headings from pubinfo TOC tables + a direct (non-proxied) official sample or an owner decision accepting proxied review
 - [ ] Kansas packet fixes before landing: 55 index-listed pages without a parsed section, second-version detection (expected 10 pages), 2026 change-list PDF parsing (0 entries matched)
-- [ ] Apply guided-calculator patch + stage/activate limitations release 2026-10-09.1, publish (queued 2026-10-09)
+- [ ] Guided calculator code is in place; the live manifest (created 2026-10-23) serves a rules.json other than the 2026-10-09.1 candidate — confirm whether .1 was superseded or still needs reconciling via the release scripts (not part of the UI refresh; Time Limits internals untouched)
 - [ ] Kansas parser-v6 land + readback; California hierarchy enrichment from retained LAW_TOC tables
+
+## UI refresh: cleaner, more visual (approved 2026-10-24)
+- [x] d3 chart forms: change-since (index) chart, stacked bars over time, above/below-baseline dots, sunburst (`src/components/charts/d3/`, maths tested)
+- [x] Map zoom and pan (buttons, Ctrl+scroll, drag, reset) on every MetricMap
+- [x] Places: highest/lowest 5 states vs the median, following the selected measure
+- [x] Places home: AI summary + Ask AI for the selected measure (median, highest and lowest five, states with a value) under the comparison chart
+- [x] Courts & judges: change-since chart of federal caseloads (civil, criminal, MDL pending; fiscal years) + latest-year dots
+- [x] Law & government: Federal Register final/proposed rules by year and bills per Congress split by became law (stacked, unfinished periods faded)
+- [x] Courts & judges: slowest/fastest districts by median days to disposition vs the median district (FJC IDB, districts closing ≥500 cases), with AI summary
+- [x] Litigation: change-since chart of the 5 largest pending MDLs + biggest 12-month rises/falls (JPML)
+- [x] Enforcement: change-since chart by agency (calendar-year series only; FY series named, not mixed; coverage-change markers honoured) + latest-period change dots
+- [x] Products & safety: one recalls change-since chart + latest-period dots; the four per-agency cards kept one click away ("Each agency's recalls by year")
+- [x] AI summary + Ask AI under every new lead chart pair (figures, source and period as context)
+- [x] Companies: method paragraph into "How companies are linked"; two duplicate KPI tiles folded into the summary line (listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md)
+- [x] Litigation: federal civil filings by case type, FY2007–latest (five largest groups + national remainder, FJC IDB), with AI summary; stacked-bar axis ticks compact and year labels spaced to fit
+- [x] Sunburst: no affordable two-level CFR/code aggregate exists (per-title counts only), so it went where the data partitions exactly — Litigation, FY civil filings by case type → nature-of-suit code (groups sum to the national total, codes to their group; verified against the corpus)
+- [x] Insights › Trends: "Values | Change since" switch (counts and amounts only; partial periods left out; slider picks the comparison point; `?chg=1`). Companies has no multi-series trend of one unit across entities, so no change-since chart there
+- [x] Court profiles: headline strip (cases filed, pending, pending MDLs, sitting judges) with AI summary; five sections (Court, Judges, Caseload, Cases & opinions, Rules & resources) behind a sticky index; sections with nothing for a court are hidden and dropped from the index; record scope note moved into "About this record" on every record page
+- [x] Record identity box: facts the header already prints (title, a subtitle part) move to "More details"; facts pack at the top beside the photo
+- [x] Judge profiles: Career, Practices, Cases & MDLs, Disclosures behind the sticky index; the record's own sections sit under "Record details" (one index, no second sticky strip)
+- [x] Company profiles: six tabs folded into four views (Overview, Financials, Documents & filings, Litigation); every former ?tab= address opens its view with its part first
+- [x] Agency profiles: AI summary under the headline figures; overview in five sections (Rulemaking, Pipeline, Money, Law and structure, Data) behind the sticky index; "Rules & notices" and "All documents" merged into one Documents tab (recent 12, then browse all)
+- [x] MDL profiles: seven tabs folded into four views (Overview + lifecycle, Cases & parties, Docket & documents, Evidence & sources; every former ?tab= opens its part first); AI summary under the header; two figures repeated from the header removed from "Membership & coverage"
+- [x] Desktop + phone checks of the 13 main pages (no sideways scroll, no page errors, 2026-10-24); demoted blocks listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md
+- [ ] Places: confirm the median reference line on the state comparison chart is visible in both themes (looked faint in one screenshot)
+- [ ] Sunburst: keyboard focus for ring segments (the case-type list already works with the keyboard)
+- [ ] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)

@@ -44,15 +44,6 @@ function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
     >
       <div className="space-y-3">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile
-            label="Member-like dockets"
-            value={reg.members.rows !== null ? reg.members.rows.toLocaleString() : <NotRecorded />}
-            note={
-              reg.members.actions !== null
-                ? `${reg.members.actions.toLocaleString()} counted as actions · not a census`
-                : "Partial count, not a census"
-            }
-          />
           <div className="rounded-md border border-border bg-background p-3 sm:col-span-1">
             <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
               Membership evidence
@@ -86,15 +77,6 @@ function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
           ) : (
             <StatTile label="Docket entries" value={<NotRecorded />} />
           )}
-          {reg.parties.length ? (
-            <StatTile
-              label="Parties & counsel"
-              value={reg.parties
-                .map((p) => (p.captured !== null ? p.captured.toLocaleString() : "—"))
-                .join(" / ")}
-              note={`${reg.parties.map((p) => p.kind).join(" / ")} on the master docket${reg.parties.every((p) => p.complete) ? " · complete at last check" : ""}`}
-            />
-          ) : null}
         </div>
         {reg.docketbirdGraph.length || reg.gaps.length ? (
           <details className="rounded-md border border-border bg-background px-3 py-2 text-[12px]">

@@ -1,4 +1,6 @@
+import { cn } from "@/lib/utils";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { Fragment, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import {
@@ -86,12 +88,16 @@ export function EntityPage({
     ...o,
     links: shownLinks.filter((_, i) => outcomes[i] === o.outcome),
   })).filter((g) => g.links.length);
-  const key = v.facts.slice(0, 8);
+  // Facts the page header already prints (the title, or one part of the subtitle) move to "More details".
+  const printed = new Set([v.title, ...(v.subtitle ? v.subtitle.split(" · ") : [])].map((t) => t.trim()));
+  const repeats = ([, val]: (typeof v.facts)[number]) =>
+    typeof val === "string" && printed.has(val.trim());
+  const key = v.facts.slice(0, 8).filter((f) => !repeats(f));
   // A caller's lead replaces the photo; the facts box is drawn only when it has something to hold.
   const leadNode = lead ? lead(data.raw, v) : null;
   const hasLead = leadNode !== null && leadNode !== undefined && leadNode !== false;
   const photo = !lead && v.photo ? v.photo : null;
-  const rest = v.facts.slice(8);
+  const rest = [...v.facts.slice(0, 8).filter(repeats), ...v.facts.slice(8)];
   const nav = [
     ...(docket
       ? [
@@ -108,13 +114,16 @@ export function EntityPage({
       {...(v.subtitle ? { description: v.subtitle } : {})}
     >
       {v.qualification ? (
-        <section
-          aria-label="Source scope"
-          className="mb-4 rounded-lg border border-border bg-muted/30 p-3 text-[13px] leading-relaxed"
-        >
-          <p className="mb-1 text-[11px] font-medium text-muted-foreground">Source scope</p>
-          <p className="whitespace-pre-wrap">{v.qualification}</p>
-        </section>
+        <div className="mb-3 flex items-center text-xs text-muted-foreground">
+          <InfoPopover
+            label="About this record"
+            showLabel
+            align="start"
+            contentClassName="max-w-md"
+          >
+            <p className="whitespace-pre-wrap">{v.qualification}</p>
+          </InfoPopover>
+        </div>
       ) : null}
       {key.length || hasLead || photo ? (
         <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
@@ -126,7 +135,7 @@ export function EntityPage({
             />
           ) : null}
           {key.length ? (
-            <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">
+            <dl className="grid flex-1 content-start grid-cols-1 gap-x-6 gap-y-2.5 text-[13px] sm:grid-cols-2">
               {key.map(([k, val], i) => (
                 <div key={i} className="min-w-0">
                   <dt className="text-[11px] text-muted-foreground">{k}</dt>
@@ -170,16 +179,28 @@ export function EntityPage({
         </p>
       ) : null}
       {extra ? extra(data.raw) : null}
+      {extra && (rest.length || docket || v.sections.length || v.text) ? (
+        <h2 id="entity-record" className="mt-10 mb-3 scroll-mt-16 text-heading text-foreground">
+          Record details
+        </h2>
+      ) : null}
       {nav.length > 1 ? (
         <nav
-          aria-label="On this page"
-          className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background px-1 py-2"
+          aria-label={extra ? "Record details" : "On this page"}
+          className={
+            extra
+              ? "-mx-1 mb-4 flex flex-wrap gap-1 px-1"
+              : "sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background px-1 py-2"
+          }
         >
           {nav.map((n) => (
             <a
               key={n.key}
               href={`#${n.key}`}
-              className="whitespace-nowrap rounded px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground"
+              className={cn(
+                "rounded px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground",
+                extra ? "max-w-full truncate" : "whitespace-nowrap",
+              )}
             >
               {n.label}
             </a>

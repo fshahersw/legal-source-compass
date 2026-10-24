@@ -3,6 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { SectionHub } from "@/components/atlas/hub/SectionHub";
+import { TrendHeadline } from "@/components/charts/d3/TrendHeadline";
+import { DistrictSpeedChart } from "@/components/courts/caseload/DistrictSpeedChart";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { CourtArtwork } from "@/components/corpus/CourtArtwork";
@@ -178,7 +180,24 @@ function CourtsPage() {
       }
     >
       {landing ? (
-        <SectionHub section="courts">
+        <SectionHub
+          section="courts"
+          lead={
+            <div className="space-y-6">
+              <TrendHeadline
+                sectionId="caseload-trends"
+                subject="federal caseloads"
+                unitNote="Civil filings count cases and criminal filings count defendants, both when filed; MDL actions are counted as pending at the end of each fiscal year. Compare the direction and size of change, not the levels."
+                items={[
+                  { id: "federal-civil", label: "Civil filings" },
+                  { id: "federal-criminal", label: "Criminal filings" },
+                  { id: "mdl-pending", label: "MDL actions pending" },
+                ]}
+              />
+              <DistrictSpeedChart />
+            </div>
+          }
+        >
           {body}
           <div className="mt-4">
             <CourtHierarchy />

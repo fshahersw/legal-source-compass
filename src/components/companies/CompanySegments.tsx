@@ -177,7 +177,11 @@ function AxisPanel({
                   dataKey="end"
                   tick={axisTick}
                   tickFormatter={(v: string) =>
-                    shown === "annual" ? v.slice(0, 4) : chartDateLabel(v)
+                    // 52/53-week years can end twice in one calendar year: those periods show their end date
+                    shown === "annual" &&
+                    series.rows.filter((r) => String(r["end"]).slice(0, 4) === v.slice(0, 4)).length === 1
+                      ? v.slice(0, 4)
+                      : chartDateLabel(v)
                   }
                   interval="preserveStartEnd"
                   minTickGap={12}

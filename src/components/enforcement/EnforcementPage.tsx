@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { BadgeDollarSign } from "lucide-react";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { SectionHub } from "@/components/atlas/hub/SectionHub";
+import { TrendHeadline } from "@/components/charts/d3/TrendHeadline";
 import {
   DEFAULT_ENFORCEMENT_AGENCY,
   ENFORCEMENT_AGENCIES,
@@ -54,7 +55,23 @@ export function EnforcementPage({
       return <EnforcementSources />;
     default:
       return (
-        <SectionHub section="enforcement">
+        <SectionHub
+          section="enforcement"
+          lead={
+            <TrendHeadline
+              sectionId="enforcement-trends"
+              subject="enforcement activity"
+              unitNote="Each agency counts something different (press releases, releases and proceedings, listed actions, cases opened, inspections), so compare the direction and size of change, not the levels."
+              items={[
+                { id: "doj-press", label: "DOJ press releases" },
+                { id: "sec-releases", label: "SEC releases" },
+                { id: "ftc-actions", label: "FTC actions" },
+                { id: "epa-cases", label: "EPA cases opened" },
+                { id: "osha-inspections", label: "OSHA inspections" },
+              ]}
+            />
+          }
+        >
           <DailyInsightCard section="enforcement" />
         </SectionHub>
       );

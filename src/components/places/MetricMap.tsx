@@ -108,8 +108,15 @@ export function MetricMap({
     if (!svg) return;
     const z = d3zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 12])
-      .translateExtent([[0, 0], [975, 610]])
-      .filter((e: Event) => (e.type === "wheel" ? (e as WheelEvent).ctrlKey || (e as WheelEvent).metaKey : !(e as MouseEvent).button))
+      .translateExtent([
+        [0, 0],
+        [975, 610],
+      ])
+      .filter((e: Event) =>
+        e.type === "wheel"
+          ? (e as WheelEvent).ctrlKey || (e as WheelEvent).metaKey
+          : !(e as MouseEvent).button,
+      )
       .on("zoom", (e) => {
         setTransform(e.transform.toString());
         setK(e.transform.k);
@@ -122,7 +129,8 @@ export function MetricMap({
   }, []);
   function zoomBy(f: number) {
     const svg = svgRef.current;
-    if (svg && zoomRef.current) select(svg).transition().duration(300).call(zoomRef.current.scaleBy, f);
+    if (svg && zoomRef.current)
+      select(svg).transition().duration(300).call(zoomRef.current.scaleBy, f);
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function fitTo(el: SVGGraphicsElement) {
@@ -130,12 +138,16 @@ export function MetricMap({
     if (!svg || !zoomRef.current) return;
     const b = el.getBBox();
     const scale = Math.min(12, 0.85 / Math.max(b.width / 975, b.height / 610));
-    const t = zoomIdentity.translate(975 / 2, 610 / 2).scale(scale).translate(-(b.x + b.width / 2), -(b.y + b.height / 2));
+    const t = zoomIdentity
+      .translate(975 / 2, 610 / 2)
+      .scale(scale)
+      .translate(-(b.x + b.width / 2), -(b.y + b.height / 2));
     select(svg).transition().duration(600).call(zoomRef.current.transform, t);
   }
   function resetZoom() {
     const svg = svgRef.current;
-    if (svg && zoomRef.current) select(svg).transition().duration(400).call(zoomRef.current.transform, zoomIdentity);
+    if (svg && zoomRef.current)
+      select(svg).transition().duration(400).call(zoomRef.current.transform, zoomIdentity);
   }
 
   // state shading and ranks (ranked over the 50 states and DC; the map draws no other area)
@@ -251,10 +263,31 @@ export function MetricMap({
         </span>
       </div>
       <div className="absolute right-2 top-11 z-10 flex flex-col overflow-hidden rounded-md border border-border bg-popover text-xs shadow-sm">
-        <button type="button" aria-label="Zoom in" className="px-2 py-1 hover:bg-muted" onClick={() => zoomBy(1.6)}>+</button>
-        <button type="button" aria-label="Zoom out" className="border-t border-border px-2 py-1 hover:bg-muted" onClick={() => zoomBy(1 / 1.6)}>−</button>
+        <button
+          type="button"
+          aria-label="Zoom in"
+          className="px-2 py-1 hover:bg-muted"
+          onClick={() => zoomBy(1.6)}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom out"
+          className="border-t border-border px-2 py-1 hover:bg-muted"
+          onClick={() => zoomBy(1 / 1.6)}
+        >
+          −
+        </button>
         {k > 1.01 ? (
-          <button type="button" aria-label="Reset zoom" className="border-t border-border px-2 py-1 hover:bg-muted" onClick={resetZoom}>⟲</button>
+          <button
+            type="button"
+            aria-label="Reset zoom"
+            className="border-t border-border px-2 py-1 hover:bg-muted"
+            onClick={resetZoom}
+          >
+            ⟲
+          </button>
         ) : null}
       </div>
       <svg
@@ -285,86 +318,86 @@ export function MetricMap({
           </pattern>
         </defs>
         <g transform={transform}>
-        {showCounties ? (
-          <>
-            <CountyPaths
-              shapes={countyShapes}
-              onPointer={(e) => {
-                const id = (e.target as SVGElement).getAttribute("data-county");
-                if (!id) return setTip(null);
-                const p = place(e.clientX, e.clientY);
-                setTip((t) =>
-                  t?.id === id && Math.abs(t.x - p.x) + Math.abs(t.y - p.y) < 3
-                    ? t
-                    : { ...p, read: countyRead(id), id },
-                );
-              }}
-              onLeave={() => setTip(null)}
-              onPick={onCounty}
-            />
-            <path
-              d={geo.stateBorders}
-              className="pointer-events-none"
-              style={{ fill: "none", stroke: "var(--surface)", strokeWidth: 1.1 }}
-            />
-          </>
-        ) : (
-          shapes.map(({ shape, id, value, idx, isSelected, read }) => (
-            <path
-              key={id.fips}
-              d={shape.d}
-              data-state={id.usps}
-              data-fips={id.fips}
-              role="button"
-              tabIndex={0}
-              aria-label={`${stateAction} ${id.name}. ${read.value}${read.rank ? `. ${read.rank}` : ""}`}
-              aria-pressed={isSelected}
-              className="outline-none transition-[stroke] duration-150 focus-visible:[stroke:var(--map-focus)] focus-visible:[stroke-width:2.4]"
-              vectorEffect="non-scaling-stroke"
-              style={{
-                fill: fillFor(
-                  idx == null || value == null ? null : shadeOf(idx, stateBreaks.length),
-                  hatch,
-                ),
-                stroke: isSelected ? "var(--map-active)" : "var(--surface)",
-                strokeWidth: isSelected ? 2.4 : 0.9,
-                cursor: "pointer",
-              }}
-              onMouseEnter={(e) => {
-                const p = place(e.clientX, e.clientY);
-                setTip({ ...p, read, id: id.fips });
-                onHoverState?.(id.usps);
-              }}
-              onMouseMove={(e) => {
-                const p = place(e.clientX, e.clientY);
-                setTip((t) => (t && t.id === id.fips ? { ...t, ...p } : t));
-              }}
-              onMouseLeave={() => {
-                setTip(null);
-                onHoverState?.(null);
-              }}
-              onFocus={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                const p = place(r.left + r.width / 2, r.top + r.height / 2);
-                setTip({ ...p, read, id: id.fips });
-                onHoverState?.(id.usps);
-              }}
-              onBlur={() => {
-                setTip(null);
-                onHoverState?.(null);
-              }}
-              onClick={() => onState(id.fips)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onState(id.fips);
-                }
-              }}
-            >
-              <title>{`${id.name}: ${read.value}`}</title>
-            </path>
-          ))
-        )}
+          {showCounties ? (
+            <>
+              <CountyPaths
+                shapes={countyShapes}
+                onPointer={(e) => {
+                  const id = (e.target as SVGElement).getAttribute("data-county");
+                  if (!id) return setTip(null);
+                  const p = place(e.clientX, e.clientY);
+                  setTip((t) =>
+                    t?.id === id && Math.abs(t.x - p.x) + Math.abs(t.y - p.y) < 3
+                      ? t
+                      : { ...p, read: countyRead(id), id },
+                  );
+                }}
+                onLeave={() => setTip(null)}
+                onPick={onCounty}
+              />
+              <path
+                d={geo.stateBorders}
+                className="pointer-events-none"
+                style={{ fill: "none", stroke: "var(--surface)", strokeWidth: 1.1 }}
+              />
+            </>
+          ) : (
+            shapes.map(({ shape, id, value, idx, isSelected, read }) => (
+              <path
+                key={id.fips}
+                d={shape.d}
+                data-state={id.usps}
+                data-fips={id.fips}
+                role="button"
+                tabIndex={0}
+                aria-label={`${stateAction} ${id.name}. ${read.value}${read.rank ? `. ${read.rank}` : ""}`}
+                aria-pressed={isSelected}
+                className="outline-none transition-[stroke] duration-150 focus-visible:[stroke:var(--map-focus)] focus-visible:[stroke-width:2.4]"
+                vectorEffect="non-scaling-stroke"
+                style={{
+                  fill: fillFor(
+                    idx == null || value == null ? null : shadeOf(idx, stateBreaks.length),
+                    hatch,
+                  ),
+                  stroke: isSelected ? "var(--map-active)" : "var(--surface)",
+                  strokeWidth: isSelected ? 2.4 : 0.9,
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  const p = place(e.clientX, e.clientY);
+                  setTip({ ...p, read, id: id.fips });
+                  onHoverState?.(id.usps);
+                }}
+                onMouseMove={(e) => {
+                  const p = place(e.clientX, e.clientY);
+                  setTip((t) => (t && t.id === id.fips ? { ...t, ...p } : t));
+                }}
+                onMouseLeave={() => {
+                  setTip(null);
+                  onHoverState?.(null);
+                }}
+                onFocus={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  const p = place(r.left + r.width / 2, r.top + r.height / 2);
+                  setTip({ ...p, read, id: id.fips });
+                  onHoverState?.(id.usps);
+                }}
+                onBlur={() => {
+                  setTip(null);
+                  onHoverState?.(null);
+                }}
+                onClick={() => onState(id.fips)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onState(id.fips);
+                  }
+                }}
+              >
+                <title>{`${id.name}: ${read.value}`}</title>
+              </path>
+            ))
+          )}
         </g>
       </svg>
       {tip ? (
