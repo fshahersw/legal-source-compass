@@ -20,7 +20,12 @@ export function rebase(series: readonly Series[], baseDate: string): Series[] {
   });
 }
 
-export type StackRow = { period: string; values: Record<string, number | null> };
+export type StackRow = {
+  period: string;
+  values: Record<string, number | null>;
+  /** An unfinished period (drawn faded, marked with an asterisk). */
+  partial?: boolean;
+};
 
 /** Stacked layers; a null category contributes 0 height but is reported in `gaps`. */
 export function stackLayers(rows: readonly StackRow[], keys: readonly string[]) {

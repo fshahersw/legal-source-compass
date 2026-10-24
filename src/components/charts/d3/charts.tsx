@@ -218,9 +218,9 @@ export function StackedBarsOverTime({
               width={x.bandwidth()}
               y={y(d[1])}
               height={Math.max(0, y(d[0]) - y(d[1]))}
-              style={{ fill: seriesVar(i) }}
+              style={{ fill: seriesVar(i), opacity: rows[j]!.partial ? 0.4 : 1 }}
             >
-              <title>{`${rows[j]!.period} · ${labels?.[l.key] ?? l.key}: ${
+              <title>{`${rows[j]!.period}${rows[j]!.partial ? " (unfinished)" : ""} · ${labels?.[l.key] ?? l.key}: ${
                 rows[j]!.values[l.key] == null ? "Not recorded" : format(d[1] - d[0])
               }`}</title>
             </rect>
@@ -236,6 +236,7 @@ export function StackedBarsOverTime({
               className={TICK}
             >
               {r.period}
+              {r.partial ? "*" : ""}
             </text>
           ) : null,
         )}
@@ -247,6 +248,7 @@ export function StackedBarsOverTime({
             {labels?.[k] ?? k}
           </span>
         ))}
+        {rows.some((r) => r.partial) ? <span>* unfinished period, drawn faded</span> : null}
       </figcaption>
     </figure>
   );
