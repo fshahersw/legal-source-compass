@@ -21,6 +21,7 @@ import {
   tableRows,
 } from "@/components/charts";
 import { chartTokens } from "@/components/charts/palette";
+import { IndexChart } from "@/components/charts/d3/charts";
 import {
   CatalogNotice,
   ENTITY_LABEL,
@@ -34,6 +35,7 @@ import {
 import {
   MAX_COMPARE,
   axisFor,
+  changeSeries,
   parseIds,
   perCapitaPair,
   seriesFrom,
@@ -115,6 +117,14 @@ function CompareTrends({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metric, series.data, nation.data, ids.join(","), withUs, labels.data]);
 
+  // change since a chosen period: counts and amounts only (a change in a percentage reads ambiguously)
+  const canChange = !!metric && metric.format !== "percent";
+  const change = useMemo(
+    () => (canChange && drawn ? changeSeries(drawn.series, drawn.axis) : null),
+    [canChange, drawn],
+  );
+  const showChange = search.chg === "1" && !!change;
+
   const entityWord = ENTITY_LABEL[type];
   const status =
     catalog.isPending || (metric && (series.isPending || (!explicit.length && snapshot.isPending)))
@@ -186,6 +196,21 @@ function CompareTrends({
               ]}
             />
           ) : null}
+          {canChange ? (
+            <Segmented
+              label="Show"
+              value={search.chg === "1" ? "change" : "values"}
+              onChange={(v) => set({ chg: v === "change" ? "1" : undefined })}
+              options={[
+                { id: "values", label: "Values" },
+                {
+                  id: "change",
+                  label: "Change since",
+                  title: "Each line as the percentage change from a period you choose",
+                },
+              ]}
+            />
+          ) : null}
         </div>
         <div className="sm:col-span-2 lg:col-span-3">
           <p className="mb-1 text-[11px] font-medium text-muted-foreground">
@@ -245,8 +270,12 @@ function CompareTrends({
       <FixtureBanner on={fixturesOn && catalog.data?.origin[metric?.id ?? ""] === "fixture"} />
       <CatalogNotice catalog={catalog.data} />
       <ChartFrame
-        title={metric ? `${metric.label}, ${entityWord.many} compared` : "Compare over time"}
-        unit={metric?.unit}
+        title={
+          metric
+            ? `${metric.label}, ${entityWord.many} compared${showChange ? ": change since a chosen period" : ""}`
+            : "Compare over time"
+        }
+        unit={showChange ? "% change" : metric?.unit}
         period={
           drawn?.axis.keys.length
             ? `${drawn.axis.label(drawn.axis.keys[0]!)}–${drawn.axis.label(drawn.axis.keys[drawn.axis.keys.length - 1]!)}${hasPartial ? "*" : ""}`
@@ -256,7 +285,19 @@ function CompareTrends({
         status={status}
         notes={metric ? metricNotes(metric) : undefined}
         footnotes={[
-          ...(hasPartial ? ["* Partial period: drawn dashed, never the latest value."] : []),
+          ...(showChange
+            ? [
+                "Change since: each line is its value divided by its value at the chosen period, minus one. Drag or click on the chart to move the comparison point; a line with no value there is not drawn.",
+                ...(change?.partialDropped.length
+                  ? [
+                      `Partial period${change.partialDropped.length === 1 ? "" : "s"} left out of the change view: ${change.partialDropped.map((k) => drawn!.axis.label(k)).join(", ")}.`,
+                    ]
+                  : []),
+              ]
+            : []),
+          ...(hasPartial && !showChange
+            ? ["* Partial period: drawn dashed, never the latest value."]
+            : []),
           ...(gaps
             ? [
                 `${gaps} entity-period${gaps === 1 ? "" : "s"} not recorded, left as gaps (not zero).`,
@@ -284,7 +325,15 @@ function CompareTrends({
         minHeight={300}
         headingLevel="h2"
       >
-        {drawn ? (
+        {drawn && showChange && change ? (
+          <IndexChart
+            series={change.series}
+            initialIndex={change.commonStart}
+            formatDate={(k) => drawn.axis.label(k)}
+            labelWidth={170}
+            height={300}
+          />
+        ) : drawn ? (
           <>
             <ChartLegend
               items={drawn.series.map((s, i) => ({
