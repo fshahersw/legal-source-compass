@@ -31,6 +31,21 @@ import { getEnforcementCalendar } from "@/lib/lawviz/lawviz.functions";
 import { HatchSwatch, Notice, RampLegend } from "./parts";
 import { builtNote, countOf, fmtDate, fmtInt } from "./format";
 import { RAMP, ZERO_FILL, rampStep } from "./ramp";
+import ContributionSkyline from "@/components/ui/contribution-skyline";
+import { ActivityHeatmap } from "@/components/ui/activity-heatmap";
+
+type DayView = "calendar" | "weekdays" | "months" | "3d";
+const DAY_VIEWS: { id: DayView; label: string }[] = [
+  { id: "calendar", label: "Calendar" },
+  { id: "weekdays", label: "Weekdays" },
+  { id: "months", label: "Months" },
+  { id: "3d", label: "3D" },
+];
+/** The ramp's validated steps as literal colours (the 3D view draws on a canvas, which cannot read CSS variables). */
+const SKYLINE_PALETTE = {
+  light: ["#9bb6da", "#759bcb", "#507fbb", "#2863ab"],
+  dark: ["#24518a", "#2f6fb8", "#4c88d3", "#9cc3f0"],
+};
 
 const control =
   "h-8 rounded-md border border-input bg-background px-2 text-xs focus-visible:outline-2 focus-visible:outline-ring";
@@ -61,8 +76,76 @@ function DayGrid({
         ? ZERO_FILL
         : RAMP[rampStep(classOf(v, breaks), breaks.length)];
   const hatchId = `h-${series.id}-${year}`;
+  const [view, setView] = useState<DayView>("calendar");
+  // Recorded days only: outside coverage nothing is passed, never a zero.
+  const recorded = useMemo(
+    () =>
+      grid.filter((c) => c.value !== null).map((c) => ({ date: c.date, value: c.value as number })),
+    [grid],
+  );
+  const lastRecorded = recorded.at(-1)?.date ?? `${year}-12-31`;
+  const uncovered = grid.length - recorded.length;
+  const switcher = (
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div
+        role="radiogroup"
+        aria-label={`${series.label} view`}
+        className="inline-flex rounded-md border border-border p-0.5"
+      >
+        {DAY_VIEWS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="radio"
+            aria-checked={view === v.id}
+            onClick={() => setView(v.id)}
+            className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${view === v.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+      {view !== "calendar" && uncovered > 0 ? (
+        <span className="text-[11px] text-muted-foreground">
+          {uncovered} day{uncovered === 1 ? "" : "s"} outside coverage left out
+        </span>
+      ) : null}
+    </div>
+  );
+  if (view === "weekdays" || view === "months")
+    return (
+      <div className="space-y-2">
+        {switcher}
+        <ActivityHeatmap
+          key={view}
+          data={recorded}
+          days={grid.length}
+          endDate={`${year}-12-31`}
+          view={view}
+          color="var(--chart-1)"
+          unit={series.unit}
+          showLegend
+        />
+      </div>
+    );
+  if (view === "3d")
+    return (
+      <div className="space-y-2">
+        {switcher}
+        <ContributionSkyline
+          data={recorded.map((d) => ({ date: d.date, count: d.value }))}
+          endDate={lastRecorded}
+          defaultView="3d"
+          palette={SKYLINE_PALETTE}
+          title={`${series.label}: ${fmtInt(recorded.reduce((n, d) => n + d.value, 0))} ${series.unit}, ${year}`}
+          unit={series.unit.replace(/s$/, "")}
+          unitPlural={series.unit}
+        />
+      </div>
+    );
   return (
     <div className="space-y-1">
+      {switcher}
       <ChartCanvas
         height={7 * 13 + 16}
         ariaLabel={`${series.label}, ${year}, one cell per day.`}
