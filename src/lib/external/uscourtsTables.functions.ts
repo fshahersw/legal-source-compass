@@ -46,6 +46,8 @@ export type UstPeriod = {
   pub: string;
   /** Index into `sources`. */
   src: number;
+  /** The publisher's own words for a period that is not N months ("From June 8, 2015, to December 31, 2015"). */
+  phrase?: string;
 };
 
 export type UstColumn = {
@@ -105,6 +107,13 @@ export type UstTable = {
     districtRow: UstSeries | null;
     outsideAt: number[];
   } | null;
+  /**
+   * Where a court's figures are printed only in a combined row from some period on: E.D. and W.D. Arkansas share one row in the
+   * bankruptcy tables ("AR", record arcomb) since `from`; `lastOwn` is the last period with the court's own row. Never split.
+   */
+  reportedWith?: { court: string; label: string; from: string; lastOwn: string | null } | null;
+  /** The combined row's courts (arcomb covers ared and arwd). */
+  covers?: string[];
 };
 
 export type UstRow = {
@@ -186,7 +195,14 @@ function parseCommon(u: Record<string, unknown>) {
     const src = r?.["src"];
     if (!r || !end || !pub || typeof src !== "number" || !Number.isInteger(src)) return null;
     const months = num(r["months"]);
-    periods.push({ end, months: months != null && months > 0 ? months : null, pub, src });
+    const phrase = str(r["phrase"]);
+    periods.push({
+      end,
+      months: months != null && months > 0 ? months : null,
+      pub,
+      src,
+      ...(phrase ? { phrase: phrase.slice(0, 160) } : {}),
+    });
   }
   if (!periods.length) return null;
   for (let i = 1; i < periods.length; i += 1)
@@ -325,7 +341,23 @@ export function parseUstTable(raw: unknown): UstTable | null {
     breaks: common.breaks,
     sources: common.sources,
     county,
+    reportedWith: parseReportedWith(u["reportedWith"]),
+    covers: arr(u["covers"]).filter(
+      (c): c is string => typeof c === "string" && /^[a-z0-9]{2,8}$/.test(c),
+    ),
   };
+}
+
+/** `reportedWith` of a court record, or null when absent or malformed (an unknown court id or a date that is not a date). */
+export function parseReportedWith(v: unknown): NonNullable<UstTable["reportedWith"]> | null {
+  const o = obj(v);
+  const court = str(o?.["court"]);
+  const label = str(o?.["label"]);
+  const from = str(o?.["from"]);
+  const lastOwn = str(o?.["lastOwn"]);
+  if (!court || !/^[a-z0-9]{2,8}$/.test(court) || !label || !from || !ISO_DATE.test(from))
+    return null;
+  return { court, label, from, lastOwn: lastOwn && ISO_DATE.test(lastOwn) ? lastOwn : null };
 }
 
 export function parseUstNational(raw: unknown): UstNationalTable | null {

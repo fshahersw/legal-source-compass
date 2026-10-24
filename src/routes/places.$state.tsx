@@ -22,6 +22,7 @@ import { partitionStateSources } from "@/components/places/state/resourceFacts";
 import { hostKey } from "@/components/places/state/resourceFilter";
 import { StateOverviewTab } from "@/components/places/state/StateOverviewTab";
 import { Button } from "@/components/ui/button";
+import { StateCapitolHeader } from "@/components/visuals/StateCapitolHeader";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
 import { sourcesForState } from "@/lib/corpus/join";
@@ -232,6 +233,7 @@ function StatePage() {
           </button>
         ))}
       </nav>
+      {tab === "overview" ? <StateCapitolHeader usps={usps} stateName={state.name} /> : null}
       {tab === "overview" ? (
         <StateOverviewTab
           key={usps}

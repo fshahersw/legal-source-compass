@@ -72,9 +72,18 @@ function renameAt(
   return i > 0 ? periods[i]!.end : null;
 }
 
-/** A bankruptcy court's name as its records title it; the combined Arkansas court has no district record of its own. */
-function courtLabel(id: string, names: ReadonlyMap<string, string>) {
-  if (id === "arcomb") return "Arkansas (both districts)";
+/** The combined Arkansas row ("AR" in the tables): one row for the Eastern and Western districts, never split between them. */
+const ARCOMB = "arcomb";
+const ARCOMB_LABEL = "Arkansas, E.D. and W.D. (one row)";
+
+/** A bankruptcy court's name as its records title it; a combined row takes its own label. */
+function courtLabel(
+  id: string,
+  names: ReadonlyMap<string, string>,
+  combined?: Record<string, { label: string }>,
+) {
+  if (combined?.[id]) return id === ARCOMB ? ARCOMB_LABEL : combined[id]!.label;
+  if (id === ARCOMB) return ARCOMB_LABEL;
   return names.get(id) ?? id.toUpperCase();
 }
 
@@ -90,6 +99,33 @@ function fileCell(src: UstSource | undefined) {
     </a>
   ) : (
     "Not recorded"
+  );
+}
+
+/** E.D. or W.D. Arkansas: from `from` the tables print the two districts in one row; a link to that row (never split). */
+function CombinedRowNote({
+  court,
+  reported,
+  onSelect,
+}: {
+  court: string;
+  reported: { court: string; label: string; from: string; lastOwn: string | null };
+  onSelect: (court: string) => void;
+}) {
+  return (
+    <StateNote
+      action={
+        <button
+          type="button"
+          onClick={() => onSelect(reported.court)}
+          className="rounded border border-border px-2 py-0.5 text-[11px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          Show {ARCOMB_LABEL}
+        </button>
+      }
+    >
+      {`From the quarter ending ${longDate(reported.from)} the table prints ${court === "ared" ? "E.D." : court === "arwd" ? "W.D." : "this court\u2019s"} Arkansas figures only in one row for the Eastern and Western districts together${reported.lastOwn ? `; this court\u2019s own row ends with the quarter ending ${longDate(reported.lastOwn)}` : ""}. The combined row is not split between the districts.`}
+    </StateNote>
   );
 }
 
@@ -143,6 +179,7 @@ export function BankruptcyTab({ search, onSearch }: TabProps) {
           court={search.court}
           measure={measure}
           onClear={() => onSearch({ court: undefined })}
+          onSelect={(court) => onSearch({ court })}
         />
       ) : null}
     </div>
@@ -382,7 +419,7 @@ function DistrictQuarter({
     l && key
       ? Object.entries(l.courts).map(([id, v]) => ({
           id,
-          label: courtLabel(id, nameMap),
+          label: courtLabel(id, nameMap, l.combined),
           value: v[key] ?? null,
         }))
       : [];
@@ -404,7 +441,9 @@ function DistrictQuarter({
       notes={[
         "The 20 courts with the most cases are drawn; Show data lists every court. Select a bar to chart that court by quarter.",
         "Counts follow the size of each district's population and economy; compare a court with its own history before reading a rank as a trend.",
-        "Arkansas has one bankruptcy court for its two districts: the table prints it once (Arkansas, both districts), so E.D. and W.D. Arkansas are listed as not recorded.",
+        l?.combined?.[ARCOMB]
+          ? "Arkansas: the table prints one bankruptcy row for the Eastern and Western districts together (\u2018AR\u2019). It is listed once as \u2018Arkansas, E.D. and W.D. (one row)\u2019 and is never split between the two districts or assigned to one of them."
+          : "Each bar is one court's row as printed.",
       ]}
       table={{
         caption: `${spec.label} by bankruptcy court`,
@@ -432,19 +471,22 @@ function DistrictTrend({
   court,
   measure,
   onClear,
+  onSelect,
 }: {
   court: string;
   measure: Measure;
   onClear: () => void;
+  onSelect: (court: string) => void;
 }) {
   const spec = SPECS[measure];
   const q = useQuery(seriesCourtsQuery(BANKRUPTCY_DS, QUARTERLY, [court]));
   const names = useQuery(seriesNamesQuery(BANKRUPTCY_DS, QUARTERLY));
   const t = q.data?.[0] ?? null;
   const name =
-    court === "arcomb"
-      ? "Arkansas (both districts)"
+    court === ARCOMB
+      ? ARCOMB_LABEL
       : shortName(names.data?.find((n) => n.id === court)?.name ?? court.toUpperCase());
+  const combinedFrom = t?.reportedWith ?? null;
   const periods = t?.periods ?? [];
   const m = t ? measureSeries(t.data, measure, periods.length) : null;
   const idx = periodIndices(periods, "all");
@@ -458,84 +500,89 @@ function DistrictTrend({
   const newest = periods[periods.length - 1];
   const change = m ? sameQuarterYearEarlier(periods, m.values) : null;
   return (
-    <ChartFrame
-      title={`${spec.label} in each quarter, ${name}`}
-      unit="cases filed in the three months"
-      period={
-        periods.length
-          ? `Quarters ending ${longDate(periods[0]!.end)} to ${longDate(newest!.end)}`
-          : undefined
-      }
-      sources={[
-        ...(t && newest && t.sources[newest.src]?.page
-          ? [
-              {
-                label: `U.S. Courts, Table F-2 (Three Months), ${longDate(newest.end)}`,
-                url: t.sources[newest.src]!.page!,
-              },
-            ]
-          : []),
-        { label: "U.S. Courts caseload statistics data tables", url: TABLES_PAGE },
-      ]}
-      status={status}
-      actions={
-        <button
-          type="button"
-          onClick={onClear}
-          className="rounded border border-border px-2 py-0.5 text-[11px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          Clear court
-        </button>
-      }
-      notes={[
-        change
-          ? `Quarter ending ${longDate(change.latestEnd)}: ${count.full(change.latest)} cases; ${longDate(change.priorEnd)}: ${count.full(change.prior)} (${change.percent != null ? formatPercentChange(change.percent) : "no percent: zero a year earlier"}).`
-          : "The same quarter a year earlier is not printed, so no change is computed.",
-        "The court's row as printed in each quarter's Table F-2 (Three Months).",
-      ]}
-      table={
-        t && m
-          ? {
-              caption: `${spec.label} in each quarter, ${name}`,
-              columns: [
-                { label: "Quarter", align: "left" },
-                { label: "Cases" },
-                { label: "File", align: "left" },
-              ],
-              rows: [...periods.keys()].reverse().map((i) => ({
-                key: periods[i]!.end,
-                cells: [
-                  periodText(periods[i]!),
-                  count.full(m.values[i]),
-                  fileCell(t.sources[periods[i]!.src]),
-                ],
-              })),
-            }
-          : undefined
-      }
-      minHeight={200}
-    >
-      {t && m ? (
-        <div className="px-3 pb-2 pt-1">
-          <LineTrend
-            series={[
-              {
-                id: court,
-                label: name,
-                points: idx.map((i) => ({ key: periods[i]!.end, value: m.values[i] ?? null })),
-              },
-            ]}
-            axis={buildAxis(periods, idx, "BF")}
-            formatter={count}
-            unit="cases"
-            ariaLabel={`${spec.label} in each quarter, ${name}`}
-            annotations={
-              newest ? [{ key: newest.end, label: `Newest: ${longDate(newest.end)}` }] : []
-            }
-            height={200}
-          />
-        </div>
+    <>
+      {combinedFrom ? (
+        <CombinedRowNote court={court} reported={combinedFrom} onSelect={onSelect} />
       ) : null}
-    </ChartFrame>
+      <ChartFrame
+        title={`${spec.label} in each quarter, ${name}`}
+        unit="cases filed in the three months"
+        period={
+          periods.length
+            ? `Quarters ending ${longDate(periods[0]!.end)} to ${longDate(newest!.end)}`
+            : undefined
+        }
+        sources={[
+          ...(t && newest && t.sources[newest.src]?.page
+            ? [
+                {
+                  label: `U.S. Courts, Table F-2 (Three Months), ${longDate(newest.end)}`,
+                  url: t.sources[newest.src]!.page!,
+                },
+              ]
+            : []),
+          { label: "U.S. Courts caseload statistics data tables", url: TABLES_PAGE },
+        ]}
+        status={status}
+        actions={
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded border border-border px-2 py-0.5 text-[11px] hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            Clear court
+          </button>
+        }
+        notes={[
+          change
+            ? `Quarter ending ${longDate(change.latestEnd)}: ${count.full(change.latest)} cases; ${longDate(change.priorEnd)}: ${count.full(change.prior)} (${change.percent != null ? formatPercentChange(change.percent) : "no percent: zero a year earlier"}).`
+            : "The same quarter a year earlier is not printed, so no change is computed.",
+          "The court's row as printed in each quarter's Table F-2 (Three Months).",
+        ]}
+        table={
+          t && m
+            ? {
+                caption: `${spec.label} in each quarter, ${name}`,
+                columns: [
+                  { label: "Quarter", align: "left" },
+                  { label: "Cases" },
+                  { label: "File", align: "left" },
+                ],
+                rows: [...periods.keys()].reverse().map((i) => ({
+                  key: periods[i]!.end,
+                  cells: [
+                    periodText(periods[i]!),
+                    count.full(m.values[i]),
+                    fileCell(t.sources[periods[i]!.src]),
+                  ],
+                })),
+              }
+            : undefined
+        }
+        minHeight={200}
+      >
+        {t && m ? (
+          <div className="px-3 pb-2 pt-1">
+            <LineTrend
+              series={[
+                {
+                  id: court,
+                  label: name,
+                  points: idx.map((i) => ({ key: periods[i]!.end, value: m.values[i] ?? null })),
+                },
+              ]}
+              axis={buildAxis(periods, idx, "BF")}
+              formatter={count}
+              unit="cases"
+              ariaLabel={`${spec.label} in each quarter, ${name}`}
+              annotations={
+                newest ? [{ key: newest.end, label: `Newest: ${longDate(newest.end)}` }] : []
+              }
+              height={200}
+            />
+          </div>
+        ) : null}
+      </ChartFrame>
+    </>
   );
 }

@@ -94,6 +94,7 @@ import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as PlacesAnalyticsRouteImport } from './routes/places.analytics'
 import { Route as PrototypesIndexRouteImport } from './routes/prototypes.index'
 import { Route as PrototypesAuthoritiesRouteImport } from './routes/prototypes.authorities'
+import { Route as PrototypesKitRouteImport } from './routes/prototypes.kit'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
 import { Route as SafetyCompaniesRouteImport } from './routes/safety_.companies'
@@ -577,6 +578,11 @@ const PrototypesAuthoritiesRoute = PrototypesAuthoritiesRouteImport.update({
   path: '/prototypes/authorities',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrototypesKitRoute = PrototypesKitRouteImport.update({
+  id: '/prototypes/kit',
+  path: '/prototypes/kit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegistryIndexRoute = RegistryIndexRouteImport.update({
   id: '/registry/',
   path: '/registry/',
@@ -944,6 +950,7 @@ export interface FileRoutesByFullPath {
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
   '/prototypes/authorities': typeof PrototypesAuthoritiesRoute
+  '/prototypes/kit': typeof PrototypesKitRoute
   '/registry/$id': typeof RegistryIdRoute
   '/safety/companies': typeof SafetyCompaniesRoute
   '/safety/signals': typeof SafetySignalsRoute
@@ -1081,6 +1088,7 @@ export interface FileRoutesByTo {
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
   '/prototypes/authorities': typeof PrototypesAuthoritiesRoute
+  '/prototypes/kit': typeof PrototypesKitRoute
   '/registry/$id': typeof RegistryIdRoute
   '/safety/companies': typeof SafetyCompaniesRoute
   '/safety/signals': typeof SafetySignalsRoute
@@ -1223,6 +1231,7 @@ export interface FileRoutesById {
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
   '/prototypes/authorities': typeof PrototypesAuthoritiesRoute
+  '/prototypes/kit': typeof PrototypesKitRoute
   '/registry/$id': typeof RegistryIdRoute
   '/safety_/companies': typeof SafetyCompaniesRoute
   '/safety_/signals': typeof SafetySignalsRoute
@@ -1368,6 +1377,7 @@ export interface FileRouteTypes {
     | '/places/$state'
     | '/places/analytics'
     | '/prototypes/authorities'
+    | '/prototypes/kit'
     | '/registry/$id'
     | '/safety/companies'
     | '/safety/signals'
@@ -1505,6 +1515,7 @@ export interface FileRouteTypes {
     | '/places/$state'
     | '/places/analytics'
     | '/prototypes/authorities'
+    | '/prototypes/kit'
     | '/registry/$id'
     | '/safety/companies'
     | '/safety/signals'
@@ -1646,6 +1657,7 @@ export interface FileRouteTypes {
     | '/places/$state'
     | '/places/analytics'
     | '/prototypes/authorities'
+    | '/prototypes/kit'
     | '/registry/$id'
     | '/safety_/companies'
     | '/safety_/signals'
@@ -1790,6 +1802,7 @@ export interface RootRouteChildren {
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   PlacesAnalyticsRoute: typeof PlacesAnalyticsRoute
   PrototypesAuthoritiesRoute: typeof PrototypesAuthoritiesRoute
+  PrototypesKitRoute: typeof PrototypesKitRoute
   RegistryIdRoute: typeof RegistryIdRoute
   SafetyCompaniesRoute: typeof SafetyCompaniesRoute
   SafetySignalsRoute: typeof SafetySignalsRoute
@@ -2429,6 +2442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrototypesAuthoritiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prototypes/kit': {
+      id: '/prototypes/kit'
+      path: '/prototypes/kit'
+      fullPath: '/prototypes/kit'
+      preLoaderRoute: typeof PrototypesKitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/registry/': {
       id: '/registry/'
       path: '/registry'
@@ -3055,6 +3075,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlacesStateRoute: PlacesStateRouteWithChildren,
   PlacesAnalyticsRoute: PlacesAnalyticsRoute,
   PrototypesAuthoritiesRoute: PrototypesAuthoritiesRoute,
+  PrototypesKitRoute: PrototypesKitRoute,
   RegistryIdRoute: RegistryIdRoute,
   SafetyCompaniesRoute: SafetyCompaniesRoute,
   SafetySignalsRoute: SafetySignalsRoute,

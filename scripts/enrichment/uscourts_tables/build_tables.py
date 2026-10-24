@@ -79,9 +79,25 @@ def pick_docs(docs):
     return chosen, dropped
 
 
+_RETRIEVED = {}
+
+
+def retrieved_at(sha256):
+    """When the file with these bytes was fetched (UTC, from the acquisition manifest); None when the manifest has no such file."""
+    if not _RETRIEVED:
+        import fetchlib as F
+
+        for e in F.manifest_entries():
+            if e.get("sha256") and e.get("retrieved_at"):
+                _RETRIEVED.setdefault(e["sha256"], e["retrieved_at"])
+        _RETRIEVED.setdefault("", None)
+    return _RETRIEVED.get(sha256 or "")
+
+
 def source_entry(doc):
     n, s = doc["norm"], doc["source"]
-    return {"pub": n["pub"], "end": n["period_end"], "page": s.get("page"), "url": s["url"], "sha256": s.get("sha256"), "fmt": s.get("format"), "sheet": n.get("sheet")}
+    return {"pub": n["pub"], "end": n["period_end"], "page": s.get("page"), "url": s["url"], "sha256": s.get("sha256"), "fmt": s.get("format"), "sheet": n.get("sheet"),
+            "retrieved": retrieved_at(s.get("sha256"))}
 
 
 def value_columns(norm):
@@ -261,7 +277,10 @@ def periods_block(docs):
     periods, sources = [], []
     for i, d in enumerate(docs):
         n = d["norm"]
-        periods.append({"end": n["period_end"], "months": n.get("months"), "pub": n["pub"], "src": i})
+        period = {"end": n["period_end"], "months": n.get("months"), "pub": n["pub"], "src": i}
+        if n.get("months") is None and n.get("period_phrase") and not n.get("period_phrase", "").lower().startswith(("during", "as of")):
+            period["phrase"] = n["period_phrase"]  # a period that is not N months, in the publisher's words ("From June 8, 2015, to December 31, 2015")
+        periods.append(period)
         sources.append(source_entry(d))
     return periods, sources
 

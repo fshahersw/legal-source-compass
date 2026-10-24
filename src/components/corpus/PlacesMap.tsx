@@ -2,22 +2,15 @@ import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  ArrowRight,
-  BookOpen,
-  Clock3,
-  ExternalLink,
-  Landmark,
-  MapPin,
-  Search,
-  UsersRound,
-} from "lucide-react";
+import { BookOpen, Clock3, ExternalLink, Landmark, MapPin, UsersRound } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
+import { BarList } from "@/components/kit/BarList";
+import { SourceFooter } from "@/components/kit/Card";
+import { ChartCard } from "@/components/kit/ChartCard";
+import { LinkTile } from "@/components/kit/LinkTile";
 import { MetricMap, type MapArea } from "@/components/places/MetricMap";
-import { dataRows } from "@/components/places/mapView";
 import { parseMapSearch, resolveMapSelection } from "@/components/places/mapSearch";
-import { StateMark } from "./EntityArtwork";
-import { Input } from "@/components/ui/input";
+import { mapRows, mapTakeaway } from "./placesMapModel";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
@@ -37,6 +30,7 @@ import {
   type StateMapMetric,
 } from "@/lib/external/mapMetricsModel";
 import { externalHref } from "@/lib/external/href";
+import { cn } from "@/lib/utils";
 
 const DESTINATIONS = [
   { id: "overview" as const, label: "State overview", icon: MapPin },
@@ -44,21 +38,40 @@ const DESTINATIONS = [
   { id: "judges" as const, label: "Judges", icon: UsersRound },
 ];
 const RANKED = STATES.map((s) => s.fips);
+/** States shown as bars in the ranked panel; every state is in its "View data" table. */
+const TOP = 10;
+
+/** Segmented control (soft pill on a muted track) shared by the map's toggles. */
+const SEGMENTED = "flex rounded-lg border border-border bg-muted p-[3px]";
+const segment = (on: boolean) =>
+  cn(
+    "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-ring",
+    on
+      ? "bg-surface font-medium text-foreground shadow-xs"
+      : "text-muted-foreground hover:text-foreground",
+  );
 
 /**
- * The national map. On "/" it is the Overview (its briefing is passed as `after`); on /places it is the Places
- * section's Map tab. Both keep the same metric selector, layers, readout and data table.
+ * The national map. On "/" it is the Overview (its briefing is passed as `before` and its section links as `after`);
+ * on /places it is the Places section's Map tab. Both keep the same metric selector, layers, readout and data table.
  */
-export function PlacesMap({ home, after }: { home?: boolean | undefined; after?: ReactNode }) {
+export function PlacesMap({
+  home,
+  before,
+  after,
+}: {
+  home?: boolean | undefined;
+  /** Rendered above the map (the Overview's KPI row). */
+  before?: ReactNode;
+  after?: ReactNode;
+}) {
   const atlas = useAtlas();
   const corpus = useCorpus();
   const navigate = useNavigate();
   const search = parseMapSearch(useSearch({ strict: false }) as Record<string, unknown>);
   const { metric: metricKey, counties: countyMode } = resolveMapSelection(search);
-  const [query, setQuery] = useState("");
   const [tab, setTab] = useState<StateHubTab>("overview");
   const [hover, setHover] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<"name" | "value">("name");
 
   const metricsFn = useServerFn(getStateMapMetrics);
   const layerFn = useServerFn(getCountyMapLayer);
@@ -112,20 +125,6 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
     void navigate({ to: home ? "/" : "/places", search: next, replace: true, resetScroll: false });
   };
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = states.filter(
-      (s) => !q || s.name.toLowerCase().includes(q) || s.usps.toLowerCase() === q,
-    );
-    if (sortBy === "value" && metric)
-      return [...list].sort(
-        (a, b) =>
-          (metric.values[b.fips] ?? Number.NEGATIVE_INFINITY) -
-            (metric.values[a.fips] ?? Number.NEGATIVE_INFINITY) || a.name.localeCompare(b.name),
-      );
-    return list;
-  }, [states, query, sortBy, metric]);
-
   const stateArea: MapArea = {
     values: metric?.values ?? {},
     detail: metric?.detail ?? {},
@@ -152,14 +151,36 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
       ),
     [corpus.geo],
   );
-  const stateNames = useMemo(() => new Map(STATES.map((s) => [s.fips, s.name])), []);
-  const tableRows = useMemo(
-    () => (metric ? dataRows(stateNames, metric.values, RANKED) : []),
-    [metric, stateNames],
+  const rankRows = useMemo(
+    () => mapRows(STATES, metric?.values ?? {}, metric?.rank ?? {}),
+    [metric],
   );
+  const withValue = rankRows.filter((r) => r.value !== null).length;
+  const topRows = rankRows.filter((r) => r.value !== null).slice(0, TOP);
+  const takeaway = mapTakeaway(rankRows, (v) => formatMapValue(v, def.format), def.unit);
   const loadingMetric = def.key !== "directory_sources" && metrics.isPending;
   const metricFailed = def.key !== "directory_sources" && !metrics.isPending && !metric;
   const failedParts = metrics.data?.unavailable ?? [];
+  const rankingLoading =
+    loadingMetric || (def.key === "directory_sources" && atlas.status === "loading");
+
+  const shownSourceUrl = countyMode && layer.data ? layer.data.sourceUrl : metric?.sourceUrl;
+  const shownSourceName = countyMode && layer.data ? layer.data.sourceName : metric?.sourceName;
+  const shownPeriod = countyMode && layer.data ? layer.data.yearLabel : metric?.yearLabel;
+  const sourceLink =
+    metric && shownSourceUrl ? (
+      <a
+        href={externalHref(shownSourceUrl)}
+        {...(shownSourceUrl.startsWith("/") ? {} : { target: "_blank", rel: "noreferrer" })}
+        title={shownSourceName}
+        className="inline-flex min-w-0 items-center gap-0.5 underline-offset-2 hover:text-foreground hover:underline"
+      >
+        <span className="truncate">{shownSourceName}</span>
+        {shownSourceUrl.startsWith("/") ? null : (
+          <ExternalLink className="size-3 shrink-0" aria-hidden />
+        )}
+      </a>
+    ) : null;
 
   return (
     <AppShell
@@ -167,20 +188,21 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
       title={home ? "Overview" : "Places"}
       description={
         home
-          ? "The national map of courts, litigation, law, enforcement and Census figures, with a briefing across the platform below it."
+          ? "The national map of courts, litigation, law, enforcement and Census figures, with a briefing across the platform."
           : "States, counties and cities: shade the map by a metric, then open a state for its courts, law, litigation and figures."
       }
     >
+      {before ? <div className="mb-6">{before}</div> : null}
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+          <label className="flex flex-col gap-1.5 text-meta font-medium text-muted-foreground">
             Shade the map by
             <select
               value={metricKey}
               onChange={(e) => setSearch({ metric: e.target.value })}
               aria-label="Map metric"
               data-testid="map-metric"
-              className="h-9 w-72 max-w-full rounded-md border border-input bg-surface px-2 text-xs text-foreground"
+              className="h-9 w-72 max-w-full cursor-pointer rounded-md border border-input bg-surface px-2.5 text-[13px] font-normal text-foreground shadow-xs transition-[border-color,box-shadow] hover:border-border-strong focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
             >
               {MAP_GROUPS.map((group) => (
                 <optgroup key={group} label={group}>
@@ -193,13 +215,9 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
               ))}
             </select>
           </label>
-          <div className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+          <div className="flex flex-col gap-1.5 text-meta font-medium text-muted-foreground">
             <span id="map-layer-label">Layer</span>
-            <div
-              role="group"
-              aria-labelledby="map-layer-label"
-              className="flex rounded-md border border-border bg-surface p-0.5"
-            >
+            <div role="group" aria-labelledby="map-layer-label" className={SEGMENTED}>
               {(
                 [
                   { id: "states", label: "States", on: !countyMode, enabled: true },
@@ -213,7 +231,7 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
                   disabled={!l.enabled}
                   title={l.enabled ? undefined : "No county data exists for this metric"}
                   onClick={() => setSearch({ layer: l.id === "counties" ? "counties" : null })}
-                  className={`h-8 rounded px-3 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${l.on ? "bg-primary font-semibold text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                  className={segment(l.on)}
                 >
                   {l.label}
                 </button>
@@ -221,23 +239,26 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </div>
           </div>
         </div>
-        <div
-          className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-surface p-1"
-          role="group"
-          aria-label="Open selected state in"
-        >
-          {DESTINATIONS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              aria-pressed={tab === id}
-              onClick={() => setTab(id)}
-              className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs transition-colors ${tab === id ? "bg-primary font-semibold text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}
-            >
-              <Icon className="size-3.5" aria-hidden />
-              {label}
-            </button>
-          ))}
+        <div className="flex flex-col gap-1.5 text-meta font-medium text-muted-foreground">
+          <span id="map-destination-label">Open a state in</span>
+          <div
+            className={cn(SEGMENTED, "flex-wrap")}
+            role="group"
+            aria-labelledby="map-destination-label"
+          >
+            {DESTINATIONS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={tab === id}
+                onClick={() => setTab(id)}
+                className={segment(tab === id)}
+              >
+                <Icon className="size-3.5" aria-hidden />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
@@ -249,7 +270,6 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
               states={stateArea}
               counties={countyArea}
               countyNames={countyNames}
-              selectedState={filtered.length === 1 ? filtered[0]?.usps : undefined}
               onHoverState={setHover}
               onState={(fips) => {
                 const state = stateByFips.get(fips);
@@ -271,7 +291,7 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
               }}
             />
           ) : (
-            <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-md border border-border bg-surface text-sm text-muted-foreground">
+            <div className="flex min-h-80 flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card text-sm text-muted-foreground shadow-xs">
               <MapPin className="size-8 opacity-50" />
               <p role="status">
                 {corpus.error ? "The map is temporarily unavailable." : "Preparing the state map…"}
@@ -290,13 +310,16 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </p>
           ) : null}
           {metricFailed ? (
-            <div role="alert" className="rounded-md border border-border bg-surface p-3 text-xs">
+            <div
+              role="alert"
+              className="rounded-lg border border-status-critical-ring bg-status-critical-soft px-3 py-2.5 text-xs text-status-critical-ink"
+            >
               {def.label} could not be loaded
               {failedParts.length ? ` (${failedParts.join(", ")} unavailable)` : ""}. States are
               shown as Not recorded.
               <button
                 type="button"
-                className="ml-2 text-primary underline"
+                className="ml-2 font-medium text-foreground underline"
                 onClick={() => void metrics.refetch()}
               >
                 Retry
@@ -309,11 +332,14 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </p>
           ) : null}
           {countyMode && layer.isError ? (
-            <div role="alert" className="rounded-md border border-border bg-surface p-3 text-xs">
+            <div
+              role="alert"
+              className="rounded-lg border border-status-critical-ring bg-status-critical-soft px-3 py-2.5 text-xs text-status-critical-ink"
+            >
               County values could not be loaded.
               <button
                 type="button"
-                className="ml-2 text-primary underline"
+                className="ml-2 font-medium text-foreground underline"
                 onClick={() => void layer.refetch()}
               >
                 Retry
@@ -321,226 +347,139 @@ export function PlacesMap({ home, after }: { home?: boolean | undefined; after?:
             </div>
           ) : null}
           <div
-            className="rounded-md border border-border bg-surface px-3 py-2.5 text-xs leading-5"
+            className="rounded-xl border border-border bg-card px-4 py-2.5 shadow-xs"
             data-testid="map-about"
           >
-            <h2 className="text-[13px] font-semibold">{def.label}</h2>
-            <p className="m-0 mt-0.5 text-muted-foreground">{def.help}</p>
-            {countyMode && def.countyNote ? (
-              <p className="m-0 mt-1 text-muted-foreground">{def.countyNote}</p>
-            ) : null}
-            {metric ? (
-              <p className="m-0 mt-1 text-muted-foreground">
-                Period: {countyMode && layer.data ? layer.data.yearLabel : metric.yearLabel}.
-                Source:{" "}
-                <a
-                  href={externalHref(
-                    countyMode && layer.data ? layer.data.sourceUrl : metric.sourceUrl,
-                  )}
-                  {...((countyMode && layer.data
-                    ? layer.data.sourceUrl
-                    : metric.sourceUrl
-                  ).startsWith("/")
-                    ? {}
-                    : { target: "_blank", rel: "noreferrer" })}
-                  className="inline-flex items-center gap-0.5 text-primary underline"
-                >
-                  {countyMode && layer.data ? layer.data.sourceName : metric.sourceName}
-                  {(countyMode && layer.data ? layer.data.sourceUrl : metric.sourceUrl).startsWith(
-                    "/",
-                  ) ? null : (
-                    <ExternalLink className="size-3" aria-hidden />
-                  )}
-                </a>
-                .
-                {metric.denominator && !countyMode ? (
-                  <>
-                    {" "}
-                    Denominator: {metric.denominator.label}, {metric.denominator.year} (
-                    <a
-                      href={externalHref(metric.denominator.url)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline"
-                    >
-                      Census Bureau
-                    </a>
-                    ).
-                  </>
-                ) : null}{" "}
-                Ranks cover the 50 states and DC. Shading is by quantile class; darker is higher.
-              </p>
-            ) : null}
-          </div>
-          <details className="rounded-md border border-border bg-surface" data-testid="map-data">
-            <summary className="cursor-pointer px-3 py-2 text-xs font-medium hover:bg-muted/40">
-              Show data for the states
-            </summary>
-            <div className="max-h-80 overflow-auto border-t border-border">
-              <table className="w-full text-xs">
-                <caption className="sr-only">
-                  {def.label}, {metric?.yearLabel ?? ""}, by state
-                </caption>
-                <thead className="sticky top-0 bg-muted/60 text-left text-[11px] text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-3 py-1.5 font-medium">
-                      Rank
-                    </th>
-                    <th scope="col" className="px-3 py-1.5 font-medium">
-                      State
-                    </th>
-                    <th scope="col" className="px-3 py-1.5 text-right font-medium">
-                      {def.unit}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.map((r) => (
-                    <tr key={r.id} className="border-t border-border/60">
-                      <td className="px-3 py-1 tabular-nums text-muted-foreground">
-                        {r.rank ?? "—"}
-                      </td>
-                      <td className="px-3 py-1">
-                        <Link
-                          to="/places/$state"
-                          params={{ state: stateByFips.get(r.id)?.usps ?? r.id }}
-                          search={{ tab }}
-                          className="text-primary hover:underline"
-                        >
-                          {r.name}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-1 text-right font-mono tabular-nums">
-                        {formatMapValue(r.value, def.format)}
-                      </td>
-                    </tr>
-                  ))}
-                  {!tableRows.length ? (
-                    <tr>
-                      <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">
-                        {NOT_RECORDED}
-                      </td>
-                    </tr>
+            <SourceFooter
+              source={sourceLink}
+              period={metric ? shownPeriod : undefined}
+              aboutTitle={def.label}
+              about={
+                <>
+                  <p>{def.help}</p>
+                  {countyMode && def.countyNote ? <p>{def.countyNote}</p> : null}
+                  {metric ? (
+                    <p>
+                      Period: {shownPeriod}. Source:{" "}
+                      <a
+                        href={externalHref(shownSourceUrl!)}
+                        {...(shownSourceUrl!.startsWith("/")
+                          ? {}
+                          : { target: "_blank", rel: "noreferrer" })}
+                      >
+                        {shownSourceName}
+                      </a>
+                      .
+                      {metric.denominator && !countyMode ? (
+                        <>
+                          {" "}
+                          Denominator: {metric.denominator.label}, {metric.denominator.year} (
+                          <a
+                            href={externalHref(metric.denominator.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Census Bureau
+                          </a>
+                          ).
+                        </>
+                      ) : null}{" "}
+                      Ranks cover the 50 states and DC. Shading is by quantile class; a stronger
+                      shade is a higher value.
+                    </p>
                   ) : null}
-                </tbody>
-              </table>
-            </div>
-          </details>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Link
-              to="/law"
-              className="group flex items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary/25"
+                </>
+              }
             >
-              <span className="rounded-md bg-[var(--blue-tint)] p-2 text-primary">
-                <BookOpen className="size-4" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">Federal law & agencies</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Statutes, rules and regulatory sources.
-                </span>
-              </span>
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              to="/limitations"
-              className="group flex items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary/25"
-            >
-              <span className="rounded-md bg-[var(--blue-tint)] p-2 text-primary">
-                <Clock3 className="size-4" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">Deadline assessment</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  Cited rules with a guided review.
-                </span>
-              </span>
-              <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
+              {!metric ? <span className="flex-1 truncate">{def.label}</span> : null}
+            </SourceFooter>
           </div>
-        </section>
-        <aside className="overflow-hidden rounded-md border border-border bg-surface">
-          <div className="border-b border-border p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Choose a state</h2>
-              <span className="text-[11px] text-muted-foreground">{filtered.length} shown</span>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Find a state"
-                placeholder="Name or abbreviation"
-                className="h-9 pl-8 text-xs"
+          {!home ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <LinkTile
+                to="/law"
+                icon={BookOpen}
+                title="Federal law & agencies"
+                description="Statutes, rules and regulatory sources."
+              />
+              <LinkTile
+                to="/limitations"
+                icon={Clock3}
+                title="Deadline assessment"
+                description="Cited rules with a guided review."
               />
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="truncate" title={`${def.short}, ${metric?.yearLabel ?? ""}`}>
-                {def.short}
-              </span>
-              <span className="flex gap-1" role="group" aria-label="Sort states">
-                {(["name", "value"] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={sortBy === s}
-                    onClick={() => setSortBy(s)}
-                    className={`rounded px-1.5 py-0.5 ${sortBy === s ? "bg-muted font-medium text-foreground" : "hover:bg-muted/60"}`}
-                  >
-                    {s === "name" ? "A to Z" : "By value"}
-                  </button>
-                ))}
-              </span>
-            </div>
-          </div>
-          <ul className="max-h-[29rem] divide-y divide-border/60 overflow-y-auto">
-            {filtered.map((state) => {
-              const value = metric?.values[state.fips];
-              const rank = metric?.rank[state.fips];
-              return (
-                <li key={state.usps}>
+          ) : null}
+        </section>
+        {/* the ranked panel: the top ten as bars, every state (and the search) behind "View data" */}
+        <ChartCard
+          id="map-ranking"
+          title={takeaway ?? `${def.short}: highest states`}
+          subtitle={`${def.label}${metric && shownPeriod ? `, ${shownPeriod}` : ""}. Top ${Math.min(TOP, withValue)} of ${withValue} states with a value.`}
+          state={
+            rankingLoading ? "loading" : metricFailed ? "error" : withValue ? "ready" : "empty"
+          }
+          onRetry={() => void metrics.refetch()}
+          height={360}
+          emptyText={NOT_RECORDED}
+          data={{
+            title: `${def.label}, by state`,
+            description: `${metric && shownPeriod ? `${shownPeriod}. ` : ""}Ranks cover the 50 states and DC; a state without a value is listed as Not recorded.`,
+            filename: `${def.short} by state ${metric?.yearLabel ?? ""}`,
+            rows: rankRows,
+            rowKey: (r) => r.id,
+            searchable: true,
+            searchLabel: "Find a state",
+            columns: [
+              {
+                key: "rank",
+                label: "Rank",
+                align: "right",
+                value: (r) => r.rank,
+                render: (r) => r.rank ?? "—",
+              },
+              {
+                key: "state",
+                label: "State",
+                value: (r) => r.name,
+                render: (r) => (
                   <Link
                     to="/places/$state"
-                    params={{ state: state.usps }}
+                    params={{ state: r.usps }}
                     search={{ tab }}
-                    onMouseEnter={() => setHover(state.usps)}
-                    onMouseLeave={() => setHover(null)}
-                    className={`flex items-center gap-2.5 px-3 py-2 transition-colors ${hover === state.usps ? "bg-muted" : "hover:bg-muted/50"}`}
+                    className="font-medium text-foreground underline-offset-2 hover:text-brand hover:underline"
                   >
-                    <StateMark state={state.usps} className="size-7 rounded-md p-1" />
-                    <span className="min-w-0 flex-1 text-[13px] font-medium">{state.name}</span>
-                    <span className="text-right text-[11px] tabular-nums text-muted-foreground">
-                      {loadingMetric ||
-                      (def.key === "directory_sources" && atlas.status === "loading")
-                        ? "…"
-                        : value == null
-                          ? "—"
-                          : formatMapValue(value, def.format)}
-                      {rank ? <span className="block text-[10px]">#{rank.rank}</span> : null}
-                    </span>
-                    <ArrowRight className="size-3 text-muted-foreground/50" />
+                    {r.name}
                   </Link>
-                </li>
-              );
-            })}
-          </ul>
-          {!filtered.length ? (
-            <p className="px-4 py-8 text-center text-xs text-muted-foreground">
-              No state matches. Try its full name or two-letter abbreviation.
-            </p>
-          ) : null}
-          {atlas.status === "error" && def.key === "directory_sources" ? (
-            <div role="alert" className="border-t border-border p-3 text-xs text-muted-foreground">
-              Source counts unavailable.
-              <button type="button" className="ml-2 underline" onClick={atlas.retryLoad}>
-                Retry
-              </button>
-            </div>
-          ) : null}
-        </aside>
+                ),
+              },
+              {
+                key: "value",
+                label: def.unit.charAt(0).toUpperCase() + def.unit.slice(1),
+                align: "right",
+                value: (r) => r.value,
+                render: (r) => formatMapValue(r.value, def.format),
+              },
+            ],
+            source: { source: sourceLink, period: metric ? shownPeriod : undefined },
+          }}
+        >
+          <BarList
+            ariaLabel={`States with the highest ${def.short.toLowerCase()}`}
+            highlight={hover && topRows.some((r) => r.usps === hover) ? hover : null}
+            items={topRows.map((r) => ({
+              id: r.usps,
+              label: r.name,
+              note: r.rank ? `#${r.rank}` : undefined,
+              value: r.value,
+              display: formatMapValue(r.value, def.format),
+              to: `/places/${r.usps}`,
+              search: { tab },
+            }))}
+          />
+        </ChartCard>
       </div>
-      {after ? <div className="mt-6">{after}</div> : null}
+      {after ? <div className="mt-8">{after}</div> : null}
     </AppShell>
   );
 }

@@ -48,16 +48,19 @@ class StructureTests(unittest.TestCase):
         out, why = W.structure(table(bad), [0, 1])
         self.assertIsNone(out)
 
-    def test_flat_editions_without_state_rows_are_kept_only_with_unique_labels(self):
-        flat = [("Total", [16, 3]), ("Federal Total", [10, 2]), ("ALABAMA MIDDLE", [4, 1]), ("ARIZONA", [6, 1]), ("MARICOPA", [4, 1]), ("ORANGE", [2, 0])]
+    def test_editions_without_state_rows_are_not_read(self):
+        # 2016-2017: the local jurisdictions follow the federal districts with no state rows; "NEW YORK" there is New York County
+        flat = [("Total", [16, 3]), ("Federal Total", [10, 2]), ("ALABAMA MIDDLE", [4, 1]), ("ARIZONA", [6, 1]), ("MARICOPA", [4, 1]), ("NEW YORK", [2, 0])]
         out, why = W.structure(table(flat), [0, 1])
-        self.assertIsNone(why)
-        self.assertIn(["MARICOPA"], [p for _, p in out])
-        dup = flat + [("ORANGE", [1, 0])]
-        dup[0] = ("Total", [17, 3])
-        out, why = W.structure(table(dup), [0, 1])
         self.assertIsNone(out)
-        self.assertIn("printed twice", why)
+        self.assertIn("without their state rows", why)
+
+    def test_a_jurisdiction_with_no_orders_stays_in_its_state_block(self):
+        rows = [("Total", [16, 3]), ("Federal Total", [10, 2]), ("ALABAMA MIDDLE", [4, 1]), ("ARIZONA", [6, 1]),
+                ("PENNSYLVANIA", [6, 1]), ("PHILADELPHIA", [6, 1]), ("SCRANTON", [0, 0])]
+        out, why = W.structure(table(rows), [0, 1])
+        self.assertIsNone(why)
+        self.assertIn(["PENNSYLVANIA", "SCRANTON"], [p for _, p in out])
 
     def test_text_cells_keep_their_column_out_of_the_grouping(self):
         rows = table(GOOD)

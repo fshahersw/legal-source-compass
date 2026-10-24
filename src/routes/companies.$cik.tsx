@@ -87,7 +87,11 @@ function Page() {
           ? `${tickerLine(st.data ?? null, q.data?.summary ?? null)} · ${st.data?.sicDescription ?? q.data?.summary.profile.sicDescription ?? "Industry not recorded"}`
           : "Financial statements, segments, investor documents and filings from SEC EDGAR, with MDL exposure from the company's own filings."
       }
-      emblem={known ? <CompanyLogo profile={st.data ?? null} /> : undefined}
+      emblem={
+        known ? (
+          <CompanyLogo profile={st.data ?? null} cik={cik} settled={!st.isPending} />
+        ) : undefined
+      }
       breadcrumbs={[...COMPANY_CRUMBS, { label: name }]}
     >
       <CompanyProfile

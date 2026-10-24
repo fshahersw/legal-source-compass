@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { OverviewBriefing } from "@/components/atlas/hub/OverviewBriefing";
+import { OverviewBriefing, OverviewSections } from "@/components/atlas/hub/OverviewBriefing";
 import { PlacesMap } from "@/components/corpus/PlacesMap";
 import { parseMapSearch, type MapSearch } from "@/components/places/mapSearch";
 import { pageHead } from "@/lib/corpus/head";
@@ -11,5 +11,5 @@ export const Route = createFileRoute("/")({
       "Overview",
       "The national map of courts, litigation, law, enforcement and Census figures, with a briefing across courts, litigation, law, enforcement, products and companies.",
     ),
-  component: () => <PlacesMap home after={<OverviewBriefing />} />,
+  component: () => <PlacesMap home before={<OverviewBriefing />} after={<OverviewSections />} />,
 });

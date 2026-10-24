@@ -18,6 +18,9 @@ SINGLE = re.compile(r"^[A-Z]{2}$")
 SPECIAL_DISTRICT = {"NMI": "nmid", "GU": "gud", "GUAM": "gud", "VI": "vid", "PR": "prd", "DC": "dcd"}
 # Directory ids for single-district states follow "<code>d" (AK -> akd); multi-district states "<code><sub>d".
 SPECIAL_BANKRUPTCY = {"AR": "arb", "NMI": "nmib", "GU": "gub", "GUAM": "gub", "VI": "vib", "PR": "prb", "DC": "dcb"}
+# A former district the tables still print (Judicial Business S-19 prints "IL,E" with the footnote "No longer a separate district"):
+# the directory (court_spine) names it "District Court, E.D. Illinois" with the id illinoised, so that is its id here.
+HISTORICAL_DISTRICT = {"IL,E": "illinoised"}
 CIRCUIT_NAMES = {
     "cadc": "D.C. Circuit", "ca1": "First Circuit", "ca2": "Second Circuit", "ca3": "Third Circuit", "ca4": "Fourth Circuit",
     "ca5": "Fifth Circuit", "ca6": "Sixth Circuit", "ca7": "Seventh Circuit", "ca8": "Eighth Circuit", "ca9": "Ninth Circuit",
@@ -63,6 +66,8 @@ def district_id(label, kind="d"):
     text = re.sub(r",\s+", ",", clean_label(label).upper())  # older editions print "NY, S", newer ones "NY,S"
     if kind == "b" and text in SPECIAL_BANKRUPTCY:
         return SPECIAL_BANKRUPTCY[text]
+    if kind == "d" and text in HISTORICAL_DISTRICT:
+        return HISTORICAL_DISTRICT[text]
     if text in SPECIAL_DISTRICT and kind == "d":
         return SPECIAL_DISTRICT[text]
     match = DISTRICT_CODE.match(text)

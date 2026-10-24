@@ -9,6 +9,7 @@ import {
   photoAlt,
   photoAuthor,
   photoPlace,
+  photoSource,
   photoSrcSet,
   toThumb,
 } from "./photos";
@@ -54,24 +55,55 @@ describe("parseCourtPhoto", () => {
     expect(p.author).toBe("James Brooks from Juneau, Alaska");
   });
 
-  it("drops a record with a licence family that is not kept", () => {
+  it("drops a record with an unknown licence family; 'other' and an unrecorded licence are kept", () => {
     expect(parseCourtPhoto({ ...PHOTO, license_family: "cc by-nc" }, "alaska")).toBeNull();
-    expect(parseCourtPhoto({ ...PHOTO, license_family: undefined }, "alaska")).toBeNull();
+    // Owner decision 2026-10-24: shown whatever the rights status; the credit then names the source only.
+    const other = parseCourtPhoto(
+      { ...PHOTO, license_family: "other", license: null, license_url: null },
+      "alaska",
+    )!;
+    expect(other.license).toBeNull();
+    expect(other.licenseUrl).toBeNull();
+    expect(other.licenseUrlIsDeed).toBe(false);
+    expect(
+      parseCourtPhoto({ ...PHOTO, license_family: undefined }, "alaska")?.licenseFamily,
+    ).toBeNull();
   });
 
-  it("drops images served from any host other than Wikimedia's upload and thumbnail hosts", () => {
+  it("drops images served from a host outside the visual registry's image hosts", () => {
     const off = { ...PHOTO.display, url: "https://example.com/960px-x.jpg" };
     expect(parseCourtPhoto({ ...PHOTO, display: off }, "alaska")).toBeNull();
     const http = { ...PHOTO.thumb, url: PHOTO.thumb.url.replace("https:", "http:") };
     expect(parseCourtPhoto({ ...PHOTO, thumb: http }, "alaska")).toBeNull();
   });
 
-  it("requires a Commons file page as the source and a licence link on an allowed host", () => {
+  it("keeps a photograph from another source site with that site as the source link", () => {
+    const fjc = "https://www.fjc.gov/sites/default/files/history/courthouses/anchorage.jpg";
+    const p = parseCourtPhoto(
+      {
+        ...PHOTO,
+        source_page: "https://www.fjc.gov/history/courthouse/anchorage-alaska-1940",
+        display: { url: fjc, width: 1000, height: 700 },
+        thumb: { url: fjc, width: 1000, height: 700 },
+        display_2x: null,
+        license: "Not assessed",
+        license_family: "other",
+        license_url: null,
+      },
+      "alaska",
+    )!;
+    expect(p.origin).toBe("other");
+    expect(photoSource(p)).toBe("fjc.gov");
+  });
+
+  it("drops a Commons file whose renditions are not Wikimedia's, and malformed links", () => {
+    const fjc = { url: "https://www.fjc.gov/x.jpg", width: 960, height: 639 };
+    expect(parseCourtPhoto({ ...PHOTO, display: fjc }, "alaska")).toBeNull();
     expect(
-      parseCourtPhoto({ ...PHOTO, source_page: "https://en.wikipedia.org/wiki/X" }, "alaska"),
+      parseCourtPhoto({ ...PHOTO, source_page: "http://commons.wikimedia.org/x" }, "alaska"),
     ).toBeNull();
     expect(
-      parseCourtPhoto({ ...PHOTO, license_url: "https://example.org/licence" }, "alaska"),
+      parseCourtPhoto({ ...PHOTO, license_url: "ftp://example.org/licence" }, "alaska"),
     ).toBeNull();
   });
 
@@ -130,6 +162,7 @@ describe("text helpers", () => {
         "courtId",
         "license",
         "licenseUrl",
+        "origin",
         "sourcePage",
         "state",
         "thumb",

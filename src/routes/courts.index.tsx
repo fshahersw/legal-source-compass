@@ -193,7 +193,7 @@ function CourtsPage() {
 
 function CourtList({ rows }: { rows: CourtRow[] }) {
   const [q, setQ] = useState("");
-  // Building thumbnails with verified licences; a failed or empty lookup leaves the rows as they were.
+  // Building thumbnails with their recorded credits; a failed or empty lookup leaves the rows as they were.
   // The rows wait for the lookup so that thumbnails and credit lines do not shift them after they are drawn.
   const photosQ = useQuery(courtPhotoThumbsQuery);
   const photos = photosQ.data ?? {};

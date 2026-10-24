@@ -45,6 +45,7 @@ import {
   matchesQuery,
   periodIndices,
   periodText,
+  shortPeriods,
   pubCounts,
   rankingItems,
   shortName,
@@ -345,6 +346,7 @@ function SeriesCharts({
   const colText = columnDisplay(col.label, col.key);
   const recorded = series.some((s) => s.points.some((p) => p.value != null));
   const held = detail?.rec?.held ?? [];
+  const short = shortPeriods(periods, idx);
   const status: ChartStatus = loadingCourts
     ? { kind: "loading" }
     : failedCourts
@@ -517,9 +519,16 @@ function SeriesCharts({
         sources={sources}
         status={status}
         partialNotice={
-          held.length
-            ? `${held.length} ${held.length === 1 ? "edition fails" : "editions fail"} the table's own printed totals and ${held.length === 1 ? "is" : "are"} left out: ${held.map((h) => `${PUB_NAMES[h.pub] ?? h.pub}, ${longDate(h.end)}`).join("; ")}.`
-            : undefined
+          [
+            held.length
+              ? `${held.length} ${held.length === 1 ? "edition fails" : "editions fail"} the table's own printed totals and ${held.length === 1 ? "is" : "are"} left out: ${held.map((h) => `${PUB_NAMES[h.pub] ?? h.pub}, ${longDate(h.end)}`).join("; ")}.`
+              : "",
+            short.length
+              ? `Not a full period: ${short.map((p) => `${longDate(p.end)} (${p.text})`).join("; ")}.`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" ") || undefined
         }
         notes={notes}
         footnotes={footnotes}

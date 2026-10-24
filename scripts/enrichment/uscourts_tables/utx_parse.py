@@ -136,12 +136,16 @@ PERIOD_NO_DAY = re.compile(
 
 
 CALENDAR_YEAR = re.compile(r"(?:During|For|In)\s+(?:the\s+)?Calendar\s+Year\s+((?:19|20)\d{2})\b", re.I)
+# "Fiscal Years 1996 and 1997" (Judicial Business titles of the 1990s): the federal judiciary's fiscal year ends September 30
+FISCAL_YEARS = re.compile(r"\bFiscal\s+Years?\s+((?:19|20)\d{2})((?:\s*(?:,|and|through|to|-|–)\s*(?:19|20)\d{2})*)\b", re.I)
 
 
 def _month_number(name):
     name = name.rstrip(".")
     return MONTHS.get(name) or next((n for m, n in MONTHS.items() if m.lower().startswith(name[:3].lower())), None)
 
+
+THROUGH_YEAR_END = re.compile(r"January 1,? Through December 31,\s*((?:19|20)\d{2})", re.I)
 
 def parse_period_phrase(text):
     """(phrase, 'YYYY-MM-DD') from a title such as 'During the 12-Month Period Ending September 30, 2025'.
@@ -153,6 +157,10 @@ def parse_period_phrase(text):
     cal = CALENDAR_YEAR.search(flat)
     if cal and not PERIOD_PHRASE.search(flat):
         return cal.group(0), f"{cal.group(1)}-12-31"
+    fy = FISCAL_YEARS.search(flat)
+    if fy and not PERIOD_PHRASE.search(flat):
+        last = (re.findall(r"(?:19|20)\d{2}", fy.group(2)) or [fy.group(1)])[-1]
+        return fy.group(0), f"{last}-09-30"
     matches = list(PERIOD_PHRASE.finditer(flat))
     chosen = next((m for m in matches if not m.group(1).lower().startswith("as")), None)
     if chosen is None:
@@ -164,6 +172,9 @@ def parse_period_phrase(text):
                 return nd.group(0), date(int(nd.group(3)), month_num, last).isoformat()
         chosen = matches[0] if matches else None
     if chosen is None:
+        through = THROUGH_YEAR_END.search(flat)  # the Wiretap reports: "January 1 Through December 31, 2010"
+        if through:
+            return through.group(0), f"{through.group(1)}-12-31"
         return None, None
     month_num = _month_number(chosen.group(3))
     if not month_num:
@@ -227,6 +238,11 @@ def parse_sheet(ws, problems):
     fill_merged(ws, grid, start)
     # ---- title block: leading rows up to the first row that has a header-like second cell, joined
     title_lines, table_id, header_start = [], None, 0
+    # the first row (before the data) whose first text is a table id ("Table F-2 Monthly. ..."): a one-cell row above it is a note
+    # left in the workbook ("pdf for bk iling" in Bankruptcy Filings F-2 one-month, September 2021), not the title or a heading
+    id_row = next((i for i in range(start) if any(norm_text(v) for v in grid[i] if v is not None)
+                   and TABLE_ID.match(next(norm_text(v) for v in grid[i] if v is not None and norm_text(v)))), None)
+    stray = []
     for i in range(start):
         row = grid[i]
         texts = [norm_text(v) for v in row if v is not None and norm_text(v)]
@@ -238,6 +254,9 @@ def parse_sheet(ws, problems):
             if t not in distinct:
                 distinct.append(t)
         m = TABLE_ID.match(first)
+        if not title_lines and not m and id_row is not None and i < id_row and len(distinct) == 1:
+            stray.append(first)
+            continue
         looks_title = len(distinct) == 1 and (m or title_lines or re.search(r"Period Ending|Cases|Courts|Summary|Filed|Filings|Statistics", first))
         if not title_lines and not m and len(distinct) > 1:
             header_start = i
@@ -298,12 +317,19 @@ def parse_sheet(ws, problems):
     # ---- rows
     rows = []
     section = None
+    # Bankruptcy Filings F-5A before 2016 prints each reporting district's code on a line of its own ("DC") and the district's
+    # figures on the next line, which has no label; in a county table such a line belongs to the code printed right above it
+    county_layout = any(re.search(r"\bcounty\b", strip_marks(norm_text(hr[0])), re.I) for hr in header_rows if hr and hr[0] is not None)
     for i in range(start, last_data + 1):
         row = grid[i]
         raw = next((v for k, v in enumerate(row[:max(len(label_cols), 1)]) if v is not None and norm_text(v)), None)
         has_values = any(is_numberlike(row[c]) for c in value_cols)
         if raw is None:
-            continue
+            if county_layout and has_values and rows and rows[-1]["section"] and rows[-1]["row"] == i:
+                head = rows.pop()
+                raw = head["label_raw"]
+            else:
+                continue
         label = strip_marks(norm_text(raw))
         if not has_values:
             # a heading row inside the table ("Contract Actions"): context for the rows that follow
@@ -359,6 +385,7 @@ def parse_sheet(ws, problems):
         "notes": raw_notes,
         "note_marks": note_marks,
         "header_rows": len(header_rows),
+        "stray_text": stray,
     }
 
 
