@@ -29,6 +29,16 @@ export const GI_API = "https://api.govinfo.gov";
 export const GI_SITE = "https://www.govinfo.gov";
 export const GI_DOCS = "https://api.govinfo.gov/docs/";
 export const NOT_RECORDED = "Not recorded";
+/**
+ * Longest title text a record heading carries. GovInfo prints some resolutions' whole text as the title (27,205
+ * bytes for 108th S.Con.Res. 81) and the corpus title index holds about 2,700 bytes: a longer heading is shortened
+ * with an ellipsis and the title as published stays in the record's facts (and, for bills, in every version).
+ */
+export const MAX_BILL_HEADING_CHARS = 600;
+export const MAX_PACKAGE_HEADING_CHARS = 2400;
+export function headline(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
 export const GI_DATASETS = {
   BILLS: "govinfo_bill_versions",
   CHRG: "govinfo_hearings",
@@ -181,7 +191,8 @@ export function packageRow(
   const label = COLLECTION_LABEL[c];
   const cls = p.docClass ? (CLASS_LABEL[p.docClass] ?? p.docClass) : null;
   const congress = p.congress && /^\d+$/.test(p.congress) ? Number(p.congress) : null;
-  const title = s?.title ?? p.title ?? `${label.noun} ${p.packageId}`;
+  const published = s?.title ?? p.title ?? `${label.noun} ${p.packageId}`;
+  const title = headline(published, MAX_PACKAGE_HEADING_CHARS);
   const links: Json[] = [
     { url: detailsUrl(p.packageId), label: "Details on GovInfo" },
     { url: contentUrl(p.packageId, "pdf"), label: "PDF (GovInfo)" },
@@ -198,7 +209,7 @@ export function packageRow(
     ["GovInfo package", p.packageId],
     ["Collection", label.name],
     ["Document class", cls ?? NOT_RECORDED],
-    ["Title (as published)", title],
+    ["Title (as published)", published],
     ["Date issued", p.dateIssued ?? NOT_RECORDED],
   ];
   if (c === "CHRG") {
@@ -395,6 +406,7 @@ export function billVersionsRow(
       .map((v) => v.title)
       .filter(Boolean)
       .pop() ?? null;
+  const heading = titleText ? headline(titleText, MAX_BILL_HEADING_CHARS) : null;
   const label = (code: string) => VERSION_LABEL[code] ?? `Version ${code.toUpperCase()}`;
   const links: Json[] = [];
   if (billHeld)
@@ -409,7 +421,7 @@ export function billVersionsRow(
   return corpusRecord(
     GI_DATASETS.BILLS,
     id,
-    `${cite}, ${ordinal(b.congress)} Congress${titleText ? `: ${titleText}` : ""}`,
+    `${cite}, ${ordinal(b.congress)} Congress${heading ? `: ${heading}` : ""}`,
     {
       source_url: detailsUrl(latest.packageId),
       subtitle: `${vs.length} text version${vs.length === 1 ? "" : "s"} · latest ${label(latest.code)}${latest.date ? ` (${latest.date})` : ""}`,
@@ -422,6 +434,7 @@ export function billVersionsRow(
       },
       facts: [
         ["Bill", `${cite}, ${ordinal(b.congress)} Congress`],
+        ...(titleText && heading !== titleText ? [["Title (as published)", titleText]] : []),
         [
           "Text versions on GovInfo",
           vs.map((v) => `${label(v.code)} (${v.code})${v.date ? `, ${v.date}` : ""}`).join("; "),

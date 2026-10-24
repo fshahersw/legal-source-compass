@@ -221,6 +221,32 @@ describe("GovInfo package ids", () => {
       "https://www.govinfo.gov/content/pkg/BILLS-119hr7730enr/pdf/BILLS-119hr7730enr.pdf",
     );
     expect(row.source_url).toBe("https://www.govinfo.gov/app/details/BILLS-119hr7730enr");
+    const facts = (row.detail["facts"] as [string, string][]).map(([k]) => k);
+    expect(facts).not.toContain("Title (as published)");
+  });
+
+  it("shortens a resolution whose published title is its whole text, keeping the title as published", () => {
+    const published = `Expressing the sense of the Congress ${"that the record is long; ".repeat(1200)}`.trim();
+    const row = billVersionsRow(
+      { congress: 108, type: "sconres", number: 81 },
+      [
+        {
+          code: "is",
+          date: "2003-11-19",
+          packageId: "BILLS-108sconres81is",
+          title: published,
+          lastModified: null,
+        },
+      ],
+      false,
+      { listing_urls: [], retrieved_at: "2026-10-24T03:00:00Z" },
+    );
+    expect(row.title.startsWith("S.Con.Res. 81, 108th Congress: Expressing the sense")).toBe(true);
+    expect(row.title.endsWith("…")).toBe(true);
+    expect(row.title.length).toBeLessThan(700);
+    const facts = new Map(row.detail["facts"] as [string, string][]);
+    expect(facts.get("Title (as published)")).toBe(published);
+    expect((row.item["versions"] as { title: string }[])[0]!.title).toBe(published);
   });
 });
 
