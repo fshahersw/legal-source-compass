@@ -36,7 +36,6 @@ import {
   TICK,
   barProps,
   gridProps,
-  gridPropsVertical,
   lineProps,
   referenceLineProps,
   tooltipProps,
@@ -119,7 +118,6 @@ export function RankBars({
             barCategoryGap={Math.max(2, rowHeight - 18)}
             accessibilityLayer
           >
-            <CartesianGrid {...gridPropsVertical} />
             <XAxis type="number" domain={axis.domain} ticks={axis.ticks} hide />
             <YAxis
               type="category"
@@ -177,7 +175,7 @@ export function RankBars({
               <ReferenceLine
                 key={r.label}
                 x={r.value}
-                {...referenceLineProps(r.label, { position: "top" })}
+                {...referenceLineProps(r.label, { orientation: "vertical" })}
               />
             ))}
             <Bar
@@ -220,6 +218,9 @@ export function RankBars({
                       fontSize={TICK.fontSize}
                       fontWeight={focus ? 600 : 400}
                       fill="var(--foreground)"
+                      stroke="var(--surface)"
+                      strokeWidth={3}
+                      paintOrder="stroke"
                       className="tabular-nums"
                     >
                       {format(p.value)}

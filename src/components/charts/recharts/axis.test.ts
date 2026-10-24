@@ -135,11 +135,8 @@ describe("theme props and content", () => {
 
   it("labels line ends with dodged, non-overlapping labels", () => {
     const line = (key: string, y: number) => ({
-      item: { type: { displayName: "Line" }, props: {} },
+      item: { type: { displayName: "Line" }, props: { dataKey: key, name: key.toUpperCase() } },
       props: {
-        dataKey: key,
-        name: key.toUpperCase(),
-        stroke: "red",
         points: [
           { x: 10, y: 50, value: 1 },
           { x: 100, y, value: 7 },

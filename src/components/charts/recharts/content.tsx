@@ -210,13 +210,14 @@ export function ThemedLegend({
 }
 
 type FormattedItem = {
-  item?: { type?: { displayName?: string }; props?: Record<string, unknown> };
+  /** The Line element: its props carry dataKey, name and hide. */
+  item?: {
+    type?: { displayName?: string };
+    props?: { dataKey?: unknown; name?: unknown; hide?: boolean };
+  };
+  /** Computed geometry. */
   props?: {
     points?: readonly { x?: number; y?: number | null; value?: unknown; payload?: unknown }[];
-    dataKey?: unknown;
-    name?: unknown;
-    stroke?: unknown;
-    hide?: boolean;
   };
 };
 
@@ -251,8 +252,8 @@ export function EndLabels({
   const lines = (formattedGraphicalItems ?? []).filter(
     (g) =>
       g.item?.type?.displayName === "Line" &&
-      !g.props?.hide &&
-      (!keys || keys.includes(String(g.props?.dataKey ?? ""))),
+      !g.item.props?.hide &&
+      (!keys || keys.includes(String(g.item.props?.dataKey ?? ""))),
   );
   if (!lines.length || lines.length > 4) return null;
   const withNames = names ?? lines.length > 1;
@@ -263,8 +264,8 @@ export function EndLabels({
         const p = pts[i]!;
         if (typeof p.value === "number" && Number.isFinite(p.value) && typeof p.y === "number")
           return {
-            key: String(g.props?.dataKey ?? ""),
-            name: String(g.props?.name ?? g.props?.dataKey ?? ""),
+            key: String(g.item?.props?.dataKey ?? ""),
+            name: String(g.item?.props?.name ?? g.item?.props?.dataKey ?? ""),
             x: p.x ?? 0,
             y: p.y,
             value: p.value,

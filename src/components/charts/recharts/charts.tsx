@@ -206,7 +206,7 @@ export function TrendLines({
               <ReferenceLine
                 key={`mark-${m.label}-${m.x}`}
                 x={m.x}
-                {...referenceLineProps(m.label, { position: "top" })}
+                {...referenceLineProps(m.label, { orientation: "vertical" })}
                 strokeDasharray={undefined}
                 strokeOpacity={0.35}
               />

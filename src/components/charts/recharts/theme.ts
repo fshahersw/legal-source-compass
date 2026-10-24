@@ -192,23 +192,41 @@ export function valueLabelProps(
   };
 }
 
+type RefViewBox = { x?: number; y?: number; width?: number; height?: number };
+
+/**
+ * Inline label of a reference line, on a surface halo so lines and marks never cut through it. Horizontal lines
+ * (y = value) are labelled just above the line at the left edge of the plot; vertical lines (x = value) above the plot,
+ * anchored so the text stays inside it.
+ */
+function refLabel(text: string, orientation: "horizontal" | "vertical") {
+  function RefLabel(props: { viewBox?: unknown }) {
+    const vb = (props.viewBox ?? {}) as RefViewBox;
+    const x0 = vb.x ?? 0;
+    const y0 = vb.y ?? 0;
+    const common = {
+      fontSize: 11,
+      fill: "var(--foreground)",
+      stroke: "var(--surface)",
+      strokeWidth: 3,
+      paintOrder: "stroke" as const,
+      className: "tabular-nums",
+    };
+    if (orientation === "horizontal")
+      return createElement("text", { ...common, x: x0 + 4, y: y0 - 4 }, text);
+    return createElement("text", { ...common, x: x0, y: y0 - 6, textAnchor: "middle" }, text);
+  }
+  return RefLabel;
+}
+
 /**
  * A labelled reference line (median, national value, the year a rule changed): ink at reduced opacity with a short
- * dash so it never reads as a gridline; the label sits inline at the line's end.
+ * dash so it never reads as a gridline; the label sits inline on a surface halo. Pass `orientation: "vertical"` for an
+ * `x =` line (rankings, a marked period).
  */
 export function referenceLineProps(
   label: string,
-  options: {
-    position?:
-      | "insideTopRight"
-      | "insideTopLeft"
-      | "insideBottomRight"
-      | "insideBottomLeft"
-      | "top"
-      | "right"
-      | "insideTop"
-      | undefined;
-  } = {},
+  options: { orientation?: "horizontal" | "vertical" | undefined } = {},
 ) {
   return {
     stroke: "var(--foreground)",
@@ -216,12 +234,7 @@ export function referenceLineProps(
     strokeWidth: 1,
     strokeDasharray: "4 3",
     ifOverflow: "extendDomain" as const,
-    label: {
-      value: label,
-      position: options.position ?? "insideTopRight",
-      fontSize: 11,
-      fill: "var(--foreground)",
-    },
+    label: { content: refLabel(label, options.orientation ?? "horizontal") },
   };
 }
 

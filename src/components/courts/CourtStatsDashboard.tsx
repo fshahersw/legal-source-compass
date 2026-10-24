@@ -1,22 +1,20 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { ArrowDown, ArrowUp, Flag, Info, Search } from "lucide-react";
-import { ChartCard } from "@/components/fda-analytics/FdaCharts";
-import { FDA_COLORS } from "@/components/fda-analytics/chartView";
+import { ChartCard } from "@/components/charts/ChartCard";
+import {
+  RankBars,
+  TrendColumns,
+  TrendLines,
+  benchmark,
+  benchmarkTakeaway,
+  periodTable,
+  rankTakeaway,
+  seriesColor,
+  trendTakeaway,
+  type ChartSeriesSpec,
+} from "@/components/charts/recharts";
 import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
 import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { MoreToggle } from "@/components/enforcement/parts";
@@ -46,8 +44,7 @@ import {
   type FlagRule,
   type Series,
   type SortKey,
-  axis,
-  tooltipStyle,
+  NOT_RECORDED,
 } from "./courtStatsData";
 import { Kpi, Notice, ScrollX, SectionTitle, Spark } from "./CourtStatsParts";
 import { courtTakeaways } from "./courtTakeaways";
@@ -243,49 +240,59 @@ function Dashboard({ data }: { data: CourtStatsOverview }) {
         <PharmaChart data={data} />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2">
         <SmallTrend
           id="court-pl-share"
           title="Product liability share of civil filings"
-          subtitle="Tables C-11 and C · line is the FY2014-FY2025 median"
+          subject="Product liability's share of civil filings"
+          subtitle="Percent of district civil filings · Tables C-11 and C · line: series median"
           years={years}
           values={s["pl_share_pct"]}
-          unit="%"
+          format={fmtPctValue}
+          tick={(v) => `${fmtNum(v)}%`}
           yi={yi}
         />
         <SmallTrend
           id="court-top5"
-          title="Top 5 districts' share of PL filings"
-          subtitle="Concentration across 94 districts · Table C-11"
+          title="Top 5 districts' share of product liability filings"
+          subject="The top 5 districts' share of PL filings"
+          subtitle="Percent of national PL filings in the 5 busiest of 94 districts · Table C-11"
           years={years}
           values={s["pl_top5_share_pct"]}
-          unit="%"
+          format={fmtPctValue}
+          tick={(v) => `${fmtNum(v)}%`}
           yi={yi}
         />
         <SmallTrend
           id="court-disposition"
           title="Median months, filing to disposition"
-          subtitle="Table C-5 · pooled national vs median district"
+          subject="Median months to disposition"
+          subtitle="Civil cases, pooled national vs median district · Table C-5"
           years={years}
           values={s["median_total"]}
-          label="National (all terminations)"
+          label="National median"
           second={{ values: s["district_median_total"], label: "Median district" }}
-          unit=" months"
-          digits={1}
+          format={fmtMonths}
+          diff={(d) => `${fmtNum(d, 1)} months`}
+          tick={(v) => fmtNum(v)}
           yi={yi}
           footnote={c5Note}
+          about="The pooled national figure is the median across all terminations; the median district is the middle of the 94 district medians. One MDL docket can dominate the pooled figure."
         />
         <SmallTrend
           title="Civil cases pending 3+ years"
-          subtitle="Table C-6 · pooled national vs median district share"
+          subject="Share of civil cases pending 3+ years"
+          subtitle="Percent of pending civil cases, pooled national vs median district · Table C-6"
           years={years}
           values={s["pending_over_3y_pct"]}
-          label="National (all pending)"
+          label="National share"
           second={{ values: s["district_median_over_3y_pct"], label: "Median district" }}
-          unit="%"
-          digits={1}
+          format={fmtPctValue}
+          diff={(d) => `${fmtNum(d, 1)} points`}
+          tick={(v) => `${fmtNum(v)}%`}
           yi={yi}
           footnote={c6Note}
+          about="Same pooled-versus-median-district caution as disposition time: one MDL docket can dominate the pooled share."
         />
       </div>
 
@@ -300,6 +307,20 @@ function Dashboard({ data }: { data: CourtStatsOverview }) {
 
 // ---------------------------------------------------------------- national charts
 
+const COURT_SOURCES = [
+  {
+    label: "Judicial Business of the United States Courts",
+    url: "https://www.uscourts.gov/statistics-reports/analysis-reports/judicial-business-united-states-courts",
+  },
+];
+
+const fmtCount = (v: number) => fmtNum(v);
+const fmtPctValue = (v: number) => fmtPct(v);
+const fmtMonths = (v: number) => `${fmtNum(v, 1)} months`;
+const shortFy = (v: string) => `’${v.slice(4)}`;
+const yearPoints = (years: number[], values: Series | undefined) =>
+  years.map((y, i) => ({ label: fy(y), value: at(values, i) }));
+
 const NOS_GROUPS: { id: string; label: string; parts: string[] }[] = [
   { id: "other", label: "Other PI incl. pharma (365, 367)", parts: ["other_pi_365_367"] },
   { id: "asbestos", label: "Asbestos (368)", parts: ["asbestos_368"] },
@@ -313,6 +334,10 @@ const NOS_GROUPS: { id: string; label: string; parts: string[] }[] = [
   },
 ];
 
+/**
+ * Product liability filings per fiscal year as columns: the two largest nature-of-suit groups and the rest folded
+ * into one grey "all other types" part, so no segment is a sliver. The table view keeps every group.
+ */
 function NosChart({ data, yi }: { data: CourtStatsOverview; yi: number }) {
   const parts = data.national.plParts;
   const rows = data.years.map((y, i) => {
@@ -325,148 +350,167 @@ function NosChart({ data, yi }: { data: CourtStatsOverview; yi: number }) {
     }
     return row;
   });
+  const totals = rows.map((r) => {
+    const vals = NOS_GROUPS.map((g) => r[g.id]);
+    return {
+      label: String(r["year"]),
+      value: vals.every((v) => typeof v === "number")
+        ? (vals as number[]).reduce((a, v) => a + v, 0)
+        : null,
+    };
+  });
+  const totalRows = totals.map((t) => ({ year: t.label, total: t.value }));
+  const sel = totals[yi]?.value ?? null;
+  const prior = yi > 0 ? (totals[yi - 1]?.value ?? null) : null;
+  const pct = change(sel, prior);
+  const lead = rows[yi]?.["other"];
+  const leadShare = typeof lead === "number" && sel ? (lead / sel) * 100 : null;
+  const title =
+    trendTakeaway("Product liability filings", totals, fmtCount) ??
+    "Product liability filings by nature of suit";
   return (
     <ChartCard
       id="court-nos"
-      title="National product liability filings by nature of suit"
-      subtitle={`Table C-11, U.S. district courts, FY${data.years[0]}-FY${data.years.at(-1)} · selected ${fy(data.years[yi]!)}`}
-      footnote="Large swings track MDL dockets: cases filed directly in, or transferred to, an MDL court count as filings there."
+      title={title}
+      subtitle={`Cases filed in U.S. district courts, all product liability natures of suit · Table C-11 · FY${data.years[0]}–FY${data.years.at(-1)}`}
+      kpis={[
+        {
+          label: `Filings ${fy(data.years[yi]!)}`,
+          value: sel === null ? NOT_RECORDED : fmtCount(sel),
+          ...(pct !== null
+            ? {
+                delta: {
+                  text: `${Math.abs(pct).toFixed(1)}% vs ${fy(data.years[yi - 1]!)}`,
+                  direction:
+                    pct > 0 ? ("up" as const) : pct < 0 ? ("down" as const) : ("flat" as const),
+                },
+              }
+            : {}),
+        },
+        {
+          label: `Other PI incl. pharma (365, 367), ${fy(data.years[yi]!)}`,
+          value: leadShare === null ? NOT_RECORDED : `${leadShare.toFixed(1)}%`,
+          detail: "of product liability filings",
+        },
+      ]}
+      sources={COURT_SOURCES}
+      period={`FY${data.years[0]}–FY${data.years.at(-1)}`}
+      table={periodTable(
+        rows,
+        "year",
+        NOS_GROUPS.map((g) => ({ key: g.id, label: g.label })),
+        fmtCount,
+        {
+          caption: "Product liability filings by nature of suit",
+          xLabel: "Fiscal year",
+          total: true,
+        },
+      )}
+      about={
+        <p>
+          Large swings track MDL dockets: cases filed directly in, or transferred to, an MDL court
+          count as filings there. The total adds the six nature-of-suit groups of Table C-11; a year
+          in which any group is not recorded has no total. The table view lists every group.
+        </p>
+      }
     >
-      <div className="h-64 px-2 py-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="year"
-              tick={axis}
-              tickLine={false}
-              axisLine={false}
-              interval={0}
-              tickFormatter={(v: string) => `'${v.slice(4)}`}
-            />
-            <YAxis
-              tick={axis}
-              tickFormatter={compactNum}
-              width={44}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v, name: string) => [fmtNum(asNum(v)), name]}
-            />
-            <Legend wrapperStyle={{ fontSize: 11 }} iconSize={9} />
-            {NOS_GROUPS.map((g, i) => (
-              <Bar
-                key={g.id}
-                dataKey={g.id}
-                name={g.label}
-                stackId="pl"
-                fill={FDA_COLORS[i % FDA_COLORS.length]}
-                isAnimationActive={false}
-                maxBarSize={34}
-              />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+      <TrendColumns
+        rows={totalRows}
+        xKey="year"
+        series={[{ key: "total", label: "Product liability filings" }]}
+        format={fmtCount}
+        xTick={shortFy}
+        highlightX={yi === data.years.length - 1 ? undefined : fy(data.years[yi]!)}
+        height={220}
+        ariaLabel={`Product liability filings by fiscal year, ${fy(data.years[yi]!)} selected`}
+      />
     </ChartCard>
   );
 }
 
+/** NOS 365, 367 and 368 over time (Table C-2A), each line labelled at its end. */
 function PharmaChart({ data }: { data: CourtStatsOverview }) {
   const nos = data.national.nos;
   const rows = data.years.map((y, i) => ({
     year: fy(y),
-    pharma: at(nos["pl_health_care_pharma_367"], i),
     other: at(nos["pl_other_365"], i),
+    pharma: at(nos["pl_health_care_pharma_367"], i),
     asbestos: at(nos["pl_asbestos_368"], i),
   }));
+  const series: ChartSeriesSpec[] = [
+    { key: "other", label: "Other PI product liability (365)", short: "365 Other PI" },
+    { key: "pharma", label: "Health care / pharmaceutical (367)", short: "367 Pharma" },
+    { key: "asbestos", label: "Asbestos (368)", short: "368 Asbestos" },
+  ];
+  const lastIdx = rows.length - 1;
+  const leader = rankTakeaway(
+    series.map((s) => ({ label: s.label, value: rows[lastIdx]?.[s.key as "other"] ?? null })),
+    fmtCount,
+    { verb: `led in ${rows[lastIdx]?.year ?? ""} with`, withRunnerUp: false },
+  );
   return (
     <ChartCard
-      title="Personal injury product liability, NOS 365 / 367 / 368"
-      subtitle="Table C-2A national nature-of-suit detail (latest five-year edition covering each year)"
+      title={leader ?? "Personal injury product liability filings, NOS 365, 367 and 368"}
+      subtitle="Cases filed, national, by nature of suit · Table C-2A · fiscal years"
+      sources={COURT_SOURCES}
+      period={`FY${data.years[0]}–FY${data.years.at(-1)}`}
+      table={periodTable(rows, "year", series, fmtCount, {
+        caption: "Personal injury product liability filings by nature of suit",
+        xLabel: "Fiscal year",
+      })}
+      about={
+        <p>
+          Table C-2A national nature-of-suit detail, read from the latest five-year edition that
+          covers each year.
+        </p>
+      }
     >
-      <div className="h-64 px-2 py-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 6, right: 12, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="year"
-              tick={axis}
-              tickLine={false}
-              axisLine={false}
-              interval={1}
-              tickFormatter={(v: string) => `'${v.slice(4)}`}
-            />
-            <YAxis
-              tick={axis}
-              tickFormatter={compactNum}
-              width={44}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v, name: string) => [fmtNum(asNum(v)), name]}
-            />
-            <Legend wrapperStyle={{ fontSize: 11 }} iconType="plainline" />
-            <Line
-              dataKey="pharma"
-              name="Health care / pharmaceutical (367)"
-              stroke={FDA_COLORS[2]}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Line
-              dataKey="other"
-              name="Other PI product liability (365)"
-              stroke={FDA_COLORS[0]}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Line
-              dataKey="asbestos"
-              name="Asbestos (368)"
-              stroke={FDA_COLORS[1]}
-              strokeWidth={2}
-              strokeDasharray="5 3"
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <TrendLines
+        rows={rows}
+        xKey="year"
+        series={series}
+        format={fmtCount}
+        xTick={shortFy}
+        height={240}
+        ariaLabel="Product liability filings by nature of suit 365, 367 and 368"
+      />
     </ChartCard>
   );
 }
 
 function SmallTrend({
   title,
+  subject,
   subtitle,
   years,
   values,
   label,
   second,
-  unit,
-  digits = 1,
+  format,
+  diff,
+  tick,
   yi,
   footnote,
   id,
+  about,
 }: {
   id?: string | undefined;
+  /** Neutral title when no takeaway can be computed. */
   title: string;
+  /** Subject of the takeaway sentence ("Product liability's share of civil filings"). */
+  subject: string;
   subtitle: string;
   years: number[];
   values: Series | undefined;
   label?: string | undefined;
   second?: { values: Series | undefined; label: string } | undefined;
-  unit: string;
-  digits?: number;
+  format: (v: number) => string;
+  /** Difference text between the two series ("7.7 months"). */
+  diff?: ((d: number) => string) | undefined;
+  tick: (v: number) => string;
   yi: number;
   footnote?: string | null | undefined;
+  about?: string | undefined;
 }) {
   const rows = years.map((y, i) => ({
     year: fy(y),
@@ -474,72 +518,63 @@ function SmallTrend({
     second: second ? at(second.values, i) : null,
   }));
   const mid = second ? null : median(values ?? []);
+  const year = fy(years[yi]!);
+  const takeaway = second
+    ? benchmarkTakeaway(
+        `${label ?? "National"}, ${year}`,
+        at(values, yi),
+        at(second.values, yi),
+        "the median district",
+        format,
+        diff ?? format,
+      )
+    : trendTakeaway(subject, yearPoints(years, values), format);
+  const series: ChartSeriesSpec[] = [
+    { key: "value", label: label ?? subject, short: second ? "National" : undefined },
+    ...(second
+      ? [{ key: "second", label: second.label, short: "Median district", context: true }]
+      : []),
+  ];
   return (
     <ChartCard
       id={id}
-      title={title}
+      title={takeaway ?? title}
       subtitle={subtitle}
-      footnote={footnote ? <span className="text-warning-foreground">{footnote}</span> : undefined}
+      sources={COURT_SOURCES}
+      period={`FY${years[0]}–FY${years.at(-1)}`}
+      kpis={
+        second
+          ? [
+              { label: `${label ?? "National"} ${year}`, value: fmtOrNr(at(values, yi), format) },
+              { label: `${second.label} ${year}`, value: fmtOrNr(at(second.values, yi), format) },
+            ]
+          : undefined
+      }
+      table={periodTable(rows, "year", series, format, { caption: title, xLabel: "Fiscal year" })}
+      notice={footnote ?? undefined}
+      about={about ? <p>{about}</p> : undefined}
     >
-      <div className="h-36 px-2 py-1.5">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 6, right: 10, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="var(--border)" vertical={false} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="year"
-              tick={axis}
-              tickLine={false}
-              axisLine={false}
-              interval={2}
-              tickFormatter={(v: string) => `'${v.slice(4)}`}
-            />
-            <YAxis
-              tick={axis}
-              width={36}
-              tickLine={false}
-              axisLine={false}
-              domain={["auto", "auto"]}
-              tickFormatter={compactNum}
-            />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v, name: string) => [
-                `${fmtNum(asNum(v), digits)}${asNum(v) === null ? "" : unit}`,
-                name,
-              ]}
-            />
-            {second ? <Legend wrapperStyle={{ fontSize: 11 }} iconType="plainline" /> : null}
-            {mid !== null ? (
-              <ReferenceLine y={mid} stroke="var(--muted-foreground)" strokeDasharray="4 3" />
-            ) : null}
-            <ReferenceLine x={fy(years[yi]!)} stroke="var(--border)" />
-            <Line
-              dataKey="value"
-              name={label ?? title}
-              stroke={FDA_COLORS[0]}
-              strokeWidth={2}
-              dot={{ r: 2 }}
-              isAnimationActive={false}
-              connectNulls={false}
-            />
-            {second ? (
-              <Line
-                dataKey="second"
-                name={second.label}
-                stroke={FDA_COLORS[1]}
-                strokeWidth={2}
-                strokeDasharray="5 3"
-                dot={false}
-                isAnimationActive={false}
-                connectNulls={false}
-              />
-            ) : null}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <TrendLines
+        rows={rows}
+        xKey="year"
+        series={series}
+        format={format}
+        tick={tick}
+        xTick={shortFy}
+        zero={false}
+        tickCount={3}
+        height={150}
+        endLabels={!second}
+        references={mid !== null ? benchmark("Median", mid, format) : []}
+        markers={yi !== years.length - 1 ? [{ x: year, label: year }] : []}
+        ariaLabel={title}
+      />
     </ChartCard>
   );
 }
+
+const fmtOrNr = (v: number | null, format: (v: number) => string) =>
+  v === null ? NOT_RECORDED : format(v);
 
 // ---------------------------------------------------------------- flags
 
@@ -1100,6 +1135,7 @@ function HeatTable({ data, yi }: { data: CourtStatsOverview; yi: number }) {
 function CircuitSection({ data, yi }: { data: CourtStatsOverview; yi: number }) {
   const year = data.years[yi]!;
   const bars = data.circuits.map((c) => ({
+    id: c.id,
     name: CIRCUIT_SHORT[c.id] ?? c.id,
     full: c.name,
     perJ: at(c.districtPerJudgeship, yi),
@@ -1190,7 +1226,6 @@ function CircuitSection({ data, yi }: { data: CourtStatsOverview; yi: number }) 
                     <Spark
                       values={c.appealsFiled}
                       highlight={yi}
-                      color={FDA_COLORS[1]}
                       label={`${c.name} appeals filed by fiscal year`}
                     />
                   </td>
@@ -1234,90 +1269,76 @@ function CircuitSection({ data, yi }: { data: CourtStatsOverview; yi: number }) 
           </table>
         </ScrollX>
       </section>
-      <ChartCard
+      <CircuitRank
         title="Median months to merits decision, by circuit"
-        subtitle={`Notice of appeal to final disposition, Table B-4, ${fy(year)} · line is the median circuit`}
-      >
-        <div className="h-72 px-2 py-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={bars}
-              layout="vertical"
-              margin={{ top: 4, right: 16, bottom: 0, left: 0 }}
-            >
-              <CartesianGrid stroke="var(--border)" horizontal={false} strokeDasharray="3 3" />
-              <XAxis type="number" tick={axis} tickLine={false} axisLine={false} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={axis}
-                width={36}
-                interval={0}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                labelFormatter={(_, p) => String(p?.[0]?.payload?.full ?? "")}
-                formatter={(v) => [`${fmtNum(asNum(v), 1)} months`, "Median"]}
-              />
-              {median(bars.map((b) => b.median)) !== null ? (
-                <ReferenceLine
-                  x={median(bars.map((b) => b.median))!}
-                  stroke="var(--muted-foreground)"
-                  strokeDasharray="4 3"
-                />
-              ) : null}
-              <Bar
-                dataKey="median"
-                fill={FDA_COLORS[1]}
-                maxBarSize={14}
-                isAnimationActive={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </ChartCard>
-      <ChartCard
+        subtitle={`Months from notice of appeal to final disposition, merits terminations · Table B-4 · ${fy(year)}`}
+        items={bars.map((b) => ({ id: b.id, label: b.full, value: b.median }))}
+        format={(v) => `${fmtNum(v, 1)} months`}
+        verb="takes the longest,"
+        benchmarkLabel="Median circuit"
+        caption={`Median months to merits decision by circuit, ${fy(year)}`}
+        unitLabel="Median months"
+      />
+      <CircuitRank
         title="District product liability filings per judgeship, by circuit"
-        subtitle={`Tables C-11 and X-1A, ${fy(year)} · line is the median circuit`}
-      >
-        <div className="h-72 px-2 py-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={bars}
-              layout="vertical"
-              margin={{ top: 4, right: 16, bottom: 0, left: 0 }}
-            >
-              <CartesianGrid stroke="var(--border)" horizontal={false} strokeDasharray="3 3" />
-              <XAxis type="number" tick={axis} tickLine={false} axisLine={false} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={axis}
-                width={36}
-                interval={0}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                labelFormatter={(_, p) => String(p?.[0]?.payload?.full ?? "")}
-                formatter={(v) => [fmtNum(asNum(v), 1), "PL filings per judgeship"]}
-              />
-              {median(bars.map((b) => b.perJ)) !== null ? (
-                <ReferenceLine
-                  x={median(bars.map((b) => b.perJ))!}
-                  stroke="var(--muted-foreground)"
-                  strokeDasharray="4 3"
-                />
-              ) : null}
-              <Bar dataKey="perJ" fill={FDA_COLORS[0]} maxBarSize={14} isAnimationActive={false} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </ChartCard>
+        subtitle={`PL filings in the circuit's district courts per authorized district judgeship · Tables C-11 and X-1A · ${fy(year)}`}
+        items={bars.map((b) => ({ id: b.id, label: b.full, value: b.perJ }))}
+        format={(v) => fmtNum(v, 1)}
+        verb="leads with"
+        benchmarkLabel="Median circuit"
+        caption={`District product liability filings per judgeship by circuit, ${fy(year)}`}
+        unitLabel="PL filings per judgeship"
+      />
     </div>
+  );
+}
+
+/** Circuits ranked on one measure, the median circuit as a labelled benchmark. */
+function CircuitRank({
+  title,
+  subtitle,
+  items,
+  format,
+  verb,
+  benchmarkLabel,
+  caption,
+  unitLabel,
+}: {
+  title: string;
+  subtitle: string;
+  items: { id: string; label: string; value: number | null }[];
+  format: (v: number) => string;
+  verb: string;
+  benchmarkLabel: string;
+  caption: string;
+  unitLabel: string;
+}) {
+  const mid = median(items.map((i) => i.value));
+  const lead = rankTakeaway(items, format, { verb, withRunnerUp: false });
+  return (
+    <ChartCard
+      title={lead && mid !== null ? `${lead}; median circuit ${format(mid)}` : title}
+      subtitle={`${title} · ${subtitle}`}
+      sources={COURT_SOURCES}
+      table={{
+        caption,
+        columns: [{ label: "Circuit" }, { label: unitLabel, align: "right" }],
+        rows: [...items]
+          .sort((a, b) => (b.value ?? -Infinity) - (a.value ?? -Infinity))
+          .map((i) => ({
+            key: i.id,
+            cells: [i.label, i.value === null ? NOT_RECORDED : format(i.value)],
+          })),
+      }}
+    >
+      <RankBars
+        items={items}
+        format={format}
+        references={benchmark(benchmarkLabel, mid, format)}
+        ariaLabel={caption}
+        rowHeight={24}
+      />
+    </ChartCard>
   );
 }
 

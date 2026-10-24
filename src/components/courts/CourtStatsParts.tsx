@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { FDA_COLORS } from "@/components/fda-analytics/chartView";
+import { seriesColor } from "@/components/charts/recharts/theme";
 import { cn } from "@/lib/utils";
 import type { Series } from "./courtStatsData";
 
@@ -102,27 +102,34 @@ export function ScrollX({ children, label }: { children: ReactNode; label: strin
 }
 
 /** Inline SVG sparkline over a fixed fiscal-year axis; a missing value breaks the line. */
+/**
+ * Table-row sparkline at the kit's readable size (at least 120 × 32): the series in the de-emphasis grey on a zero
+ * baseline, the selected fiscal year as an accent dot. The row's own cells carry the values.
+ */
 export function Spark({
   values,
   highlight,
-  color = FDA_COLORS[0]!,
-  width = 72,
-  height = 18,
+  width = 120,
+  height = 32,
   label,
 }: {
   values: Series;
   highlight?: number | undefined;
+  /** Kept for callers; the line is always the de-emphasis grey and the dot the accent. */
   color?: string | undefined;
   width?: number;
   height?: number;
   label?: string | undefined;
 }) {
+  const w = Math.max(120, width);
+  const h = Math.max(32, height);
   const present = values.filter((v): v is number => v !== null);
   if (present.length < 2)
     return <span className="text-[11px] text-muted-foreground">Not recorded</span>;
   const max = Math.max(...present, 1);
-  const x = (i: number) => (i / Math.max(values.length - 1, 1)) * (width - 4) + 2;
-  const y = (v: number) => height - 2 - (v / max) * (height - 4);
+  const pad = 4;
+  const x = (i: number) => (i / Math.max(values.length - 1, 1)) * (w - pad * 2) + pad;
+  const y = (v: number) => h - pad - (v / max) * (h - pad * 2);
   const segments: string[] = [];
   let path = "";
   values.forEach((v, i) => {
@@ -134,21 +141,46 @@ export function Spark({
     path += `${path ? " L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`;
   });
   if (path) segments.push(path);
-  const h = highlight !== undefined ? values[highlight] : null;
+  const hv = highlight !== undefined ? values[highlight] : null;
   return (
     <svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
       role="img"
       aria-label={label ?? "Fiscal-year trend"}
       className="shrink-0 overflow-visible"
     >
+      <line
+        x1={pad}
+        x2={w - pad}
+        y1={h - pad}
+        y2={h - pad}
+        stroke="var(--border)"
+        strokeWidth={1}
+        shapeRendering="crispEdges"
+      />
       {segments.map((d, i) => (
-        <path key={i} d={d} fill="none" stroke={color} strokeWidth={1.4} />
+        <path
+          key={i}
+          d={d}
+          fill="none"
+          stroke="var(--muted-foreground)"
+          strokeOpacity={0.75}
+          strokeWidth={1.5}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
       ))}
-      {highlight !== undefined && h !== null && h !== undefined ? (
-        <circle cx={x(highlight)} cy={y(h)} r={2} fill={color} />
+      {highlight !== undefined && hv !== null && hv !== undefined ? (
+        <circle
+          cx={x(highlight)}
+          cy={y(hv)}
+          r={3.5}
+          fill={seriesColor(0)}
+          stroke="var(--surface)"
+          strokeWidth={1.5}
+        />
       ) : null}
     </svg>
   );

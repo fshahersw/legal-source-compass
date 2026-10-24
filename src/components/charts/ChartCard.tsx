@@ -181,10 +181,12 @@ export function SourceLinks({ sources }: { sources: readonly ChartSource[] }) {
             href={s.url}
             target={s.url.startsWith("/") ? undefined : "_blank"}
             rel={s.url.startsWith("/") ? undefined : "noreferrer"}
-            className="inline-flex items-center gap-0.5 rounded text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-foreground focus-visible:outline-2 focus-visible:outline-ring"
+            className="rounded text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >
             {s.label}
-            {s.url.startsWith("/") ? null : <ExternalLink className="size-3" aria-hidden />}
+            {s.url.startsWith("/") ? null : (
+              <ExternalLink className="ml-0.5 inline size-3 align-[-1px]" aria-hidden />
+            )}
           </a>
         </span>
       ))}

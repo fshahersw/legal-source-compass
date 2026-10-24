@@ -76,9 +76,9 @@ export function percentTick(v: number): string {
   return `${Number.isInteger(v) ? v : Number(v.toFixed(1))}%`;
 }
 
-/** Rough rendered width of a label in Public Sans (about 0.56 em per character). */
+/** Rough rendered width of a label in Public Sans (about 0.58 em per character; digits run wide). */
 export function labelWidth(text: string, fontSize = TICK_FONT): number {
-  return text.length * fontSize * 0.56;
+  return text.length * fontSize * 0.58;
 }
 
 /** Width a value axis needs for its tick labels, with room for the tick gap. */
@@ -88,7 +88,7 @@ export function axisWidth(
   fontSize = TICK_FONT,
 ): number {
   const widest = Math.max(0, ...ticks.map((t) => labelWidth(format(t), fontSize)));
-  return Math.ceil(Math.max(24, widest + 10));
+  return Math.ceil(Math.max(28, widest + 16));
 }
 
 /** Width a category axis (horizontal bars) needs, capped so long names truncate instead of squeezing the bars. */
