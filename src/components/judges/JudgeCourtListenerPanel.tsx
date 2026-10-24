@@ -56,13 +56,13 @@ export function JudgeCourtListenerPanel({ judgeId }: { judgeId: string }) {
       <div
         className="mb-5 h-24 animate-pulse rounded-lg border border-border bg-muted/40"
         aria-busy="true"
-        aria-label="Loading CourtListener activity"
+        aria-label="Loading activity"
       />
     );
   if (q.isError)
     return (
       <p role="alert" className="mb-5 text-xs text-muted-foreground">
-        CourtListener activity could not be loaded.
+        Source activity could not be loaded.
       </p>
     );
   const data = q.data;
@@ -118,7 +118,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
   return (
     <section
       className="mb-5 rounded-lg border border-border bg-surface"
-      aria-label="CourtListener activity"
+      aria-label="Source activity"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
         <h2 className="font-sans text-sm font-semibold">
@@ -150,7 +150,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
         </dl>
       ) : (
         <p className="px-4 py-2 text-xs text-muted-foreground">
-          No assigned dockets or authored opinions for this person in CourtListener's collection.
+          No assigned dockets or authored opinions for this person in the collection.
         </p>
       )}
       {c.clPersonId !== null && (d?.byYear.length || o?.byYear.length) ? (
@@ -194,9 +194,9 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
         </p>
         {o?.timesCitedTotal !== null && o ? (
           <p>
-            Times cited is CourtListener's citation_count of the clusters where this person wrote
-            the lead, combined, unanimous, plurality or on-the-merits opinion; it is not a measure
-            of quality or of good-law status.
+            Times cited is the citation_count of the clusters where this person wrote
+ the lead, combined, unanimous, plurality or on-the-merits opinion; it is not a measure
+ of quality or of good-law status.
           </p>
         ) : null}
         {o?.excludedOutsideLifespan ? (
@@ -225,7 +225,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
                 params={{ dataset: "cl_people", id: `cl:people:${c.clPersonId}` }}
                 className="text-primary hover:underline"
               >
-                CourtListener people record
+                Source people record
               </Link>
             </>
           ) : null}
@@ -239,10 +239,10 @@ function Review({ c }: { c: Crosswalk }) {
   return (
     <section
       className="mb-5 rounded-lg border border-dashed border-border bg-surface px-4 py-2.5 text-xs"
-      aria-label="Possible CourtListener match"
+      aria-label="Possible source match"
     >
       <p>
-        <span className="font-medium">Possible CourtListener match, needs review: </span>
+        <span className="font-medium">Possible source match, needs review: </span>
         {c.clName ?? `person ${c.clPersonId}`}
         {c.positions.length ? (
           <span className="text-muted-foreground">
@@ -262,7 +262,7 @@ function Review({ c }: { c: Crosswalk }) {
           rel="noreferrer"
           className="inline-flex items-center gap-0.5 text-primary hover:underline"
         >
-          Compare on CourtListener <ExternalLink className="size-3" aria-hidden />
+          Compare at the source <ExternalLink className="size-3" aria-hidden />
         </a>
       </p>
       <p className="mt-1 text-[11px] text-muted-foreground">

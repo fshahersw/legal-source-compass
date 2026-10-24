@@ -51,7 +51,7 @@ function Body({ o }: { o: OralProfile }) {
       subtitle={
         <>
           Recordings in CourtListener, by the docket's argument date · bulk data from Free Law
-          Project
+ Project
         </>
       }
       record={{ dataset: "clb_oral_arguments", id: o.courtId }}

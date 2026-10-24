@@ -67,11 +67,11 @@ export function OpinionsOnFileBody({ o }: { o: ClbOpinions }) {
         <AuthorsList o={o} />
       </div>
       <p className="text-[11px] leading-4 text-muted-foreground">
-        Per curiam is CourtListener's flag on the opinion. OCR means the text was read from page
-        images, which can introduce errors. A parenthetical description is a short description of an
-        opinion that CourtListener extracted from another opinion's text; counts are of
-        descriptions, not of citing cases. This is the collection's opinion rows, not every opinion
-        the court issued.
+        Per curiam is the flag on the opinion. OCR means the text was read from page
+ images, which can introduce errors. A parenthetical description is a short description of an
+ opinion that extracted from another opinion's text; counts are of
+ descriptions, not of citing cases. This is the collection's opinion rows, not every opinion
+ the court issued.
       </p>
     </div>
   );

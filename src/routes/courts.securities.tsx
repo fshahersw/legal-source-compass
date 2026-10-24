@@ -24,7 +24,7 @@ function Page() {
   return (
     <AppShell
       title="Securities class actions"
-      description="Federal securities class action filings since 1996 from the Stanford Securities Class Action Clearinghouse: when and where they are filed, against which sectors, how they end, the largest settlements, and how filing volume lines up with markets and court counts."
+      description="Federal securities class action filings since 1996: when and where they are filed, against which sectors, how they end, the largest settlements, and how filing volume lines up with markets and court counts."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Courts", to: "/courts" },

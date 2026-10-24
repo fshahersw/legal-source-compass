@@ -19,7 +19,7 @@ function Page() {
   return (
     <AppShell
       title="MDL judges and district benches"
-      description="Experience, current MDL load, appointing party and tenure from FJC and JPML records, with a labelled disclosure review queue."
+      description="Experience, current MDL load, appointing party and tenure, with a labelled disclosure review queue."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Analytics", to: "/analytics" },

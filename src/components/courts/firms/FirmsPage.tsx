@@ -56,10 +56,10 @@ export function FirmsPage({ search, onNavigate }: { search: FirmSearch; onNaviga
     <div className="space-y-4">
       <Callout>
         One <strong>appearance</strong> is one counsel entry for one party on an MDL master docket
-        in the matter registry (CourtListener party records). Member dockets are not counted, so
-        these figures describe who appears on the master dockets, not a firm&rsquo;s whole caseload
-        or market share. Firm spellings are merged only by stated rules (case, punctuation, &amp;,
-        entity forms such as LLP, a trailing office name); government counsel is kept apart.
+ in the matter registry (CourtListener party records). Member dockets are not counted, so
+ these figures describe who appears on the master dockets, not a firm&rsquo;s whole caseload
+ or market share. Firm spellings are merged only by stated rules (case, punctuation, &amp;,
+ entity forms such as LLP, a trailing office name); government counsel is kept apart.
       </Callout>
       <Overview />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">

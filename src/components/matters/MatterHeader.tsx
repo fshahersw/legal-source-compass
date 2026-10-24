@@ -191,7 +191,7 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
       />
       <Metric
         label="Documents"
-        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (DocketBird-tracked cases), counted live. Listed and stored are exact corpus counts. Sealed and restricted documents are not listed."
+        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (tracked cases), counted live. Listed and stored are exact corpus counts. Sealed and restricted documents are not listed."
         value={
           docSum.isLoading ? (
             <span className="font-normal text-muted-foreground">…</span>
@@ -470,7 +470,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
             : ""}
         </p>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-          {clUrl ? <LinkOut href={clUrl}>CourtListener master docket</LinkOut> : null}
+          {clUrl ? <LinkOut href={clUrl}>Source master docket</LinkOut> : null}
           {byNumberReport?.officialUrl ? (
             <LinkOut href={byNumberReport.officialUrl}>
               JPML MDL statistics

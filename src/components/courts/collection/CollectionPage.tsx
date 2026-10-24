@@ -64,7 +64,7 @@ export function CollectionPage({
     <div className="space-y-3">
       <div
         role="tablist"
-        aria-label="CourtListener collection views"
+        aria-label="Source collection views"
         className="flex flex-wrap gap-1 rounded-md border border-border bg-surface p-1"
       >
         {TABS.map(({ id, label, Icon }) => (

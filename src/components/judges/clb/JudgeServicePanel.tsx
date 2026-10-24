@@ -96,7 +96,7 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
       record={{ dataset: "clb_judge_people", id: String(j.personId) }}
       aside={
         <SourceLink href={`https://www.courtlistener.com/person/${j.personId}/`}>
-          CourtListener person page
+          Source person page
         </SourceLink>
       }
     >
@@ -267,7 +267,7 @@ function Body({ j, tier, hasFjc }: { j: JudgePeople; tier: CrosswalkTier; hasFjc
           />
         ) : (
           <p className="text-xs text-muted-foreground">
-            CourtListener records no ABA rating for this person.
+            The source records no ABA rating for this person.
           </p>
         )}
       </CollapsibleSection>

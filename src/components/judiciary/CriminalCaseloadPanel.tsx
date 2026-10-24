@@ -77,9 +77,9 @@ function Body({ p }: { p: CriminalProfile }) {
   return (
     <PanelShell
       title="Criminal caseload"
-      subtitle={`Criminal defendants in the ${p.label ?? p.courtId} district, FY1996–June 2026 · FJC Integrated Database`}
+      subtitle={`Criminal defendants in the ${p.label ?? p.courtId} district, FY1996–June 2026`}
       record={{ dataset: "fjc_criminal_districts", id: `district:${p.courtId}` }}
-      aside={<SourceLink href={SOURCE}>FJC criminal data</SourceLink>}
+      aside={<SourceLink href={SOURCE}>Federal criminal data</SourceLink>}
     >
       <div className="grid grid-cols-2 gap-2 px-3 pb-2 md:grid-cols-6">
         <Kpi

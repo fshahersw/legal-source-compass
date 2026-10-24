@@ -45,8 +45,8 @@ export function UnmatchedTab({ search, onSearch }: TabProps) {
     <div className="space-y-3">
       <Kpis query={query} />
       <Callout>
-        CourtListener links each citation it finds in an opinion to the case it names. These are the
-        citations it could <strong className="font-semibold text-foreground">not</strong> link when
+        Source links each citation it finds in an opinion to the case it names. These are the
+ citations it could <strong className="font-semibold text-foreground">not</strong> link when
         the opinion was processed: Westlaw and LEXIS numbers, slip opinions, reporters it does not
         hold, and citations that fit more than one case. The status says what happened since.
         Unmatched does not mean the citation is wrong.{" "}
@@ -199,7 +199,7 @@ function Body({ d, search, onSearch }: TabProps & { d: UnmatchedList }) {
           </Panel>
           <Panel
             title="Citation type"
-            subtitle="CourtListener's type of the reporter; shares of all unmatched citations."
+            subtitle="The type of the reporter; shares of all unmatched citations."
           >
             <div className="p-3">
               <ShareBars

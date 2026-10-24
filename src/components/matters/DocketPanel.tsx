@@ -112,7 +112,7 @@ function EntryRow({ entry, mdl }: { entry: DocketEntry; mdl: string }) {
               Documents for entry {entry.entryNumber}
             </Link>
           ) : null}
-          {entry.sourceUrl ? <LinkOut href={entry.sourceUrl}>CourtListener docket</LinkOut> : null}
+          {entry.sourceUrl ? <LinkOut href={entry.sourceUrl}>Source docket</LinkOut> : null}
         </div>
         {open && sampleId ? <EntryText id={sampleId} /> : null}
       </div>

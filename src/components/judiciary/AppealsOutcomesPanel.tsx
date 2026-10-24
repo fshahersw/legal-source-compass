@@ -134,7 +134,7 @@ function Body({ p }: { p: AppealsProfile }) {
         dataset: "fjc_appeals_outcomes",
         id: `${circuit ? "circuit" : "district"}:${p.courtId}`,
       }}
-      aside={<SourceLink href={SOURCE}>FJC appeals data</SourceLink>}
+      aside={<SourceLink href={SOURCE}>Federal appeals data</SourceLink>}
     >
       <div className="grid grid-cols-2 gap-2 px-3 pb-2 md:grid-cols-5">
         <Kpi label="Terminated, FY2025" value={fmtN(latest?.terminated)} />

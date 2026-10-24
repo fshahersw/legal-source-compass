@@ -523,7 +523,7 @@ function NosBody({ list, search, onSearch }: TabProps & { list: DocketNosList })
     <>
       <div className="border-b border-border/60">
         <p className="px-3 pt-2 text-[11px] font-medium">
-          Groups (this project&apos;s grouping of FJC codebook codes)
+          Groups (this project&apos;s grouping of federal codebook codes)
         </p>
         <ShareBars
           id="collection-nos-groups"
@@ -693,7 +693,7 @@ function NosDetailBody({
               params={{ dataset: "fjc_civil_nos", id: row.id }}
               className="text-primary hover:underline"
             >
-              Open the FJC national record for this code
+              Open the federal national record for this code
             </Link>
           </p>
         ) : null}
@@ -793,9 +793,9 @@ function CausesView({ search, onSearch }: TabProps) {
               noun="causes"
             />
             <p className="border-t border-border/60 px-3 py-1.5 text-[11px] leading-4 text-muted-foreground">
-              The top 200 causes by dockets, each the exact string CourtListener records, so
-              near-duplicates (for example two spellings of the same statute) are separate rows. Few
-              dockets carry a cause, so these counts are not shares of the collection.
+              The top 200 causes by dockets, each the exact string the source records, so
+ near-duplicates (for example two spellings of the same statute) are separate rows. Few
+ dockets carry a cause, so these counts are not shares of the collection.
             </p>
           </>
         );

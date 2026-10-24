@@ -74,7 +74,7 @@ export function CourtCollectionPanel({ courtId }: { courtId: string }) {
       <div
         className="mb-5 h-56 animate-pulse rounded-lg border border-border bg-muted/40"
         aria-busy="true"
-        aria-label="Loading CourtListener collection statistics"
+        aria-label="Loading collection statistics"
       />
     );
   if (q.isError)
@@ -83,7 +83,7 @@ export function CourtCollectionPanel({ courtId }: { courtId: string }) {
         role="alert"
         className="mb-5 flex flex-wrap items-center gap-2 rounded-lg border border-border px-4 py-3 text-xs text-muted-foreground"
       >
-        CourtListener collection statistics could not be loaded.
+        Source collection statistics could not be loaded.
         <button
           type="button"
           onClick={() => void q.refetch()}
@@ -116,7 +116,7 @@ function Body({ c }: { c: ClbCourtCollection }) {
       <div className="flex flex-wrap items-start justify-between gap-2 px-3 py-2">
         <div className="min-w-0">
           <h2 id={`${uid}-title`} className="text-sm font-semibold">
-            CourtListener collection
+            Source collection
           </h2>
           <p className="text-xs text-muted-foreground">
             {p.name}
@@ -132,7 +132,7 @@ function Body({ c }: { c: ClbCourtCollection }) {
             Full record
           </Link>
           {c.courtPageUrl ? (
-            <SourceLink href={c.courtPageUrl}>CourtListener court page</SourceLink>
+            <SourceLink href={c.courtPageUrl}>Source court page</SourceLink>
           ) : null}
         </div>
       </div>
@@ -385,8 +385,8 @@ function CoverageBody({ p }: { p: ClbCourtProfile }) {
   return (
     <div className="space-y-2">
       <ChartFrame
-        caption="CourtListener civil-numbered dockets and FJC civil filings, by fiscal year"
-        label={`Line chart of CourtListener civil-numbered dockets against FJC civil filings, FY${cov.byFy[0]?.fy} to FY${cov.byFy[cov.byFy.length - 1]?.fy}, with their ratio`}
+        caption="Source civil-numbered dockets and federal civil filings, by fiscal year"
+        label={`Line chart of civil-numbered dockets against federal civil filings, FY${cov.byFy[0]?.fy} to FY${cov.byFy[cov.byFy.length - 1]?.fy}, with their ratio`}
         height="h-56"
       >
         <CoverageChart years={cov.byFy} />
@@ -736,7 +736,7 @@ function OpinionsBody({ k, courtId }: { k: ClbClusters; courtId: string }) {
         </ChartFrame>
       ) : null}
       <div className="min-w-0">
-        <h4 className="text-xs font-medium">Times cited in the CourtListener citation network</h4>
+        <h4 className="text-xs font-medium">Times cited in the citation network</h4>
         <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3 lg:grid-cols-5">
           <Fact
             label="Clusters cited at least once"
@@ -749,9 +749,9 @@ function OpinionsBody({ k, courtId }: { k: ClbClusters; courtId: string }) {
           <Fact label="Most cited cluster" value={fmtInt(k.citeMax)} />
         </dl>
         <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
-          Times cited counts the opinions in CourtListener's citation network that cite a cluster.
-          It depends on what the collection holds, newer opinions have had less time to be cited,
-          and it says nothing about whether the opinion is still good law.
+          Times cited counts the opinions in the citation network that cite a cluster.
+ It depends on what the collection holds, newer opinions have had less time to be cited,
+ and it says nothing about whether the opinion is still good law.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">

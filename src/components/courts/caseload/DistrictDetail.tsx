@@ -312,8 +312,8 @@ function Detail({
       </div>
       <p className="border-t border-border/60 px-3 py-1.5 text-[11px] leading-4 text-muted-foreground">
         Source: Federal Judicial Center Integrated Database, civil cases filed, terminated and
-        pending, statistical years 1988 to present. Counts are the FJC&apos;s; the AO&apos;s
-        published tables remain the reference for official totals.
+ pending, statistical years 1988 to present. Counts are the FJC&apos;s; the AO&apos;s
+ published tables remain the reference for official totals.
       </p>
     </Panel>
   );

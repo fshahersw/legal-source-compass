@@ -68,7 +68,7 @@ export function StateCourtDataPanel({ usps }: { usps: string }) {
           <Gavel className="size-4" aria-hidden />
           Court data
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">FJC · CourtListener</span>
+        <span className="text-[11px] text-[var(--navy-muted)]">Federal · CourtListener</span>
       </div>
       {q.isPending ? (
         <p role="status" aria-busy="true" className="px-3 py-6 text-xs text-muted-foreground">
@@ -126,9 +126,9 @@ function Body({ data, onRetry }: { data: StateCourtData; onRetry: () => void }) 
               </span>
             </span>
             {civil.sourceUrl ? (
-              <SourceLink href={civil.sourceUrl}>FJC Integrated Database</SourceLink>
+              <SourceLink href={civil.sourceUrl}>Federal caseload data</SourceLink>
             ) : (
-              <span className="text-muted-foreground">FJC Integrated Database</span>
+              <span className="text-muted-foreground">Federal caseload data</span>
             )}
           </div>
           <StatGrid label={`Federal civil caseload, FY${two.last.fy}`} wide={4}>
@@ -167,7 +167,7 @@ function Body({ data, onRetry }: { data: StateCourtData; onRetry: () => void }) 
         <>
           <div className="flex flex-wrap items-baseline justify-between gap-x-2 px-3 py-1.5 text-[11px]">
             <span className="font-medium">
-              CourtListener collection
+              Source collection
               <span className="font-normal text-muted-foreground">
                 {data.sources.courtListener.snapshot
                   ? ` · snapshot ${data.sources.courtListener.snapshot}`
@@ -176,7 +176,7 @@ function Body({ data, onRetry }: { data: StateCourtData; onRetry: () => void }) 
             </span>
             <span className="text-muted-foreground">{COLLECTION_CAVEAT}</span>
           </div>
-          <StatGrid label="Dockets and opinions in CourtListener's collection" wide={4}>
+          <StatGrid label="Dockets and opinions in the collection" wide={4}>
             <Stat
               label="Dockets in the collection"
               value={countText(cl.dockets)}
@@ -216,7 +216,7 @@ function Body({ data, onRetry }: { data: StateCourtData; onRetry: () => void }) 
       {cl ? (
         <PanelSection
           id="courts-dockets"
-          title="Dockets in CourtListener's collection"
+          title="Dockets in the collection"
           hint="collection"
         >
           <Dockets data={data} />
@@ -373,7 +373,7 @@ function Courts({ data }: { data: StateCourtData }) {
     <>
       <div id="courts-largest-list">
         <ResponsiveTable
-          caption="Largest courts by dockets in CourtListener's collection"
+          caption="Largest courts by dockets in the collection"
           rows={rows}
           rowKey={(c) => c.courtId}
           columns={[
@@ -547,7 +547,7 @@ function Method({ data }: { data: StateCourtData }) {
           </dd>
         </div>
         <div>
-          <dt className="font-medium">CourtListener collection</dt>
+          <dt className="font-medium">Source collection</dt>
           <dd className="text-muted-foreground">
             Dockets and opinion clusters in Free Law Project&apos;s bulk data
             {courtListener.snapshot ? ` (snapshot ${courtListener.snapshot})` : ""}:{" "}
@@ -564,13 +564,13 @@ function Method({ data }: { data: StateCourtData }) {
       <Note>
         {civil?.sourceUrl ? (
           <>
-            <SourceLink href={civil.sourceUrl}>FJC IDB civil cases</SourceLink>
+            <SourceLink href={civil.sourceUrl}>Federal caseload data civil cases</SourceLink>
           </>
         ) : null}
         {cl?.sourceUrl ? (
           <>
             {civil?.sourceUrl ? " · " : ""}
-            <SourceLink href={cl.sourceUrl}>CourtListener dockets file</SourceLink>
+            <SourceLink href={cl.sourceUrl}>Source dockets file</SourceLink>
           </>
         ) : null}
       </Note>

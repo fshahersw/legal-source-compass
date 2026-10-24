@@ -117,7 +117,7 @@ export function HitTable({
             <th className="px-2 py-1.5 font-medium">Status</th>
             <th
               className="px-3 py-1.5 text-right font-medium"
-              title="Citing opinions in CourtListener's citation map"
+              title="Citing opinions in the citation map"
             >
               Cited by
             </th>
@@ -242,7 +242,7 @@ function FulltextResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
           onClick={() => nav({ ...s, mode: "live", page: undefined, cursor: undefined })}
           className="rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
         >
-          Search on CourtListener
+          Search at the source
         </button>
       </Problem>
     );

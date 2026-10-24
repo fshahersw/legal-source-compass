@@ -607,7 +607,7 @@ function Detail({
       </div>
       <p className="border-t border-border/60 px-3 py-1.5 text-[11px] leading-4 text-muted-foreground">
         Source: Federal Judicial Center Integrated Database, national, all districts. Counts are the
-        FJC&apos;s, and the AO&apos;s published tables remain the reference for official totals.
+ FJC&apos;s, and the AO&apos;s published tables remain the reference for official totals.
       </p>
     </Panel>
   );

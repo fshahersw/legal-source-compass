@@ -213,7 +213,7 @@ export function JudgeProfilePrototype({ profile, fjcUrl }: Props) {
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            FJC Biographical Directory
+            Federal Biographical Directory
             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
         </div>

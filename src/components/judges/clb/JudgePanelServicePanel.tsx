@@ -52,7 +52,7 @@ function Body({ p }: { p: JudgePanels }) {
       record={{ dataset: "clb_appellate_panels", id: `judge:${p.personId}` }}
       aside={
         <SourceLink href={`https://www.courtlistener.com/person/${p.personId}/`}>
-          CourtListener person page
+          Source person page
         </SourceLink>
       }
     >

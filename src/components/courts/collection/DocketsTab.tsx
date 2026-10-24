@@ -511,7 +511,7 @@ function SourcesPanel({ query }: { query: UseQueryResult<DocketOverview | null> 
     <Panel
       id="collection-sources"
       title="Where the docket rows come from"
-      subtitle="CourtListener's source flags for each docket"
+      subtitle="The source flags for each docket"
     >
       <QueryPanel
         query={query}

@@ -55,7 +55,7 @@ function AssociationLabel() {
       role="note"
       className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs leading-5 text-warning-foreground"
     >
-      <p className="font-medium">FJC IDB association (historical), not current JPML membership.</p>
+      <p className="font-medium">Federal caseload association (historical), not current JPML membership.</p>
       <p>
         Each number is an MDL docket number carried by at least one civil case record in the Federal
         Judicial Center&apos;s Integrated Database (field MDLDOCK). It shows that a case was
@@ -95,7 +95,7 @@ export function MdlTab({ search, onSearch }: TabProps) {
     return (
       <div className="space-y-3">
         <AssociationLabel />
-        <StateNote>The FJC MDL-number association has not been published yet.</StateNote>
+        <StateNote>The MDL-number association has not been published yet.</StateNote>
       </div>
     );
   const names = new Map((districts.data?.rows ?? []).map((d) => [d.id, d.name]));
@@ -220,7 +220,7 @@ function MdlTable({
   return (
     <Panel
       id="caseload-mdls"
-      title="MDL docket numbers in the FJC data"
+      title="MDL docket numbers in the federal caseload data"
       subtitle={`${int(rows.length)} numbers carried by at least one civil case; ${int(inJpml)} also in the JPML records`}
       actions={
         <span className="text-[11px] text-muted-foreground" role="status">
@@ -269,13 +269,13 @@ function MdlTable({
       {shown.length ? (
         <>
           <TableScroll
-            label="MDL docket numbers carried by FJC civil cases"
+            label="MDL docket numbers carried by federal civil cases"
             maxHeight="max-h-[28rem]"
           >
             <table className="w-full min-w-[46rem] text-xs" id="caseload-mdl-table">
               <caption className="sr-only">
-                MDL docket numbers carried by civil cases in the FJC Integrated Database, a
-                historical association
+                MDL docket numbers carried by civil cases in the federal caseload data, a
+ historical association
               </caption>
               <thead className="text-left text-[11px] text-muted-foreground">
                 <tr>
@@ -510,7 +510,7 @@ function Detail({
     <Panel
       id="caseload-mdl-detail"
       title={`MDL ${d.mdl}`}
-      subtitle="Cases carrying this MDL docket number in the FJC IDB: a historical association, not current JPML membership"
+      subtitle="Cases carrying this MDL docket number in the federal caseload data: a historical association, not current JPML membership"
       actions={
         <>
           {row?.lensHref ? (

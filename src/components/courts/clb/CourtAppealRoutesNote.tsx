@@ -50,7 +50,7 @@ export function CourtAppealRoutesNote({ courtId }: { courtId: string }) {
     >
       {d.appealsTo.length ? (
         <p>
-          <span className="font-medium">CourtListener records appeals from this court to: </span>
+          <span className="font-medium">The source records appeals from this court to: </span>
           {d.appealsTo.map((c, i) => (
             <span key={c.edgeId}>
               {i ? "; " : ""}
@@ -61,7 +61,7 @@ export function CourtAppealRoutesNote({ courtId }: { courtId: string }) {
       ) : null}
       {d.appealsFrom.length ? (
         <p>
-          <span className="font-medium">CourtListener records appeals to this court from: </span>
+          <span className="font-medium">The source records appeals to this court from: </span>
           {d.appealsFrom.map((c, i) => (
             <span key={c.edgeId}>
               {i ? "; " : ""}

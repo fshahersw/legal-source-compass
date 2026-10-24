@@ -536,7 +536,7 @@ export function BenchSmallMultiples({ rows }: { rows: DistrictRow[] }) {
                     {d.medianYearsActive?.toFixed(1) ?? "—"}
                   </dd>
                 </div>
-                <div title="Authorized judgeships, US Courts FCMS (June 2026). Fractional values are shared judgeships. FJC active counts use a different as-of date.">
+                <div title="Authorized judgeships, US Courts FCMS (June 2026). Fractional values are shared judgeships. federal active counts use a different as-of date.">
                   <dt className="text-muted-foreground">Judgeships</dt>
                   <dd className="font-mono tabular-nums">
                     {d.judgeships !== null ? String(d.judgeships) : "—"}

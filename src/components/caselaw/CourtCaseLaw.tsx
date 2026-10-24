@@ -97,7 +97,7 @@ export function CourtCaseLaw({
               rel="noreferrer"
             >
               <ExternalLink className="mr-1 size-3.5" />
-              CourtListener
+              Source
             </a>
           </Button>
         </div>
