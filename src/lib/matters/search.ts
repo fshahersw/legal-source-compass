@@ -70,3 +70,19 @@ export function withView(prev: MatterSearch, view: string | null): MatterSearch 
   const { view: _drop, ...rest } = prev;
   return view === null ? rest : { ...rest, view };
 }
+
+/**
+ * The four views a matter page shows (owner rule: at most four tabs). Each view holds one or more of the URL tabs
+ * above, so every former address (`?tab=parties`, `?tab=documents&entry=…`) still opens the same content, with
+ * the part it names first.
+ */
+export const MATTER_VIEWS = [
+  { id: "overview", label: "Overview", tabs: ["overview", "lifecycle"] },
+  { id: "cases", label: "Cases & parties", tabs: ["cases", "parties"] },
+  { id: "docket", label: "Docket & documents", tabs: ["docket", "documents"] },
+  { id: "evidence", label: "Evidence & sources", tabs: ["evidence"] },
+] as const satisfies readonly { id: string; label: string; tabs: readonly MatterTab[] }[];
+export type MatterView = (typeof MATTER_VIEWS)[number];
+
+export const matterViewOf = (tab: MatterTab): MatterView =>
+  MATTER_VIEWS.find((v) => (v.tabs as readonly MatterTab[]).includes(tab)) ?? MATTER_VIEWS[0];
