@@ -15,16 +15,26 @@ import { HEADLINE_BLOCKS, hubTileState, type TileState } from "./hubTiles";
 import { kpiDelta } from "./kpiDelta";
 import type { Kpi } from "./kpis";
 
-/** "Open chart" link; `compact` is an icon button for narrow cards, so the title keeps the width. */
+/**
+ * "Open chart" link. `compact` is an icon button for narrow cards, so the title keeps the width; "auto" shows the
+ * icon below 22 rem of card width and the text link from there (the card is a container; see KpiCard `auto`).
+ */
 export function KpiLink({
   kpi,
   compact = false,
   className,
 }: {
   kpi: Kpi;
-  compact?: boolean;
+  compact?: boolean | "auto";
   className?: string;
 }) {
+  if (compact === "auto")
+    return (
+      <>
+        <KpiLink kpi={kpi} compact className={cn("@[22rem]:hidden", className)} />
+        <KpiLink kpi={kpi} className={cn("hidden @[22rem]:inline-flex", className)} />
+      </>
+    );
   return (
     <Link
       to={kpi.href.to as never}
@@ -50,12 +60,16 @@ export function KpiLink({
   );
 }
 
+/**
+ * One tile. By default the card measures itself: wide enough (22 rem) and the sparkline sits beside the value, narrower
+ * and it takes its own row below, with the chart link as an icon, so a tile never crowds at three or four per row.
+ */
 export function KpiTile({
   state,
-  trendPlacement = "side",
+  trendPlacement = "auto",
 }: {
   state: TileState;
-  trendPlacement?: "side" | "below";
+  trendPlacement?: "side" | "below" | "auto";
 }) {
   if (state.kind !== "ok")
     return (
@@ -83,16 +97,23 @@ export function KpiTile({
       partial={k.partialNote ?? undefined}
       trendPlacement={trendPlacement}
       trend={
-        k.spark ? (
-          <Sparkline
-            series={k.spark.series}
-            keys={k.spark.keys}
-            width={trendPlacement === "below" ? 200 : 128}
-            height={36}
-          />
-        ) : undefined
+        k.spark
+          ? (slot) => (
+              <Sparkline
+                series={k.spark!.series}
+                keys={k.spark!.keys}
+                width={slot === "below" ? 200 : 128}
+                height={36}
+              />
+            )
+          : undefined
       }
-      action={<KpiLink kpi={k} compact={trendPlacement === "below"} />}
+      action={
+        <KpiLink
+          kpi={k}
+          compact={trendPlacement === "auto" ? "auto" : trendPlacement === "below"}
+        />
+      }
       source={{ source: { label: k.source.label, href: k.source.url } }}
     />
   );
@@ -129,7 +150,7 @@ export function HeadlineTiles({
   return (
     <KpiGrid columns={4} label={label}>
       {HEADLINE_BLOCKS.map((id, i) => (
-        <KpiTile key={id} state={hubTileState(id, qs[i]!)} trendPlacement="below" />
+        <KpiTile key={id} state={hubTileState(id, qs[i]!)} />
       ))}
     </KpiGrid>
   );

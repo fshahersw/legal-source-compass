@@ -64,7 +64,7 @@ export function HubKpis({
                   to="/data/$dataset"
                   params={{ dataset: k.dataset }}
                   title={`Source: ${source}`}
-                  className="truncate underline-offset-2 hover:text-foreground hover:underline"
+                  className="underline-offset-2 hover:text-foreground hover:underline"
                 >
                   {source}
                 </Link>

@@ -14,7 +14,7 @@
  * The delta pill is neutral (grey) unless the metric has an agreed good direction (`goodDirection`), so a rise in
  * filings, recalls or complaints is never painted good or bad by default. A value of null reads "Not recorded".
  */
-import type { ElementType, ReactNode } from "react";
+import { Children, type ElementType, type ReactNode } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,7 @@ import {
   type GoodDirection,
 } from "./format";
 import { PartialPill } from "./StatusPill";
+import { kpiGridClass, type GridColumns } from "./grid";
 import { TONE_CLASS, pillBase } from "./styles";
 
 export type KpiDelta = {
@@ -78,6 +79,8 @@ export function DeltaPill({
   );
 }
 
+export type TrendSlot = "side" | "below";
+
 export type KpiCardProps = {
   label: ReactNode;
   /** The figure as printed ("303,716", "$3.94 billion"); null or undefined shows "Not recorded". */
@@ -91,10 +94,16 @@ export type KpiCardProps = {
   footnote?: ReactNode | undefined;
   /** Partial-period note: shows the "Partial" pill with the note in its popover. */
   partial?: ReactNode | undefined;
-  /** Mini trend slot (e.g. a Sparkline at least 120 × 32). */
-  trend?: ReactNode | undefined;
-  /** "side": right of the value (wide cards); "below": its own row under the change (narrow cards). */
-  trendPlacement?: "side" | "below" | undefined;
+  /**
+   * Mini trend slot (e.g. a Sparkline at least 120 × 32). A function gets the slot it is drawn in, so each placement
+   * can ask for its own width: `(slot) => <Sparkline width={slot === "side" ? 128 : 200} … />`.
+   */
+  trend?: ReactNode | ((slot: TrendSlot) => ReactNode) | undefined;
+  /**
+   * "side": right of the value; "below": its own row under the change; "auto": the card measures itself (container
+   * query) and puts the trend beside the value when it is at least 22 rem wide, below it when narrower.
+   */
+  trendPlacement?: "side" | "below" | "auto" | undefined;
   /** Header action, e.g. an "Open chart" link. */
   action?: ReactNode | undefined;
   /** Footer line; omit for a card without a footer. */
@@ -153,8 +162,12 @@ export function KpiCard({
   labelAs: Label = "p",
 }: KpiCardProps) {
   const Shell = bare ? (as as ElementType) : Card;
+  const drawTrend = (slot: TrendSlot): ReactNode =>
+    typeof trend === "function" ? trend(slot) : trend;
   const shellProps = bare ? {} : { as };
-  const pad = size === "md" ? "px-4" : "px-3.5";
+  // every card pads its text 16 px from the card edge, so the floating assistant button (which reaches 16 px past
+  // the content edge) never covers card text; `sm` only tightens the vertical rhythm
+  const pad = "px-4";
   const header = (
     <div
       className={cn(
@@ -210,13 +223,22 @@ export function KpiCard({
       </Shell>
     );
   return (
-    <Shell {...shellProps} className={cn("flex min-w-0 flex-col", className)}>
+    <Shell
+      {...shellProps}
+      className={cn("flex min-w-0 flex-col", trendPlacement === "auto" && "@container", className)}
+    >
       {header}
       <div className={cn("flex items-end justify-between gap-3", pad, "pt-1.5")}>
         <div className="min-w-0">
           <Value value={value} unit={unit} size={size} />
         </div>
-        {trend && trendPlacement === "side" ? <div className="mb-1 shrink-0">{trend}</div> : null}
+        {trend && trendPlacement !== "below" ? (
+          <div
+            className={cn("mb-1 shrink-0", trendPlacement === "auto" && "hidden @[22rem]:block")}
+          >
+            {drawTrend("side")}
+          </div>
+        ) : null}
       </div>
       {delta || deltaNote ? (
         <div className={cn("mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1", pad)}>
@@ -229,9 +251,17 @@ export function KpiCard({
           ) : null}
         </div>
       ) : null}
-      {trend && trendPlacement === "below" ? (
+      {trend && trendPlacement !== "side" ? (
         // the trend fills a narrow card: the svg shrinks to the card width, keeping its aspect ratio
-        <div className={cn("mt-2.5 [&_svg]:h-auto [&_svg]:max-w-full", pad)}>{trend}</div>
+        <div
+          className={cn(
+            "mt-2.5 [&_svg]:h-auto [&_svg]:max-w-full",
+            trendPlacement === "auto" && "@[22rem]:hidden",
+            pad,
+          )}
+        >
+          {drawTrend("below")}
+        </div>
       ) : null}
       {meta || partial ? (
         <div className={cn("mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1", pad)}>
@@ -258,30 +288,26 @@ export function KpiCard({
   );
 }
 
-const GRID_COLS: Record<2 | 3 | 4 | 5 | 6, string> = {
-  2: "sm:grid-cols-2",
-  3: "sm:grid-cols-2 lg:grid-cols-3",
-  4: "sm:grid-cols-2 xl:grid-cols-4",
-  5: "grid-cols-2 sm:grid-cols-3 xl:grid-cols-5",
-  6: "grid-cols-2 sm:grid-cols-3 xl:grid-cols-6",
-};
-
-/** A row of separate KPI cards (children are KpiCards with as="li"). */
+/**
+ * A row of separate KPI cards (children are KpiCards with as="li"). `columns` is the widest layout (at xl); the
+ * column count at every breakpoint follows the number of cards so the last row is never one card alone (grid.ts).
+ */
 export function KpiGrid({
   columns = 4,
   label,
   className,
   children,
 }: {
-  columns?: 2 | 3 | 4 | 5 | 6 | undefined;
+  columns?: GridColumns | undefined;
   label?: string | undefined;
   className?: string | undefined;
   children: ReactNode;
 }) {
+  const count = Children.toArray(children).length;
   return (
     <ul
       aria-label={label}
-      className={cn("m-0 grid list-none gap-3 p-0", GRID_COLS[columns], className)}
+      className={cn("m-0 grid list-none gap-3 p-0", kpiGridClass(count, columns), className)}
     >
       {children}
     </ul>

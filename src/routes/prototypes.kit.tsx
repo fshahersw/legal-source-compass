@@ -165,7 +165,7 @@ function Specimen({
 function LiveTiles() {
   const qs = useQueries({ queries: LIVE_BLOCKS.map((id) => analyticsBlockQuery(id)) });
   return (
-    <KpiGrid columns={2} className="xl:grid-cols-3" label="Live KPI cards">
+    <KpiGrid columns={3} label="Live KPI cards">
       {LIVE_BLOCKS.map((id, i) => (
         <KpiTile key={id} state={hubTileState(id, qs[i]!)} />
       ))}
@@ -528,6 +528,36 @@ function Specimens({ panel }: { panel: string }) {
         </div>
       </Specimen>
 
+      <Specimen
+        id={`${panel}-footer`}
+        name="SourceFooter"
+        note="a long source, a period and an as-of date wrap inside cards of three widths; the About button stays put"
+      >
+        <div className="flex flex-wrap items-start gap-4">
+          {[17, 24, 36].map((rem) => (
+            <Card key={rem} className="w-full" style={{ maxWidth: `${rem}rem` }}>
+              <CardBody className="pt-4 text-[13px] text-muted-foreground">
+                A card {rem} rem wide
+              </CardBody>
+              <CardFooter>
+                <SourceFooter
+                  className="flex-1"
+                  source={{
+                    label:
+                      "Judicial Panel on Multidistrict Litigation, Statistical Analysis of Multidistrict Litigation, pending actions by report",
+                    href: "https://www.jpml.uscourts.gov/",
+                  }}
+                  period="FY1992–FY2025"
+                  asOf="Oct 1, 2026"
+                  partial="FY2026 is a partial period and is not the latest value."
+                  about={<p>Method and caveats stay in this popover.</p>}
+                />
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </Specimen>
+
       <Specimen id={`${panel}-insight`} name="InsightCallout" note="today's safety insight, live">
         <LiveInsight />
       </Specimen>
@@ -762,6 +792,7 @@ function Page() {
           { id: "light-kpis", label: "KPIs" },
           { id: "light-chart", label: "Chart card & data" },
           { id: "light-states", label: "States" },
+          { id: "light-footer", label: "Footer" },
           { id: "light-insight", label: "Insight" },
           { id: "light-links", label: "Links" },
           { id: "light-ui", label: "Primitives" },
