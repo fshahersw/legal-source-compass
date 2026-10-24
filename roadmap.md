@@ -62,6 +62,8 @@
 - [x] Map zoom and pan (buttons, Ctrl+scroll, drag, reset) on every MetricMap
 - [x] Places: highest/lowest 5 states vs the median, following the selected measure
 - [ ] Places home: tidy header, KPI strip from the selected measure
+- [x] Courts & judges: change-since chart of federal caseloads (civil, criminal, MDL pending; fiscal years) + latest-year dots
+- [x] Law & government: Federal Register final/proposed rules by year and bills per Congress split by became law (stacked, unfinished periods faded)
 - [ ] Courts & judges: dots vs national baseline where a per-court measure exists
 - [x] Litigation: change-since chart of the 5 largest pending MDLs + biggest 12-month rises/falls (JPML)
 - [x] Enforcement: change-since chart by agency (calendar-year series only; FY series named, not mixed; coverage-change markers honoured) + latest-period change dots
