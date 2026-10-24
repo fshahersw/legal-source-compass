@@ -192,7 +192,10 @@ export function EntityPage({
             <a
               key={n.key}
               href={`#${n.key}`}
-              className="whitespace-nowrap rounded px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground"
+              className={cn(
+                "rounded px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground",
+                extra ? "max-w-full truncate" : "whitespace-nowrap",
+              )}
             >
               {n.label}
             </a>
