@@ -27,6 +27,17 @@ export type ApiLawDataset = {
   recordHref?: (id: string) => string;
   /** the official publisher, shown under the results */
   sourceNote: string;
+  /**
+   * PostgREST order of the results and how it reads in the result line. Default: corpus order (the builder's order,
+   * with rows a scheduled run adds or changes placed first).
+   */
+  order?: { clause: string; label: string };
+};
+
+/** GovInfo packages by their date issued, newest first (a scheduled run also adds historical packages GovInfo posts). */
+const BY_DATE_ISSUED = {
+  clause: "item->package->>dateIssued.desc.nullslast,ordinal.asc",
+  label: "newest issued first",
 };
 
 const YEAR = /^(19|20)\d{2}$/;
@@ -145,6 +156,7 @@ export const API_LAW_DATASETS: Record<string, ApiLawDataset> = {
     ],
     sourceNote:
       "GovInfo Congressional Hearings (U.S. Government Publishing Office): titles and dates as published, with the PDF.",
+    order: BY_DATE_ISSUED,
   },
   govinfo_committee_prints: {
     id: "govinfo_committee_prints",
@@ -158,6 +170,7 @@ export const API_LAW_DATASETS: Record<string, ApiLawDataset> = {
       { name: "summary", label: "Summary read", pattern: YESNO },
     ],
     sourceNote: "GovInfo Congressional Committee Prints (U.S. Government Publishing Office).",
+    order: BY_DATE_ISSUED,
   },
   govinfo_bill_versions: {
     id: "govinfo_bill_versions",
@@ -185,6 +198,7 @@ export const API_LAW_DATASETS: Record<string, ApiLawDataset> = {
     ],
     sourceNote:
       "GovInfo's GAO Reports and Comptroller General Decisions collection (1994-2008). Later GAO work is on gao.gov.",
+    order: BY_DATE_ISSUED,
   },
   gao_legal_decisions: {
     id: "gao_legal_decisions",
@@ -249,7 +263,7 @@ export function searchPath(spec: SearchSpec): { path: string; mode: "id" | "word
     }
   }
   if (Object.keys(contain).length) parts.push(`filters=cs.${cs(contain)}`);
-  parts.push("order=ordinal.asc");
+  parts.push(`order=${ds.order?.clause ?? "ordinal.asc"}`);
   return { path: `corpus_records?${parts.join("&")}`, mode };
 }
 

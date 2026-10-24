@@ -167,6 +167,7 @@ export function ApiLawBrowser({
         <Results
           r={results.data}
           noun={ds.noun}
+          orderLabel={ds.order?.label}
           fetching={results.isFetching}
           onPage={(p) => onSearch({ ...search, page: p })}
           columns={columns}
@@ -181,6 +182,7 @@ export function ApiLawBrowser({
 function Results({
   r,
   noun,
+  orderLabel,
   fetching,
   onPage,
   columns,
@@ -188,6 +190,7 @@ function Results({
 }: {
   r: ApiLawSearchResult;
   noun: string;
+  orderLabel?: string | undefined;
   fetching: boolean;
   onPage: (p: number) => void;
   columns: [string, string][];
@@ -208,6 +211,7 @@ function Results({
             ? `${fmtN(from)}–${fmtN(to)} of ${r.total != null ? fmtN(r.total) : "too large to count"} ${noun}`
             : `No ${noun} match.`}
           {r.mode === "id" ? " · exact identifier" : ""}
+          {r.rows.length > 1 && orderLabel ? ` · ${orderLabel}` : ""}
           {r.dropped ? ` · ${r.dropped} malformed row${r.dropped === 1 ? "" : "s"} not shown` : ""}
           {facets?.ready === false
             ? " · the collection is being loaded; counts may be partial"
