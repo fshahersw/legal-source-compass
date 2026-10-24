@@ -32,7 +32,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "./AssistantMarkdown";
-import { ASK_EVENT, type AskDetail } from "./askAssistant";
+import { ASK_EVENT, OPEN_EVENT, type AskDetail } from "./askAssistant";
 import { CitationCheckLine } from "./CitationCheck";
 import { citationMarks } from "./citationStatus";
 import { collectPageContext, suggestionsFor } from "./pageContext";
@@ -299,8 +299,13 @@ export function AssistantPanel() {
       setMode("open");
       setTimeout(() => submitRef.current(detail.question, detail.label), 60);
     };
+    const onOpen = () => setMode("open");
     window.addEventListener(ASK_EVENT, onAsk);
-    return () => window.removeEventListener(ASK_EVENT, onAsk);
+    window.addEventListener(OPEN_EVENT, onOpen);
+    return () => {
+      window.removeEventListener(ASK_EVENT, onAsk);
+      window.removeEventListener(OPEN_EVENT, onOpen);
+    };
   }, []);
 
   const attach = async (picked: FileList | null) => {

@@ -48,7 +48,7 @@ export function InsightCallout({
             {eyebrow}
           </p>
         ) : null}
-        <h3 className="text-heading text-foreground">{headline}</h3>
+        <h3 className="text-label font-semibold text-foreground">{headline}</h3>
       </div>
       {figures.length ? (
         <dl
@@ -88,7 +88,7 @@ export function InsightCallout({
           <div
             id={panelId}
             hidden={!open}
-            className="mt-2 max-w-4xl space-y-2 text-[13px] leading-6 text-foreground/85"
+            className="measure mt-2 space-y-2 text-body text-foreground/85"
           >
             {children}
           </div>

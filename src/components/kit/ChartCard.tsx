@@ -61,14 +61,14 @@ export function ChartCard<T>({
       className={cn("m-0 flex flex-col", className)}
     >
       <figcaption className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-4 pb-3">
-        <div className="min-w-0 flex-1">
-          <h3 id={titleId} className="text-[15px] font-semibold leading-6 text-foreground">
+        <div className="min-w-0 flex-[1_1_14rem]">
+          <h3 id={titleId} className="text-label font-semibold text-foreground">
             {title}
           </h3>
           {subtitle ? <p className="mt-0.5 text-meta text-muted-foreground">{subtitle}</p> : null}
         </div>
         {actions || (data && state === "ready") ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             {actions}
             {data && state === "ready" ? <DataDrawer {...data} /> : null}
           </div>

@@ -218,7 +218,14 @@ const recordIn = (section: NavigationSection, tab?: string) => (path: string) =>
 // ------------------------------------------------------------------------------------------------ sections and tabs
 
 type Owner = (path: string, search: SearchParams) => boolean;
-type TabSpec = ContextNavigationItem & { id: string; owns: Owner };
+type TabSpec = ContextNavigationItem & {
+  id: string;
+  /** One plain-language line (at most 14 words) shown under the label in the header menu. */
+  description: string;
+  /** Destinations with the same group id open together in one dropdown panel (see SECTION_GROUPS). */
+  group?: string;
+  owns: Owner;
+};
 type SectionSpec = {
   id: NavigationSection;
   tabs: readonly TabSpec[];
@@ -252,12 +259,19 @@ const SECTIONS: readonly SectionSpec[] = [
   {
     id: "enforcement",
     tabs: [
-      { id: "overview", to: "/enforcement", label: "Overview", owns: enforcementTab(undefined) },
+      {
+        id: "overview",
+        to: "/enforcement",
+        label: "Overview",
+        description: "Headline enforcement figures and what changed across agencies.",
+        owns: enforcementTab(undefined),
+      },
       {
         id: "actions",
         to: "/enforcement",
         search: { tab: "actions" },
         label: "Actions by agency",
+        description: "Each agency's own published actions: DOJ, SEC, FTC, EPA and more.",
         owns: (p, s) => enforcementTab("actions")(p, s) || recordIn("enforcement", "actions")(p),
       },
       {
@@ -265,6 +279,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/enforcement",
         search: { tab: "exclusions" },
         label: "Exclusions",
+        description: "People and companies barred from federal health and contracting programs.",
+        group: "checks",
         owns: (p, s) =>
           enforcementTab("exclusions")(p, s) || recordIn("enforcement", "exclusions")(p),
       },
@@ -273,6 +289,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/enforcement",
         search: { tab: "oversight" },
         label: "Oversight reports",
+        description: "Inspector General reports, DOJ OIG reports and Special Counsel files.",
+        group: "checks",
         owns: (p, s) =>
           enforcementTab("oversight")(p, s) || recordIn("enforcement", "oversight")(p),
       },
@@ -281,6 +299,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/enforcement",
         search: { tab: "merger" },
         label: "Merger review",
+        description: "Merger filings and early termination notices from the FTC.",
+        group: "checks",
         owns: (p, s) => enforcementTab("merger")(p, s) || recordIn("enforcement", "merger")(p),
       },
       {
@@ -288,6 +308,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/enforcement",
         search: { tab: "sources" },
         label: "Agency data sources",
+        description: "Where each enforcement dataset comes from and what it covers.",
+        group: "checks",
         owns: enforcementTab("sources"),
       },
     ],
@@ -300,12 +322,15 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "overview",
         to: "/safety",
         label: "Overview",
+        description: "Recalls, adverse events and safety flags at a glance.",
         owns: (p, s) => safetyView(p, s) === "overview",
       },
       {
         id: "intelligence",
         to: "/law/monitoring",
         label: "Regulatory intelligence",
+        description: "Recall patterns, repeat-recall firms and changes in agency sources.",
+        group: "signals",
         owns: (p) => at(p, "/law/monitoring"),
       },
       {
@@ -313,6 +338,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/safety",
         search: { view: "neiss" },
         label: "Injuries (NEISS)",
+        description: "National estimates of emergency-room injuries from consumer products.",
+        group: "injuries",
         owns: (p, s) => safetyView(p, s) === "neiss",
       },
       {
@@ -320,18 +347,24 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/safety",
         search: { view: "reports" },
         label: "Consumer reports",
+        description: "Unverified consumer reports on SaferProducts.gov, by product.",
+        group: "injuries",
         owns: (p, s) => safetyView(p, s) === "reports",
       },
       {
         id: "signals",
         to: "/safety/signals",
         label: "Signals",
+        description: "Mass-tort products next to rising adverse events, recalls and complaints.",
+        group: "signals",
         owns: (p) => at(p, "/safety/signals"),
       },
       {
         id: "products",
         to: "/safety/products",
         label: "Products & devices",
+        description: "Adverse-event and device reports, reactions and recalls for named products.",
+        group: "browse",
         owns: (p) => at(p, "/safety/products") || at(p, "/safety/companies"),
       },
       {
@@ -339,6 +372,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/safety",
         search: { view: "list" },
         label: "Collections",
+        description: "Every recall, enforcement and approval dataset, by agency.",
+        group: "browse",
         owns: (p, s) => safetyView(p, s) === "collections" || recordIn("safety")(p),
       },
     ],
@@ -347,17 +382,27 @@ const SECTIONS: readonly SectionSpec[] = [
   {
     id: "litigation",
     tabs: [
-      { id: "overview", to: "/litigation", label: "Overview", owns: (p) => p === "/litigation" },
+      {
+        id: "overview",
+        to: "/litigation",
+        label: "Overview",
+        description: "Mass torts, class actions, firms and settlements at a glance.",
+        owns: (p) => p === "/litigation",
+      },
       {
         id: "cases",
         to: "/cases",
         label: "Case law",
+        description: "Supreme Court, appeals and state high-court opinions, with a citator.",
+        group: "cases",
         owns: (p) => at(p, "/cases"),
       },
       {
         id: "mdls",
         to: "/matters/analytics",
         label: "MDLs & mass torts",
+        description: "Pending MDLs over time, transferee courts, and one page per MDL.",
+        group: "mass",
         owns: (p) =>
           at(p, "/matters") ||
           p === "/mdls" ||
@@ -368,6 +413,8 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "dockets",
         to: "/courts/collection",
         label: "Dockets",
+        description: "The docket collection by year, court and nature of suit.",
+        group: "cases",
         owns: (p) =>
           at(p, "/courts/collection") ||
           at(p, "/registry") ||
@@ -380,12 +427,15 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "securities",
         to: "/courts/securities",
         label: "Securities class actions",
+        description: "Federal securities class actions since 1996, with outcomes and settlements.",
+        group: "mass",
         owns: (p) => at(p, "/courts/securities") || recordIn("litigation", "securities")(p),
       },
       {
         id: "firms",
         to: "/courts/firms",
         label: "Law firms",
+        description: "Who appears on MDL master dockets, on which side.",
         owns: (p, s) =>
           at(p, "/courts/firms") ||
           (p === "/people" && param(s, "kind") === "mdl_counsel") ||
@@ -395,6 +445,8 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "settlements",
         to: "/litigation/settlements",
         label: "Settlements",
+        description: "Confirmed class settlements with deadlines, courts and published notices.",
+        group: "mass",
         owns: (p) => at(p, "/litigation/settlements") || recordIn("litigation", "settlements")(p),
       },
     ],
@@ -407,6 +459,7 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "courts",
         to: "/courts",
         label: "Courts",
+        description: "Find any federal, state or tribal court and open its page.",
         owns: (p) =>
           (at(p, "/courts") && !COURT_PAGES_IN_OTHER_SECTIONS.some((x) => at(p, x))) ||
           at(p, "/prototypes/court") ||
@@ -416,6 +469,7 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "judges",
         to: "/judges",
         label: "Judges",
+        description: "Judge profiles by court, with appointment and past service.",
         owns: (p) =>
           at(p, "/judges") ||
           p === "/people" ||
@@ -426,24 +480,32 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "caseload",
         to: "/courts/caseload",
         label: "Caseload",
+        description: "Federal civil caseload by district court, from the FJC.",
+        group: "caseload",
         owns: (p) => at(p, "/courts/caseload"),
       },
       {
         id: "vacancies",
         to: "/courts/vacancies",
         label: "Vacancies",
+        description: "Current and future vacancies, judicial emergencies and confirmations.",
+        group: "caseload",
         owns: (p) => at(p, "/courts/vacancies"),
       },
       {
         id: "compare-courts",
         to: "/courts/analytics",
         label: "Compare courts",
+        description: "District courts side by side: filings, pending cases and timing.",
+        group: "compare",
         owns: (p) => at(p, "/courts/analytics"),
       },
       {
         id: "compare-judges",
         to: "/judges/analytics",
         label: "Compare judges",
+        description: "MDL transferee judges and their dockets, side by side.",
+        group: "compare",
         owns: (p) => at(p, "/judges/analytics"),
       },
     ],
@@ -451,11 +513,18 @@ const SECTIONS: readonly SectionSpec[] = [
   {
     id: "places",
     tabs: [
-      { id: "map", to: "/places", label: "Map", owns: (p) => p === "/places" },
+      {
+        id: "map",
+        to: "/places",
+        label: "Map",
+        description: "Shade states and counties by any metric, then open a place.",
+        owns: (p) => p === "/places",
+      },
       {
         id: "compare",
         to: "/places/analytics",
         label: "Compare",
+        description: "States side by side: rankings and per-capita figures.",
         owns: (p) => at(p, "/places/analytics"),
       },
     ],
@@ -474,6 +543,7 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "overview",
         to: "/law",
         label: "Overview",
+        description: "Federal law, state law, legislation and agencies at a glance.",
         owns: (p, s) => p === "/law" && lawScope(s) !== "federal" && lawScope(s) !== "states",
       },
       {
@@ -481,6 +551,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/law",
         search: { scope: "federal" },
         label: "Federal law",
+        description: "The U.S. Code and the Code of Federal Regulations, section by section.",
+        group: "law",
         owns: (p, s) =>
           (p === "/law" && lawScope(s) === "federal") ||
           at(p, "/law/uscode") ||
@@ -493,6 +565,8 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/law",
         search: { scope: "states" },
         label: "State law",
+        description: "State codes, constitutions, regulations and court rules.",
+        group: "law",
         owns: (p, s) =>
           (p === "/law" && lawScope(s) === "states") ||
           at(p, "/law/codes") ||
@@ -504,24 +578,31 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "legislation",
         to: "/law/legislation",
         label: "Legislation & Congress",
+        description: "Federal and state bills, members of Congress and committees.",
+        group: "gov",
         owns: (p) => at(p, "/law/legislation") || recordIn("law", "legislation")(p),
       },
       {
         id: "rulemaking",
         to: "/law/rulemaking",
         label: "Rulemaking",
+        description: "Federal Register rules, proposed rules and the Unified Agenda.",
+        group: "gov",
         owns: (p) => at(p, "/law/rulemaking") || recordIn("law", "rulemaking")(p),
       },
       {
         id: "limits",
         to: "/limitations",
         label: "Time limits",
+        description: "Statutes of limitation with cited rules and a guided calculator.",
         owns: (p) => at(p, "/limitations") || recordIn("law", "limits")(p),
       },
       {
         id: "agencies",
         to: "/agencies",
         label: "Agencies",
+        description: "Federal agencies: structure, rules, budgets and enforcement.",
+        group: "gov",
         owns: (p) => at(p, "/agencies") || recordIn("law", "agencies")(p),
       },
     ],
@@ -535,6 +616,7 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "directory",
         to: "/companies",
         label: "Directory",
+        description: "Companies tied to MDLs, profiled from their SEC filings.",
         owns: (p) =>
           (at(p, "/companies") && !at(p, "/companies/payments")) || recordIn("companies")(p),
       },
@@ -542,6 +624,7 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "payments",
         to: "/companies/payments",
         label: "Industry payments",
+        description: "What drug and device makers paid clinicians, 2017 to 2025.",
         owns: (p) => at(p, "/companies/payments"),
       },
     ],
@@ -554,18 +637,23 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "overview",
         to: "/insights",
         label: "Overview",
+        description: "Headline figures across the platform and what moved most.",
         owns: (p) => p === "/insights" || p === "/analytics",
       },
       {
         id: "explore",
         to: "/insights/explore",
         label: "Explore",
+        description: "Put any two metrics side by side across states or MDLs.",
+        group: "analyse",
         owns: (p) => at(p, "/insights/explore"),
       },
       {
         id: "trends",
         to: "/insights/trends",
         label: "Trends",
+        description: "Follow one metric over time for up to six places.",
+        group: "analyse",
         owns: (p) =>
           at(p, "/insights/trends") ||
           at(p, "/analytics/enforcement") ||
@@ -575,24 +663,31 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "rankings",
         to: "/insights/rankings",
         label: "Rankings & maps",
+        description: "Rank and map any metric for any period.",
+        group: "analyse",
         owns: (p) => at(p, "/insights/rankings"),
       },
       {
         id: "signals",
         to: "/insights/signals",
         label: "Signals",
+        description: "Time to MDL termination, growth after centralization and clusters.",
         owns: (p) => at(p, "/insights/signals"),
       },
       {
         id: "today",
         to: "/insights/today",
         label: "Insights of the day",
+        description: "One computed insight per section each day, with its figures.",
+        group: "research",
         owns: (p) => at(p, "/insights/today") || at(p, "/analytics/insights"),
       },
       {
         id: "research",
         to: "/insights/research",
         label: "Research",
+        description: "State comparisons, judge and case analysis and citation paths.",
+        group: "research",
         owns: (p) => at(p, "/insights/research"),
       },
     ],
@@ -601,11 +696,19 @@ const SECTIONS: readonly SectionSpec[] = [
   {
     id: "sources",
     tabs: [
-      { id: "directory", to: "/sources", label: "Directory", owns: (p) => p === "/sources" },
+      {
+        id: "directory",
+        to: "/sources",
+        label: "Directory",
+        description: "Every dataset and where it comes from.",
+        owns: (p) => p === "/sources",
+      },
       {
         id: "library",
         to: "/sources/library",
         label: "Library",
+        description: "Browse source documents and records in the library.",
+        group: "browse",
         owns: (p) =>
           at(p, "/sources/library") ||
           at(p, "/sources/detail") ||
@@ -615,24 +718,32 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "catalog",
         to: "/sources/catalog",
         label: "Catalog",
+        description: "The catalog of sources, endpoints and update schedules.",
+        group: "browse",
         owns: (p) => at(p, "/sources/catalog"),
       },
       {
         id: "coverage",
         to: "/sources/coverage",
         label: "Coverage",
+        description: "What each source covers by place, period and record type.",
+        group: "coverage",
         owns: (p) => at(p, "/sources/coverage"),
       },
       {
         id: "registry",
         to: "/sources/registry",
         label: "Registry",
+        description: "The source registry with status, rights and checks.",
+        group: "coverage",
         owns: (p) => at(p, "/sources/registry") || at(p, "/sources/registry-v22"),
       },
       {
         id: "datasets",
         to: "/data",
         label: "Datasets",
+        description: "Every dataset with its record count, fields and filters.",
+        group: "browse",
         // Dataset pages of other sections are claimed by their section before this tab is consulted.
         owns: (p) => at(p, "/data") || at(p, "/source-datasets") || recordIn("sources")(p),
       },
@@ -646,12 +757,14 @@ const SECTIONS: readonly SectionSpec[] = [
         id: "saved",
         to: "/saved-sources",
         label: "Saved sources",
+        description: "Sources you bookmarked or reviewed in this browser.",
         owns: (p) => at(p, "/saved-sources"),
       },
       {
         id: "exports",
         to: "/data-exports",
         label: "Imports & exports",
+        description: "Import a saved bundle or export your work.",
         owns: (p) => at(p, "/data-exports"),
       },
     ],
@@ -700,6 +813,157 @@ export function contextualNavigation(path: string, search?: SearchParams): Conte
   const spec = specFor(p, search);
   if (!spec || spec.noStrip?.(p)) return [];
   return spec.tabs.map(strip);
+}
+
+// ------------------------------------------------------------------------------------------------ header menu
+
+type GroupCopy = { label: string; description: string };
+
+/**
+ * The dropdown panels of each section: the id a tab names in `group`, the panel's title and one line (at most 14
+ * words) for its feature tile. Destinations without a group are direct links.
+ */
+const SECTION_GROUPS: Partial<Record<NavigationSection, Readonly<Record<string, GroupCopy>>>> = {
+  enforcement: {
+    checks: {
+      label: "Checks & oversight",
+      description: "Exclusion lists, oversight findings, merger review and data sources.",
+    },
+  },
+  safety: {
+    signals: {
+      label: "Signals & intelligence",
+      description: "Where product problems are rising, and which firms keep recalling.",
+    },
+    injuries: {
+      label: "Injuries & reports",
+      description: "Estimated injuries and what consumers report about products.",
+    },
+    browse: {
+      label: "Browse data",
+      description: "Look up products and devices, or open every collection.",
+    },
+  },
+  litigation: {
+    cases: {
+      label: "Cases & dockets",
+      description: "Court opinions and the docket records behind them.",
+    },
+    mass: {
+      label: "Mass litigation",
+      description: "MDLs, securities class actions and settlements.",
+    },
+  },
+  courts: {
+    caseload: {
+      label: "Caseload",
+      description: "How busy the federal courts are, and where judgeships are open.",
+    },
+    compare: {
+      label: "Compare",
+      description: "Courts or judges side by side on the same measures.",
+    },
+  },
+  law: {
+    law: {
+      label: "Federal & state law",
+      description: "Statutes, regulations and court rules, section by section.",
+    },
+    gov: {
+      label: "Congress & agencies",
+      description: "Bills, rulemaking and the agencies that issue rules.",
+    },
+  },
+  insights: {
+    analyse: { label: "Analyse", description: "Compare, follow, rank and map any metric." },
+    research: { label: "Research", description: "The research workbench and the daily insights." },
+  },
+  sources: {
+    browse: { label: "Browse", description: "Open the library, the catalog or any dataset." },
+    coverage: {
+      label: "Coverage & registry",
+      description: "What each source covers, and the status of every source.",
+    },
+  },
+};
+
+/** The header strip shows at most this many top-level items; related destinations share a dropdown panel. */
+export const MAX_MENU_ITEMS = 4;
+
+export type MenuLink = {
+  /** tabKey of the destination (its path plus query). */
+  key: string;
+  to: string;
+  search?: Readonly<Record<string, string>> | undefined;
+  label: string;
+  description: string;
+  /** aria-current of this destination for the page being shown. */
+  current: "page" | "true" | undefined;
+};
+export type MenuItem =
+  | ({ kind: "link"; active: boolean } & MenuLink)
+  | {
+      kind: "group";
+      key: string;
+      label: string;
+      description: string;
+      /** The destinations in the panel, in order; the first is the panel's feature tile. */
+      items: MenuLink[];
+      /** The page being shown is one of the panel's destinations. */
+      active: boolean;
+    };
+
+/**
+ * The section's header menu for a page: at most four items, each a direct link or a dropdown panel of grouped
+ * destinations, every destination of the section exactly once, in tab order (a panel sits where its first member
+ * is). Empty where the page carries no menu (the map home, a state page). Pure.
+ */
+export function sectionMenu(path: string, search?: SearchParams): MenuItem[] {
+  const p = normalizePath(path);
+  const spec = specFor(p, search);
+  if (!spec || spec.noStrip?.(p)) return [];
+  const activeKey = activeContextualPath(p, search);
+  const copy = SECTION_GROUPS[spec.id] ?? {};
+  const out: MenuItem[] = [];
+  const groups = new Map<string, Extract<MenuItem, { kind: "group" }>>();
+  for (const tab of spec.tabs) {
+    const item = strip(tab);
+    const key = tabKey(item);
+    const link: MenuLink = {
+      key,
+      to: item.to,
+      ...(item.search ? { search: item.search } : {}),
+      label: item.label,
+      description: tab.description,
+      current: ariaCurrent(p, item.to, key === activeKey, search, item.search),
+    };
+    const group = tab.group ? copy[tab.group] : undefined;
+    if (!tab.group || !group) {
+      out.push({ kind: "link", active: key === activeKey, ...link });
+      continue;
+    }
+    let panel = groups.get(tab.group);
+    if (!panel) {
+      panel = {
+        kind: "group",
+        key: `${spec.id}:${tab.group}`,
+        label: group.label,
+        description: group.description,
+        items: [],
+        active: false,
+      };
+      groups.set(tab.group, panel);
+      out.push(panel);
+    }
+    panel.items.push(link);
+    if (key === activeKey) panel.active = true;
+  }
+  return out;
+}
+
+/** Every destination of a menu, panels flattened, in order. */
+export function menuLinks(items: readonly MenuItem[]): MenuLink[] {
+  return items.flatMap((i) => (i.kind === "group" ? i.items : [i]));
 }
 
 /** Stable identity of a tab: its path plus its query, e.g. "/safety?view=neiss". */

@@ -1,5 +1,6 @@
 /**
- * PageHeader: breadcrumb, title (24/32 semibold), one-line description, actions, optional emblem and tabs.
+ * PageHeader: breadcrumb, title (28/34 semibold, tight tracking), one-line description (14/22, at most 68ch), actions,
+ * optional emblem and menu or tabs.
  * The app shell renders one for every page (title/description/actions/emblem); use this directly for a header inside
  * a page body or a prototype.
  *
@@ -67,6 +68,7 @@ export function PageHeader({
   tabs,
   meta,
   titleAs: Title = "h1",
+  tabsClassName,
   className,
 }: {
   title: ReactNode;
@@ -79,6 +81,8 @@ export function PageHeader({
   /** A short line under the description (e.g. "Updated Oct 24, 2026"). */
   meta?: ReactNode | undefined;
   titleAs?: "h1" | "h2" | undefined;
+  /** Replaces the default gap above `tabs`. */
+  tabsClassName?: string | undefined;
   className?: string | undefined;
 }) {
   return (
@@ -90,9 +94,7 @@ export function PageHeader({
           <div className="min-w-0">
             <Title className="text-title text-foreground">{title}</Title>
             {description ? (
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-                {description}
-              </p>
+              <p className="measure mt-1.5 text-body text-muted-foreground">{description}</p>
             ) : null}
             {meta ? <div className="mt-1 text-meta text-muted-foreground">{meta}</div> : null}
           </div>
@@ -101,7 +103,7 @@ export function PageHeader({
           <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
         ) : null}
       </div>
-      {tabs ? <div className="mt-4">{tabs}</div> : null}
+      {tabs ? <div className={tabsClassName ?? "mt-4"}>{tabs}</div> : null}
     </header>
   );
 }

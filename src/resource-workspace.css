@@ -26,8 +26,10 @@
   background: var(--background);
 }
 .atlas-main {
-  /* the bottom padding keeps the last content clear of the floating assistant button (32 px + 12 px offset) */
-  padding: 16px var(--workspace-gutter) 72px;
+  /* 32 px under the header (one section gap); a sticky SectionIndex cancels it with -mt-[var(--page-pad-top)].
+     The bottom padding keeps the last content clear of the floating assistant button (32 px + 12 px offset). */
+  --page-pad-top: 32px;
+  padding: var(--page-pad-top) var(--workspace-gutter) 72px;
 }
 
 /* Section band: a light header row on a card (formerly a navy bar). */

@@ -7,9 +7,12 @@ import {
   ariaCurrent,
   composeBreadcrumbs,
   contextualNavigation,
+  MAX_MENU_ITEMS,
+  menuLinks,
   navigationSection,
   normalizePath,
   recordPlacement,
+  sectionMenu,
   tabKey,
   type NavigationSection,
   type SearchParams,
@@ -324,6 +327,166 @@ const PAGES: [string, SearchParams, NavigationSection | null, string | null][] =
   ["/reset-password", undefined, null, null],
   ["/prototypes", undefined, null, null],
 ];
+
+describe("header menu (sectionMenu)", () => {
+  /** One page of every section that has tabs. */
+  const SECTION_TABS: [string, SearchParams][] = [
+    ["/places", undefined],
+    ["/courts", undefined],
+    ["/litigation", undefined],
+    ["/law", undefined],
+    ["/enforcement", undefined],
+    ["/safety", undefined],
+    ["/companies", undefined],
+    ["/insights", undefined],
+    ["/sources", undefined],
+    ["/saved-sources", undefined],
+  ];
+  const words = (text: string) => text.trim().split(/\s+/).filter(Boolean);
+  const menuOf = (path: string, search?: SearchParams) => sectionMenu(path, search);
+
+  it("has at most four top-level items in every section, and none where there are no tabs", () => {
+    expect(MAX_MENU_ITEMS).toBe(4);
+    for (const [path, search] of SECTION_TABS) {
+      const menu = menuOf(path, search);
+      expect(menu.length, path).toBeGreaterThanOrEqual(2);
+      expect(menu.length, path).toBeLessThanOrEqual(MAX_MENU_ITEMS);
+    }
+    expect(menuOf("/")).toEqual([]);
+    expect(menuOf("/places/NE")).toEqual([]);
+    expect(menuOf("/places/NE/31055")).toEqual([]);
+    expect(menuOf("/search", { q: "x" })).toEqual([]);
+  });
+
+  it("reaches every tab of the section exactly once, with the same address and label", () => {
+    for (const [path, search] of SECTION_TABS) {
+      const tabs = contextualNavigation(path, search);
+      const links = menuLinks(menuOf(path, search));
+      expect([...links.map((l) => l.key)].sort(), path).toEqual([...tabs.map(tabKey)].sort());
+      expect(new Set(links.map((l) => l.key)).size, path).toBe(links.length);
+      for (const link of links) {
+        const tab = tabs.find((t) => tabKey(t) === link.key)!;
+        expect([link.to, link.search, link.label], link.key).toEqual([
+          tab.to,
+          tab.search,
+          tab.label,
+        ]);
+      }
+    }
+  });
+
+  it("keeps tab order inside a panel and places a panel where its first member sits", () => {
+    for (const [path, search] of SECTION_TABS) {
+      const order = contextualNavigation(path, search).map(tabKey);
+      const menu = menuOf(path, search);
+      for (const item of menu)
+        if (item.kind === "group") {
+          const at = item.items.map((i) => order.indexOf(i.key));
+          expect(
+            [...at].sort((a, b) => a - b),
+            item.key,
+          ).toEqual(at);
+        }
+      const firsts = menu.map((m) => order.indexOf(m.kind === "group" ? m.items[0]!.key : m.key));
+      expect(
+        [...firsts].sort((a, b) => a - b),
+        path,
+      ).toEqual(firsts);
+    }
+  });
+
+  it("gives every destination a plain one-line description of at most 14 words", () => {
+    const seen = new Set<string>();
+    for (const [path, search] of SECTION_TABS)
+      for (const link of menuLinks(menuOf(path, search))) {
+        const n = words(link.description).length;
+        expect(n, `${link.key}: "${link.description}"`).toBeGreaterThanOrEqual(3);
+        expect(n, `${link.key}: "${link.description}"`).toBeLessThanOrEqual(14);
+        expect(link.description, link.key).toMatch(/[.)]$/);
+        expect(link.description, link.key).not.toMatch(/\s{2,}|^\s|\s$/);
+        // a description adds to the label instead of repeating it
+        expect(link.description.toLowerCase(), link.key).not.toBe(link.label.toLowerCase());
+        expect(seen.has(link.description), `duplicate description: ${link.description}`).toBe(
+          false,
+        );
+        seen.add(link.description);
+      }
+  });
+
+  it("builds each dropdown panel from two or more related destinations, with a title and a line", () => {
+    for (const [path, search] of SECTION_TABS) {
+      const menu = menuOf(path, search);
+      const keys = menu.map((m) => m.key);
+      expect(new Set(keys).size, path).toBe(keys.length);
+      for (const item of menu)
+        if (item.kind === "group") {
+          expect(item.items.length, item.key).toBeGreaterThanOrEqual(2);
+          expect(item.label.length, item.key).toBeGreaterThan(2);
+          expect(words(item.description).length, item.key).toBeLessThanOrEqual(14);
+          expect(item.description, item.key).toMatch(/\.$/);
+        }
+    }
+  });
+
+  it("groups the destinations the owner asked to see together", () => {
+    const shape = (path: string) =>
+      menuOf(path).map((m) =>
+        m.kind === "group" ? [m.label, m.items.map((i) => i.label)] : m.label,
+      );
+    expect(shape("/courts")).toEqual([
+      "Courts",
+      "Judges",
+      ["Caseload", ["Caseload", "Vacancies"]],
+      ["Compare", ["Compare courts", "Compare judges"]],
+    ]);
+    expect(shape("/law")).toEqual([
+      "Overview",
+      ["Federal & state law", ["Federal law", "State law"]],
+      ["Congress & agencies", ["Legislation & Congress", "Rulemaking", "Agencies"]],
+      "Time limits",
+    ]);
+    expect(shape("/litigation")).toEqual([
+      "Overview",
+      ["Cases & dockets", ["Case law", "Dockets"]],
+      ["Mass litigation", ["MDLs & mass torts", "Securities class actions", "Settlements"]],
+      "Law firms",
+    ]);
+  });
+
+  it("marks the page being shown: the link (aria-current), and the panel that holds it", () => {
+    const current = (path: string, search?: SearchParams) =>
+      menuLinks(menuOf(path, search))
+        .filter((l) => l.current)
+        .map((l) => [l.label, l.current]);
+    expect(current("/courts")).toEqual([["Courts", "page"]]);
+    expect(current("/courts/nysd")).toEqual([["Courts", "true"]]);
+    expect(current("/courts/vacancies")).toEqual([["Vacancies", "page"]]);
+    expect(current("/enforcement", { tab: "merger" })).toEqual([["Merger review", "page"]]);
+    expect(current("/safety", { view: "neiss", x: "1" })).toEqual([["Injuries (NEISS)", "true"]]);
+    const active = (path: string, search?: SearchParams) =>
+      menuOf(path, search)
+        .filter((m) => m.active)
+        .map((m) => m.label);
+    expect(active("/courts/vacancies")).toEqual(["Caseload"]);
+    expect(active("/judges/analytics")).toEqual(["Compare"]);
+    expect(active("/courts")).toEqual(["Courts"]);
+    expect(active("/cases/abc")).toEqual(["Cases & dockets"]);
+    // exactly one lit item on every tab page, in every section
+    for (const [path, search] of SECTION_TABS)
+      for (const tab of contextualNavigation(path, search))
+        expect(
+          menuOf(tab.to, tab.search).filter((m) => m.active),
+          tabKey(tab),
+        ).toHaveLength(1);
+  });
+
+  it("is the same menu on every page of a section", () => {
+    const labelsOf = (path: string, search?: SearchParams) =>
+      menuOf(path, search).map((m) => m.label);
+    expect(labelsOf("/courts/nysd")).toEqual(labelsOf("/courts/vacancies"));
+    expect(labelsOf("/matters/lens/3026")).toEqual(labelsOf("/litigation"));
+  });
+});
 
 describe("every page lights its section and exactly one tab", () => {
   it.each(PAGES)("%s %j → %s / %s", (path, search, section, tab) => {

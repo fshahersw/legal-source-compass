@@ -12,6 +12,7 @@ export { KpiCard, KpiGrid, KpiStrip, DeltaPill } from "./KpiCard";
 export type { KpiCardProps, KpiDelta, TrendSlot } from "./KpiCard";
 export { balancedColumns, kpiGridClass } from "./grid";
 export { PageHeader, Breadcrumbs } from "./PageHeader";
+export { HeaderStrip, HeaderMenu } from "./HeaderStrip";
 export type { PageCrumb } from "./PageHeader";
 export { PageTabs } from "./PageTabs";
 export type { PageTabItem } from "./PageTabs";

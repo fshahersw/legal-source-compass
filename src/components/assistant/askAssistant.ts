@@ -1,6 +1,13 @@
 /** Open the research assistant with a question from anywhere on the page (the panel listens for this event). */
 export const ASK_EVENT = "assistant:ask";
 
+/** Open the research assistant without a question (the header's Ask AI button). */
+export const OPEN_EVENT = "assistant:open";
+
+export function openAssistant() {
+  window.dispatchEvent(new Event(OPEN_EVENT));
+}
+
 export type AskDetail = { question: string; label?: string | undefined };
 
 /** `label` is what the conversation shows for the question (the full question is still sent). */

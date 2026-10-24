@@ -357,7 +357,7 @@ export function OverviewBoard() {
 
   return (
     <div className="space-y-8">
-      <SectionIndex items={index} label="On this page" className="-mt-4" />
+      <SectionIndex items={index} label="On this page" />
       <FixtureBanner on={fixturesOn} />
       <CatalogNotice catalog={catalog.data} />
       <Section
