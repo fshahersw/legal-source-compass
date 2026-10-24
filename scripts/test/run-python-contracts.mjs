@@ -87,6 +87,7 @@ for (const suite of [
   { directory: "scripts/enrichment/ftc_data", modules: ["test_ftc_data"] },
   { directory: "scripts/enrichment/jpml_history", modules: ["test_jpml_history", "test_jpml_series"] },
   { directory: "scripts/enrichment/court_images", modules: ["test_court_images"] },
+  { directory: "scripts/enrichment/visual_registry", modules: ["test_visual_registry"] },
   { directory: "scripts/enrichment/cra", modules: ["test_cra"] },
   { directory: "scripts/enrichment/clb_1026", modules: ["test_clb_1026"] },
   {
