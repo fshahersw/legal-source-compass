@@ -98,7 +98,7 @@ export function LibraryBrowser({
 
   return (
     <>
-      <div className="rounded-lg border border-border bg-surface p-3 shadow-card">
+      <div className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input

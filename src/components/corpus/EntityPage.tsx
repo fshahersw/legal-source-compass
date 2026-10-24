@@ -126,7 +126,7 @@ export function EntityPage({
         </div>
       ) : null}
       {key.length || hasLead || photo ? (
-        <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
+        <div className="mb-5 flex flex-col gap-4 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card sm:flex-row">
           {hasLead ? leadNode : null}
           {photo ? (
             <Img
@@ -292,7 +292,7 @@ function Section({
         <h2 className="text-[15px] font-semibold">{label}</h2>
         {right}
       </div>
-      <div className="rounded-lg border border-border bg-surface p-3 shadow-card">{children}</div>
+      <div className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">{children}</div>
     </section>
   );
 }
@@ -447,7 +447,7 @@ function FullText({ text }: { text: string }) {
     .filter((p, i, a) => a.indexOf(p) === i);
   if (!paras.length) return null;
   return (
-    <details className="rounded-lg border border-border bg-surface p-3 shadow-card">
+    <details className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">
       <summary className="cursor-pointer text-[13px] font-medium">
         Full text{" "}
         <span className="text-[11px] font-normal text-muted-foreground">

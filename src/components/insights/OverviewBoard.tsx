@@ -271,7 +271,7 @@ function Today() {
       {others.length ? (
         <nav
           aria-label="Other insights of the day"
-          className="overflow-hidden rounded-xl border border-border bg-card shadow-xs"
+          className="overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-xs"
         >
           <p className="m-0 border-b border-border px-4 py-3 text-label">Other sections today</p>
           <ul className="m-0 list-none divide-y divide-border p-0">

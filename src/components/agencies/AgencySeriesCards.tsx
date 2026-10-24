@@ -12,7 +12,7 @@ export function AgencySeriesCards({ agencyId, label }: { agencyId: number; label
   return (
     <section aria-label={`Trends in ${label}'s published data`} className="space-y-2">
       <div>
-        <h3 className="text-sm font-semibold leading-5">
+        <h3 className="text-label font-semibold  text-foreground">
           Trends in {label}&rsquo;s published data
         </h3>
         <p className="text-[11px] text-muted-foreground">

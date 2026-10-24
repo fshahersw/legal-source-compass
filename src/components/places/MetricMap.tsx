@@ -258,7 +258,7 @@ export function MetricMap({
         <span id={titleId} className="truncate text-xs font-medium">
           {title}
         </span>
-        <span className="shrink-0 text-[11px] text-[var(--navy-muted)]">
+        <span className="shrink-0 text-[11px] text-muted-foreground">
           {active.yearLabel} · {active.unit}
         </span>
       </div>

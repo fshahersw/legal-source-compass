@@ -57,10 +57,10 @@ export function CourtJudgesRosterPanel({ courtId }: { courtId: string }) {
   return (
     <section
       aria-label="Judges on the court's website"
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-border/70 px-4 py-3">
-        <h2 className="m-0 text-sm font-semibold">Judges on the court's website</h2>
+        <h2 className="m-0 text-heading font-semibold text-foreground">Judges on the court's website</h2>
         <p className="m-0 text-xs text-muted-foreground">
           {data.judges.length
             ? `${plural(totals.judges, "judge")} · ${plural(totals.documents, "practice document")} from ${plural(totals.withDocuments, "judge")} · ${totals.linked} linked to a profile`

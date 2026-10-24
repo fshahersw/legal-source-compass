@@ -66,11 +66,11 @@ export function StateSourcePanel({
       data-state={state}
     >
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <BookOpen className="size-4" aria-hidden />
           {heading}
         </h2>
-        <span className="text-xs tabular-nums text-[var(--navy-muted)]" role="status">
+        <span className="text-xs tabular-nums text-muted-foreground" role="status">
           {loading ? "Loading…" : `${shown.length.toLocaleString()}${error ? "+" : ""} resources`}
         </span>
       </div>

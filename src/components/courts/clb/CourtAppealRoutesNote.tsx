@@ -46,7 +46,7 @@ export function CourtAppealRoutesNote({ courtId }: { courtId: string }) {
   return (
     <aside
       aria-label="Recorded appeal routes"
-      className="mb-5 rounded-lg border border-border bg-surface px-3 py-2 text-xs leading-5"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs px-3 py-2 text-xs leading-5"
     >
       {d.appealsTo.length ? (
         <p>

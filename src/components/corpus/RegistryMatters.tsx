@@ -9,7 +9,7 @@ export function RegistryMatters({ courtId }: { courtId: string }) {
   const matters = q.data.mattersByCourt.get(courtId) ?? [];
   if (!matters.length) return null;
   return (
-    <section className="mb-5 rounded-lg border border-border bg-surface p-3 shadow-card">
+    <section className="mb-5 rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">
       <div className="mb-2 flex flex-wrap items-baseline gap-2">
         <h2 className="eyebrow">Case registry</h2>
         <span className="text-[12px] text-muted-foreground">{matters.length} verified {matters.length === 1 ? "matter" : "matters"} with parties, outcomes and documents</span>

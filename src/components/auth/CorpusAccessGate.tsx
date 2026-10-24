@@ -126,7 +126,7 @@ export function CorpusAccessGate({ children }: { children: ReactNode }) {
   return (
     <ModeContext.Provider value={access.state === "checking" ? "unknown" : "enforced"}>
       <main className="flex min-h-screen items-center justify-center bg-background px-6">
-        <section className="w-full max-w-sm space-y-5 rounded-lg border border-border bg-surface p-7">
+        <section className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-card shadow-xs p-7">
           <div>
             <WorkspaceBrand />
             <h1 className="sr-only">{PRODUCT_NAME}</h1>

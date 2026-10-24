@@ -128,7 +128,7 @@ function Page() {
                   to="/places/$state"
                   params={{ state: state.usps }}
                   search={{ tab: "judges" }}
-                  className="rounded-lg border border-border bg-surface px-3 py-2 font-medium hover:bg-muted"
+                  className="rounded-xl border border-border bg-card shadow-xs px-3 py-2 font-medium hover:bg-muted"
                 >
                   {state.name} →
                 </Link>

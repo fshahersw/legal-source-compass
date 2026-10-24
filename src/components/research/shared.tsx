@@ -44,7 +44,7 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-xl border border-border bg-surface p-4 shadow-card">
+    <section className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
       <h2 className="text-[15px] font-semibold">{title}</h2>
       {note && (
         <p className="mb-3 mt-1 text-[12px] leading-relaxed text-muted-foreground">{note}</p>

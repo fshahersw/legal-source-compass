@@ -767,7 +767,7 @@ function EpaBody({
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">
+          <h2 className="text-heading font-semibold text-foreground">
             EPA civil enforcement · {selected ? selected.name : "United States"}
           </h2>
           <p className="text-xs text-muted-foreground">

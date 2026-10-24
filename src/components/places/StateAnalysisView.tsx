@@ -136,12 +136,12 @@ export function StateAnalysisView({
       {view === "associations" ? (
         <section className="resource-panel" aria-label="County associations">
           <div className="research-band">
-            <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
               <Grid3x3 className="size-4" aria-hidden />
               What moves together across {stateName}'s counties
             </h2>
             {analysis.data ? (
-              <span className="text-[11px] text-[var(--navy-muted)]">
+              <span className="text-[11px] text-muted-foreground">
                 {analysis.data.testsHold} of {analysis.data.testsRun} hold
               </span>
             ) : null}
@@ -206,12 +206,12 @@ function StandOut({
   return (
     <section className="resource-panel" aria-label="What stands out">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Lightbulb className="size-4" aria-hidden />
           What stands out in {stateName}
         </h2>
         {analysis ? (
-          <span className="text-[11px] text-[var(--navy-muted)]">
+          <span className="text-[11px] text-muted-foreground">
             {analysis.counties} counties · {analysis.districts.length} district
             {analysis.districts.length === 1 ? "" : "s"}
           </span>
@@ -439,11 +439,11 @@ function CountyMapView({
           <div className="min-w-0 space-y-3">
             <section className="resource-panel" aria-label="Distribution">
               <div className="research-band">
-                <h2 className="flex items-center gap-2 text-sm font-semibold">
+                <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
                   <BarChart3 className="size-4" aria-hidden />
                   Spread across counties
                 </h2>
-                <span className="text-[11px] text-[var(--navy-muted)]">
+                <span className="text-[11px] text-muted-foreground">
                   {summary?.n ?? 0} of {rows.length} recorded
                 </span>
               </div>
@@ -476,10 +476,10 @@ function CountyMapView({
             </section>
             <section className="resource-panel" aria-label="County ranking">
               <div className="research-band">
-                <h2 className="text-sm font-semibold">
+                <h2 className="text-heading font-semibold text-foreground">
                   Highest{bottom.length ? " and lowest" : ""}
                 </h2>
-                <span className="text-[11px] text-[var(--navy-muted)]">{def.unit}</span>
+                <span className="text-[11px] text-muted-foreground">{def.unit}</span>
               </div>
               <RankList items={top} format={def.format} usps={usps} />
               {bottom.length ? (
@@ -650,11 +650,11 @@ function DistrictComparison({
     <div className="space-y-3">
       <section className="resource-panel" aria-label="District comparison">
         <div className="research-band">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
             <Landmark className="size-4" aria-hidden />
             Federal districts compared
           </h2>
-          <span className="text-[11px] text-[var(--navy-muted)]">
+          <span className="text-[11px] text-muted-foreground">
             counties grouped by 28 U.S.C. ch. 5
           </span>
         </div>
@@ -728,8 +728,8 @@ function DistrictCard({ d, usps }: { d: DistrictSummary; usps: string }) {
   return (
     <section className="resource-panel" aria-label={d.name}>
       <div className="research-band">
-        <h3 className="truncate text-sm font-semibold">{d.name}</h3>
-        <span className="shrink-0 text-[11px] text-[var(--navy-muted)]">
+        <h3 className="truncate text-label font-semibold text-foreground">{d.name}</h3>
+        <span className="shrink-0 text-[11px] text-muted-foreground">
           {formatPlaceValue(d.population, "int")} residents
         </span>
       </div>
@@ -868,11 +868,11 @@ function CityTable({ usps }: { usps: string }) {
   return (
     <section className="resource-panel" aria-label="Cities and places">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Building2 className="size-4" aria-hidden />
           Cities and places
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">
+        <span className="text-[11px] text-muted-foreground">
           ACS 2020-2024 · 10,000+ residents or the 15 largest
         </span>
       </div>

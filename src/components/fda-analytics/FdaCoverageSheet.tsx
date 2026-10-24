@@ -50,7 +50,7 @@ export function FdaCoverageSheet({
           {datasets.map((dataset) => (
             <section key={dataset.id} className="rounded-md border border-border p-3">
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-sm font-semibold">{dataset.label}</h3>
+                <h3 className="text-label font-semibold text-foreground">{dataset.label}</h3>
                 <span className="rounded border border-border px-1.5 text-xs capitalize">
                   {dataset.status}
                 </span>

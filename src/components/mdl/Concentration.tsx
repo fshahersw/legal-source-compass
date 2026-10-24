@@ -103,7 +103,7 @@ export function Concentration({ data }: { data: MdlIntel }) {
         </ChartCard>
         <div className="overflow-hidden rounded-md border border-border bg-surface">
           <div className="border-b border-border/70 px-3 py-2">
-            <h3 className="text-sm font-semibold">Transferee judges by pending actions</h3>
+            <h3 className="text-label font-semibold text-foreground">Transferee judges by pending actions</h3>
             <p className="text-xs text-muted-foreground">
               Share of all {n(data.kpis.pendingActions)} pending MDL actions
             </p>
@@ -196,7 +196,7 @@ export function Concentration({ data }: { data: MdlIntel }) {
         </ChartCard>
         <div className="overflow-hidden rounded-md border border-border bg-surface">
           <div className="border-b border-border/70 px-3 py-2">
-            <h3 className="text-sm font-semibold">Growth leaders, last 12 months</h3>
+            <h3 className="text-label font-semibold text-foreground">Growth leaders, last 12 months</h3>
             <p className="text-xs text-muted-foreground">
               Change in pending actions across JPML monthly reports (dataset mdl_analytics)
             </p>

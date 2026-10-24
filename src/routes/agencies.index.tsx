@@ -36,7 +36,7 @@ function AgencyCards({ rows }: { rows: Agency[] }) {
           key={agency.id}
           to="/agencies/$id"
           params={{ id: agency.id }}
-          className="group flex min-h-20 items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary/30 hover:bg-muted/20"
+          className="group flex min-h-20 items-center gap-3 rounded-xl border border-border bg-card shadow-xs px-3 py-2.5 transition-colors hover:border-primary/30 hover:bg-muted/20"
         >
           <AgencyMark name={agency.name} />
           <span className="min-w-0 flex-1">
@@ -96,7 +96,7 @@ function LegacyDirectory({ term, setTerm }: { term: string; setTerm: (q: string)
         <div className="space-y-4">
           {groups.departments.length ? (
             <section>
-              <h2 className="research-band mb-2 rounded-lg !py-2 text-sm font-semibold">
+              <h2 className="research-band mb-2 rounded-lg !py-2 text-heading font-semibold text-foreground">
                 Departments
               </h2>
               <AgencyCards rows={groups.departments} />
@@ -104,7 +104,7 @@ function LegacyDirectory({ term, setTerm }: { term: string; setTerm: (q: string)
           ) : null}
           {groups.others.length ? (
             <section>
-              <h2 className="research-band mb-2 rounded-lg !py-2 text-sm font-semibold">
+              <h2 className="research-band mb-2 rounded-lg !py-2 text-heading font-semibold text-foreground">
                 Independent & component agencies
               </h2>
               <AgencyCards rows={groups.others.slice(0, limit)} />

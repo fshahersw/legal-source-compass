@@ -170,10 +170,10 @@ export function ProjectionCodeBrowser({
 
   return (
     <section className="space-y-4" aria-label={`${listing.name} code browser`}>
-      <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+      <div className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="font-sans text-sm font-semibold">Browse statutes</h2>
+            <h2 className="text-heading font-semibold text-foreground">Browse statutes</h2>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
               Source version: {listing.currency || listing.edition || "Not recorded"}. This source
               edition does not establish the law currently in force.
@@ -288,7 +288,7 @@ export function ProjectionCodeBrowser({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]">
-        <div className="flex flex-col rounded-lg border border-border bg-surface shadow-card lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+        <div className="flex flex-col rounded-xl border border-border bg-card shadow-xs shadow-card lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
           <div className="space-y-2 border-b border-border p-3">
             {crumbs}
             {path.length ? (
@@ -490,7 +490,7 @@ export function ProjectionCodeBrowser({
 
         <div
           ref={readerRef}
-          className="min-w-0 scroll-mt-4 rounded-lg border border-border bg-surface p-4 shadow-card"
+          className="min-w-0 scroll-mt-4 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card"
         >
           {!section ? (
             <div className="space-y-2 text-sm text-muted-foreground">

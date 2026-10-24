@@ -111,7 +111,7 @@ export function RegulationIndexV1({
         <p className="text-sm text-muted-foreground">No entry matches{q ? ` “${q}”` : ""}.</p>
       ) : null}
       {rows.length ? (
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
           <table className="w-full min-w-[40rem] border-collapse text-left text-[13px]">
             <thead className="border-b border-border text-[11px] text-muted-foreground">
               <tr>

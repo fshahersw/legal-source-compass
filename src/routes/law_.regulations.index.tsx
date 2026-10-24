@@ -102,7 +102,7 @@ function RegulationsPage() {
                   {(found.data.total ?? found.data.entries.length).toLocaleString("en-US")} entries
                   match. Showing {found.data.entries.length}.
                 </p>
-                <ul className="mt-2 divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
+                <ul className="mt-2 divide-y divide-border rounded-xl border border-border bg-card shadow-xs shadow-card">
                   {found.data.entries.map((e) => (
                     <li
                       key={e.id}

@@ -108,7 +108,7 @@ function Body({ h }: { h: MdlHierarchy }) {
   ];
   return (
     <section
-      className="min-w-0 rounded-lg border border-border bg-surface"
+      className="min-w-0 rounded-xl border border-border bg-card shadow-xs"
       aria-label="Member actions and where they started"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-3 py-2">

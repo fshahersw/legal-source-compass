@@ -245,7 +245,7 @@ function CourtList({ rows }: { rows: CourtRow[] }) {
           {shown.length.toLocaleString()} courts
         </span>
       </div>
-      <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs shadow-card">
         <table className="w-full text-[12.5px]">
           <thead className="bg-muted/50 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>

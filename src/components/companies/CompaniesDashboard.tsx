@@ -163,7 +163,7 @@ function Dashboard({ data }: { data: CompaniesData }) {
 
       <section className="rounded-md border border-border bg-surface" aria-label="Ranked companies">
         <div className="flex flex-wrap items-center gap-2 border-b border-border/70 px-3 py-2">
-          <h3 className="mr-auto text-sm font-semibold">Ranked companies</h3>
+          <h3 className="mr-auto text-label font-semibold text-foreground">Ranked companies</h3>
           <label className="relative">
             <span className="sr-only">Search companies, tickers, sectors or MDLs</span>
             <Search
@@ -700,7 +700,7 @@ function FlagPanel({
   if (!keys.length) return null;
   return (
     <section className="rounded-md border border-border bg-surface p-3" aria-label="Cluster flags">
-      <h3 className="text-sm font-semibold">Cluster flags</h3>
+      <h3 className="text-label font-semibold text-foreground">Cluster flags</h3>
       <p className="text-xs text-muted-foreground">
         Deterministic rules over the published numbers. Select a flag to filter the table.
       </p>
@@ -821,7 +821,7 @@ function Coverage({ data }: { data: CompaniesData }) {
       aria-label="Pending MDL coverage"
     >
       <div className="border-b border-border/70 px-3 py-2">
-        <h3 className="text-sm font-semibold">
+        <h3 className="text-label font-semibold text-foreground">
           Pending mass-tort MDLs and the SEC filers that name them
         </h3>
         <p className="text-xs text-muted-foreground">

@@ -126,7 +126,7 @@ function SourcePage() {
         </p>
       ) : null}
       {row ? (
-        <section className="mt-5 max-w-5xl rounded-lg border border-border bg-surface p-5">
+        <section className="mt-5 max-w-5xl rounded-xl border border-border bg-card shadow-xs p-5">
           <h2 className="text-[15px] font-semibold">All records for this exact URL</h2>
           <p className="mt-1 text-[12px] text-muted-foreground">
             {row.records.length} original rows in {row.collections.join(", ")}. Alternate URLs are

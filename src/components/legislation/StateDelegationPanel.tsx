@@ -22,7 +22,7 @@ export function StateDelegationPanel({ usps }: { usps: string }) {
   return (
     <section className="resource-panel" aria-label="Delegation in Congress">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Landmark className="size-4" aria-hidden />
           Delegation in Congress
         </h2>

@@ -111,7 +111,7 @@ function Card({
 }) {
   return (
     <section
-      className={cn("min-w-0 rounded-lg border border-border bg-surface", className)}
+      className={cn("min-w-0 rounded-xl border border-border bg-card shadow-xs", className)}
       aria-label={title}
     >
       <header className="border-b border-border/70 px-3 py-2">
@@ -1367,7 +1367,7 @@ function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
   ];
   return (
     <div className="space-y-3">
-      <section className="rounded-lg border border-border bg-surface" aria-label="MDL summary">
+      <section className="rounded-xl border border-border bg-card shadow-xs" aria-label="MDL summary">
         <div className="px-4 py-3">
           <p className="text-[11px] text-muted-foreground">
             MDL {mdl} ·{" "}
@@ -1375,7 +1375,7 @@ function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
               ? `listed on ${byType} but not transferred as of that report, so it has no actions-pending series`
               : `not in ${ACTIONS_PENDING_SERIES}`}
           </p>
-          <h2 className="mt-0.5 text-base font-semibold leading-snug">
+          <h2 className="mt-0.5 text-heading font-semibold  text-foreground">
             {t ? litigationTitle(t.title) : `MDL ${mdl}`}
           </h2>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -1448,7 +1448,7 @@ export function MdlLens({ mdl }: { mdl: number }) {
   const growth = growthPct(m.pending, m.change12m);
   return (
     <div className="space-y-3">
-      <section className="rounded-lg border border-border bg-surface" aria-label="MDL summary">
+      <section className="rounded-xl border border-border bg-card shadow-xs" aria-label="MDL summary">
         <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground">
@@ -1457,7 +1457,7 @@ export function MdlLens({ mdl }: { mdl: number }) {
               {m.status ?? "Status not recorded"}
               {m.asOf ? ` · JPML actions-pending report of ${m.asOf}` : ""}
             </p>
-            <h2 className="mt-0.5 text-base font-semibold leading-snug">{m.title}</h2>
+            <h2 className="mt-0.5 text-heading font-semibold  text-foreground">{m.title}</h2>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <Landmark className="size-3.5" aria-hidden="true" />

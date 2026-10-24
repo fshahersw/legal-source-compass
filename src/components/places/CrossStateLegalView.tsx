@@ -194,11 +194,11 @@ function Body({
         )}
         <section className="resource-panel" aria-label="State ranking">
           <div className="research-band">
-            <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
               <ListOrdered className="size-4" aria-hidden />
               Ranking
             </h2>
-            <span className="text-[11px] text-[var(--navy-muted)]">
+            <span className="text-[11px] text-muted-foreground">
               U.S. {formatPlaceValue(data.us[defKey], format)}
             </span>
           </div>
@@ -229,11 +229,11 @@ function Body({
       </div>
       <section className="resource-panel" aria-label="Associations across states">
         <div className="research-band">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
             <Grid3x3 className="size-4" aria-hidden />
             What moves together across states
           </h2>
-          <span className="text-[11px] text-[var(--navy-muted)]">
+          <span className="text-[11px] text-muted-foreground">
             {data.testsHold} of {data.testsRun} hold
           </span>
         </div>
@@ -277,7 +277,7 @@ function SpreadTable({
   return (
     <section className="resource-panel" aria-label="County spread within states">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Rows3 className="size-4" aria-hidden />
           How much counties differ inside each state
         </h2>

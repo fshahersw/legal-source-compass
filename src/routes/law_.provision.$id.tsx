@@ -216,7 +216,7 @@ function ProvisionPage() {
         </span>
       </div>
 
-      <section className="rounded-lg border border-border bg-surface p-4 shadow-card">
+      <section className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
         {paras.length ? (
           <div className="max-w-3xl space-y-2 text-[14px] leading-relaxed">
             {paras.map((t, k) => (
@@ -235,7 +235,7 @@ function ProvisionPage() {
       </section>
 
       {p.dates || p.frCitations?.length || p.authorityNote || p.sourceNote ? (
-        <section className="mt-4 rounded-lg border border-border bg-surface p-4 shadow-card">
+        <section className="mt-4 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           <h2 className="eyebrow mb-2">Dates & sources</h2>
           <dl className="grid grid-cols-[10rem_1fr] gap-x-3 gap-y-1 text-[12px]">
             <dt className="text-muted-foreground">Source as of</dt>

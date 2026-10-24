@@ -55,7 +55,7 @@ export function DocketDocuments({ kind, id }: { kind: "mdl" | "court"; id: strin
         <Stat label="Key filings" value={summary.highValue} note="Flagged high value in the file" />
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
-        <section className="rounded-lg border border-border bg-surface p-4 shadow-card">
+        <section className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           <h3 className="eyebrow mb-3">Filings per year</h3>
           <div className="flex h-28 items-end gap-1">
             {yearRows.map(([y, c]) => (

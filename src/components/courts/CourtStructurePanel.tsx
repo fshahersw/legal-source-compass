@@ -91,10 +91,10 @@ export function CourtStructurePanel({ courtId }: { courtId: string }) {
   return (
     <section
       aria-label="Court structure"
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-3">
-        <h2 className="m-0 text-sm font-semibold">Court structure</h2>
+        <h2 className="m-0 text-heading font-semibold text-foreground">Court structure</h2>
         <p className="m-0 text-xs text-muted-foreground">
           {s.system} · {s.level}
           {s.location ? ` · ${s.location}` : ""}

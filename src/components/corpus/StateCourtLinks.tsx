@@ -11,7 +11,7 @@ export function StateCourtLinks({ stateName, usps }: { stateName: string; usps: 
   const sections = q.data?.states[stateName];
   const cat = idx.data?.jurisdictions.find((j) => j.jurisdiction === usps.toLowerCase());
   return (
-    <section className="mt-5 rounded-lg border border-border bg-surface p-3 shadow-card">
+    <section className="mt-5 rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">
       <div className="mb-2 flex flex-wrap items-center gap-3">
         <h2 className="eyebrow">Official court and government websites</h2>
         {q.data ? <a href={q.data.source} target="_blank" rel="noreferrer" className="text-[12px] text-muted-foreground underline">Source: U.S. DOJ state resources</a> : null}

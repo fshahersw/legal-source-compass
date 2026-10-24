@@ -140,7 +140,7 @@ function CoveragePage() {
                   </Button>
                 </div>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-card">
+              <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
                 <table className="w-full text-[12px]">
                   <caption className="sr-only">
                     Jurisdiction coverage; each count has its own population

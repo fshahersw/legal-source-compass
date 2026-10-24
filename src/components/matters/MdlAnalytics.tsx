@@ -254,7 +254,7 @@ function MdlTable({ rows, asOf }: { rows: MdlRow[]; asOf: string }) {
   return (
     <section className="rounded-md border border-border bg-surface" aria-label="Pending MDLs">
       <div className="flex flex-wrap items-center gap-2 border-b border-border/70 px-3 py-2">
-        <h3 className="mr-auto font-sans text-sm font-semibold">
+        <h3 className="mr-auto text-label font-semibold text-foreground">
           Pending MDLs{" "}
           <span className="font-normal text-muted-foreground">
             · {shown.length} shown · {asOf}
@@ -471,7 +471,7 @@ function Terminated({ data }: { data: Data }) {
   return (
     <section className="space-y-3" aria-label="Terminated MDLs">
       <div>
-        <h2 className="font-sans text-base font-semibold">Terminated MDLs, 1968–2025</h2>
+        <h2 className="text-heading font-semibold text-foreground">Terminated MDLs, 1968–2025</h2>
         <p className="text-xs text-muted-foreground">
           {n(t.rows)} district entries from the JPML report of litigations terminated through
           September 30, 2025 · {n(t.totals.actions)} actions terminated, {t.totals.remandPct ?? "—"}

@@ -189,7 +189,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">CPSC consumer product recalls</h2>
+          <h2 className="text-heading font-semibold text-foreground">CPSC consumer product recalls</h2>
           <p className="text-xs text-muted-foreground">
             {count(data.recalls)} recalls from the official CPSC Recall API ({data.firstDate} to{" "}
             {data.asOf}; retrieved {data.retrieved}). Hazard categories are keyword-classified from

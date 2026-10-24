@@ -197,7 +197,7 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
         <section className={panelClass} aria-label="Source change queue">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-3">
             <div>
-              <h2 className="font-sans text-base font-semibold">Source changes to review</h2>
+              <h2 className="text-heading font-semibold text-foreground">Source changes to review</h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 An observed source change is a research lead, not a finding of injury or liability.
                 Initial captures and backfills remain separately labeled.
@@ -305,7 +305,7 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
       {search.view === "entities" && (
         <section className={panelClass}>
           <div className="border-b border-border p-3">
-            <h2 className="font-sans text-base font-semibold">Recorded source identities</h2>
+            <h2 className="text-heading font-semibold text-foreground">Recorded source identities</h2>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Exact namespace and native identifier only. Similar names are not merged. Date,
               event-type and existing entity filters do not restrict this identity directory.

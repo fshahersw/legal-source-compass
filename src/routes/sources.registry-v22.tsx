@@ -67,7 +67,7 @@ function Page() {
             <label className="flex items-center gap-1.5 text-[12px]"><input type="checkbox" checked={official} onChange={(e) => setOfficial(e.target.checked)} /> Official only</label>
             <span className="text-[11px] text-muted-foreground">{rows.length.toLocaleString()} of {all.length.toLocaleString()}</span>
           </div>
-          <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-xs">
             {rows.slice(0, limit).map((r) => (
               <li key={r.id} className="p-3 text-[12px]">
                 <a href={r.url} target="_blank" rel="noreferrer" className="flex items-start gap-1 font-medium underline"><span className="break-words">{r.title}</span><ExternalLink className="mt-0.5 size-3 shrink-0" /></a>

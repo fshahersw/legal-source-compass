@@ -737,7 +737,7 @@ export function SourceViewer() {
   if (view === "file") {
     content = (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-4">
+        <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-xs p-4">
           <div className="flex items-start gap-3">
             <FileText className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
             <div className="min-w-0">

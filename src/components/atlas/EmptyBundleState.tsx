@@ -12,7 +12,7 @@ export function EmptyBundleState({ view }: { view: string }) {
     return (
       <div
         role="status"
-        className="flex items-center gap-2.5 rounded-lg border border-border bg-surface p-6 text-[13px] text-muted-foreground"
+        className="flex items-center gap-2.5 rounded-xl border border-border bg-card shadow-xs p-6 text-[13px] text-muted-foreground"
       >
         <Loader2 className="size-4 animate-spin" /> Loading the source directory…
       </div>
@@ -46,7 +46,7 @@ export function EmptyBundleState({ view }: { view: string }) {
   return (
     <div className="rounded-lg border border-dashed border-border-strong bg-surface p-8 text-center">
       <FileJson className="mx-auto size-7 text-muted-foreground" strokeWidth={1.5} />
-      <h2 className="mt-3 text-base">No source rows in the loaded bundle</h2>
+      <h2 className="mt-3 text-heading text-foreground">No source rows in the loaded bundle</h2>
       <p className="mx-auto mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
         {view} is empty because the bundle currently loaded contains no directory sources. You can
         restore the bundled source directory from Data &amp; Exports.

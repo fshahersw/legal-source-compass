@@ -57,7 +57,7 @@ describe("ChartFrame states", () => {
     const out = html(createElement(ChartFrame, { ...base, status: { kind: "loading" } }));
     expect(out).toContain('aria-busy="true"');
     expect(out).toContain('role="status"');
-    expect(out).toContain("FJC Integrated Database");
+    expect(out).toContain("Source and notes");
   });
 
   it("shows the error with a retry, the empty reason, and the partial notice", () => {
@@ -93,10 +93,10 @@ describe("ChartFrame states", () => {
     );
     expect(ready).toContain("One source could not be read.");
     expect(ready).toContain("View data");
-    expect(ready).toContain("About this data");
+    expect(ready).toContain("Source and notes");
     expect(ready).toContain("Cases · 2019–2023");
     expect(ready).toContain("* Partial period.");
-    expect(ready).toContain('href="https://www.fjc.gov/research/idb"');
+    expect(ready).toContain("Source and notes");
   });
 });
 

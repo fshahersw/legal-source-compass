@@ -41,7 +41,7 @@ function RegistryPage() {
       {reg.error ? <p className="text-[13px] text-destructive">{String(reg.error)}</p> : null}
       {reg.isLoading ? <p className="text-[13px] text-muted-foreground">Loading registry…</p> : null}
       <div className="grid gap-5 lg:grid-cols-[15rem_1fr]">
-        <aside className="max-h-[75vh] overflow-auto rounded-lg border border-border bg-surface p-2 shadow-card">
+        <aside className="max-h-[75vh] overflow-auto rounded-xl border border-border bg-card shadow-xs p-2 shadow-card">
           <div className="eyebrow mb-1 px-1">Jurisdiction</div>
           <Choice active={!j} onClick={() => set({ j: undefined, layer: undefined, cat: undefined })} label="All" count={all.length} />
           {countBy(all, (e) => e.jurisdiction).sort((a, b) => jurisdictionLabel(a[0]).localeCompare(jurisdictionLabel(b[0]))).map(([code, n]) => (
@@ -55,7 +55,7 @@ function RegistryPage() {
             <Input aria-label="Search registry" placeholder="Search names, URLs, descriptions" defaultValue={q ?? ""} onChange={(e) => set({ q: e.target.value || undefined })} className="h-8 max-w-sm text-[13px]" />
             <span className="text-[12px] text-muted-foreground">{inCat.length.toLocaleString()} sources · {inCat.filter(isReachable).length.toLocaleString()} answered 2xx at last registry check</span>
           </div>
-          <ul className="divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
+          <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-xs shadow-card">
             {rows.slice(0, limit).map((e) => <Row key={e.id} e={e} kids={children.get(e.id) ?? []} />)}
             {!rows.length && reg.data ? <li className="p-3 text-[13px] text-muted-foreground">No registry sources match.</li> : null}
           </ul>

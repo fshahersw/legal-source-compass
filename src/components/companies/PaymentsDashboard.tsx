@@ -534,7 +534,7 @@ export function PaymentsDashboard({
       >
         <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border/70 px-3 py-2">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold">
+            <h3 className="text-label font-semibold text-foreground">
               Top 300 reporting entities · {metricLabel.toLowerCase()}, {periodLabel}
             </h3>
             <p className="text-xs text-muted-foreground">

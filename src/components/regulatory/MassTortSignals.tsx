@@ -256,7 +256,7 @@ function Detail({ s }: { s: MassTortSignal }) {
       <div className="rounded-md border border-border bg-surface px-4 py-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="font-sans text-base font-semibold">{s.product}</h2>
+            <h2 className="text-heading font-semibold text-foreground">{s.product}</h2>
             <p className="text-xs text-muted-foreground">
               <Link
                 to="/records/$dataset/$id"

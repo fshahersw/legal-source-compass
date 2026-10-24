@@ -43,7 +43,7 @@ function TablePage() {
       {res.error ? <ExternalError error={res.error as Error} /> : null}
       {res.isLoading ? <p className="text-[13px] text-muted-foreground">Loading…</p> : null}
       {rows.length ? (
-        <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-card">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
           <table className="w-full text-[12px]">
             <thead className="text-left text-[11px] uppercase tracking-wide text-muted-foreground"><tr>{cols.map((c) => <th key={c} className="px-2 py-1.5">{fieldLabel(c)}</th>)}</tr></thead>
             <tbody className="divide-y divide-border">

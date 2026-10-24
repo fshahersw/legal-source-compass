@@ -111,7 +111,7 @@ export function SearchResultsView({
   onExample?: ((q: string) => void) | undefined;
   showExamples?: boolean;
 }) {
-  const frame = "rounded-lg border border-border bg-surface shadow-card";
+  const frame = "rounded-xl border border-border bg-card shadow-xs shadow-card";
   if (view.kind === "idle")
     return showExamples && onExample ? (
       <div className="text-[12px] text-muted-foreground">

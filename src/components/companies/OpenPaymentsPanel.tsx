@@ -158,7 +158,7 @@ export function ManufacturerPaymentsView({
     <div className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+          <h3 className="flex items-center gap-1.5 text-label font-semibold text-foreground">
             <HandCoins className="size-4 text-primary" aria-hidden="true" />
             {m.name}
           </h3>

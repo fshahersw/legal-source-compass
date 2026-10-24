@@ -150,7 +150,7 @@ export function DatabaseQuality() {
           note={`${totals.heldRecords.toLocaleString()} imported records`}
         />
       </div>
-      <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+      <div className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
         <div className="mb-2 flex flex-wrap justify-between gap-2 text-[12px]">
           <span>Records by publication status</span>
           <span className="font-mono">{percent.toFixed(1)}% marked ready</span>
@@ -188,7 +188,7 @@ export function DatabaseQuality() {
           <option value="held">Held</option>
         </select>
       </div>
-      <div className="max-h-[28rem] overflow-auto rounded-lg border border-border bg-surface shadow-card">
+      <div className="max-h-[28rem] overflow-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
         <table className="w-full text-left text-[12px]">
           <caption className="sr-only">Collection record counts and publication status</caption>
           <thead className="sticky top-0 bg-muted text-[10px] uppercase text-muted-foreground">

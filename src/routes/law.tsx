@@ -347,8 +347,8 @@ function LawPage() {
 
 function StateLawSources({ entry }: { entry: StateLawDirectoryEntry }) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 shadow-card">
-      <h2 className="text-sm font-semibold">Official law source</h2>
+    <section className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
+      <h2 className="text-heading font-semibold text-foreground">Official law source</h2>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
         {entry.codeLink ? (
           <a

@@ -152,7 +152,7 @@ function DocketDocumentsPage() {
             ) : null}
           </div>
           {q.error ? <ExternalError error={q.error} /> : null}
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-card">
+          <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
             <table className="w-full text-left text-[12px]">
               <caption className="sr-only">Docket-sheet documents</caption>
               <thead className="bg-muted text-[10px] uppercase text-muted-foreground">

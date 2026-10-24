@@ -180,11 +180,11 @@ export function GovDomainsPanel({
     >
       {embedded ? null : (
         <div className="research-band">
-          <h3 className="flex items-center gap-2 font-sans text-sm font-semibold">
+          <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
             <Globe2 className="size-4" aria-hidden />
             Registered government domains
           </h3>
-          <span className="text-xs tabular-nums text-[var(--navy-muted)]" role="status">
+          <span className="text-xs tabular-nums text-muted-foreground" role="status">
             {q.isPending && (seen || embedded)
               ? "Loading…"
               : q.data?.available

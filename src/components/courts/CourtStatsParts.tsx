@@ -214,7 +214,7 @@ export function SectionTitle({
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border/70 px-3 py-2">
       <div className="mr-auto min-w-0">
-        <h3 className="font-sans text-sm font-semibold leading-5">{title}</h3>
+        <h3 className="text-label font-semibold  text-foreground">{title}</h3>
         {subtitle ? <p className="text-xs leading-4 text-muted-foreground">{subtitle}</p> : null}
       </div>
       {children}

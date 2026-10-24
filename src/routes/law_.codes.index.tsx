@@ -130,7 +130,7 @@ function StateCodesPage() {
                 {found.data.total.toLocaleString()} matching sections. Showing{" "}
                 {found.data.hits.length.toLocaleString()}.
               </p>
-              <ul className="mt-2 divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
+              <ul className="mt-2 divide-y divide-border rounded-xl border border-border bg-card shadow-xs shadow-card">
                 {found.data.hits.map((hit) => (
                   <li key={`${hit.state}-${hit.kind}-${hit.id}`}>
                     <Link

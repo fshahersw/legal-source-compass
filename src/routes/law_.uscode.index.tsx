@@ -135,7 +135,7 @@ function UsCodeIndex() {
         <>
           <section
             aria-label="Edition"
-            className="mb-4 rounded-lg border border-border bg-surface px-4 py-3"
+            className="mb-4 rounded-xl border border-border bg-card shadow-xs px-4 py-3"
           >
             <dl className="m-0 grid gap-x-6 gap-y-1.5 text-xs sm:grid-cols-2 xl:grid-cols-4">
               <Fact label="Release point">{release ?? "Not recorded"}</Fact>
@@ -214,7 +214,7 @@ function ReleasePoints() {
         <p className="text-xs text-muted-foreground">No release points are recorded yet.</p>
       ) : null}
       {points.data?.length ? (
-        <div className="mt-2 overflow-x-auto rounded-lg border border-border bg-surface">
+        <div className="mt-2 overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
           <table className="w-full min-w-[40rem] text-left text-[12px]">
             <thead className="border-b border-border text-[11px] text-muted-foreground">
               <tr>

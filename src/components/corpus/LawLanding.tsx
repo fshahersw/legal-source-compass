@@ -44,14 +44,14 @@ export function FederalLawCollections({ datasets = [] }: { datasets?: readonly D
   return (
     <section className="resource-panel" aria-label="Federal record sets">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <LibraryBig className="size-4" aria-hidden />
           Federal record sets
         </h2>
         <Link
           to="/law"
           search={{ view: "list" }}
-          className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
+          className="text-xs text-muted-foreground hover:text-white hover:underline"
         >
           All collections →
         </Link>
@@ -161,13 +161,13 @@ export function LawLanding({
       ) : null}
       <section className="resource-panel" aria-label="Agency shortcuts">
         <div className="research-band">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
             <Building2 className="size-4" aria-hidden />
             Regulatory agencies
           </h2>
           <Link
             to="/agencies"
-            className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
+            className="text-xs text-muted-foreground hover:text-white hover:underline"
           >
             All agencies →
           </Link>
@@ -202,14 +202,14 @@ export function LawLanding({
       </section>
       <section className="resource-panel" aria-label="State law shortcuts">
         <div className="research-band">
-          <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
             <MapPinned className="size-4" aria-hidden />
             Law by state
           </h2>
           <Link
             to="/law"
             search={{ scope: "states" }}
-            className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
+            className="text-xs text-muted-foreground hover:text-white hover:underline"
           >
             State law →
           </Link>

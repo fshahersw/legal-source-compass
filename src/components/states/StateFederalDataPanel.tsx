@@ -25,11 +25,11 @@ export function StateFederalDataPanel({ usps }: { usps: string }) {
   return (
     <section className="resource-panel" aria-label="Federal enforcement and complaint data">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Landmark className="size-4" aria-hidden />
           Federal enforcement and complaints
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">CFPB · EPA ECHO · OSHA · NPDB</span>
+        <span className="text-[11px] text-muted-foreground">CFPB · EPA ECHO · OSHA · NPDB</span>
       </div>
       {q.isPending ? (
         <p role="status" className="px-3 py-6 text-xs text-muted-foreground">

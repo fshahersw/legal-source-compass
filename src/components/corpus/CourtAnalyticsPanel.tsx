@@ -80,11 +80,11 @@ function Panel({
   const maxNos = Math.max(1, ...nos.map((x) => x.filings));
   return (
     <section
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
       aria-label="Caseload statistics"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
-        <h2 className="font-sans text-sm font-semibold">Caseload</h2>
+        <h2 className="text-heading font-semibold text-foreground">Caseload</h2>
         <p className="text-xs text-muted-foreground">
           12 months ending June 30, 2026 ·{" "}
           <a

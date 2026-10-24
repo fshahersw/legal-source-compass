@@ -246,11 +246,11 @@ function PendingMdls({ usps, stateName }: { usps: string; stateName: string }) {
       data-testid="pending-mdls"
     >
       <div className="research-band">
-        <h3 className="flex items-center gap-2 font-sans text-sm font-semibold">
+        <h3 className="flex items-center gap-2 text-label font-semibold text-foreground">
           <Network className="size-4" aria-hidden />
           Pending MDLs before the state's courts
         </h3>
-        <span className="text-[11px] text-[var(--navy-muted)]">
+        <span className="text-[11px] text-muted-foreground">
           {o?.summary.asOf ? `JPML, ${o.summary.asOf}` : "JPML"}
         </span>
       </div>

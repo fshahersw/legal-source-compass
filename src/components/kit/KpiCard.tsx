@@ -274,15 +274,9 @@ export function KpiCard({
       ) : null}
       <div className={cn("mt-auto", size === "md" ? "pt-3.5" : "pt-3")} />
       {source ? (
-        bare ? (
-          <div className={cn(pad, "pb-3")}>
-            <SourceFooter {...source} />
-          </div>
-        ) : (
-          <CardFooter>
-            <SourceFooter {...source} className="flex-1" />
-          </CardFooter>
-        )
+        <div className={cn(pad, "-mt-1 pb-2.5")}>
+          <SourceFooter {...source} />
+        </div>
       ) : null}
     </Shell>
   );

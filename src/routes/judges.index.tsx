@@ -205,7 +205,7 @@ function JudgeList({ rows }: { rows: JudgeRow[] }) {
             key={r.id}
             to="/judges/$id"
             params={{ id: r.id }}
-            className="flex items-center gap-2 rounded-lg border border-border bg-surface p-2 shadow-card hover:bg-muted"
+            className="flex items-center gap-2 rounded-xl border border-border bg-card shadow-xs p-2 shadow-card hover:bg-muted"
           >
             {r.photo || r.portrait ? (
               <img

@@ -100,7 +100,7 @@ export function SeriesExplorer({ search, onSearch }: TabProps) {
         className="min-w-0 rounded-md border border-border bg-surface"
       >
         <div className="space-y-2 border-b border-border/70 px-3 py-2">
-          <h3 className="text-sm font-semibold leading-5">Table series</h3>
+          <h3 className="text-label font-semibold  text-foreground">Table series</h3>
           <SearchBox
             value={search.q}
             onChange={(q) => onSearch({ q })}
@@ -429,7 +429,7 @@ function SeriesCharts({
   return (
     <div className="space-y-3">
       <header className="rounded-md border border-border bg-surface px-3 py-2">
-        <h3 className="text-sm font-semibold leading-5">
+        <h3 className="text-label font-semibold  text-foreground">
           Table {card.table}: {table.title}
         </h3>
         <p className="text-[11px] leading-4 text-muted-foreground">

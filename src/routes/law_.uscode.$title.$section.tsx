@@ -163,8 +163,8 @@ function SectionBody({ s }: { s: UscSection }) {
             above states what happened to it; the notes below give the details.
           </p>
         ) : null}
-        <section aria-label="Text" className="rounded-lg border border-border bg-surface px-4 py-3">
-          <h2 className="m-0 mb-2 flex flex-wrap items-baseline gap-x-2 text-sm font-semibold">
+        <section aria-label="Text" className="rounded-xl border border-border bg-card shadow-xs px-4 py-3">
+          <h2 className="m-0 mb-2 flex flex-wrap items-baseline gap-x-2 text-heading font-semibold text-foreground">
             <span>{s.num ?? s.citation}</span>
             <span className="font-normal">{s.heading}</span>
             <StatusBadge status={s.status} />
@@ -198,7 +198,7 @@ function SectionBody({ s }: { s: UscSection }) {
       <aside className="space-y-3 self-start xl:sticky xl:top-2">
         <section
           aria-label="Source"
-          className="rounded-lg border border-border bg-surface px-4 py-3"
+          className="rounded-xl border border-border bg-card shadow-xs px-4 py-3"
         >
           <dl className="m-0 grid gap-y-1.5 text-xs">
             <Fact label="Release point" wrap>
@@ -272,7 +272,7 @@ function Editions({ s }: { s: UscSection }) {
     return (
       <section
         aria-label="Earlier editions"
-        className="rounded-lg border border-border bg-surface px-4 py-3 text-[12px] text-muted-foreground"
+        className="rounded-xl border border-border bg-card shadow-xs px-4 py-3 text-[12px] text-muted-foreground"
       >
         GovInfo's annual editions are not linked for appendix units.
       </section>
@@ -281,7 +281,7 @@ function Editions({ s }: { s: UscSection }) {
   return (
     <section
       aria-label="Earlier editions"
-      className="rounded-lg border border-border bg-surface px-4 py-3"
+      className="rounded-xl border border-border bg-card shadow-xs px-4 py-3"
     >
       <h2 className="eyebrow m-0">Annual editions on GovInfo</h2>
       {years.length ? (
@@ -325,7 +325,7 @@ function Notes({ notes }: { notes: UscNote[] }) {
   }
   return (
     <details
-      className="rounded-lg border border-border bg-surface"
+      className="rounded-xl border border-border bg-card shadow-xs"
       onToggle={(e) => setShown((e.currentTarget as HTMLDetailsElement).open)}
     >
       <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold">
@@ -366,10 +366,10 @@ function AmendingLaws({ title, section }: { title: string; section: string }) {
   return (
     <section
       aria-label="Enacting and amending laws"
-      className="rounded-lg border border-border bg-surface"
+      className="rounded-xl border border-border bg-card shadow-xs"
     >
       <header className="border-b border-border/70 px-4 py-2.5">
-        <h2 className="m-0 text-sm font-semibold">Enacting and amending laws</h2>
+        <h2 className="m-0 text-heading font-semibold text-foreground">Enacting and amending laws</h2>
         <p className="m-0 mt-0.5 text-[11px] text-muted-foreground">
           Laws named in this unit's source credit or notes, and laws whose Statutes at Large text or
           margin cites it. Matched on public law number, act date and chapter, or Statutes at Large

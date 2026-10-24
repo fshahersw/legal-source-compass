@@ -4,7 +4,7 @@ export function BarList({ title, rows, limit = 12, unit }: { title: string; rows
   const shown = rows.slice(0, limit);
   const max = Math.max(1, ...shown.map((r) => r.count));
   return (
-    <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card">
+    <section className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
       <h3 className="eyebrow mb-3">{title}</h3>
       {shown.length === 0 ? (
         <p className="text-[12px] text-muted-foreground">No rows.</p>
@@ -28,7 +28,7 @@ export function BarList({ title, rows, limit = 12, unit }: { title: string; rows
 
 export function Stat({ label, value, note }: { label: string; value: number | string; note?: string }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-3 shadow-card">
+    <div className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">
       <div className="eyebrow">{label}</div>
       <div className="mt-1 font-display text-2xl">{typeof value === "number" ? value.toLocaleString() : value}</div>
       {note ? <div className="mt-0.5 text-[11px] text-muted-foreground">{note}</div> : null}

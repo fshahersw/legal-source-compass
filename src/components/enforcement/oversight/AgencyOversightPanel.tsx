@@ -54,7 +54,7 @@ export function AgencyOversightPanel({
     <section className={`min-w-0 space-y-2 ${className}`} aria-label="Inspector General reports">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold">Inspector General reports</h2>
+          <h2 className="text-heading font-semibold text-foreground">Inspector General reports</h2>
           <p className="text-xs text-muted-foreground">
             {t.name} on <SourceLink href={SOURCE}>Oversight.gov</SourceLink>, matched to this agency
             by exact name. Figures are the OIG&rsquo;s own, not audited here.

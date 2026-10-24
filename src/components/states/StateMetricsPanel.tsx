@@ -83,11 +83,11 @@ export function StateMetricsPanel({
   return (
     <section className="resource-panel" aria-label="State metrics">
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <BarChart3 className="size-4" aria-hidden />
           {heading}
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">rank of 50 + DC</span>
+        <span className="text-[11px] text-muted-foreground">rank of 50 + DC</span>
       </div>
       {q.isPending ? (
         <p role="status" className="px-3 py-6 text-xs text-muted-foreground">

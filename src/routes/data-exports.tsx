@@ -143,9 +143,9 @@ function DataExportsView() {
       description="Where the directory data comes from, how to replace it with your own file in this browser, and exports of the directory and your browser-local review overlay."
     >
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card lg:col-span-2">
+        <section className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card lg:col-span-2">
           <div className="eyebrow">Directory data</div>
-          <h2 className="mt-1 text-base">Currently loaded bundle</h2>
+          <h2 className="mt-1 text-heading text-foreground">Currently loaded bundle</h2>
           <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
             The real supplied file is shipped with this build and loads automatically. You can
             replace it in this browser with your own directory file; your file is kept as exact raw bytes in
@@ -253,7 +253,7 @@ function DataExportsView() {
           ) : null}
         </section>
 
-        <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card">
+        <section className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           <div className="eyebrow">Counted from the loaded rows</div>
           {bundle && stats ? (
             <div className="mt-2" data-testid="bundle-facts">
@@ -316,7 +316,7 @@ function DataExportsView() {
         </section>
 
         {rawFiles.length > 0 ? (
-          <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card lg:col-span-3">
+          <section className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card lg:col-span-3">
             <div className="eyebrow">Original files carried in the bundle</div>
             <p className="mt-1 text-[12px] text-muted-foreground">
               Names, sizes and checksums are imported values. Downloads contain the file text exactly as
@@ -350,9 +350,9 @@ function DataExportsView() {
           </section>
         ) : null}
 
-        <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card lg:col-span-2">
+        <section className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card lg:col-span-2">
           <div className="eyebrow">Exports</div>
-          <h2 className="mt-1 text-base">Export the full directory</h2>
+          <h2 className="mt-1 text-heading text-foreground">Export the full directory</h2>
           <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
             CSV and JSON exports include the imported fields plus your browser-local review and bookmark
             columns, prefixed <code className="font-mono text-[12px]">local_</code>. JSON rows also carry
@@ -421,7 +421,7 @@ function DataExportsView() {
           </div>
         </section>
 
-        <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card">
+        <section className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           <div className="eyebrow">Your browser-local state</div>
           <div className="mt-2">
             <ImportedLabel label="Review decisions" value={counts.total.toLocaleString()} />

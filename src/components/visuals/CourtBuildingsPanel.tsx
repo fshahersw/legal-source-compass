@@ -44,7 +44,7 @@ export function CourtBuildingsPanel({ courtId }: { courtId: string }) {
   return (
     <section
       aria-labelledby={`courthouses-${courtId}`}
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-border/70 px-4 py-3">
         <h2 id={`courthouses-${courtId}`} className="m-0 text-sm font-semibold">

@@ -81,8 +81,8 @@ export function DatasetCodeBrowser({
 
   return (
     <section className="space-y-4" aria-label={`${listing.name} code browser`}>
-      <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
-        <h2 className="text-lg font-semibold text-foreground">{listing.codeName}</h2>
+      <div className="rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
+        <h2 className="text-heading font-semibold text-foreground">{listing.codeName}</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           {listing.sectionCount == null
             ? "Section count: Not recorded"
@@ -162,7 +162,7 @@ export function DatasetCodeBrowser({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(15rem,22rem)_minmax(0,1fr)]">
-        <div className="space-y-3 rounded-lg border border-border bg-surface p-4 shadow-card">
+        <div className="space-y-3 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           {titles.error ? <ExternalError error={titles.error} /> : null}
           <label className="block text-sm font-semibold" htmlFor="code-title">
             Title
@@ -267,7 +267,7 @@ export function DatasetCodeBrowser({
             </>
           ) : null}
         </div>
-        <div className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card">
+        <div className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card">
           {!section ? (
             <p className="text-sm text-muted-foreground">
               Choose a title, chapter, and section to read the published text.

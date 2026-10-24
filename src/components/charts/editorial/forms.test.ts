@@ -426,6 +426,6 @@ describe("editorial ChartCard", () => {
     expect(out).toContain("bg-brand");
     expect(out).toContain("Filings fell 81% from their peak");
     expect(out).toContain("View data");
-    expect(out).toContain("Judicial Business");
+    expect(out).toContain("Source and notes");
   });
 });

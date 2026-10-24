@@ -321,7 +321,7 @@ export function DatasetBrowser({
         </span>
       </div>
       {query.error ? <ExternalError error={query.error} /> : null}
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
         <table className="w-full text-[13px]">
           <thead className="bg-muted/60 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
             <tr>

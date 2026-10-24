@@ -79,7 +79,7 @@ export function FolderGrid({
               <ChevronRight className="mt-0.5 size-4 shrink-0 opacity-40" aria-hidden />
             </>
           );
-          const cls = `flex ${it.icon ? "items-center gap-3" : "items-start gap-2"} rounded-lg border border-border bg-surface p-3 shadow-card`;
+          const cls = `flex ${it.icon ? "items-center gap-3" : "items-start gap-2"} rounded-xl border border-border bg-card shadow-xs p-3 shadow-card`;
           return it.count === 0 ? (
             <div key={it.key} className={`${cls} opacity-50`} aria-disabled>
               {body}

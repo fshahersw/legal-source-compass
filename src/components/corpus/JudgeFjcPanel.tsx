@@ -45,11 +45,11 @@ function Panel({ p }: { p: FjcRecord }) {
   const mdlActions = p.mdls.reduce((sum, m) => sum + m.pending, 0);
   return (
     <section
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
       aria-label="Judicial service"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
-        <h2 className="font-sans text-sm font-semibold">Judicial service</h2>
+        <h2 className="text-heading font-semibold text-foreground">Judicial service</h2>
         <a
           href={FJC(p.nid)}
           target="_blank"
@@ -283,11 +283,11 @@ export function CourtJudgesPanel({ courtId }: { courtId: string }) {
   if (!q.data?.length) return null;
   return (
     <section
-      className="mb-5 rounded-lg border border-border bg-surface"
+      className="mb-5 rounded-xl border border-border bg-card shadow-xs"
       aria-label="Sitting judges"
     >
       <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border/70 px-4 py-2.5">
-        <h2 className="font-sans text-sm font-semibold">Sitting judges · {q.data.length}</h2>
+        <h2 className="text-heading font-semibold text-foreground">Sitting judges · {q.data.length}</h2>
         <p className="text-xs text-muted-foreground">
           Federal Judicial Center biographical directory, all sitting Article III judges of this
           court

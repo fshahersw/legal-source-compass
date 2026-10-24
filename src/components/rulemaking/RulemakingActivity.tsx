@@ -153,7 +153,7 @@ function AgencyDetail({ agency }: { agency: AgencyActivity }) {
   return (
     <div className="grid gap-3 lg:grid-cols-2">
       <section
-        className="min-w-0 rounded-lg border border-border bg-surface p-3"
+        className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-3"
         aria-label="Documents per year"
       >
         <h3 className="text-[12px] font-semibold">{agency.short} documents per year</h3>
@@ -204,7 +204,7 @@ function AgencyDetail({ agency }: { agency: AgencyActivity }) {
         </div>
       </section>
       <section
-        className="min-w-0 rounded-lg border border-border bg-surface p-3"
+        className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-3"
         aria-label="Rules per month"
       >
         <h3 className="text-[12px] font-semibold">Final and proposed rules per month</h3>
@@ -238,7 +238,7 @@ function AgencyDetail({ agency }: { agency: AgencyActivity }) {
         </div>
       </section>
       <section
-        className="min-w-0 rounded-lg border border-border bg-surface p-3 lg:col-span-2"
+        className="min-w-0 rounded-xl border border-border bg-card shadow-xs p-3 lg:col-span-2"
         aria-label="Recent significant final rules"
       >
         <h3 className="text-[12px] font-semibold">

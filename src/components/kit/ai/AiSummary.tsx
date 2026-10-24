@@ -126,7 +126,7 @@ export function AiSummaryView({
       aria-label={`AI summary: ${title}`}
       data-state={state.kind}
       className={cn(
-        "min-w-0 rounded-xl border border-border bg-card px-4 py-3 text-card-foreground shadow-xs",
+        "min-w-0 rounded-xl border border-border bg-card shadow-xs px-4 py-3 text-card-foreground shadow-xs",
         className,
       )}
     >

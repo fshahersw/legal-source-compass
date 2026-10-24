@@ -26,7 +26,7 @@ export function Panel({
       id={id}
       aria-labelledby={id ? `${id}-title` : undefined}
       className={cn(
-        "scroll-mt-44 rounded-lg border border-border bg-surface shadow-card",
+        "scroll-mt-44 rounded-xl border border-border bg-card shadow-xs shadow-card",
         className,
       )}
     >

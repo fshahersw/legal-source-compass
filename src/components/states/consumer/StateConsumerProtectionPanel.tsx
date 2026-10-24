@@ -67,11 +67,11 @@ export function StateConsumerProtectionPanel({ usps }: { usps: string }) {
       aria-label="Consumer protection reports and complaints from the Federal Trade Commission"
     >
       <div className="research-band">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
+        <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Scale className="size-4" aria-hidden />
           Consumer protection
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">FTC data books</span>
+        <span className="text-[11px] text-muted-foreground">FTC data books</span>
       </div>
       {q.isPending ? (
         <p role="status" aria-busy="true" className="px-3 py-6 text-xs text-muted-foreground">
