@@ -226,7 +226,8 @@ describe("GovInfo package ids", () => {
   });
 
   it("shortens a resolution whose published title is its whole text, keeping the title as published", () => {
-    const published = `Expressing the sense of the Congress ${"that the record is long; ".repeat(1200)}`.trim();
+    const published =
+      `Expressing the sense of the Congress ${"that the record is long; ".repeat(1200)}`.trim();
     const row = billVersionsRow(
       { congress: 108, type: "sconres", number: 81 },
       [
