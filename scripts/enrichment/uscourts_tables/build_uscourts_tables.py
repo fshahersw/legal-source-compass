@@ -115,8 +115,13 @@ def group_docs(docs):
     return groups
 
 
+def title_of(norm):
+    """The table title as printed; a workbook that prints only its table number (H-3A) takes the title the listing gives it."""
+    return norm.get("title") or norm.get("title_listing") or ""
+
+
 def latest_title(docs):
-    return docs[-1]["norm"]["title"]
+    return title_of(docs[-1]["norm"])
 
 
 def table_info(docs):
@@ -375,7 +380,7 @@ def catalog_of(chosen_by_group):
     for (tkey, scope), chosen in sorted(chosen_by_group.items()):
         if not chosen:
             continue
-        e = cat.setdefault(tkey, {"tableKey": tkey, "table": chosen[-1]["norm"]["table"], "title": chosen[-1]["norm"]["title"], "scopes": [], "ends": set(), "pubs": set()})
+        e = cat.setdefault(tkey, {"tableKey": tkey, "table": chosen[-1]["norm"]["table"], "title": title_of(chosen[-1]["norm"]), "scopes": [], "ends": set(), "pubs": set()})
         if scope not in e["scopes"]:
             e["scopes"].append(scope)
         for d in chosen:

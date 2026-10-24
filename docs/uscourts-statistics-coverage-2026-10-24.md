@@ -1,6 +1,6 @@
 # U.S. Courts statistical tables: coverage audit (2026-10-24)
 
-Generated 2026-10-24T02:56:09+00:00 by `scripts/enrichment/uscourts_tables/coverage.py` from the listing of https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables (crawled 2026-10-23, the years 2025-2026 re-crawled on 2026-10-24: no table was added), the stream's file store and parse reports, and the built datasets. Each listing row is one table of one publication for one period.
+Generated 2026-10-24T03:00:43+00:00 by `scripts/enrichment/uscourts_tables/coverage.py` from the listing of https://www.uscourts.gov/statistics-reports/caseload-statistics-data-tables (crawled 2026-10-23, the years 2025-2026 re-crawled on 2026-10-24: no table was added), the stream's file store and parse reports, and the built datasets. Each listing row is one table of one publication for one period.
 
 Columns: **Listed** rows in the listing; **Acquired** file stored (here or by the stream that publishes that publication); **Parsed** read into a table (here or by that stream); **Published** in a dataset of this stream. Not published splits into **Held** (the edition fails its own printed totals), **Duplicate** (another publication prints the same table for the same period and that one is published), **Other dataset** (published by another stream's dataset) and **Gap**.
 

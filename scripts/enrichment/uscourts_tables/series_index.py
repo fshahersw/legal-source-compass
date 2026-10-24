@@ -45,7 +45,7 @@ def series_payload(info, builds, dsid, coverage_by_table):
     ust = (national or {}).get("item", {}).get("ust", {})
     cols = B.collect_columns(chosen)
     payload = {
-        "v": 1, "tableKey": tkey, "table": last["table"], "title": last["title"], "scope": scope, "geography": GEO.get(scope, scope), "family": family,
+        "v": 1, "tableKey": tkey, "table": last["table"], "title": last.get("title") or last.get("title_listing") or "", "scope": scope, "geography": GEO.get(scope, scope), "family": family,
         "periods": [{"end": d["norm"]["period_end"], "months": d["norm"].get("months"), "pub": d["norm"]["pub"], "fmt": d["source"].get("format")} for d in chosen],
         "pubs": sorted({d["norm"]["pub"] for d in chosen}),
         "cols": [{"k": c["k"], "label": c["label"], "unit": c["unit"], "dec": c["dec"]} for c in cols.values()],
