@@ -92,6 +92,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="validate files and print the plan; no network")
     parser.add_argument("--activate", action="store_true", help="activate after a complete load")
     parser.add_argument("--note", default=None)
+    parser.add_argument("--purge-superseded", action="store_true",
+                        help="after activation, remove the rows of the edition this one superseded (it stays listed)")
     parser.add_argument("--accept-rejects", default="",
                         help="the reason rejects above the share bound are deliberate exclusions (recorded in the note)")
     args = parser.parse_args(argv)
@@ -151,7 +153,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"sections {done}/{counts['sections']} ({time.monotonic() - started:.0f}s)", flush=True)
     print(f"sections {done}")
     if args.activate:
-        print("activate", rpc("state_law_activate_edition_v1", {"p_edition_id": edition["edition_id"], "p_note": args.note}))
+        activated = rpc("state_law_activate_edition_v1", {"p_edition_id": edition["edition_id"], "p_note": args.note})
+        print("activate", activated)
+        old = (activated or {}).get("superseded") if isinstance(activated, dict) else None
+        if args.purge_superseded and old:
+            for _ in range(200):  # the purge removes a bounded batch per call
+                got = rpc("state_law_purge_edition_v1", {"p_edition_id": old, "p_limit": 20000})
+                if (got or {}).get("done"):
+                    print("purged superseded", old)
+                    break
     print(f"loaded in {time.monotonic() - started:.0f}s")
     return 0
 
