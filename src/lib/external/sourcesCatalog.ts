@@ -324,6 +324,7 @@ const USED_ON: Readonly<Record<string, readonly AppLink[]>> = {
   court_spine: [P.courts],
   courts_db: [P.courts],
   court_locations: [P.courts],
+  court_images: [P.courts],
   court_analytics: [P.courts],
   court_stats_national: [P.courtAnalytics],
   court_stats_circuits: [P.courtAnalytics],
