@@ -121,6 +121,8 @@ def _split_label(text: str | None, word: str):
 
 
 # "(Effective on occurrence of contingency)": whether the contingency has occurred is not printed
+# a dated clause: "(Effective October 1, 2026)" or, for a temporary version, "(Temporary -- effective October 1, 2026)"
+DATED_CLAUSE = re.compile(r"^\((?:Temporary\s*--\s*e|E)ffective ([A-Z][a-z]+ \d{1,2}, \d{4})\)$")
 CONTINGENT_CLAUSE = re.compile(r"^\(Effective (?:on|upon) (?:the )?occurrence of (?:a )?contingenc(?:y|ies)\)$", re.I)
 
 
@@ -130,7 +132,7 @@ def temporary_superseded(versions: list[dict], run_date) -> bool:
     if not any(v["clause"] == "(Temporary)" for v in versions):
         return False
     for v in versions:
-        m = re.match(r"^\(Effective ([A-Z][a-z]+ \d{1,2}, \d{4})\)$", v["clause"] or "")
+        m = DATED_CLAUSE.match(v["clause"] or "")
         start = sb.parse_us_date(m.group(1)) if m else None
         if start and start <= run_date:
             return True
@@ -195,7 +197,7 @@ def acquire(ctx):
                         effective, status = None, None
                         if v["clause"]:
                             effective = {"start": None, "end": None, "note": v["clause"]}
-                            m = re.match(r"^\(Effective ([A-Z][a-z]+ \d{1,2}, \d{4})\)$", v["clause"])
+                            m = DATED_CLAUSE.match(v["clause"])
                             if m:
                                 effective["start"] = sb.parse_us_date(m.group(1))
                                 if effective["start"] and effective["start"] > run_date:

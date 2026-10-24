@@ -243,6 +243,10 @@ class MontanaVersions(unittest.TestCase):
         ahead = [{"clause": "(Temporary)"}, {"clause": "(Effective July 1, 2027)"}]
         self.assertTrue(mt.temporary_superseded(started, today))
         self.assertFalse(mt.temporary_superseded(ahead, today))
+        # MCA 53-4-1005: a later temporary version with its own date supersedes the undated one once that date has come
+        dated = [{"clause": "(Temporary)"}, {"clause": "(Temporary -- effective October 1, 2026)"}]
+        self.assertTrue(mt.temporary_superseded(dated, today))
+        self.assertEqual(mt.DATED_CLAUSE.match("(Temporary -- effective July 1, 2027)").group(1), "July 1, 2027")
         self.assertTrue(mt.CONTINGENT_CLAUSE.match("(Effective on occurrence of contingency)"))
         self.assertEqual(mt.rule_number("Rule 4", "25", "20"), "25-20 Rule 4")
         self.assertEqual(mt.rule_number("2-18-704", "2", "18"), "2-18-704")
