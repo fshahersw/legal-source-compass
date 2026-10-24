@@ -10,6 +10,7 @@ import { ChartCard } from "@/components/kit/ChartCard";
 import { LinkTile } from "@/components/kit/LinkTile";
 import { MetricMap, type MapArea } from "@/components/places/MetricMap";
 import { DivergingDots } from "@/components/charts/d3/charts";
+import { PlacesMetricAi } from "./PlacesMetricAi";
 import { median } from "d3-array";
 import { parseMapSearch, resolveMapSelection } from "@/components/places/mapSearch";
 import { mapRows, mapTakeaway } from "./placesMapModel";
@@ -328,6 +329,16 @@ export function PlacesMap({
                       baseline={mid}
                       baselineLabel="Median"
                       format={(v) => formatMapValue(v, def.format)}
+                    />
+                    <PlacesMetricAi
+                      label={def.label}
+                      unit={def.unit}
+                      period={shownPeriod}
+                      source={shownSourceName}
+                      median={mid}
+                      ranked={ranked.map((r) => ({ name: r.name, value: r.value as number }))}
+                      format={(v) => formatMapValue(v, def.format)}
+                      total={rankRows.length}
                     />
                   </section>
                 );
