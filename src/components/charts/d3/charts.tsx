@@ -511,7 +511,10 @@ export function Sunburst({
           : (shown?.value ?? total).toLocaleString("en-US")}
       </text>
       <text textAnchor="middle" dy="1.2em" className="fill-muted-foreground text-[10px]">
-        {shown?.data.name ?? root.name}
+        {(() => {
+          const name = shown?.data.name ?? root.name;
+          return name.length > 24 ? `${name.slice(0, 22).trimEnd()}…` : name;
+        })()}
       </text>
     </svg>
   );
