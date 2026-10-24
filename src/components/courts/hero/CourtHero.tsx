@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { photoAlt, photoPlace, photoSrcSet } from "@/lib/courts/photos";
+import { photoAlt, photoPlace, photoSource, photoSrcSet } from "@/lib/courts/photos";
 import { cn } from "@/lib/utils";
 import { resolveCourtMark } from "./courtMark";
 import { MarkCaption, MarkMedallion, PhotoCredit, SealPlate } from "./parts";
@@ -9,7 +9,7 @@ import { courtPhotoQuery } from "./queries";
 const HERO_SIZES = "(min-width: 1024px) 23rem, (min-width: 640px) 19rem, 100vw";
 
 /**
- * Court page header artwork: the court's building photograph (licence verified on its file page) with the court's
+ * Court page header artwork: the court's building photograph (credited as its source records it) with the court's
  * seal set into its corner, and a visible credit. Without a photograph, or when it fails to load, the same frame
  * shows the seal on a ruled plate, so the layout never shifts.
  */
@@ -87,7 +87,7 @@ export function CourtHero({
           </>
         ) : status === "none" ? (
           <p className="m-0 text-[11px] leading-snug text-muted-foreground">
-            No building photograph with a verified open licence is recorded for this court.
+            No building photograph is recorded for this court.
           </p>
         ) : status === "failed" && photo ? (
           <p className="m-0 text-[11px] leading-snug text-muted-foreground">
@@ -98,7 +98,7 @@ export function CourtHero({
               rel="noreferrer"
               className="underline decoration-dotted underline-offset-2 hover:text-foreground"
             >
-              Open it on Wikimedia Commons
+              Open it on {photoSource(photo)}
             </a>
             .
           </p>

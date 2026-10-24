@@ -4,6 +4,7 @@ import { agencyArtwork, stateArtwork, stateFlag } from "@/lib/visuals/registry";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { fileUrl } from "@/lib/external/groups";
 import { cn } from "@/lib/utils";
+import { markImageFailed, useImageFailed } from "@/components/visuals/failedImages";
 export function StateMark({
   state,
   className,
@@ -74,16 +75,36 @@ export function StateFlag({ state, className }: { state: string; className?: str
     />
   );
 }
-export function AgencyMark({ name, className }: { name: string; className?: string | undefined }) {
+/**
+ * An agency's mark. The GSA image-repository mark wins; only when the site has none is `fallback` (a seal or logo
+ * recorded for the agency in the agency_images dataset) drawn, credited on the page that passes it.
+ */
+export function AgencyMark({
+  name,
+  className,
+  fallback,
+}: {
+  name: string;
+  className?: string | undefined;
+  fallback?: { url: string; sourcePage: string } | null;
+}) {
   const asset = agencyArtwork(name);
   const [failed, setFailed] = useState<string | null>(null);
+  const extraFailed = useImageFailed(fallback?.url);
+  const extra = !asset && fallback && !extraFailed ? fallback : null;
   return (
     <span
       className={cn(
         "inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-white p-1.5",
         className,
       )}
-      title={asset ? `${name} · GSA image repository; no endorsement implied` : name}
+      title={
+        asset
+          ? `${name} · GSA image repository; no endorsement implied`
+          : extra
+            ? `${name} · mark from ${new URL(extra.sourcePage).hostname.replace(/^www\./, "")}`
+            : name
+      }
     >
       {asset && failed !== asset.path ? (
         <img
@@ -92,6 +113,16 @@ export function AgencyMark({ name, className }: { name: string; className?: stri
           className="size-full object-contain"
           loading="lazy"
           onError={() => setFailed(asset.path)}
+        />
+      ) : extra ? (
+        <img
+          src={extra.url}
+          alt={`${name} mark`}
+          className="size-full object-contain"
+          loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => markImageFailed(extra.url)}
         />
       ) : (
         <Building2

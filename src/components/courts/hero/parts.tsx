@@ -1,5 +1,5 @@
 import { courtTypeLabels } from "@/lib/courts/artwork";
-import { photoAuthor, type CourtPhotoThumb } from "@/lib/courts/photos";
+import { photoAuthor, photoSource, type CourtPhotoThumb } from "@/lib/courts/photos";
 import { cn } from "@/lib/utils";
 import type { CourtMark } from "./courtMark";
 import { courtTypeIcons } from "./typeIcons";
@@ -172,26 +172,47 @@ export function MarkCaption({ mark, className }: { mark: CourtMark; className?: 
   );
 }
 
-/** Visible credit for a photograph: author, licence (linked) and source page (linked). */
+/**
+ * Visible credit for a photograph: author, licence (linked when a licence link is recorded) and source page (linked).
+ * When the record names no licence, only "Source: <site>" is shown.
+ */
 export function PhotoCredit({
   photo,
   compact = false,
   className,
 }: {
-  photo: Pick<CourtPhotoThumb, "author" | "license" | "licenseUrl" | "sourcePage">;
+  photo: Pick<CourtPhotoThumb, "author" | "license" | "licenseUrl" | "sourcePage" | "origin">;
   compact?: boolean;
   className?: string;
 }) {
   const author = photoAuthor(photo);
+  const source = (
+    <a href={photo.sourcePage} target="_blank" rel="noreferrer" className={linkClass}>
+      {photoSource(photo)}
+    </a>
+  );
+  if (!photo.license)
+    return (
+      <p
+        className={cn(
+          "m-0 leading-snug text-muted-foreground",
+          compact ? "text-[10.5px]" : "text-[11px]",
+          className,
+        )}
+      >
+        Source: {source}
+      </p>
+    );
   const links = (
     <>
-      <a href={photo.licenseUrl} target="_blank" rel="noreferrer" className={linkClass}>
-        {photo.license}
-      </a>{" "}
-      ·{" "}
-      <a href={photo.sourcePage} target="_blank" rel="noreferrer" className={linkClass}>
-        Wikimedia Commons
-      </a>
+      {photo.licenseUrl ? (
+        <a href={photo.licenseUrl} target="_blank" rel="noreferrer" className={linkClass}>
+          {photo.license}
+        </a>
+      ) : (
+        photo.license
+      )}{" "}
+      · {source}
     </>
   );
   if (compact)

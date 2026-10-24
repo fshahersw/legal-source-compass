@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
-import { AgencyMark } from "@/components/corpus/EntityArtwork";
 import { Stat } from "@/components/corpus/BarList";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
 import { LoadingBlock } from "@/components/enforcement/parts";
@@ -19,6 +18,8 @@ import { getAgencyProfile } from "@/lib/external/agencyProfile.functions";
 import { isDepartment, SAFETY_AGENCY } from "@/lib/external/agencyTree";
 import { pageHead } from "@/lib/corpus/head";
 import { AgencyOversightPanel } from "@/components/enforcement/oversight/AgencyOversightPanel";
+import { AgencyBuildingPhoto } from "@/components/visuals/AgencyBuildingPhoto";
+import { AgencyEmblem, AgencyMarkCaption } from "@/components/visuals/AgencyEmblem";
 
 export const Route = createFileRoute("/agencies/$id")({
   remountDeps: ({ params }) => ({ id: params.id }),
@@ -195,7 +196,7 @@ function AgencyPage() {
         { label: name },
       ]}
       title={name}
-      emblem={<AgencyMark name={name} />}
+      emblem={<AgencyEmblem agencyId={id} name={name} ready={known && !loading} />}
       description={
         known && isDepartment(name)
           ? "Department totals include documents its component agencies file: the publisher names the department and the component on the same document."
@@ -229,6 +230,8 @@ function AgencyPage() {
       ) : null}
       {known && !loading ? (
         <>
+          <AgencyMarkCaption agencyId={id} name={name} ready className="mb-2" />
+          <AgencyBuildingPhoto agencyId={id} name={name} />
           <div className="flex flex-wrap gap-1 border-b border-border text-[13px]">
             {TABS.map((t) => (
               <button

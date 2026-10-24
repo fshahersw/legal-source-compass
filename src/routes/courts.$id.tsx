@@ -28,12 +28,18 @@ import { DistrictGlancePanel } from "@/components/courts/clb/DistrictGlancePanel
 import { ProsecutionsPanel } from "@/components/enforcement/extra/ProsecutionsPanel";
 import { SentencingPanel } from "@/components/enforcement/extra/SentencingPanel";
 import { CourtJudgesRosterPanel } from "@/components/courts/CourtJudgesRosterPanel";
+import { CourtBuildingsPanel } from "@/components/visuals/CourtBuildingsPanel";
+import { courtBuildingsQuery } from "@/components/visuals/queries";
 
 /** Court ids the filings index accepts (documents_for_entity_v1). */
 const COURT_ID = /^[a-z0-9_-]{1,40}$/;
 export const Route = createFileRoute("/courts/$id")({
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(entityQuery("court_spine", params.id)),
+  loader: ({ context, params }) => {
+    // Started alongside the court record so the courthouses section is ready when the page renders; never awaited.
+    if (COURT_ID.test(params.id))
+      void context.queryClient.prefetchQuery(courtBuildingsQuery(params.id));
+    return context.queryClient.ensureQueryData(entityQuery("court_spine", params.id));
+  },
   head: ({ loaderData }) => {
     const raw = (loaderData as { raw?: Record<string, unknown> | null } | undefined)?.raw;
     const name = String(raw?.["title"] ?? raw?.["name"] ?? "Court profile");
@@ -95,6 +101,7 @@ function Page() {
           <CourtStructurePanel courtId={id} />
           <CourtAppealRoutesNote courtId={id} />
           <CourtLocationsPanel courtId={id} />
+          {COURT_ID.test(id) ? <CourtBuildingsPanel courtId={id} /> : null}
           <CourtRulesPanel courtId={id} />
           <CourtJudgesRosterPanel courtId={id} />
           <CourtAnalyticsPanel courtId={id} />
