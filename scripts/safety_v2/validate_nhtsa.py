@@ -55,7 +55,10 @@ def main():
         a = found[0]
         filed = a.get("dateComplaintFiled") or ""
         filed_iso = f"{filed[6:10]}-{filed[0:2]}-{filed[3:5]}" if re.fullmatch(r"\d\d/\d\d/\d{4}", filed) else None
-        ours_top = sorted({i["component"].split(":")[0].strip() for i in r["items"] if i["component"]})
+        # the API joins component names with commas and some names contain one ("FUEL SYSTEM, GASOLINE"), so both
+        # sides are compared as their comma-separated parts
+        ours_top = sorted({x.strip() for i in r["items"] if i["component"]
+                           for x in i["component"].split(":")[0].split(",") if x.strip()})
         api_top = sorted({x.strip() for x in (a.get("components") or "").split(",") if x.strip()})
         diffs = {}
         if filed_iso != r["received"]:
