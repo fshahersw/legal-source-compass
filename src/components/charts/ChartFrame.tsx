@@ -78,7 +78,7 @@ export function ChartFrame({
       table={table}
       kpis={kpis}
       sources={sources}
-      period={period}
+      period={subtitle ? period : undefined}
       asOf={asOf}
       notice={partialNotice}
       footnotes={footnotes}

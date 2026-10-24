@@ -52,7 +52,7 @@ export type ChartCardProps = {
   period?: string | undefined;
   /** Data date the source states. */
   asOf?: string | undefined;
-  /** Replaces the source in the footer line (a node, e.g. a router link or a short source sentence). */
+  /** A note printed as small print under the chart (a source sentence or a method note written as text). */
   footer?: ReactNode;
   /** "About this data" popover: method, caveats. */
   about?: ReactNode;
@@ -170,9 +170,7 @@ export function ChartCard({
           ? "empty"
           : "ready";
   const sourceProp =
-    sources && sources.length
-      ? sources.map((s) => ({ label: s.label, href: s.url }))
-      : (footer ?? undefined);
+    sources && sources.length ? sources.map((s) => ({ label: s.label, href: s.url })) : undefined;
   const hasFooter = sourceProp !== undefined || period || asOf || about || partial;
   return (
     <KitChartCard
@@ -211,9 +209,7 @@ export function ChartCard({
           </div>
         ) : null}
         {children}
-        {sources?.length && footer ? (
-          <div className="pt-2 text-meta text-muted-foreground">{footer}</div>
-        ) : null}
+        {footer ? <div className="pt-2 text-meta text-muted-foreground">{footer}</div> : null}
         {footnotes?.length ? (
           <div className="space-y-0.5 pt-2 text-[11px] leading-4 text-muted-foreground">
             {footnotes.map((f, i) => (
