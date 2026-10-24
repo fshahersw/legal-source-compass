@@ -59,6 +59,7 @@ export function EnforcementPage({
           section="enforcement"
           lead={
             <TrendHeadline
+              sectionId="enforcement-trends"
               subject="enforcement activity"
               unitNote="Each agency counts something different (press releases, releases and proceedings, listed actions, cases opened, inspections), so compare the direction and size of change, not the levels."
               items={[

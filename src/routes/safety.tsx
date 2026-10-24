@@ -22,6 +22,7 @@ import { TrendHeadline } from "@/components/charts/d3/TrendHeadline";
 
 const RECALL_LEAD = (
   <TrendHeadline
+    sectionId="recall-trends"
     subject="recalls"
     unitNote="Each agency counts and classifies recalls its own way, and one recall can cover many products and units, so compare the direction and size of change, not the levels."
     items={[

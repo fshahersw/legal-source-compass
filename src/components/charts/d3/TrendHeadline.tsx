@@ -4,6 +4,9 @@
  * the one before, as dots either side of "no change". Titles are computed from the plotted values.
  */
 import { useMemo } from "react";
+import { AiSummary } from "@/components/kit/ai/AiSummary";
+import { AskAiButton } from "@/components/kit/ai/AskAiButton";
+import { buildSectionContext } from "@/components/kit/ai/buildSectionContext";
 import { useQueries } from "@tanstack/react-query";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { analyticsBlockQuery } from "@/components/analytics/hub/blockQuery";
@@ -22,11 +25,20 @@ const KIND_LABEL = {
   congress: "Congress",
 } as const;
 
+const QUESTIONS = [
+  "Which series changed most, and from when?",
+  "What does the latest complete period show?",
+  "What should I keep in mind when comparing these series?",
+] as const;
+
 export function TrendHeadline({
   items,
   subject,
   unitNote,
+  sectionId,
 }: {
+  /** Anchor id of the block, also the AI section id. */
+  sectionId: string;
   items: readonly TrendHeadlineItem[];
   /** What the series count, in a few words ("enforcement activity", "recalls"). */
   subject: string;
@@ -213,5 +225,10 @@ export function TrendHeadline({
         ) : null}
       </ChartCard>
     </div>
+    <AiSummary
+      context={context}
+      actions={<AskAiButton sectionId={sectionId} title={aiTitle} context={context} questions={QUESTIONS} />}
+    />
+    </section>
   );
 }
