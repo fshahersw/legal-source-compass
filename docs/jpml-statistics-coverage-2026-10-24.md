@@ -91,5 +91,5 @@ Independent verification (`scripts/enrichment/jpml_history/verify_series.py`, a 
 ## 7. Files
 
 - Acquisition: `scripts/enrichment/jpml_history/acquire_jpml_reports.py`; raw files `private/acq/jpml_reports/` (9.4 MB, gzipped).
-- Parsing and build: `parse_quarterly.py`, `series_metrics.py`, `build_jpml_series.py` (rebuilds the 2026-10-18 datasets in memory unchanged and verifies they still equal the published rows).
+- Parsing and build: `parse_quarterly.py`, `series_metrics.py`, `build_jpml_series.py` (rebuilds the 2026-10-18 datasets in memory to reuse their parsed archive reports; on 2026-10-24 the rebuilt rows equalled the stored build files row for row, and those files' row digests equal the live `manifest_sha256` of all three datasets). Verification: `verify_series.py`; report: `make_series_report.py`.
 - Build files: `private/build/jpml_reports/` (five datasets, validation, inventory, cross-checks, verification).
