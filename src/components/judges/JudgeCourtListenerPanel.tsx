@@ -27,7 +27,7 @@ const TIER_TEXT: Record<CrosswalkTier, string> = {
   no_cl_person_for_fjc_id:
     "the source has no person with this record's federal judicial id, and no exact name match was found",
   not_found:
-    "the judicial people database has no judicial position for this name at the recorded courts or state",
+    "The judicial people database has no judicial position for this name at the recorded courts or state",
 };
 
 /** Static column classes so the tile grid has no empty cells (Tailwind needs literal class names). */
