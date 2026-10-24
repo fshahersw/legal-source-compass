@@ -207,6 +207,11 @@ class EffectiveMarkerTests(unittest.TestCase):
                            "(Effective once contingency met. Contingent expiration, see note.)"):
             self.assertEqual(lib.effective_marker(contingent, today)["status"], "not_recorded", contingent)
         self.assertEqual(lib.effective_marker("(Effective until contingency met)", today), {})
+        nv = lib.effective_marker("Powers and duties of Board. [Effective on the effective date of the initial contract "
+                                  "entered into pursuant to section 4 of this act.]", today)
+        self.assertEqual(nv["status"], "not_recorded")
+        self.assertEqual(lib.effective_marker("Powers. [Effective until the effective date of the initial contract.]", today), {})
+        self.assertEqual(lib.effective_marker("(Effective on July 1, 2027) Rates", today)["status"], "future_effective")
 
     def test_first_line_and_module_dates(self):
         import datetime as _dt

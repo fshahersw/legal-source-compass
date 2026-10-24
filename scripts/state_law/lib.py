@@ -616,10 +616,10 @@ _DATE_WORDS = r"(?:[A-Z][a-z]{2,8}\.?\s+\d{1,2},\s+\d{4}|\d{1,2}[-/]\d{1,2}[-/]\
 # "(Effective until January 1, 2026)", "[Effective until Oct. 21, 2026]", "[Effective through June 30, 2027.]",
 # "(Effective July 1, 2026; Effective until October 1, 2026)", "(Effective until September 30, 2025, Unless Extended by
 # the Legislature)"
-_EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:(until|through)\s+)?(" + _DATE_WORDS + r")((?:[^\)\]])*)[\)\]]", re.I)
+_EFFECTIVE_MARK_RE = re.compile(r"[\(\[]\s*Effective\s+(?:on\s+)?(?:(until|through)\s+)?(" + _DATE_WORDS + r")((?:[^\)\]])*)[\)\]]", re.I)
 # a version that applies only once a condition is met: "(Effective Upon Ratification of Proposed Constitutional
 # Amendment)", "(Effective once contingency met. ...)", "(Contingently effective ...)"
-_CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effective\s+(?:upon|once|when|if|on\s+the\s+date)\b|"
+_CONTINGENT_MARK_RE = re.compile(r"[\(\[]\s*(?:Contingently\s+effective|Effective\s+(?:upon|once|when|if|on\s+the\s+(?:effective\s+)?date)\b|"
                                  r"(?:For\s+)?contingent\s+effective\s+date\b)[^\)\]]*[\)\]]", re.I)
 _QUALIFIED_RE = re.compile(r"\b(unless|contingent|subject to|or upon|until (?:the|such)|if|when)\b", re.I)
 # South Carolina's first text line: "Section effective until July 1, 2027. See, also, section 57-3-20 effective ..."

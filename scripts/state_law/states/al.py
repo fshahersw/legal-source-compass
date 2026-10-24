@@ -56,9 +56,12 @@ def _date(v: str | None) -> dt.date | None:
 
 def _text(value) -> str:
     """lib.html_text, then one more entity decoding: the API double-encodes some entities ("&amp;amp;", "&amp;sect;"),
-    which read as "&amp;" / "&sect;" after one pass (414 sections were refused as markup on 2026-10-23)."""
+    which read as "&amp;" / "&sect;" after one pass (414 sections were refused as markup on 2026-10-23); decoding is
+    repeated until no entity is left."""
     text = lib.html_text(value or "")
-    if re.search(r"&(?:[a-zA-Z][a-zA-Z0-9]{1,30}|#\d+|#x[0-9a-fA-F]+);", text):
+    for _ in range(4):  # some values are encoded three or four times ("&amp;amp;amp;sect;")
+        if not re.search(r"&(?:[a-zA-Z][a-zA-Z0-9]{1,30}|#\d+|#x[0-9a-fA-F]+);", text):
+            break
         text = _html.unescape(text)
     return text
 
