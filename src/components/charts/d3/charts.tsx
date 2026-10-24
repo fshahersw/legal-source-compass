@@ -150,14 +150,14 @@ export function StackedBarsOverTime({ rows, keys, labels, height = 260 }: { rows
   );
 }
 
-export function DivergingDots({ items, baseline, baselineLabel, format = (v: number) => v.toLocaleString() }: { items: readonly { label: string; value: number | null }[]; baseline: number; baselineLabel: string; format?: (v: number) => string }) {
+export function DivergingDots({ items, baseline, baselineLabel, format = (v: number) => v.toLocaleString(), showBaselineValue = true }: { items: readonly { label: string; value: number | null }[]; baseline: number; baselineLabel: string; format?: (v: number) => string; showBaselineValue?: boolean }) {
   const row = 22;
   const height = items.length * row + 30;
   const x = scaleLinear().domain(divergingDomain(items.map((i) => i.value), baseline)).range([170, W - 50]);
   return (
     <svg style={chartTokens} viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label={`Values against ${baselineLabel}`}>
       <line x1={x(baseline)} x2={x(baseline)} y1={14} y2={height - 6} style={{ stroke: "var(--foreground)" }} opacity={0.5} />
-      <text x={x(baseline)} y={10} textAnchor="middle" className="fill-muted-foreground text-[10px]">{baselineLabel} {format(baseline)}</text>
+      <text x={x(baseline)} y={10} textAnchor="middle" className="fill-muted-foreground text-[10px]">{baselineLabel}{showBaselineValue ? ` ${format(baseline)}` : ""}</text>
       {items.map((it, i) => {
         const cy = 24 + i * row + row / 2;
         return (

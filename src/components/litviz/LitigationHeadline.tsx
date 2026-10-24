@@ -140,6 +140,7 @@ export function LitigationHeadline() {
             items={movers.map((m) => ({ label: shortMdl(m), value: m.change12m }))}
             baseline={0}
             baselineLabel="No change"
+            showBaselineValue={false}
             format={signed}
           />
         ) : null}
