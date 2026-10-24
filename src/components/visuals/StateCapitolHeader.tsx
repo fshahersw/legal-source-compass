@@ -12,7 +12,8 @@ export function StateCapitolHeader({ usps, stateName }: { usps: string; stateNam
   const q = useQuery({ ...stateCapitolQuery(usps), enabled: valid });
   const photo = q.data ?? null;
   if (!valid || !photo) return null;
-  const caption = capitolCaption(photo, stateName);
+  // "Building · City, State" when the record gives a city; the building alone otherwise.
+  const place = capitolCaption(photo, stateName).slice(photo.building.length);
   return (
     <PhotoHeaderBand
       key={photo.display.url}
@@ -22,7 +23,7 @@ export function StateCapitolHeader({ usps, stateName }: { usps: string; stateNam
       heading={
         <>
           <span className="font-semibold">{photo.building}</span>
-          <span className="text-muted-foreground">{caption.slice(photo.building.length)}</span>
+          {place ? <span className="text-muted-foreground">{place}</span> : null}
         </>
       }
       label={`${stateName} capitol photograph`}
