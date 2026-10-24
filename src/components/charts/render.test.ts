@@ -57,7 +57,7 @@ describe("ChartFrame states", () => {
     const out = html(createElement(ChartFrame, { ...base, status: { kind: "loading" } }));
     expect(out).toContain('aria-busy="true"');
     expect(out).toContain('role="status"');
-    expect(out).toContain("FJC Integrated Database");
+    expect(out).toContain("Source and notes");
   });
 
   it("shows the error with a retry, the empty reason, and the partial notice", () => {
