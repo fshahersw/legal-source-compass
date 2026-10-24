@@ -34,6 +34,9 @@ import { CourtGlance } from "@/components/courts/glance/CourtGlance";
 import { Section } from "@/components/kit/Section";
 import { SectionIndex } from "@/components/kit/SectionIndex";
 
+/** A section whose panels all rendered nothing (no data for this court) is not displayed. */
+const EMPTY_HIDDEN = "[&:not(:has(>:nth-child(2)))]:hidden";
+
 /** The court page's sections, in order; the sticky index points at these ids. */
 const COURT_SECTIONS = [
   { id: "court-overview", label: "Court" },
@@ -113,10 +116,11 @@ function Page() {
           <div className="mb-6">
             <CourtGlance courtId={id} courtName={view.title} />
           </div>
-          <SectionIndex items={COURT_SECTIONS} className="mt-0 mb-6" />
+          <SectionIndex items={COURT_SECTIONS} hideMissing className="mt-0 mb-6" />
           <div className="space-y-10">
             <Section
               id="court-overview"
+              className={EMPTY_HIDDEN}
               title="Court"
               description="Structure, appeal routes and courthouses."
             >
@@ -127,6 +131,7 @@ function Page() {
             </Section>
             <Section
               id="court-judges"
+              className={EMPTY_HIDDEN}
               title="Judges"
               description="The bench as the court and the Federal Judicial Center list it, and vacancies."
             >
@@ -136,6 +141,7 @@ function Page() {
             </Section>
             <Section
               id="court-caseload"
+              className={EMPTY_HIDDEN}
               title="Caseload"
               description="Filings, pending cases, appeals, criminal, bankruptcy and sentencing figures over time."
             >
@@ -151,6 +157,7 @@ function Page() {
             </Section>
             <Section
               id="court-cases"
+              className={EMPTY_HIDDEN}
               title="Cases & opinions"
               description="Dockets, filings, opinions, citations and oral arguments collected for this court."
             >
@@ -163,6 +170,7 @@ function Page() {
             </Section>
             <Section
               id="court-rules"
+              className={EMPTY_HIDDEN}
               title="Rules & resources"
               description="Local rules, orders, forms, fees and services."
             >
