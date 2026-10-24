@@ -84,7 +84,7 @@ function Body({ p, courtId }: { p: BankruptcyFilings; courtId: string }) {
   return (
     <PanelShell
       title="Bankruptcy filings"
-      subtitle={`Bankruptcy cases in the ${p.districtLabel ?? p.districtId} district, FY2008–June 2026 · FJC Integrated Database`}
+      subtitle={`Bankruptcy cases in the ${p.districtLabel ?? p.districtId} district, FY2008–June 2026`}
       record={{ dataset: "fjc_bankruptcy_districts", id: `district:${p.districtId}` }}
       aside={
         <>
@@ -97,7 +97,7 @@ function Body({ p, courtId }: { p: BankruptcyFilings; courtId: string }) {
               {other.text}
             </Link>
           ) : null}
-          <SourceLink href={SOURCE}>FJC bankruptcy data</SourceLink>
+          <SourceLink href={SOURCE}>Federal bankruptcy data</SourceLink>
         </>
       }
     >

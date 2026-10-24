@@ -23,7 +23,7 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
     kpis: [
       { dataset: "court_spine", label: "Courts in the court directory" },
       { dataset: "judges", label: "Judges in the judge directory" },
-      { dataset: "cl_docket_metadata", label: "Federal dockets with CourtListener metadata" },
+      { dataset: "cl_docket_metadata", label: "Federal dockets with recorded metadata" },
       { dataset: "congress_bills", label: "Bills and resolutions in Congress since 2003" },
       { dataset: "sec_enforcement_actions", label: "SEC enforcement actions" },
       { dataset: "agency_safety_cpsc_recalls_api", label: "CPSC recalls" },
@@ -114,7 +114,7 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
     kpis: [
       { dataset: "court_spine", label: "Courts in the court directory" },
       { dataset: "judges", label: "Judges in the judge directory" },
-      { dataset: "judge_profiles_fjc", label: "Article III judges (FJC Biographical Directory)" },
+      { dataset: "judge_profiles_fjc", label: "Article III judges" },
       { dataset: "judicial_nominations", label: "Nominations to federal judgeships, 1981–2026" },
       {
         dataset: "judicial_vacancies",
@@ -155,7 +155,7 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
   },
   litigation: {
     kpis: [
-      { dataset: "cl_docket_metadata", label: "Federal dockets with CourtListener metadata" },
+      { dataset: "cl_docket_metadata", label: "Federal dockets with recorded metadata" },
       { dataset: "mdls", label: "MDLs in the JPML collection" },
       { dataset: "firm_profiles", label: "Law firms on MDL master dockets" },
       { dataset: "settlement_claims_official", label: "Settlements confirmed on official pages" },

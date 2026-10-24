@@ -150,7 +150,7 @@ export function SourceResearch({ data, state, update }: WorkbenchProps) {
         <ul className="mt-4 space-y-2 text-[12px] text-muted-foreground">
           <li>
             FJC: Article III federal service history, including historical appointments. State,
-            bankruptcy and magistrate judges are outside this directory.
+ bankruptcy and magistrate judges are outside this directory.
           </li>
           <li>
             Census: July 1, 2025 state population estimates, Vintage 2025. Territories are outside

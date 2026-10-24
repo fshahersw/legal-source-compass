@@ -89,7 +89,7 @@ function DocketDocumentsPage() {
         { label: "Docket documents" },
       ]}
       title="Docket documents"
-      description="Documents of the cases tracked in DocketBird, one row per docket-sheet document. Counts are read from the connected corpus when the page loads."
+      description="Documents of the cases tracked, one row per docket-sheet document. Counts are read from the connected corpus when the page loads."
     >
       {info?.ready === false ? (
         <p className="text-[13px] text-muted-foreground">

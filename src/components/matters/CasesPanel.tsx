@@ -213,7 +213,7 @@ function CaseTable({
                 </div>
               ) : r.sourceUrl ? (
                 <div className="text-[11px]">
-                  <LinkOut href={r.sourceUrl}>CourtListener</LinkOut>
+                  <LinkOut href={r.sourceUrl}>Source</LinkOut>
                 </div>
               ) : null}
             </td>
@@ -557,7 +557,7 @@ function FjcCases({ mdl, total, capped }: { mdl: string; total: number | null; c
   if (!total) return null;
   return (
     <Panel
-      title="Dockets carrying this MDL number in the FJC Integrated Database"
+      title="Dockets carrying this MDL number in the federal caseload data"
       note="Historical/administrative: the FJC IDB records a multidistrict-litigation docket number on each of these dockets. It is a dated source association, not a current member census, a master designation or a transfer ruling."
       aside={
         <Chip tone="warning">
@@ -568,7 +568,7 @@ function FjcCases({ mdl, total, capped }: { mdl: string; total: number | null; c
     >
       {!open ? (
         <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-          Show FJC-associated dockets
+          Show associated dockets
         </Button>
       ) : (
         <div className="space-y-3">
@@ -615,7 +615,7 @@ function FjcCases({ mdl, total, capped }: { mdl: string; total: number | null; c
               {q.data.rows.length ? (
                 <CaseTable rows={q.data.rows} showRoute={false} />
               ) : (
-                <EmptyState>No FJC-associated docket matches.</EmptyState>
+                <EmptyState>No associated docket matches.</EmptyState>
               )}
               <RangePager
                 offset={q.data.offset}

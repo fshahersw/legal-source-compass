@@ -42,8 +42,8 @@ export function CitationsTab({ search, onSearch }: TabProps) {
       <CitationKpis query={map} />
       <Callout id="citations-scope">
         <strong className="font-semibold text-foreground">
-          The citation map is CourtListener&apos;s extraction from opinion text, not a census of
-          citations.
+          The citation map is the extraction from opinion text, not a census of
+ citations.
         </strong>{" "}
         {map.data ? <ExcludedSentence map={map.data} /> : null}
         {note?.caveats.find((c) => /coverage/i.test(c)) ?? ""} Courts are linked only where the

@@ -194,10 +194,10 @@ export function CourtDirectory({
         <Problem>No court matches these filters.</Problem>
       )}
       <p className="text-[11px] text-muted-foreground">
-        Courts and their levels as CourtListener records them (bulk data, snapshot 2026-09-30); a
-        court's state is shown when every courthouse CourtListener lists for it is in that state.
-        Counts are cases held here (opinion clusters with at least one opinion; cases CourtListener
-        blocks from search engines are never loaded).
+        Courts and their levels as the source records them (bulk data, snapshot 2026-09-30); a
+ court's state is shown when every courthouse the source lists for it is in that state.
+ Counts are cases held here (opinion clusters with at least one opinion; cases CourtListener
+ blocks from search engines are never loaded).
       </p>
     </div>
   );

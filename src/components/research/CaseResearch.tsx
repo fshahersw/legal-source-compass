@@ -392,7 +392,7 @@ export function CaseResearch({ data, cases, masters, state, search, update }: Wo
             <div className="mt-4 flex flex-wrap gap-3 text-[12px]">
               {chosen.courtlistener_docket_url && (
                 <Source href={chosen.courtlistener_docket_url}>
-                  Original CourtListener docket
+                  Original docket
                 </Source>
               )}
               <Link

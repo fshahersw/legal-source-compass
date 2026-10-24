@@ -36,8 +36,8 @@ function Page() {
   const navigate = Route.useNavigate();
   return (
     <AppShell
-      title="CourtListener collection"
-      description="What CourtListener's bulk files hold: dockets by year, court level, state and nature of suit; citation flows between courts; the most-cited opinions and how later opinions describe them; citations CourtListener could not match to a case; financial-disclosure report counts; and which database tables have no public bulk file. Counts of rows in the collection, not complete court totals."
+      title="Source collection"
+      description="What the bulk files hold: dockets by year, court level, state and nature of suit; citation flows between courts; the most-cited opinions and how later opinions describe them; citations could not match to a case; financial-disclosure report counts; and which database tables have no public bulk file. Counts of rows in the collection, not complete court totals."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Courts", to: "/courts" },

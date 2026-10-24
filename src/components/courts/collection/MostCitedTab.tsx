@@ -72,7 +72,7 @@ export function MostCitedTab({ search, onSearch }: TabProps) {
       <Panel
         id="cited-table"
         title="The most-cited opinions"
-        subtitle="The opinion clusters CourtListener counts as cited most often. Select a case for its citing courts and decades."
+        subtitle="The opinion clusters the source counts as cited most often. Select a case for its citing courts and decades."
       >
         <QueryPanel
           query={query}
@@ -452,11 +452,11 @@ function CitedDetailBody({ row, d }: { row: TopCited; d: TopCitedDetail }) {
         </p>
         {row.url ? (
           <p>
-            <SourceLink href={row.url}>Open the opinion on CourtListener</SourceLink>
+            <SourceLink href={row.url}>Open the source opinion</SourceLink>
           </p>
         ) : (
           <p className="text-muted-foreground">
-            No CourtListener link is recorded for this opinion.
+            No link is recorded for this opinion.
           </p>
         )}
       </div>

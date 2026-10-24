@@ -18,7 +18,7 @@ export const OpinionBody = memo(function OpinionBody({ opinion }: { opinion: Opi
   if (!opinion.text.trim())
     return (
       <p className="text-[13px] text-muted-foreground">
-        CourtListener holds no text for this opinion.
+        Source holds no text for this opinion.
       </p>
     );
   return (
@@ -62,7 +62,7 @@ export const OpinionBody = memo(function OpinionBody({ opinion }: { opinion: Opi
                 href={courtListenerCaseUrl(s.clusterId)}
                 target="_blank"
                 rel="noreferrer"
-                title="Not held here: opens CourtListener"
+                title="Not held here: opens the source"
                 className="text-foreground underline decoration-dotted decoration-muted-foreground underline-offset-2 hover:text-primary"
               >
                 {s.text}

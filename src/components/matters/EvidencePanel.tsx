@@ -207,10 +207,10 @@ export function EvidencePanel({ payload }: { payload: MatterOverviewPayload }) {
               <Chip>No profile link</Chip>
             )}
           </Fact>
-          <Fact label="FJC judge id (jid / nid)">
+          <Fact label="Federal judge id (jid / nid)">
             {j.fjcJid || j.fjcNid ? `${j.fjcJid ?? "—"} / ${j.fjcNid ?? "—"}` : null}
           </Fact>
-          <Fact label="CourtListener person id">{j.clPersonId}</Fact>
+          <Fact label="Source person id">{j.clPersonId}</Fact>
           <Fact label="Evidence">{j.evidenceNote ?? j.linkBasis}</Fact>
         </dl>
       </Panel>

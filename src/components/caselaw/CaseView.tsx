@@ -104,8 +104,8 @@ function OpinionTab({
   if (!load || load.status === "not_stored")
     return (
       <p className="rounded-md border border-border px-3 py-2 text-[13px] text-muted-foreground">
-        The text of this opinion is not in the reading store yet. Use the CourtListener link above
-        to read it there.
+        The text of this opinion is not in the reading store yet. Use the link above
+ to read it there.
       </p>
     );
   if (load.status !== "ok")
@@ -229,7 +229,7 @@ export function CaseView({
         <Button asChild size="sm" variant="outline">
           <a href={r.courtListenerUrl} target="_blank" rel="noreferrer">
             <ExternalLink className="mr-1 size-3.5" />
-            CourtListener
+            Source
           </a>
         </Button>
         <Button

@@ -76,7 +76,7 @@ function Body({ d }: { d: JudgeDisclosures }) {
       record={{ dataset: "clb_judge_disclosures", id: String(d.personId) }}
       aside={
         <SourceLink href={`https://www.courtlistener.com/person/${d.personId}/`}>
-          CourtListener person page
+          Source person page
         </SourceLink>
       }
     >
@@ -251,10 +251,10 @@ function Body({ d }: { d: JudgeDisclosures }) {
       ) : null}
       <CollapsibleSection
         title="Reports"
-        summary={`${fmtInt(d.reportList.filter((r) => r.pdf).length)} with CourtListener's copy linked`}
+        summary={`${fmtInt(d.reportList.filter((r) => r.pdf).length)} with the copy linked`}
       >
         <MiniTable<ReportRow>
-          caption="Each report CourtListener attributes to this person"
+          caption="Each report attributes to this person"
           rows={d.reportList}
           rowKey={(r) => String(r.id)}
           limit={6}

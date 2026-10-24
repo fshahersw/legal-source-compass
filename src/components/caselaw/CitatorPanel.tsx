@@ -36,7 +36,7 @@ function CaseLink({ id, name, held }: { id: number | null; name: string | null; 
         target="_blank"
         rel="noreferrer"
         className="inline-flex items-center gap-0.5 hover:text-primary hover:underline"
-        title="Not held here: opens CourtListener"
+        title="Not held here: opens the source"
       >
         {label}
         <ExternalLink className="size-3 shrink-0 text-muted-foreground" aria-hidden />
@@ -179,9 +179,9 @@ function CitatorBody({ c, clCount }: { c: Citator; clCount: number | null }) {
         ))}
       </dl>
       <p className="text-[11px] text-muted-foreground">
-        From CourtListener's citation map (snapshot 2026-09-30): opinions whose text cites this case
-        and that CourtListener could match to it. Blocked cases and the case's own opinions are not
-        counted. A citation is not a treatment: it can follow, distinguish or criticise.
+        From the citation map (snapshot 2026-09-30): opinions whose text cites this case
+ and that could match to it. Blocked cases and the case's own opinions are not
+ counted. A citation is not a treatment: it can follow, distinguish or criticise.
       </p>
       {c.citedByOpinions > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -257,7 +257,7 @@ function CitatorBody({ c, clCount }: { c: Citator; clCount: number | null }) {
                   </th>
                   <th
                     className="px-3 py-1 text-right font-medium"
-                    title="CourtListener citation count of the citing case"
+                    title="Source citation count of the citing case"
                   >
                     Cited by
                   </th>
@@ -297,8 +297,8 @@ function CitatorBody({ c, clCount }: { c: Citator; clCount: number | null }) {
             </table>
           </div>
           <p className="border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
-            Listed: up to 200 citing cases, the most-cited first (CourtListener's count of the
-            citing case), then by how often they cite this case, then newest.
+            Listed: up to 200 citing cases, the most-cited first (the count of the
+ citing case), then by how often they cite this case, then newest.
           </p>
         </section>
       ) : null}
@@ -329,8 +329,8 @@ function CitatorBody({ c, clCount }: { c: Citator; clCount: number | null }) {
           </p>
         )}
         <p className="border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
-          Parentheticals as written by the citing courts (CourtListener's extraction), one per group
-          of similar wording, highest-scored first.
+          Parentheticals as written by the citing courts (the extraction), one per group
+ of similar wording, highest-scored first.
         </p>
       </section>
     </div>
@@ -348,7 +348,7 @@ export function AuthoritiesPanel({ id }: { id: number }) {
     return (
       <p className="rounded-md border border-border px-3 py-2 text-[13px] text-muted-foreground">
         No case citations are linked in this case's stored text (only citations CourtListener
-        resolved to a case are listed).
+ resolved to a case are listed).
       </p>
     );
   const rows = filter === "held" ? list.filter((a) => a.held) : list;
@@ -411,10 +411,10 @@ export function AuthoritiesPanel({ id }: { id: number }) {
         </table>
       </div>
       <p className="border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
-        From the citation links CourtListener placed in this case's opinion text, in date order.
-        Links counts the links to each case (when a combined text repeats the separate opinions, it
-        is counted once). Citations CourtListener could not resolve to a case, statutes and other
-        sources are not listed.
+        From the citation links placed in this case's opinion text, in date order.
+ Links counts the links to each case (when a combined text repeats the separate opinions, it
+ is counted once). Citations could not resolve to a case, statutes and other
+ sources are not listed.
       </p>
     </section>
   );

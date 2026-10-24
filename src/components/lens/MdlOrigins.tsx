@@ -115,7 +115,7 @@ function Body({ h }: { h: MdlHierarchy }) {
         <div className="min-w-0">
           <h2 className="text-[12.5px] font-semibold">Member actions and where they started</h2>
           <p className="text-[11px] text-muted-foreground">
-            The matter registry's member dockets joined to CourtListener by exact docket id
+            The matter registry's member dockets joined to by exact docket id
           </p>
         </div>
         <p className="m-0 text-[11px] text-muted-foreground">
@@ -242,10 +242,10 @@ function Body({ h }: { h: MdlHierarchy }) {
       </div>
       <footer className="border-t border-border/70 px-3 py-2 text-[10.5px] leading-4 text-muted-foreground">
         Membership is only what the registry records (JPML schedules and conditional transfer
-        orders, the master docket's party list, provider-reported links and firm crosswalks); it is
-        never inferred from a caption, product, judge or firm. Most member cases are filed directly
-        in the transferee court and have no other court of origin. Judges are CourtListener
-        assignments by exact person id.
+ orders, the master docket's party list, provider-reported links and firm crosswalks); it is
+ never inferred from a caption, product, judge or firm. Most member cases are filed directly
+ in the transferee court and have no other court of origin. Judges are CourtListener
+ assignments by exact person id.
       </footer>
     </section>
   );

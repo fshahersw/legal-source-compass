@@ -82,7 +82,7 @@ export function JudgeResearch({ data, cases, state, search, update }: WorkbenchP
               ))}
             </select>
           </Field>
-          <Field label="Search the FJC service directory">
+          <Field label="Search the federal service directory">
             <input
               className={control}
               value={q}
@@ -139,8 +139,8 @@ export function JudgeResearch({ data, cases, state, search, update }: WorkbenchP
         </details>
         <p className="mt-3 text-[11px] text-muted-foreground">
           Biographies link to catalog cases only when the full name has one exact match after
-          normalizing punctuation, spacing, and case. Initials and suffixes remain significant.
-          State and magistrate judges can still have catalog analysis without an FJC biography.
+ normalizing punctuation, spacing, and case. Initials and suffixes remain significant.
+ State and magistrate judges can still have catalog analysis without an federal biography.
         </p>
       </Panel>
       {selectedName && (
@@ -162,7 +162,7 @@ export function JudgeResearch({ data, cases, state, search, update }: WorkbenchP
                 Explore this judge’s saved cases
               </button>
               <Source href="https://www.fjc.gov/history/judges/biographical-directory-article-iii-federal-judges-export">
-                FJC source and coverage
+                Federal source and coverage
               </Source>
               <Button
                 size="sm"

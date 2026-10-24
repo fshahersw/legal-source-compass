@@ -121,7 +121,7 @@ function Panel({ f }: { f: JudgeMdlFlows }) {
         <h2 className="font-sans text-sm font-semibold">
           MDL transfers{" "}
           <span className="font-normal text-muted-foreground">
-            · judge to judge, by exact CourtListener person
+            · judge to judge, by exact person
           </span>
         </h2>
         {f.transferee ? (
@@ -161,9 +161,9 @@ function Panel({ f }: { f: JudgeMdlFlows }) {
       </div>
       <footer className="border-t border-border/70 px-4 py-2 text-[11px] leading-4 text-muted-foreground">
         A docket counts when the matter registry ties it to an MDL as an originating docket (JPML
-        schedules, conditional transfer orders or FJC records); judges are the CourtListener
-        assignments on the originating and master dockets. Counts cover the MDLs the registry holds,
-        not every transfer.
+ schedules, conditional transfer orders or federal records); judges are the CourtListener
+ assignments on the originating and master dockets. Counts cover the MDLs the registry holds,
+ not every transfer.
       </footer>
     </section>
   );

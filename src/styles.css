@@ -11,11 +11,11 @@
  * accent (the chart slot-1 blue), near-black primary, a light sidebar, and status colours as soft pill pairs.
  * All colours are oklch tokens defined here for light (:root) and dark (.dark). Never hardcode colours in components.
  *
- * Type scale (utilities, 4 px rhythm): text-title 28/34 semibold, tight tracking (page title, one H1 per page) ·
- * text-heading 20/28 semibold (section heading) · text-label 15/22 medium (card title) · text-body 14/22 (reading
- * text) · text-meta 12/16 (muted meta, footers) · text-kpi 32/36 and text-kpi-sm 28/32 semibold for KPI values (sans;
+ * Type scale (utilities, 4 px rhythm): text-title 22/28 semibold, tight tracking (page title, one H1 per page) ·
+ * text-heading 17/24 semibold (section heading) · text-label 14/20 medium (card title) · text-body 13/20 (reading
+ * text) · text-meta 11/16 (muted meta, footers) · text-kpi 26/32 and text-kpi-sm 22/28 semibold for KPI values (sans;
  * pair with tabular-nums). Monospace only for ids and citations. Utilities `measure` (prose at most 68ch),
- * `stack-section` (32 px between sections) and `stack-block` (48 px between page blocks) set the vertical rhythm.
+ * `stack-section` (24 px between sections) and `stack-block` (36 px between page blocks) set the vertical rhythm.
  *
  * Chart surfaces: src/components/charts/palette.ts maps chart chrome onto --surface (plot surface), --border (grid),
  * --muted-foreground (axes), --foreground (ink), --muted (diverging midpoint) and the map ramp --map-low → --map-high;
@@ -23,28 +23,28 @@
  */
 
 @theme {
-  --text-title: 1.75rem;
-  --text-title--line-height: 2.125rem;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.75rem;
   --text-title--letter-spacing: -0.024em;
   --text-title--font-weight: 600;
-  --text-heading: 1.25rem;
-  --text-heading--line-height: 1.75rem;
+  --text-heading: 1.0625rem;
+  --text-heading--line-height: 1.5rem;
   --text-heading--letter-spacing: -0.016em;
   --text-heading--font-weight: 600;
-  --text-label: 0.9375rem;
-  --text-label--line-height: 1.375rem;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.25rem;
   --text-label--letter-spacing: -0.006em;
   --text-label--font-weight: 500;
-  --text-body: 0.875rem;
-  --text-body--line-height: 1.375rem;
-  --text-meta: 0.75rem;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.25rem;
+  --text-meta: 0.6875rem;
   --text-meta--line-height: 1rem;
-  --text-kpi: 2rem;
-  --text-kpi--line-height: 2.25rem;
+  --text-kpi: 1.625rem;
+  --text-kpi--line-height: 2rem;
   --text-kpi--letter-spacing: -0.03em;
   --text-kpi--font-weight: 600;
-  --text-kpi-sm: 1.75rem;
-  --text-kpi-sm--line-height: 2rem;
+  --text-kpi-sm: 1.375rem;
+  --text-kpi-sm--line-height: 1.75rem;
   --text-kpi-sm--letter-spacing: -0.025em;
   --text-kpi-sm--font-weight: 600;
 }
@@ -399,12 +399,12 @@
 @utility stack-section {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 @utility stack-block {
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 2.25rem;
 }
 
 /* Small-caps section label used across views. */
@@ -462,4 +462,9 @@
   &[data-status="active"] > svg {
     color: var(--color-sidebar-accent-foreground);
   }
+}
+
+/* Header photo backdrop: the photo sits right; a surface gradient keeps the title readable in both modes. */
+@utility header-backdrop-fade {
+  background: linear-gradient(90deg, var(--surface) 0%, color-mix(in oklab, var(--surface) 92%, transparent) 38%, color-mix(in oklab, var(--surface) 35%, transparent) 75%, color-mix(in oklab, var(--surface) 10%, transparent) 100%);
 }

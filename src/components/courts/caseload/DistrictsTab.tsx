@@ -63,7 +63,7 @@ export function DistrictsTab({ search, onSearch }: TabProps) {
     );
   const list = districts.data;
   if (!list?.rows.length)
-    return <StateNote>The FJC district caseload has not been published yet.</StateNote>;
+    return <StateNote>The district caseload has not been published yet.</StateNote>;
 
   const nat = national.data ?? null;
   const cur = nat ? yearOf(nat.years, nat.latestFy) : null;
@@ -272,12 +272,12 @@ function DistrictsTable({
       }
       footnote={
         <>
-          FJC Integrated Database counts; the AO&apos;s published tables remain the reference for
-          official totals (terminations match them exactly, filings can differ). Median days is over
-          cases terminated in the year. Class action, pro se plaintiff and product liability are
-          shares of the year&apos;s filings (pro se: filings with a recorded status); trial is the
-          share of terminations by trial judgment. The fiscal year in progress is not shown here and
-          never ranked.
+          Federal caseload data counts; the AO&apos;s published tables remain the reference for
+ official totals (terminations match them exactly, filings can differ). Median days is over
+ cases terminated in the year. Class action, pro se plaintiff and product liability are
+ shares of the year&apos;s filings (pro se: filings with a recorded status); trial is the
+ share of terminations by trial judgment. The fiscal year in progress is not shown here and
+ never ranked.
         </>
       }
     >

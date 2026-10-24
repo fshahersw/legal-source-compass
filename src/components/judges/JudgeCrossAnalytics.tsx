@@ -213,7 +213,7 @@ function Dashboard({ data }: { data: Data }) {
       <p className="text-xs leading-relaxed text-muted-foreground">
         Sitting Article III judges from the{" "}
         <a href={FJC} target="_blank" rel="noreferrer" className="underline underline-offset-2">
-          FJC Biographical Directory
+          Federal Biographical Directory
         </a>{" "}
         joined to JPML pending MDL reports (as of {p.asOf}) and the{" "}
         <a
@@ -224,8 +224,8 @@ function Dashboard({ data }: { data: Data }) {
         >
           JPML terminated-MDL report through FY2025
         </a>
-        . Appointing president and party are as recorded by the FJC for the judge’s current court.
-        Years are measured from the first Article III commission.
+        . Appointing president and party are as recorded by the federal for the judge’s current court.
+ Years are measured from the first Article III commission.
       </p>
       {partial ? (
         <p
@@ -468,8 +468,8 @@ function MethodNotes({
         {fmtInt(p.unassignedPending.length)} pending MDLs have no matched judge profile.
       </li>
       <li>
-        Bench counts are not divided by authorized judgeships: the FJC export and the US Courts
-        judgeship table have different as-of dates, so a vacancy rate would mix periods.
+        Bench counts are not divided by authorized judgeships: the federal export and the US Courts
+ judgeship table have different as-of dates, so a vacancy rate would mix periods.
       </li>
       <li>
         Each MDL number links to its{" "}

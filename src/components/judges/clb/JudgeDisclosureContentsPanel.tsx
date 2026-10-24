@@ -80,7 +80,7 @@ function Body({ d }: { d: DisclosureItems }) {
       record={{ dataset: "clb_judge_disclosure_items", id: String(d.personId) }}
       aside={
         <SourceLink href="https://www.courtlistener.com/financial-disclosures/">
-          CourtListener financial disclosures
+          Source financial disclosures
         </SourceLink>
       }
     >
@@ -133,9 +133,9 @@ function Body({ d }: { d: DisclosureItems }) {
           role="note"
           className="mx-3 my-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs leading-5"
         >
-          CourtListener attributes to this person reports filed under more than one circuit code.
-          They may belong to more than one judge, so no items are listed; the counts above include
-          every attributed report.
+          Source attributes to this person reports filed under more than one circuit code.
+ They may belong to more than one judge, so no items are listed; the counts above include
+ every attributed report.
         </p>
       ) : (
         <ListedItems d={d} />

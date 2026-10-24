@@ -58,7 +58,7 @@ export function SecuritiesPage() {
     <div className="space-y-4">
       <Callout>
         Figures from the public pages of the{" "}
-        <strong>Stanford Securities Class Action Clearinghouse</strong> (with Cornerstone Research).
+        <strong>the securities class action research source</strong> (with Cornerstone Research).
         SCAC counts one <strong>filing</strong> per underlying event, which can group several
         complaints. The Clearinghouse is restructuring and its data stop on{" "}
         <strong>28 July 2025</strong>, so 2025 is a partial year. Per-case pages need a SCAC account

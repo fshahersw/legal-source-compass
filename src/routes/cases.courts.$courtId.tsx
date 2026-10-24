@@ -44,7 +44,7 @@ function Page() {
   return (
     <AppShell
       title={name}
-      description="Decisions held here from CourtListener's bulk data, by year filed."
+      description="Decisions held here, by year filed."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Law & regulation", to: "/law" },

@@ -97,7 +97,7 @@ function Body({
       subtitle="Federal Judicial Center appointment record, Congress.gov nomination actions (1981 on) and Senate roll-call votes (1989 on)"
       aside={
         record ? (
-          <SourceLink href={`https://www.fjc.gov/node/${record.nid}`}>FJC entry</SourceLink>
+          <SourceLink href={`https://www.fjc.gov/node/${record.nid}`}>Federal entry</SourceLink>
         ) : null
       }
     >
@@ -127,7 +127,7 @@ function Body({
       {!nominations.length && earliest && earliest < "1981-01-01" ? (
         <p className="px-3 pb-3 text-[11px] text-muted-foreground">
           Congress.gov nomination records start in 1981; the appointment fields above are the
-          FJC&apos;s.
+ FJC&apos;s.
         </p>
       ) : null}
       {nominations.length || !record ? null : earliest && earliest >= "1981-01-01" ? (

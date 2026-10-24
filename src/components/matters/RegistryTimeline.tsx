@@ -294,13 +294,13 @@ function EntryRow({
           {entry.documentCount !== null && entry.documentCount > 0 ? (
             <Chip
               tone="success"
-              title="Documents CourtListener lists for this entry (attachments included)."
+              title="Documents the source lists for this entry (attachments included)."
             >
               {entry.documentCount} {entry.documentCount === 1 ? "document" : "documents"} listed
             </Chip>
           ) : null}
           {entry.documentCount !== null && entry.documentCount > 0 && recap ? (
-            <Chip title="CourtListener's RECAP archive of PACER documents; not the firm's PDF archive.">
+            <Chip title="The RECAP archive of PACER documents; not the firm's PDF archive.">
               {recap}
             </Chip>
           ) : null}
@@ -313,7 +313,7 @@ function EntryRow({
             </Chip>
           ) : null}
           {entry.provider && entry.provider !== "courtlistener" ? (
-            <Chip title="This entry comes from the source named here, not from CourtListener.">
+            <Chip title="This entry comes from the source named here, not.">
               {entryProviderLabel(entry.provider)}
             </Chip>
           ) : null}
@@ -439,11 +439,11 @@ function CoverageNote({ payload }: { payload: MatterOverviewPayload }) {
           </p>
           <p>
             Docket text is shown exactly as printed. Entries come from the master docket’s
-            CourtListener record or, where CourtListener does not publish, from GovInfo or the court
-            site; those alternate-provider lists are partial by design. Text indicating sealing,
-            restriction, in camera, ex parte or redaction is withheld. Such entries retain their
-            number, date and document count; sealed documents are not listed. Source-listed
-            documents are separate from PDFs the verified archive can serve.
+ CourtListener record or, where does not publish, from GovInfo or the court
+ site; those alternate-provider lists are partial by design. Text indicating sealing,
+ restriction, in camera, ex parte or redaction is withheld. Such entries retain their
+ number, date and document count; sealed documents are not listed. Source-listed
+ documents are separate from PDFs the verified archive can serve.
           </p>
           {captures.length ? (
             <ul className="space-y-1">

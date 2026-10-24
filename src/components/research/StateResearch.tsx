@@ -496,9 +496,9 @@ export function StateResearch({ data, cases, state, update }: WorkbenchProps) {
         </div>
         <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
           Table C-5 excludes several case categories and suppresses medians when fewer than 10 cases
-          are reported. Its population differs from Table C. The FJC headcount includes senior
-          district judges with a recorded open service interval as of September 30, 2025; it
-          measures people, not seats or workload capacity.
+ are reported. Its population differs from Table C. The headcount includes senior
+ district judges with a recorded open service interval as of September 30, 2025; it
+ measures people, not seats or workload capacity.
         </p>
       </Panel>
     </div>

@@ -86,7 +86,7 @@ export function SchemaTab({ search, onSearch }: TabProps) {
             value: s.count,
             tone: LOAD_TONE[s.label] ?? "none",
           }))}
-          caption="Every table in CourtListener's published schema, by whether it has a public bulk file and whether this project loads it."
+          caption="Every table in the published schema, by whether it has a public bulk file and whether this project loads it."
         />
       ) : null}
       <KeyTakeaways
@@ -99,7 +99,7 @@ export function SchemaTab({ search, onSearch }: TabProps) {
       <Panel
         id="schema-tables"
         title="Tables in the published schema"
-        subtitle="Every table CourtListener's database schema defines, whether it has a public bulk file, and how this project loads it. Select a table for its columns."
+        subtitle="Every table the database schema defines, whether it has a public bulk file, and how this project loads it. Select a table for its columns."
         footnote="Loaded here means this project holds a copy of the bulk file: all columns as text, or selected columns only (long text is reduced to lengths or presence flags). Rows loaded and compressed size are for the table's bulk file."
       >
         <QueryPanel
@@ -153,7 +153,7 @@ function NotInBulk({
               <p>{nb.statement}</p>
               <p className="font-medium">
                 No attorney, law-firm, party, role, docket-entry or RECAP-document statistics can be
-                derived from CourtListener&apos;s bulk data.
+ derived.
               </p>
               <ul
                 className="flex flex-wrap gap-1.5"
