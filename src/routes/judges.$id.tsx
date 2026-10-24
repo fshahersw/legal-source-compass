@@ -68,6 +68,7 @@ function Page() {
       extra={() => (
         <>
           <ProfileSections
+            after={[{ id: "entity-record", label: "Record" }]}
             sections={[
               {
                 id: "judge-career",

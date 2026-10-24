@@ -110,7 +110,12 @@ export function EntityPage({
     >
       {v.qualification ? (
         <div className="mb-3 flex items-center text-xs text-muted-foreground">
-          <InfoPopover label="About this record" showLabel align="start" contentClassName="max-w-md">
+          <InfoPopover
+            label="About this record"
+            showLabel
+            align="start"
+            contentClassName="max-w-md"
+          >
             <p className="whitespace-pre-wrap">{v.qualification}</p>
           </InfoPopover>
         </div>
@@ -169,10 +174,19 @@ export function EntityPage({
         </p>
       ) : null}
       {extra ? extra(data.raw) : null}
+      {extra && (rest.length || docket || v.sections.length || v.text) ? (
+        <h2 id="entity-record" className="mt-10 mb-3 scroll-mt-16 text-heading text-foreground">
+          Record details
+        </h2>
+      ) : null}
       {nav.length > 1 ? (
         <nav
-          aria-label="On this page"
-          className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background px-1 py-2"
+          aria-label={extra ? "Record details" : "On this page"}
+          className={
+            extra
+              ? "-mx-1 mb-4 flex flex-wrap gap-1 px-1"
+              : "sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background px-1 py-2"
+          }
         >
           {nav.map((n) => (
             <a

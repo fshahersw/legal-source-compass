@@ -22,11 +22,18 @@ export type ProfileSection = {
 /** Hidden while the section holds nothing but its own header. */
 const EMPTY_HIDDEN = "[&:not(:has(>:nth-child(2)))]:hidden";
 
-export function ProfileSections({ sections }: { sections: readonly ProfileSection[] }) {
+export function ProfileSections({
+  sections,
+  after = [],
+}: {
+  sections: readonly ProfileSection[];
+  /** Index entries for blocks the page renders after these sections (e.g. the record details), when present. */
+  after?: readonly { id: string; label: string }[];
+}) {
   return (
     <>
       <SectionIndex
-        items={sections.map((s) => ({ id: s.id, label: s.label ?? s.title }))}
+        items={[...sections.map((s) => ({ id: s.id, label: s.label ?? s.title })), ...after]}
         hideMissing
         className="mt-0 mb-6"
       />

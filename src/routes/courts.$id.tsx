@@ -104,6 +104,7 @@ function Page() {
             <CourtGlance courtId={id} courtName={view.title} />
           </div>
           <ProfileSections
+            after={[{ id: "entity-record", label: "Record" }]}
             sections={[
               {
                 id: "court-overview",
