@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { scaleBand, scaleLinear, scalePoint } from "d3-scale";
 import { arc as d3arc, line as d3line } from "d3-shape";
 import { divergingDomain, rebase, stackLayers, sunburstLayout, type Series, type StackRow, type TreeNode } from "./maths";
-import { seriesVar } from "../palette";
+import { chartTokens, seriesVar } from "../palette";
 
 const W = 640;
 const pct = (v: number) => `${v >= 0 ? "+" : ""}${Math.round(v * 100)}%`;
@@ -21,7 +21,7 @@ export function IndexChart({ series, height = 280 }: { series: readonly Series[]
     .x((p) => x(p.date) ?? 0)
     .y((p) => y(p.value ?? 0));
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label={`Change since ${base}`}
+    <svg style={chartTokens} viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label={`Change since ${base}`}
       onMouseMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
         const px = ((e.clientX - r.left) / r.width) * W;
@@ -55,7 +55,7 @@ export function StackedBarsOverTime({ rows, keys, labels, height = 260 }: { rows
   const y = scaleLinear().domain([0, max || 1]).nice().range([height - 40, 10]);
   return (
     <figure>
-      <svg viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label="Stacked totals by period">
+      <svg style={chartTokens} viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label="Stacked totals by period">
         {y.ticks(4).map((t) => (
           <g key={t}>
             <line x1={40} x2={W - 10} y1={y(t)} y2={y(t)} stroke="var(--border)" />
@@ -69,7 +69,7 @@ export function StackedBarsOverTime({ rows, keys, labels, height = 260 }: { rows
         )))}
         {rows.map((r) => <text key={r.period} x={(x(r.period) ?? 0) + x.bandwidth() / 2} y={height - 24} textAnchor="middle" className="fill-muted-foreground text-[10px]">{r.period}</text>)}
       </svg>
-      <figcaption className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+      <figcaption style={chartTokens} className="flex flex-wrap gap-3 text-xs text-muted-foreground">
         {keys.slice(0, 6).map((k, i) => <span key={k} className="inline-flex items-center gap-1"><span className="size-2.5 rounded-sm" style={{ background: seriesVar(i) }} />{labels?.[k] ?? k}</span>)}
       </figcaption>
     </figure>
@@ -81,7 +81,7 @@ export function DivergingDots({ items, baseline, baselineLabel, format = (v: num
   const height = items.length * row + 30;
   const x = scaleLinear().domain(divergingDomain(items.map((i) => i.value), baseline)).range([170, W - 50]);
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label={`Values against ${baselineLabel}`}>
+    <svg style={chartTokens} viewBox={`0 0 ${W} ${height}`} className="w-full" role="img" aria-label={`Values against ${baselineLabel}`}>
       <line x1={x(baseline)} x2={x(baseline)} y1={14} y2={height - 6} stroke="var(--foreground)" opacity={0.5} />
       <text x={x(baseline)} y={10} textAnchor="middle" className="fill-muted-foreground text-[10px]">{baselineLabel} {format(baseline)}</text>
       {items.map((it, i) => {
@@ -116,7 +116,7 @@ export function Sunburst({ root, size = 360 }: { root: TreeNode; size?: number }
   const total = nodes[0]?.value ?? 0;
   const shown = focus ? nodes.find((n) => n.data.name === focus && n.depth === 1) : undefined;
   return (
-    <svg viewBox={`${-r} ${-r} ${size} ${size}`} className="mx-auto w-full max-w-sm" role="img" aria-label={`Breakdown of ${root.name}`}>
+    <svg style={chartTokens} viewBox={`${-r} ${-r} ${size} ${size}`} className="mx-auto w-full max-w-sm" role="img" aria-label={`Breakdown of ${root.name}`}>
       {nodes.filter((n) => n.depth > 0).map((n, i) => {
         const t = top(n);
         const slot = Math.min(5, tops.indexOf(t!));
