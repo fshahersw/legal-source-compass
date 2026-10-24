@@ -175,7 +175,7 @@ describe("agency profile data states", () => {
   });
 
   it("distinguishes failed document requests from a valid empty filter", () => {
-    mocks.tab = "Rules & notices";
+    mocks.tab = "Documents";
     mocks.results["agency-docs"] = { error: new Error("read failed") };
     expect(render()).toContain("Retry agency documents");
     expect(render()).not.toContain("No matching documents");
