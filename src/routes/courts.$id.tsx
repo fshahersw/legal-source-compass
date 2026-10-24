@@ -113,7 +113,7 @@ function Page() {
           <div className="mb-6">
             <CourtGlance courtId={id} courtName={view.title} />
           </div>
-          <SectionIndex items={COURT_SECTIONS} className="mb-6" />
+          <SectionIndex items={COURT_SECTIONS} className="mt-0 mb-6" />
           <div className="space-y-10">
             <Section
               id="court-overview"
