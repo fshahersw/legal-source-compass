@@ -99,7 +99,7 @@ export type JudgePeople = {
   personId: number;
   name: string;
   fjcId: number | null;
-  born: string | null;
+  birthYear: number | null;
   died: string | null;
   positions: Position[];
   positionsTotal: number;
@@ -238,7 +238,7 @@ export function parseJudgePeople(raw: unknown, personId: number): JudgePeople | 
     personId,
     name,
     fjcId: count(p["fjc_id"]),
-    born: date(p["born"]),
+    birthYear: yearOf(p["birth_year"], 1700),
     died: date(p["died"]),
     positions,
     positionsTotal: Math.max(count(p["positions_total"]) ?? positions.length, positions.length),

@@ -18,7 +18,7 @@ const PEOPLE = {
   person_id: 45,
   name: "Ronnie Abrams",
   fjc_id: 3419,
-  born: "1968",
+  birth_year: 1968,
   positions_total: 3,
   aba_ratings: [
     {
@@ -92,7 +92,7 @@ describe("parseJudgePeople", () => {
     expect(j.aba).toEqual([
       { id: 2, code: "q", rating: "Qualified", year: 2011, retrievedAt: "2026-10-24T01:33:57Z" },
     ]);
-    expect(j.born).toBe("1968");
+    expect(j.birthYear).toBe(1968);
   });
 
   it("rejects a record for another person id", () => {

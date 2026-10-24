@@ -160,6 +160,14 @@ def verify_search(report: dict) -> None:
 
     for r in b["rows"]:
         pr = r["item"]["profile"]
+        if pr.get("kind") == "status":
+            for pt in pr["points"]:
+                for k in ("published", "unpublished", "combined"):
+                    if pt.get(k):
+                        check(pt[k])
+                if pt.get("combined") and (pt["published"]["count"] + pt["unpublished"]["count"] == pt["combined"]["count"]) != pt["sum_equals_combined"]:
+                    fails.append(["status_sum_flag", pt["year"]])
+            continue
         for pt in pr.get("points", []):
             check(pt)
             if "share_pct" in pt and pt.get("total"):

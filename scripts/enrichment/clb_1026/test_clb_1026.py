@@ -120,7 +120,7 @@ class DisclosureTests(unittest.TestCase):
 class SearchCountTests(unittest.TestCase):
     def test_plan_has_every_query_once(self):
         plan = sp.plan()
-        self.assertEqual(len(plan), len(sp.YEARS) * (1 + len(sp.TOPICS)) + len(sp.APPELLATE) * (1 + len(sp.TOPICS)) + 1 + len(sp.TOPICS))
+        self.assertEqual(len(plan), len(sp.YEARS) * (1 + len(sp.TOPICS)) + len(sp.APPELLATE) * (1 + len(sp.TOPICS)) + 2 * len(sp.YEARS) + 1 + len(sp.TOPICS))
         self.assertEqual(len({p["key"] for p in plan}), len(plan))
 
     def test_queries_are_exact_and_round_trip_through_the_url(self):
@@ -134,6 +134,9 @@ class SearchCountTests(unittest.TestCase):
         c = plan["court:ca9:product_liability"]
         self.assertEqual(c["q"], 'court_id:ca9 AND ("products liability" OR "product liability") AND dateFiled:[2000-01-01 TO 2025-12-31]')
         self.assertNotIn("q=", plan["oral:all"]["url"])
+        st = urllib.parse.parse_qs(plan["status:unpublished:2020"]["url"].split("?", 1)[1])
+        self.assertEqual(st.get("stat_Unpublished"), ["on"])
+        self.assertNotIn("stat_Published", st)
 
     def test_share_and_rank(self):
         self.assertEqual(bsc.share(7, 200000), 0.004)
@@ -181,6 +184,10 @@ class SearchCountTests(unittest.TestCase):
         self.assertTrue(all(p["search_url"].startswith("https://www.courtlistener.com/?") for p in topic["points"]))
         self.assertEqual(by["court:ca9"]["item"]["links"][0]["url"], "/courts/ca9")
         self.assertNotIn("/courts/ca1", json.dumps(by["court:ca1"]["item"]["links"]))  # not in the stub directory
+        st = by["status:by_year"]["item"]["profile"]
+        # synthetic published and unpublished counts (100-106 each) do not add up to the synthetic total: flagged, not adjusted
+        self.assertEqual(len(st["years_sum_not_equal"]), len(sp.YEARS))
+        self.assertTrue(all(p["sum_equals_combined"] is False for p in st["points"]))
 
 
 class AppealsTests(unittest.TestCase):

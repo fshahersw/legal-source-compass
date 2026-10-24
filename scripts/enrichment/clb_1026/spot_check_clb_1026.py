@@ -54,7 +54,7 @@ def main() -> None:
     p7378 = next(p for p in rbg["positions"] if p["id"] == 7378)
     check("Ginsburg: Supreme Court start", p7378["dates"]["start"], cm.show_date(pos["7378"]["date_start"], pos["7378"]["date_granularity_start"]), "positions row 7378, date_start at its granularity")
     check("Ginsburg: Supreme Court end", p7378["dates"]["termination"], cm.show_date(pos["7378"]["date_termination"], pos["7378"]["date_granularity_termination"]), "positions row 7378, date_termination")
-    check("Ginsburg: birth shown at recorded precision", rbg["born"], cm.show_date(ppl["1213"]["date_dob"], ppl["1213"]["date_granularity_dob"]), "people row 1213, date_dob with date_granularity_dob")
+    check("Ginsburg: birth year", rbg["birth_year"], int(ppl["1213"]["date_dob"][:4]), "people row 1213, date_dob (year only)")
     # ABA ratings: the archived page that holds rating ids 2 and 738/739
     idx = cl_api.load_index()
     aba_rows = {}

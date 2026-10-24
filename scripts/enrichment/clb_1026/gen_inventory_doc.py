@@ -144,6 +144,20 @@ def main() -> None:
         objs = [o for v in groups.values() for o in v if o["date"] == d]
         w(f"| {d} | {len(objs)} | {mb(sum(o['size'] for o in objs))} |")
     w("")
+    w("## Datasets built in wave 1026")
+    w("")
+    w("| Dataset | Records | Reads |")
+    w("|---|---:|---|")
+    build_dir = os.path.join(ROOT, "private", "build", "clb_1026")
+    reads = {"clb_judge_people": "people-db people, positions, educations, schools, political affiliations, retention events; courts; originating-court information; aba-ratings API",
+             "clb_judge_disclosure_items": "financial-disclosures and its eight line-item files; people-db people",
+             "clb_court_appeals_to": "court-appeals-to; courts",
+             "clb_search_counts": "search API counts (588 exact queries)"}
+    for ds, what in reads.items():
+        f = os.path.join(build_dir, ds + ".json")
+        n = len(json.load(open(f))["rows"]) if os.path.exists(f) else None
+        w(f"| {ds} | {'not built' if n is None else f'{n:,}'} | {what} |")
+    w("")
     w("## Data that has no bulk file")
     w("")
     w("- ABA ratings (2,426 rows) and person source notes (20,430 rows) are tables of the people database without a bulk file. "

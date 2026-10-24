@@ -220,7 +220,8 @@ def build() -> dict:
         alias = cm.as_int(p.get("is_alias_of_id"))
         profile = {
             "person_id": pid, "name": name, "slug": cm.blank(p["slug"]), "fjc_id": cm.as_int(p["fjc_id"]), "alias_of": person_ref(alias) if alias else None,
-            "born": cm.show_date(p["date_dob"], p["date_granularity_dob"]), "died": cm.show_date(p["date_dod"], p["date_granularity_dod"]),
+            # birth: the year only (a full birth date is not published here); death at the recorded precision
+            "birth_year": cm.as_int((cm.show_date(p["date_dob"], p["date_granularity_dob"]) or "")[:4]), "died": cm.show_date(p["date_dod"], p["date_granularity_dod"]),
             "positions": pvs[:MAX_POSITIONS], "positions_total": len(pvs), "court_positions": len(court_pvs),
             "education": educ, "political_affiliations": aff, "aba_ratings": ratings, "retention_events": [],
             "courts": sorted({x["court_id"] for x in court_pvs}),
@@ -286,7 +287,7 @@ def build() -> dict:
                                  "lower_court_judge_ids": len(lower), "lower_court_judge_ids_not_selected": sum(1 for j in lower if j not in set(selected)), "aba_retrieved": f"{aba_meta['first_retrieved_at']} to {aba_meta['last_retrieved_at']}"},
         "definitions": {
             "selection": "one record per CourtListener person with at least one position at a court, or an ABA rating",
-            "dates": "shown to the precision CourtListener recorded (year, month or day); confirmation, nomination and hearing dates are stored as days",
+            "dates": "shown to the precision CourtListener recorded (year, month or day); confirmation, nomination and hearing dates are stored as days; birth is given as the year only",
             "appointer": "the appointing official is the person holding the position CourtListener links as appointer (exact id join)",
             "political affiliation source": leg["political-affiliations"]["_help"].get("source"),
             "has inferred values": leg["positions"]["_help"].get("has_inferred_values"),

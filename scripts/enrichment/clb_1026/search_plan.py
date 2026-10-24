@@ -45,8 +45,8 @@ def opinion_query(topic_q: str | None, date_q: str, court: str | None = None) ->
     return " AND ".join(parts)
 
 
-def opinion_url(q: str) -> str:
-    return cl_api.build_url("search/", [("type", "o"), ("q", q), *STATUS_PARAMS])
+def opinion_url(q: str, statuses: list[tuple[str, str]] | None = None) -> str:
+    return cl_api.build_url("search/", [("type", "o"), ("q", q), *(STATUS_PARAMS if statuses is None else statuses)])
 
 
 def oral_url(q: str | None) -> str:
@@ -70,6 +70,12 @@ def plan() -> list[dict]:
         for slug, _, tq in TOPICS:
             q = opinion_query(tq, dq, c)
             out.append({"key": f"court:{c}:{slug}", "kind": "court", "topic": slug, "year": None, "court": c, "type": "o", "q": q, "url": opinion_url(q)})
+    # precedential status by year: published only and unpublished only (their sum is checked against the combined count)
+    for y in YEARS:
+        q = opinion_query(None, date_range(f"{y}-01-01", f"{y}-12-31"))
+        for status, param in (("published", "stat_Published"), ("unpublished", "stat_Unpublished")):
+            out.append({"key": f"status:{status}:{y}", "kind": "status", "topic": status, "year": y, "court": None, "type": "o", "q": q,
+                        "url": opinion_url(q, [(param, "on")])})
     out.append({"key": "oral:all", "kind": "oral", "topic": None, "year": None, "court": None, "type": "oa", "q": None, "url": oral_url(None)})
     for slug, _, tq in TOPICS:
         out.append({"key": f"oral:{slug}", "kind": "oral", "topic": slug, "year": None, "court": None, "type": "oa", "q": tq, "url": oral_url(tq)})

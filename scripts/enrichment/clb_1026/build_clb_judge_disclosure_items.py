@@ -236,7 +236,8 @@ def build() -> dict:
                    {"label": "Reports and gifts record", "url": f"/records/clb_judge_disclosures/{pid}"}],
             extra={"profile": cm.compact(profile)}))
     # national per-year records
-    for y in sorted(k for k in nat if k is not None):
+    # every report year gets a record, also a year whose reports carry no line item (its counts are zero, not missing)
+    for y in sorted({r["year"] for r in reports.values() if r["year"] is not None}):
         n = nat[y]
         reps_y = [r for r in reports.values() if r["year"] == y]
         types = Counter(r["type_code"] for r in reps_y)

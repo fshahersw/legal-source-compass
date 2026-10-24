@@ -135,7 +135,7 @@ def build(rows: dict[str, dict] | None = None) -> dict:
     pooled = {}
     for slug, _, _ in sp.TOPICS:
         cs = [c for c in court_rows if any(t["slug"] == slug for t in court_rows[c][1])]
-        if len(cs) == len(court_rows) and court_rows:
+        if len(cs) == len(sp.APPELLATE):  # pooled only over all 14 courts, never over the ones that happen to be present
             num = sum(next(t["count"] for t in court_rows[c][1] if t["slug"] == slug) for c in cs)
             den = sum(court_rows[c][0]["count"] for c in cs)
             pooled[slug] = {"count": num, "total": den, "share_pct": share(num, den)}
@@ -159,6 +159,31 @@ def build(rows: dict[str, dict] | None = None) -> dict:
             links=[x for x in ({"label": name, "url": cm.court_link(c, spine)}, {"label": "Advanced search help", "url": HELP}) if x["url"]],
             extra={"profile": {"kind": "court", "court_id": c, "court": name, "court_link": cm.court_link(c, spine), "window": list(sp.WINDOW), **common,
                                "total": point(tot), "topics": topics}}))
+    st_pts = []
+    for y in sp.YEARS:
+        pub, unp, tot = rows.get(f"status:published:{y}"), rows.get(f"status:unpublished:{y}"), totals.get(y)
+        if not pub or not unp:
+            continue
+        st_pts.append({"year": y, "partial": y == sp.PARTIAL_YEAR, "published": point(pub), "unpublished": point(unp),
+                       "combined": point(tot) if tot else None, "unpublished_share_pct": share(unp["count"], pub["count"] + unp["count"]),
+                       "sum_equals_combined": (pub["count"] + unp["count"] == tot["count"]) if tot else None})
+    if st_pts:
+        full = [p for p in st_pts if not p["partial"]]
+        mism = [p["year"] for p in st_pts if p["sum_equals_combined"] is False]
+        last = full[-1] if full else st_pts[-1]
+        out.append(writer.record(
+            DATASET, "status:by_year", "Published and unpublished opinions in CourtListener's search index, by year filed", source_url=last["unpublished"]["search_url"],
+            subtitle=f"{len(st_pts)} years · {last['year']}: {last['published']['count']:,} published, {last['unpublished']['count']:,} unpublished ({last['unpublished_share_pct']}% unpublished)",
+            cells={"kind": "status", "name": "Precedential status", "court": "All courts", "window": f"{st_pts[0]['year']}–{st_pts[-1]['year']}", "count": None, "share_pct": last["unpublished_share_pct"]},
+            badges=["CourtListener search counts", "Precedential status"],
+            facts=cm.facts([("Published, query", "dateFiled:[YYYY-01-01 TO YYYY-12-31] with stat_Published=on only"),
+                            ("Unpublished, query", "the same with stat_Unpublished=on only"),
+                            ("Unpublished share", "unpublished ÷ (published + unpublished) × 100"),
+                            ("Check", "published + unpublished equals the combined count (both switches on) in " + (f"every year except {', '.join(map(str, mism))}" if mism else "every year")),
+                            ("Partial year", f"{sp.PARTIAL_YEAR} counted to the retrieval date")]),
+            text="published unpublished opinions per year precedential status search counts", filters={"kind": ["status"]},
+            links=[{"label": "Search API help (statuses)", "url": API_HELP}],
+            extra={"profile": {"kind": "status", "points": st_pts, "years_sum_not_equal": mism}}))
     oral_tot = rows.get("oral:all")
     if oral_tot:
         topics = [{"slug": slug, "label": label, "topic_query": tq, **point(rows[f"oral:{slug}"]), "share_pct": share(rows[f"oral:{slug}"]["count"], oral_tot["count"])}
@@ -184,6 +209,7 @@ def build(rows: dict[str, dict] | None = None) -> dict:
                         "rank": "position among the 14 courts by share, highest first; ties share a rank",
                         "syntax": "phrases in quotes (no stemming or synonyms), OR within parentheses, \"...\"~10 proximity, court_id: and dateFiled:[A TO B] fielded filters, as documented in CourtListener's advanced search help"},
         "caveats": ["Counts describe CourtListener's collection, which is more complete for some courts and years than others.",
+                    "An opinion cluster is any decision CourtListener holds; for some courts (the Supreme Court especially) most clusters are orders and summary dispositions, so a court's share is of all its clusters, not of its signed opinions.",
                     "A mention is any occurrence of the words in the opinion text; it says nothing about how the doctrine was applied.",
                     "The search index changes as CourtListener adds and corrects opinions; each count holds at its retrieval time.",
                     f"{sp.PARTIAL_YEAR} is a partial year, counted to the retrieval date."],
@@ -192,7 +218,7 @@ def build(rows: dict[str, dict] | None = None) -> dict:
     }
     return {"dataset": DATASET, "label": "Opinions and oral arguments mentioning selected doctrines: CourtListener search counts by year and court (retrieved Oct 2026)",
             "listing_block": writer.listing([("kind", "Type"), ("name", "Topic or court"), ("court", "Court"), ("window", "Years"), ("count", "Count"), ("share_pct", "Share %")],
-                                            [("kind", "Type", {"year": "All opinions", "topic": "Topic by year", "court": "Court", "oral": "Oral arguments"})]),
+                                            [("kind", "Type", {"year": "All opinions", "topic": "Topic by year", "court": "Court", "status": "Precedential status", "oral": "Oral arguments"})]),
             "summary": summary, "rows": out, "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "inputs": [{"url": cl_api.API + "search/", "path": os.path.relpath(INPUT, cm.ROOT), "sha256": None, "requests": len(rows)},
                        {"url": HELP, "path": "private/acq/clb_1026/docs/adv-search-wiki.html", "sha256": None}]}
