@@ -6,7 +6,8 @@
  *   documents  every Rule / Proposed Rule / Notice of each agency, read in postedDate windows small enough for the API's
  *              5,000-record query limit (a window over the limit is halved; a single day over it is split by type)
  *              → <out>/documents/<AGENCY>.jsonl.gz  (one line per API record: {record, api_url, retrieved_at})
- *   dockets    every docket of each agency, in lastModifiedDate windows (Eastern time, as the API reads them)
+ *   dockets    every docket of each agency, in lower-bound lastModifiedDate passes of up to 5,000 records (Eastern
+ *              time, as the API reads it; the API ignores a lower bound given with an upper one)
  *              → <out>/dockets/<AGENCY>.jsonl.gz
  *   counts     public comments posted (comments API totalElements): proposed rules first, then rulemaking dockets, then
  *              other documents with a comment period, newest first, until --max requests or the end
@@ -131,10 +132,7 @@ async function documents() {
 
 async function dockets() {
   const from = flag(args, "--modified-from", "1990-01-01 00:00:00");
-  const to = flag(args, "--modified-to", R.etFilterTime(new Date().toISOString()));
-  const manifest = { stage: "dockets", modified_from_et: from, modified_to_et: to, agencies: {} };
-  const toMs = (et) => Date.parse(et.replace(" ", "T") + "Z");
-  const fromMs = (ms) => new Date(ms).toISOString().slice(0, 19).replace("T", " ");
+  const manifest = { stage: "dockets", modified_from_et: from, agencies: {} };
   for (const agency of agencies) {
     const file = path.join(out, "dockets", `${agency}.jsonl.gz`);
     if (fs.existsSync(file)) {
@@ -142,38 +140,43 @@ async function dockets() {
       continue;
     }
     const seen = new Map();
-    const all = await list(R.docketsQuery({ agencies: [agency], modifiedFromEt: from, modifiedToEt: to, size: 5 }));
-    const windows = [{ from, to }];
+    const all = await list(R.docketsQuery({ agencies: [agency], modifiedFromEt: from, size: 5 }));
     const held = [];
     let reads = 0;
-    while (windows.length) {
-      const w = windows.shift();
-      const q = (page) => R.docketsQuery({ agencies: [agency], modifiedFromEt: w.from, modifiedToEt: w.to, page });
+    // Lower-bound (keyset) passes: the API applies only the upper bound when both lastModifiedDate bounds are given
+    // (checked 2026-10-24: a one-second FDA window returned the agency's oldest 5,000 dockets), so each pass asks for
+    // the dockets modified at or after `ge`, sorted by modification time, up to 5,000 records, and the next pass
+    // starts at the last record's modification time (records at that second are read again and kept once).
+    let ge = from;
+    for (;;) {
+      const q = (page) => R.docketsQuery({ agencies: [agency], modifiedFromEt: ge, page });
       const first = await list(q(1));
       reads++;
-      if (first.total > R.PAGE_SIZE * R.MAX_PAGES_PER_QUERY) {
-        const a = toMs(w.from);
-        const z = toMs(w.to);
-        if (z - a >= 2000) {
-          const mid = a + Math.floor((z - a) / 2000) * 1000;
-          windows.unshift({ from: w.from, to: fromMs(mid) }, { from: fromMs(mid + 1000), to: w.to });
-        } else held.push({ window: w, total: first.total, reason: "more than 5,000 dockets modified in one second" });
-        continue;
-      }
-      const sink = (rec, record) => {
-        if (typeof rec.id === "string") seen.set(rec.id, { record: rec, api_url: record.url, retrieved_at: record.retrieved_at });
+      let last = null;
+      const take = (p) => {
+        for (const rec of p.data) {
+          if (typeof rec.id === "string") seen.set(rec.id, { record: rec, api_url: p.record.url, retrieved_at: p.record.retrieved_at });
+          last = rec.attributes?.lastModifiedDate ?? last;
+        }
       };
-      for (const rec of first.data) sink(rec, first.record);
+      take(first);
+      const pages = Math.min(R.MAX_PAGES_PER_QUERY, Math.ceil(first.total / R.PAGE_SIZE));
       if (first.hasNextPage) {
-        const pages = Math.ceil(first.total / R.PAGE_SIZE);
         for (let page = 2; page <= pages; page++) {
           const p = await list(q(page));
           reads++;
-          for (const rec of p.data) sink(rec, p.record);
+          take(p);
           if (!p.hasNextPage) break;
         }
       }
-      log({ agency, window: `${w.from}..${w.to}`, total: first.total, held_so_far: seen.size });
+      log({ agency, from_et: ge, total_from_here: first.total, held_so_far: seen.size });
+      if (first.total <= R.PAGE_SIZE * R.MAX_PAGES_PER_QUERY) break; // this pass reached the end
+      const next = last ? R.etFilterTime(last) : null;
+      if (!next || next <= ge) {
+        held.push({ from_et: ge, total_from_here: first.total, reason: "more than 5,000 dockets modified in one second" });
+        break;
+      }
+      ge = next;
     }
     const written = await writeJsonlGz(file, [...seen.values()].sort((a, b) => (a.record.id < b.record.id ? -1 : 1)));
     manifest.agencies[agency] = { api_total_in_range: all.total, acquired: seen.size, not_reached: all.total - seen.size, held, reads, file: written };

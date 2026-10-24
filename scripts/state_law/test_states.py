@@ -416,6 +416,15 @@ class AlaskaHeadTests(unittest.TestCase):
         self.assertEqual((m.group(1), m.group(2)), ("03.05.010", "Powers and duties."))
 
 
+class IdahoNumberTests(unittest.TestCase):
+    def test_ucc_chapter_article_section_numbers(self):
+        idaho = load("id")
+        for head, number in (("28-5-101. Short title. This chapter may be cited as ...", "28-5-101"),
+                             ("28-2-313. EXPRESS WARRANTIES", "28-2-313"), ("5-219. LIMITATIONS", "5-219"),
+                             ("39-1301.5. DEFINITIONS", "39-1301.5")):
+            self.assertEqual(idaho.SECTION_RE.match(head).group(1), number)
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):

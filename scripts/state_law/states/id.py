@@ -42,7 +42,8 @@ META = lib.StateMeta(
     update_cadence="Updated to the website July 1 following each session (publisher statement); re-check each July.",
 )
 
-NUM = r"\d+[A-Z]?-\d+[0-9A-Z]*(?:\.\d+[A-Z]?)?"
+# "5-219", "39-1301.5", and the Uniform Commercial Code title's chapter-article-section "28-2-313", "28-12-101A"
+NUM = r"\d+[A-Z]?-\d+[0-9A-Z]*(?:-\d+[0-9A-Z]*)?(?:\.\d+[A-Z]?)?"
 SECTION_RE = re.compile(rf"^({NUM})\.\s*(.*)$")
 HEADER_RE = re.compile(r"^(TITLE|CHAPTER|PART|SUBPART|ARTICLE)\s+([0-9A-Z.\-]+)\s*$")
 LEVEL = {"TITLE": "title", "CHAPTER": "chapter", "PART": "part", "SUBPART": "subpart", "ARTICLE": "article"}
@@ -158,7 +159,15 @@ def acquire(ctx: lib.RunContext) -> None:
                 if not ctx.want_more():
                     break
                 page = ctx.get(f"{BASE}{link}", fallback_fresh=True)
-                parsed = parse_section(page)
+                try:
+                    parsed = parse_section(page)
+                except RuntimeError as error:
+                    if ctx.sample is not None:
+                        raise
+                    # one page the parser cannot read is ledgered, never guessed (the loader bounds the share)
+                    ctx._rejects.write({"state": "ID", "code": "IC", "number": None, "reason": str(error)[:300],
+                                        "source_url": page.url, "source_sha256": page.sha256})
+                    continue
                 for header in parsed["headers"]:  # every page repeats TITLE/CHAPTER; a PART prints where it starts
                     same = next((c for c in context if c["level"] == header["level"]), None)
                     if same is not None and same["number"] == header["number"]:
