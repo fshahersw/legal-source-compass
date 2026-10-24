@@ -9,7 +9,9 @@ const SRC =
 
 function CourtRef({ c }: { c: RouteCourt }) {
   const span =
-    c.start || c.end ? ` (${c.start ?? "start not recorded"} – ${c.end ?? "no end recorded"})` : "";
+    c.start || c.end
+      ? ` (court dates ${c.start ?? "start not recorded"} – ${c.end ?? "no end recorded"})`
+      : "";
   return (
     <>
       {c.link ? (
@@ -48,7 +50,7 @@ export function CourtAppealRoutesNote({ courtId }: { courtId: string }) {
     >
       {d.appealsTo.length ? (
         <p>
-          <span className="font-medium">Appeals go to: </span>
+          <span className="font-medium">CourtListener records appeals from this court to: </span>
           {d.appealsTo.map((c, i) => (
             <span key={c.edgeId}>
               {i ? "; " : ""}
@@ -59,7 +61,7 @@ export function CourtAppealRoutesNote({ courtId }: { courtId: string }) {
       ) : null}
       {d.appealsFrom.length ? (
         <p>
-          <span className="font-medium">Appeals come from: </span>
+          <span className="font-medium">CourtListener records appeals to this court from: </span>
           {d.appealsFrom.map((c, i) => (
             <span key={c.edgeId}>
               {i ? "; " : ""}
@@ -69,8 +71,9 @@ export function CourtAppealRoutesNote({ courtId }: { courtId: string }) {
         </p>
       ) : null}
       <p className="text-[11px] text-muted-foreground">
-        As recorded in CourtListener's court-appeals-to table (8 rows, Sept 30, 2026 export; dates
-        are each court's record dates). <SourceLink href={SRC}>Bulk file</SourceLink>
+        CourtListener's court-appeals-to table (Sept 30, 2026 export) lists 8 routes, shown as
+        recorded; it is not a court's full appeal path.{" "}
+        <SourceLink href={SRC}>Bulk file</SourceLink>
       </p>
     </aside>
   );
