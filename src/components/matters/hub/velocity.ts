@@ -65,12 +65,39 @@ export type VelocityMonth = {
   portfolioMdls: number;
 };
 
+/**
+ * The series' largest national fall (the highest report to the lowest later one) and the MDL whose pending actions
+ * fell most between those two reports. Computed from the loaded series, so it moves with the window; null when the
+ * national pending series never falls.
+ */
+export type SeriesDrop = {
+  /** Months (YYYY-MM) of the higher and the lower report. */
+  from: string;
+  to: string;
+  /** Fall in national pending actions between the two reports. */
+  national: number;
+  /** The MDL whose pending actions fell most between the same two reports (listed in both). */
+  mdl: string;
+  title: string | null;
+  mdlDrop: number;
+  inPortfolio: boolean;
+};
+
 export type VelocityModel = {
   latestMonth: string | null;
   latestReport: string | null;
   months: VelocityMonth[];
   rows: VelocityRow[];
+  largestDrop: SeriesDrop | null;
 };
+
+/** Why an MDL in the latest report has no 12-month figure, in the reader's words. */
+export function notRecordedReason(row: Pick<VelocityRow, "window12" | "added12m">): string | null {
+  if (row.added12m !== null) return null;
+  return row.window12 === "recount"
+    ? "Re-counted: total fell"
+    : "Not listed in the report 12 months earlier";
+}
 
 const MONTH = /^(\d{4})-(\d{2})/;
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -181,6 +208,41 @@ export function buildVelocity(
     latestReport: latestMonth ? (monthAgg.get(latestMonth)?.reportDate ?? null) : null,
     months: monthsOut,
     rows,
+    largestDrop: largestDrop(monthsOut, parsed, options.portfolio),
+  };
+}
+
+function largestDrop(
+  months: readonly VelocityMonth[],
+  parsed: readonly { input: JpmlMdlInput; months: ByMonth }[],
+  portfolio: ReadonlySet<string>,
+): SeriesDrop | null {
+  let best: { from: VelocityMonth; to: VelocityMonth; fall: number } | null = null;
+  for (let i = 0; i < months.length; i++)
+    for (let j = i + 1; j < months.length; j++) {
+      const fall = months[i]!.national - months[j]!.national;
+      if (fall > 0 && (!best || fall > best.fall))
+        best = { from: months[i]!, to: months[j]!, fall };
+    }
+  if (!best) return null;
+  let lead: { input: JpmlMdlInput; drop: number } | null = null;
+  for (const { input, months: m } of parsed) {
+    const a = m.get(best.from.month)?.pending;
+    const b = m.get(best.to.month)?.pending;
+    if (!finite(a) || !finite(b)) continue;
+    const drop = a - b;
+    if (drop > 0 && (!lead || drop > lead.drop || (drop === lead.drop && input.mdl < lead.input.mdl)))
+      lead = { input, drop };
+  }
+  if (!lead) return null;
+  return {
+    from: best.from.month,
+    to: best.to.month,
+    national: best.fall,
+    mdl: lead.input.mdl,
+    title: lead.input.title,
+    mdlDrop: lead.drop,
+    inPortfolio: portfolio.has(lead.input.mdl),
   };
 }
 

@@ -37,16 +37,22 @@ import {
 import {
   coverageRows,
   coverageTakeaway,
+  largestDropNote,
   pdfTotals,
   portfolioGrowth,
   portfolioKpis,
   portfolioShareTakeaway,
 } from "./portfolio";
+import { notRecordedReason } from "./velocity";
 
 const REGISTRY_SOURCE = { label: "Seeger Weiss matter registry (sw_matters_v1)" };
 const PDF_SOURCE = { label: "Verified PDF registry (matter header counts)" };
 const COUNT = metricFormatter("count");
 const COVERAGE_BELOW = 10;
+const VELOCITY_ERROR = "The JPML report series could not be read.";
+/** The priority list is a watch list: its JPML counts are MDL-wide, never the firm's own caseload. */
+const NOT_CLIENTS =
+  "MDL-wide JPML counts for the matters on the priority list; not the firm's clients or representation.";
 
 export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsReady: boolean }) {
   const velocity = useQuery(mdlVelocityQuery);
@@ -70,7 +76,7 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
     : velocity.isError
       ? ({
           kind: "error",
-          message: "The JPML report series could not be read.",
+          message: VELOCITY_ERROR,
           onRetry: () => void velocity.refetch(),
         } as const)
       : !model
@@ -83,30 +89,32 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
     rowsReady && model
       ? buildSectionContext({
           id: "portfolio",
-          title: "Seeger Weiss portfolio",
-          scope: `${kpis.matters} priority matters on the hub`,
+          title: "Seeger Weiss priority matters",
+          scope: `${kpis.matters} priority matters on the hub (MDL-wide counts, not the firm's clients)`,
           period: reportDate ? `JPML report of ${reportDate}` : undefined,
           source: JPML_SOURCE.label,
           figures: [
             { label: "Matters on the hub", value: kpis.matters },
             { label: "Matters pending in the JPML report", value: kpis.pendingMatters },
             {
-              label: "Actions pending in hub matters",
+              label: "Actions pending in hub matters (MDL-wide)",
               value: kpis.pendingActions,
               unit: "actions",
+              note: NOT_CLIENTS,
             },
             { label: "Actions pending in all MDLs", value: kpis.national, unit: "actions" },
             {
-              label: "Hub share of national pending actions",
+              label: "Hub matters' share of national pending actions",
               value: kpis.sharePct,
               unit: "%",
               decimals: 1,
+              note: NOT_CLIENTS,
             },
             {
               label: "Actions added to hub matters, last 12 reports",
               value: growth.added12m,
               unit: "actions",
-              note: `${growth.ranked.length} matters with a full window`,
+              note: `${growth.ranked.length} matters with a full window; MDL-wide, not the firm's clients`,
             },
             ...growth.ranked.slice(0, 5).map((g) => ({
               label: `Actions added, last 12 reports: ${g.name} (MDL ${g.mdl})`,
@@ -150,7 +158,9 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
           label="Actions pending in hub matters"
           value={kpis.pendingActions !== null ? count(kpis.pendingActions) : null}
           unit="actions"
-          state={!rowsReady || velocity.isPending ? "loading" : "ready"}
+          state={!rowsReady ? "loading" : velocityKpiState}
+          errorText={VELOCITY_ERROR}
+          onRetry={() => void velocity.refetch()}
           meta={
             reportDate
               ? `${kpis.counted} matters, JPML report of ${reportDate}`
@@ -158,12 +168,18 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
           }
           source={{
             source: { label: JPML_SOURCE.label, href: model?.reportUrl ?? JPML_SOURCE.url },
-            about: kpis.otherDates.length ? (
-              <p>
-                Left out: {kpis.otherDates.map((o) => `MDL ${o.mdl}`).join(", ")}, whose counts are
-                not dated by this report (closed matters carry the fiscal-year terminated report).
-              </p>
-            ) : undefined,
+            about: (
+              <>
+                <p>{NOT_CLIENTS}</p>
+                {kpis.otherDates.length ? (
+                  <p className="mt-1">
+                    Left out: {kpis.otherDates.map((o) => `MDL ${o.mdl}`).join(", ")}, whose counts
+                    are not dated by this report (closed matters carry the fiscal-year terminated
+                    report).
+                  </p>
+                ) : null}
+              </>
+            ),
           }}
         />
         <KpiCard
@@ -171,6 +187,8 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
           label="Share of national pending actions"
           value={kpis.sharePct !== null ? pct(kpis.sharePct) : null}
           state={velocityKpiState}
+          errorText={VELOCITY_ERROR}
+          onRetry={() => void velocity.refetch()}
           meta={
             kpis.national !== null
               ? `of ${count(kpis.national)} actions in ${count(kpis.nationalMdls ?? 0)} MDLs`
@@ -179,6 +197,7 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
           source={{
             source: { label: JPML_SOURCE.label, href: model?.reportUrl ?? JPML_SOURCE.url },
             asOf: reportDate ?? undefined,
+            about: <p>{NOT_CLIENTS}</p>,
           }}
         />
         <KpiCard
@@ -187,6 +206,8 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
           value={growth.added12m !== null ? count(growth.added12m) : null}
           unit="actions"
           state={velocityKpiState}
+          errorText={VELOCITY_ERROR}
+          onRetry={() => void velocity.refetch()}
           meta={`${growth.ranked.length} matters with a full 12-month window`}
           source={{
             source: { label: JPML_SOURCE.label, href: JPML_SOURCE.url },
@@ -196,7 +217,7 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
                 The change in each MDL&apos;s cumulative JPML action total between the latest report
                 and the report 12 months earlier. Actions are not plaintiffs.
                 {growth.notRecorded.length
-                  ? ` Not counted (newer than 12 months or re-counted): ${growth.notRecorded.map((g) => `MDL ${g.mdl}`).join(", ")}.`
+                  ? ` Not counted: ${growth.notRecorded.map((g) => `MDL ${g.mdl} (${notRecordedReason(g)?.toLowerCase()})`).join(", ")}.`
                   : ""}
               </p>
             ),
@@ -329,6 +350,7 @@ function ShareChart({
       }
     : undefined;
   const last = months.at(-1);
+  const dropNote = model ? largestDropNote(model.largestDrop, monthLabel, count) : null;
   const context = last
     ? buildSectionContext({
         id: "portfolio-share",
@@ -366,11 +388,9 @@ function ShareChart({
       about={
         <ul className="list-disc space-y-1 pl-4">
           <li>Each point sums the actions pending in every MDL the Panel listed in that report.</li>
-          <li>
-            Most of the fall between October 2024 and April 2025 is MDL 2885 (3M Combat Arms
-            earplugs, a hub matter) closing out its pending actions in the reports.
-          </li>
+          {dropNote ? <li>{dropNote}</li> : null}
           <li>Actions are cases on the MDL docket, not plaintiffs.</li>
+          <li>{NOT_CLIENTS}</li>
         </ul>
       }
       minHeight={300}
@@ -420,6 +440,7 @@ function GrowthChart({
             { label: "Added, 3 months" },
             { label: "3 months × 4" },
             { label: "Pending" },
+            { label: "Why not recorded" },
           ],
           rows: [...growth.ranked, ...growth.notRecorded].map((g) => ({
             key: g.mdl,
@@ -430,6 +451,7 @@ function GrowthChart({
               g.added3m ?? "Not recorded",
               g.pace3m ?? "Not recorded",
               g.pending ?? "Not recorded",
+              notRecordedReason(g) ?? "",
             ],
             muted: g.added12m === null,
           })),
@@ -477,8 +499,9 @@ function GrowthChart({
             right of the first means the matter is speeding up.
           </li>
           <li>
-            A matter newer than 12 months, or whose total fell (the Panel re-counted), is Not
-            recorded and listed in View data.
+            A matter not listed in the report 12 months earlier (a newer MDL, or one missing from
+            that report), or whose total fell (the Panel re-counted), is Not recorded; View data
+            says which.
           </li>
         </ul>
       }

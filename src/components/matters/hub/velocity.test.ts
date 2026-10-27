@@ -4,6 +4,7 @@ import {
   growthLeaders,
   leaderboardKpis,
   monthOf,
+  notRecordedReason,
   shiftMonth,
   shortCaption,
   type JpmlMdlInput,
@@ -140,6 +141,43 @@ describe("buildVelocity", () => {
     const { ranked, notRecorded } = growthLeaders(model.rows);
     expect(ranked.map((r) => r.mdl)).toEqual(["3140", "3084"]);
     expect(notRecorded.map((r) => r.mdl)).toEqual(["2885", "3199"]);
+  });
+
+  it("says why a 12-month figure is Not recorded from the window's own state", () => {
+    expect(notRecordedReason(row("2885"))).toBe("Re-counted: total fell");
+    expect(notRecordedReason(row("3199"))).toBe("Not listed in the report 12 months earlier");
+    expect(notRecordedReason(row("3140"))).toBeNull();
+    // An MDL absent from the report 12 months back (a gap, not a new MDL) reads the same, never "re-counted".
+    const gapped = buildVelocity(
+      [mdl("2885", [...series("2024-10", [10, 20]), ...series("2026-03", [30, 40, 50, 60, 70, 80, 90, 100])])],
+      { portfolio: new Set(), registry: null },
+    );
+    expect(gapped.rows[0]).toMatchObject({ window12: "partial", added12m: null });
+    expect(notRecordedReason(gapped.rows[0]!)).toBe("Not listed in the report 12 months earlier");
+  });
+
+  it("finds the series' largest national fall and the MDL that fell most in it", () => {
+    const m = buildVelocity(
+      [
+        mdl("100", series("2024-10", [1, 1, 1], [1000, 1000, 50])),
+        mdl("200", series("2024-10", [1, 1, 1], [500, 600, 700])),
+      ],
+      { portfolio: new Set(["100"]), registry: null },
+    );
+    expect(m.largestDrop).toEqual({
+      from: "2024-11",
+      to: "2024-12",
+      national: 850,
+      mdl: "100",
+      title: "IN RE: 100 Products Liability Litigation",
+      mdlDrop: 950,
+      inPortfolio: true,
+    });
+    const rising = buildVelocity([mdl("200", series("2024-10", [1, 1], [500, 600]))], {
+      portfolio: new Set(),
+      registry: null,
+    });
+    expect(rising.largestDrop).toBeNull();
   });
 
   it("computes the leaderboard KPIs from complete windows only", () => {

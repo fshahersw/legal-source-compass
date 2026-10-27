@@ -3,6 +3,7 @@ import type { HubRow } from "@/lib/matters/types";
 import {
   coverageRows,
   coverageTakeaway,
+  largestDropNote,
   pdfTotals,
   portfolioGrowth,
   portfolioKpis,
@@ -116,6 +117,28 @@ describe("portfolioShareTakeaway", () => {
       `Hub matters held ${Math.round(((6412 + 69340 + 12) / 76764) * 100)}% of the 76,764 actions pending in all MDLs in 2026-10, against ${Math.round(((6412 + 69340) / 76752) * 100)}% in 2025-10`,
     );
     expect(portfolioShareTakeaway(model.months.slice(0, 1), (m) => m)).toBeNull();
+  });
+});
+
+describe("largestDropNote", () => {
+  const drop = {
+    from: "2024-10",
+    to: "2025-04",
+    national: 223205,
+    mdl: "2885",
+    title: "IN RE: 3M Combat Arms Earplug Products Liability Litigation",
+    mdlDrop: 224377,
+    inPortfolio: true,
+  };
+  const fmt = (v: number) => v.toLocaleString("en-US");
+  it("names the MDL behind the series' largest fall, from the loaded series", () => {
+    expect(largestDropNote(drop, (m) => m, fmt)).toBe(
+      "Most of the fall between 2024-10 and 2025-04 (223,205 actions) is MDL 2885 (3M Combat Arms Earplug), a hub matter: its pending actions fell by 224,377.",
+    );
+  });
+  it("says nothing when no single MDL explains most of the fall, or there is no fall", () => {
+    expect(largestDropNote({ ...drop, mdlDrop: 100000 }, (m) => m, fmt)).toBeNull();
+    expect(largestDropNote(null, (m) => m, fmt)).toBeNull();
   });
 });
 

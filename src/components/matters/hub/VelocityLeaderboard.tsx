@@ -26,6 +26,7 @@ import {
   PRODUCTS_LIABILITY,
   growthLeaders,
   leaderboardKpis,
+  notRecordedReason,
   shortCaption,
   type VelocityRow,
 } from "./velocity";
@@ -44,7 +45,7 @@ const flag = (r: VelocityRow) =>
 
 export function VelocityLeaderboard() {
   const q = useQuery(mdlVelocityQuery);
-  const [type, setType] = useState(PRODUCTS_LIABILITY);
+  const [picked, setType] = useState(PRODUCTS_LIABILITY);
   const model = q.data?.published ? q.data : null;
   const rows = useMemo(() => model?.rows ?? [], [model]);
   const types = useMemo(
@@ -54,6 +55,9 @@ export function VelocityLeaderboard() {
       ),
     [rows],
   );
+  // The default type, or a type no longer in the data, falls back to all types: the select never filters on an
+  // option it does not show.
+  const type = picked === ALL || types.includes(picked) ? picked : ALL;
   const { ranked, notRecorded } = useMemo(
     () => growthLeaders(rows, (r) => type === ALL || r.type === type),
     [rows, type],
@@ -102,6 +106,7 @@ export function VelocityLeaderboard() {
           { label: "3 months × 4" },
           { label: "Pending" },
           { label: "Registry" },
+          { label: "Why not recorded" },
         ],
         rows: [...ranked, ...notRecorded].map((r) => ({
           key: r.mdl,
@@ -114,6 +119,7 @@ export function VelocityLeaderboard() {
             r.pace3m ?? "Not recorded",
             r.pending ?? "Not recorded",
             flag(r),
+            notRecordedReason(r) ?? "",
           ],
           muted: r.added12m === null,
         })),
@@ -207,8 +213,8 @@ export function VelocityLeaderboard() {
             period,
             about: (
               <p>
-                {kpis.plAdded12mExcluded} products-liability MDLs are left out: newer than 12
-                months, or their cumulative total fell (the Panel re-counted).
+                {kpis.plAdded12mExcluded} products-liability MDLs are left out: not listed in the
+                report 12 months earlier, or their cumulative total fell (the Panel re-counted).
               </p>
             ),
           }}
@@ -278,8 +284,9 @@ export function VelocityLeaderboard() {
               nothing about representation.
             </li>
             <li>
-              MDLs newer than 12 months, or whose total fell because the Panel re-counted, are Not
-              recorded and listed in View data. Actions are cases, not plaintiffs.
+              MDLs not listed in the report 12 months earlier, or whose total fell because the
+              Panel re-counted, are Not recorded; View data says which. Actions are cases, not
+              plaintiffs.
             </li>
           </ul>
         }
@@ -305,7 +312,7 @@ export function VelocityLeaderboard() {
         ) : null}
       </ChartCard>
       <p className="mt-2 text-meta text-muted-foreground">
-        Our own matters are on the{" "}
+        The priority matters are on the{" "}
         <Link
           to="/matters/seeger-weiss"
           className="text-primary underline-offset-2 hover:underline"

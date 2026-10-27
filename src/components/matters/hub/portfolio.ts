@@ -11,7 +11,7 @@
  *   connected makes the total partial.
  */
 import type { HubRegistry, HubRow } from "@/lib/matters/types";
-import type { VelocityModel, VelocityRow } from "./velocity";
+import { shortCaption, type SeriesDrop, type VelocityModel, type VelocityRow } from "./velocity";
 
 export type PortfolioKpis = {
   matters: number;
@@ -71,6 +71,22 @@ export function portfolioShareTakeaway(
   const share = (m: (typeof recorded)[number]) => (m.portfolio / m.national) * 100;
   const p = (v: number) => `${v >= 10 ? Math.round(v) : v.toFixed(1)}%`;
   return `Hub matters held ${p(share(last))} of the ${last.national.toLocaleString("en-US")} actions pending in all MDLs in ${label(last.month)}, against ${p(share(first))} in ${label(first.month)}`;
+}
+
+/**
+ * "Most of the fall between Oct 2024 and Apr 2025 (223,205 actions) is MDL 2885 (3M Combat Arms Earplug), a hub
+ * matter: its pending actions fell by 224,377." Computed from the loaded series; null unless one MDL accounts for at
+ * least half of the series' largest national fall, so the note never outlives the data that supports it.
+ */
+export function largestDropNote(
+  drop: SeriesDrop | null,
+  label: (month: string) => string,
+  fmt: (v: number) => string,
+): string | null {
+  if (!drop || drop.national <= 0 || drop.mdlDrop < drop.national / 2) return null;
+  const name = shortCaption(drop.title);
+  const who = `MDL ${drop.mdl}${name ? ` (${name})` : ""}${drop.inPortfolio ? ", a hub matter" : ""}`;
+  return `Most of the fall between ${label(drop.from)} and ${label(drop.to)} (${fmt(drop.national)} actions) is ${who}: its pending actions fell by ${fmt(drop.mdlDrop)}.`;
 }
 
 export type PortfolioGrowth = {
