@@ -121,8 +121,10 @@ grant execute on function legal_atlas.record_errors(jsonb) to service_role;
 
 -- 3. Refresh window, read-only, for scripts/legal/refresh-federal-register.mjs --live-held:
 --    the newest publication date held and, from p_from on, the publications already held
---    (exact publisher URL), so a refresh never stages a second version of a held document.
-create or replace function public.corpus_legal_fr_window_v3(p_from date default null)
+--    (exact publisher URL), so a refresh never stages a second version of a held document; and
+--    which of p_input_keys are already in legal_atlas.staging (primary-key lookups), so a row
+--    staged before and rejected in production is not restaged: staging is immutable per input key.
+create or replace function public.corpus_legal_fr_window_v3(p_from date default null, p_input_keys text[] default null)
 returns jsonb language sql stable security invoker set search_path='' as $$
   with recent as (
     select r.id, r.payload->>'source_url' as source_url, r.payload->>'date' as published
@@ -138,10 +140,12 @@ returns jsonb language sql stable security invoker set search_path='' as $$
     'held',case when p_from is null then '[]'::jsonb else coalesce((
       select jsonb_agg(jsonb_build_object('id',h.id,'source_url',h.source_url,'published',h.published) order by h.published,h.id)
       from (select distinct id,source_url,published from recent where published>=p_from::text) h),'[]'::jsonb) end,
+    'staged',coalesce((select jsonb_agg(s.input_key order by s.input_key) from legal_atlas.staging s
+      where s.input_key = any(coalesce(p_input_keys,'{}'::text[]))),'[]'::jsonb),
     'as_of',now());
 $$;
-revoke all on function public.corpus_legal_fr_window_v3(date) from public,anon,authenticated;
-grant execute on function public.corpus_legal_fr_window_v3(date) to service_role;
+revoke all on function public.corpus_legal_fr_window_v3(date,text[]) from public,anon,authenticated;
+grant execute on function public.corpus_legal_fr_window_v3(date,text[]) to service_role;
 
 -- 4. One current payload per publication. 3,130 documents published 2026-08-21..2026-10-02 hold a
 --    second, reduced version (a "dates" field set without RINs, dockets or comments_close_on) staged

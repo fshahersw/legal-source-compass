@@ -131,3 +131,40 @@ test('live mode starts on the newest held day and never restages a held publicat
   assert.deepEqual(run.records_by_type, { fr_document: 2 });
   assert.deepEqual(run.published, { first: '2026-11-02', last: '2026-11-02' });
 });
+
+test('live mode skips publications production already staged but does not hold, and lists them for review', async () => {
+  const api = fakeApi();
+  const acquire = (o) => acquireFederalRegister({ ...o, fetchImpl: api.fetchImpl, minIntervalMs: 0, diskReserveBytes: 0, log: quiet });
+  // First pass: learn the window's input keys exactly as staging computes them.
+  const seen = [];
+  const probe = async (from, keys) => { seen.push({ from, keys }); return { latest_published: '2026-10-05', held: [], staged: [] }; };
+  const log = console.log; console.log = quiet;
+  try {
+    await refresh({ out: temp(), from: '2026-10-05', through: '2026-11-02', live: true, acquire, readWindow: probe, now: '2026-11-02' });
+    assert.equal(seen.length, 1); assert.equal(seen[0].keys.length, 4);
+    assert.ok(seen[0].keys.every(k => /^[0-9a-f]{64}$/.test(k)));
+    // Second pass: production reports the first key as already staged (rejected there, so not held).
+    const rejectedKey = seen[0].keys[0];
+    const readWindow = async () => ({ latest_published: '2026-10-05', held: [], staged: [rejectedKey] });
+    const run = await refresh({ out: temp(), from: '2026-10-05', through: '2026-11-02', live: true, acquire, readWindow, now: '2026-11-02' });
+    assert.equal(run.window.already_staged_skipped, 1);
+    assert.equal(run.window.held_skipped, 0);
+    assert.equal(run.window.staged_rows, 3);
+    assert.deepEqual(run.already_staged_not_held.map(s => [s.id, s.input_key]), [['2026-30001', rejectedKey]]);
+  } finally { console.log = log; }
+});
+
+test('refresh refuses an --out that already holds a packet, and can restage an earlier acquisition offline', async () => {
+  const out = temp(); const api = fakeApi();
+  const acquire = (o) => acquireFederalRegister({ ...o, fetchImpl: api.fetchImpl, minIntervalMs: 0, diskReserveBytes: 0, log: quiet });
+  const log = console.log; console.log = quiet;
+  try {
+    await refresh({ out, from: '2026-10-03', through: '2026-11-02', acquire, now: '2026-11-02' });
+    await assert.rejects(refresh({ out, from: '2026-10-03', through: '2026-11-02', acquire, now: '2026-11-02' }), /new --out directory/);
+    const requests = api.calls.length;
+    const noNetwork = () => { throw Error('acquisition must not run with --native'); };
+    const again = await refresh({ out: temp(), from: '2026-10-03', through: '2026-11-02', native: path.join(out, 'native'), acquire: noNetwork, now: '2026-11-02' });
+    assert.equal(api.calls.length, requests);
+    assert.deepEqual(again.records_by_type, { fr_document: 4, rule_proceeding: 2 });
+  } finally { console.log = log; }
+});
