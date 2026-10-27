@@ -174,6 +174,17 @@ class Contract(unittest.TestCase):
         self.assertEqual(code, ["begin", "drop function if exists public.documents_text_backlog_v1(text, integer)", "commit"])
 
 
+class WorklistProjectPin(unittest.TestCase):
+    def test_worklist_refuses_another_project(self):
+        import os
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"EXTERNAL_SUPABASE_URL": "https://other.supabase.co"}):
+            self.assertEqual(tb.main(["worklist", "--out", str(Path(tmp, "w.jsonl"))]), 2)
+            self.assertFalse(Path(tmp, "w.jsonl").exists())
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(tb.main(["worklist", "--out", str(Path(tmp, "w.jsonl"))]), 2)
+
+
 class ExtractorCredentials(unittest.TestCase):
     URL = "https://xosqzzsnhxcyehcnirpa.supabase.co"
 

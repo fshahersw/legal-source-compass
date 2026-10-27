@@ -12,8 +12,11 @@
 -- not_extracted byte sets plus 60 byte sets whose listing is 'withheld_policy' (entry_withheld: the published docket
 -- row carries description_withheld = 'contact_or_access_data', i.e. the description matched the email/phone pattern of
 -- scripts/ingest/members-publish-rules.mjs; that hold is decided by release/documents-contact-description-as-seal).
--- Storing their text publishes nothing: documents_refresh_v1 ranks withheld_policy above every text status,
--- documents_build_pages_v1 skips withheld byte sets, and citations/2 reads only text_layer / partial_text documents.
+-- Storing their text does not publish it through the documents layer or the site: documents_refresh_v1 ranks
+-- withheld_policy above every text status, documents_build_pages_v1 skips withheld byte sets, and citations/2 reads only
+-- text_layer / partial_text documents. Two service_role RPCs that no page calls (public.corpus_pdf_text_pages_v1,
+-- public.corpus_pdf_text_search_v1) gate only on the open-association check, so a service_role caller could read it.
+-- That hold is caution, not source evidence, and release/documents-contact-description-as-seal lifts it (2026-10-27).
 -- They are listed last (rank 4, held = true) so the text is ready the moment that hold is decided, without a second run.
 --
 -- This function only READS. It lists those byte sets in pages so scripts/documents/text_backlog.py can write the
@@ -73,6 +76,6 @@ revoke all on function public.documents_text_backlog_v1(text, integer) from publ
 grant execute on function public.documents_text_backlog_v1(text, integer) to service_role;
 
 comment on function public.documents_text_backlog_v1(text, integer) is
-  'Read-only extraction worklist: byte sets of documents.documents with no corpus_ingest.pdf_texts row (text_status not_extracted, plus withheld_policy byte sets listed last with held = true; storing their text does not publish it). Paged by sha256 (C collation).';
+  'Read-only extraction worklist: byte sets of documents.documents with no corpus_ingest.pdf_texts row (text_status not_extracted, plus withheld_policy byte sets listed last with held = true; the documents layer does not index their text while held). Paged by sha256 (C collation).';
 
 commit;

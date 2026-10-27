@@ -193,6 +193,9 @@ def fetch_backlog(call, page: int = 2000) -> list[dict]:
         after = last
 
 
+CORPUS_URL = "https://xosqzzsnhxcyehcnirpa.supabase.co"
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -206,6 +209,10 @@ def main(argv: list[str]) -> int:
     v.add_argument("--staging", required=True, type=Path)
     a = ap.parse_args(argv)
     if a.cmd == "worklist":
+        # the worklist must come from corpussite: the extractor and the loader pin the same project
+        if os.environ.get("EXTERNAL_SUPABASE_URL", "").strip().rstrip("/") != CORPUS_URL:
+            print("WRONG_PROJECT_OR_URL_MISSING: EXTERNAL_SUPABASE_URL must be " + CORPUS_URL, file=sys.stderr)
+            return 2
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from run_pipeline import rpc  # credentials from the environment; never printed
 
