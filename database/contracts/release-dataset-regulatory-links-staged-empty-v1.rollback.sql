@@ -2,6 +2,8 @@
 -- exactly as archived (all columns, including updated_at) from corpus_ingest.cleanup_decisions. The ledger row is kept and marked rolled back.
 -- Afterwards also revert the datasetSuccessor entry in src/lib/external/groups.ts if the staged page should open again
 -- (it would show 0 rows either way: its 38 links live in sw_matter_regulatory_links_v1).
+-- Run this FIRST if the 2026-10-03 flip (ledger issue dq20261003r6_regulatory_links_flip) is ever rolled back: that rollback moves the
+-- 38 links back into sw_matter_regulatory_links_v1_staged, which needs this catalog row (corpus_records_dataset_fkey).
 
 begin;
 set local statement_timeout = '30s';

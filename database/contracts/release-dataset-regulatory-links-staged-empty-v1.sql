@@ -17,6 +17,13 @@
 -- The site redirects /data/sw_matter_regulatory_links_v1_staged and /records/sw_matter_regulatory_links_v1_staged/<id> to the live
 -- collection (src/lib/external/groups.ts datasetSuccessor), so former URLs keep working.
 -- Rollback: release-dataset-regulatory-links-staged-empty-v1.rollback.sql. Checks: release-dataset-regulatory-links-staged-empty-v1.verify.sql.
+-- ORDERING DEPENDENCY: the documented rollback of the 2026-10-03 flip (ledger issue dq20261003r6_regulatory_links_flip, reason
+-- "set dataset back to sw_matter_regulatory_links_v1_staged and ordinal - 127") needs this catalog row (corpus_records_dataset_fkey).
+-- To roll back that flip, FIRST run release-dataset-regulatory-links-staged-empty-v1.rollback.sql to restore the row.
+-- The staged row's own creation ledger row (dataset sw_matter_regulatory_links_v1_staged, issue dq20261003r6_regulatory_links_staged,
+-- record_id 'dataset') asked for owner approval before deleting it; the owner rule of 2026-10-05/06 allows the coordinator to remove data
+-- unreviewed when every removal is ledgered, reversible and in the audit reports. This one is (ledger below, rollback file,
+-- docs/corpus-audit.md and docs/supabase-data-audit-2026-10-05.md).
 
 begin;
 set local statement_timeout = '30s';
@@ -73,13 +80,18 @@ begin
     jsonb_build_object('row_md5', v_md5, 'records', 0, 'successor', v_live, 'moved_links', 38,
       'moved_by', 'sw-matter-regulatory-links-flip-staged-r6-20261003-v1.sql (ledger issue dq20261003r6_regulatory_links_flip)',
       'owner_decision', '2026-10-27 dont withhold any data',
-      'rollback', 'database/contracts/release-dataset-regulatory-links-staged-empty-v1.rollback.sql'),
+      'rollback', 'database/contracts/release-dataset-regulatory-links-staged-empty-v1.rollback.sql',
+      'ordering_dependency', 'to roll back the 2026-10-03 flip (dq20261003r6_regulatory_links_flip), first run release-dataset-regulatory-links-staged-empty-v1.rollback.sql',
+      'creation_ledger', 'dq20261003r6_regulatory_links_staged (record_id dataset)',
+      'removal_rule', 'owner decisions 2026-10-05/06: removal ledgered, reversible and in the audit reports'),
     to_jsonb(d),
     jsonb_build_object('deleted', true, 'redirect_to', v_live),
     run)
   on conflict (dataset, record_id, issue) do update
     set reason = excluded.reason, evidence = excluded.evidence, original_record = excluded.original_record,
-        replacement = excluded.replacement, run_id = excluded.run_id, reviewed_at = now();
+        replacement = coalesce(cleanup_decisions.replacement, '{}'::jsonb) || excluded.replacement
+                      || jsonb_build_object('reapplied_at', now(), 'previous_run_id', cleanup_decisions.run_id),
+        run_id = excluded.run_id, reviewed_at = now();
 
   delete from public.corpus_datasets where id = v_id;
 

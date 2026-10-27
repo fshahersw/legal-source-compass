@@ -12,7 +12,12 @@ export const Route = createFileRoute("/records/$dataset/$id")({
   // A record of a retired collection keeps its id in the collection it moved into.
   beforeLoad: ({ params }) => {
     const next = datasetSuccessor(params.dataset);
-    if (next) throw redirect({ to: "/records/$dataset/$id", params: { dataset: next, id: params.id }, replace: true });
+    if (next)
+      throw redirect({
+        to: "/records/$dataset/$id",
+        params: { dataset: next, id: params.id },
+        replace: true,
+      });
   },
   loader: ({ context, params }) => {
     if (!/^[a-z0-9_]{1,80}$/.test(params.dataset)) throw new Error("Unknown dataset");

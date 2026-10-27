@@ -44,6 +44,7 @@ These three buckets partition all 16,730 rows. They describe **what each ledger 
 | `sw_matter_regulatory_links_v1` | `dq20261003r5_regulatory_links_pilot` | 4 | Must stay |
 | `sw_matter_regulatory_links_v1` | `dq20261003r6_regulatory_links_flip` | 4 | Must stay |
 | `sw_matter_regulatory_links_v1_staged` | `dq20261003r6_regulatory_links_staged` | 4 | Must stay |
+| `public.corpus_datasets` | `release20261027_retire_empty_staged_catalog` | 1 | Must stay (rollback source: the retired empty catalog row `sw_matter_regulatory_links_v1_staged`, 2026-10-27; restore it with `release-dataset-regulatory-links-staged-empty-v1.rollback.sql` before any rollback of `dq20261003r6_regulatory_links_flip`) |
 | `public.corpus_datasets` | `cleanup_20261006_carry_county_enrichment_20260928_counter` | 1 | Taxonomy / catalog noise |
 | `public.corpus_datasets` | `cleanup_20261006_carry_gap_enrichment_20260927_counter` | 1 | Taxonomy / catalog noise |
 | `public.corpus_datasets` | `cleanup_20261006_carry_cl_reporter_citations_counter` | 1 | Taxonomy / catalog noise |
