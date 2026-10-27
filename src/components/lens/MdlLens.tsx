@@ -341,7 +341,13 @@ function JudgeCard({
  * `showYears` is false when the page already draws this product's reports by year as a trend card (FAERS or MAUDE), which
  * adds the data table, source, partial-year marking and the national total; the same series is then not drawn twice.
  */
-export function SignalCard({ signal, showYears = true }: { signal: MassTortSignal; showYears?: boolean }) {
+export function SignalCard({
+  signal,
+  showYears = true,
+}: {
+  signal: MassTortSignal;
+  showYears?: boolean;
+}) {
   const regulator = REGULATOR[signal.kind];
   const year = new Date().getUTCFullYear();
   const rows = reportYears(signal, year);

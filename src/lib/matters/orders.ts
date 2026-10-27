@@ -119,7 +119,8 @@ const TITLE_END =
   /(?:\.\s*|\s+)(?:Signed\s+by\b|\(?by\s+(?:(?:Senior|Chief|District|Magistrate|U\.S\.|United\s+States)\s+)*(?:Judge|Magistrate|Special\s+Master|Honorable)\b|(?:Approved\s+)?Judge\s+[A-Z][^.]{0,80}?\s+on\s+\d)|\s*\(Related\s+Doc|\.?\s+See\s+Order\b|\s*\((?:Filed\s+on|Entered:)|\s+Associated\s+Cases:|\.\s*\((?:[A-Za-z0-9]{1,6}(?:,\s*[A-Za-z ]{1,20})?)\)/i;
 
 /** Words that may precede a numbered order's name. */
-const AMEND_WORD = /(?:FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|AMENDED|REVISED|SUPPLEMENTAL|CORRECTED)/;
+const AMEND_WORD =
+  /(?:FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|AMENDED|REVISED|SUPPLEMENTAL|CORRECTED)/;
 
 /**
  * An issued numbered order: optional "MDL ORDER -", "MDL", amendment words or "ADDENDUM TO", then the order name and its
@@ -137,7 +138,8 @@ const ORDER_START =
   /^[\s*]*(?:(?:MDL|MINUTE|OMNIBUS|STIPULATED|AGREED|SCHEDULING|PROTECTIVE|INITIAL|PRETRIAL|PRE-TRIAL)\s+)?(?:(?:MEMORANDUM\s+(?:OPINION\s+)?(?:AND\s+|&\s+)?)?(?:OPINION\s+(?:AND\s+|&\s+)?)?ORDER\b|(?:MEMORANDUM\s+)?OPINION\b|(?:CLERK'?S\s+)?JUDGMENT\b|CONDITIONAL\s+TRANSFER\s+ORDER\b|JURY\s+VERDICT\b)/i;
 
 /** A signature line anywhere marks an entry the court entered (stipulated orders and the like). */
-const SIGNED = /\bSigned\s+by\s+(?:the\s+)?(?:(?:Senior|Chief|District|Magistrate|U\.S\.|Honorable)\s+)*(?:Judge|Special\s+Master)\b/i;
+const SIGNED =
+  /\bSigned\s+by\s+(?:the\s+)?(?:(?:Senior|Chief|District|Magistrate|U\.S\.|Honorable)\s+)*(?:Judge|Special\s+Master)\b/i;
 
 /** Clerk notices, minute entries and deadline settings. */
 const CLERK_START =
@@ -178,7 +180,8 @@ const SUBJECT_KINDS: { kind: OrderKind; re: RegExp }[] = [
 const TRIAL_SETTING =
   /\b((?:jury|bench)\s+(?:trial|selection))\b[^.;]{0,40}?\b(?:(?:is\s+)?(?:re)?set\s+for|continued\s+to|vacated)/i;
 
-const CTO = /^[\s*]*CONDITIONAL\s+TRANSFER\s+ORDER\b\s*(?:\(?\s*CTO\s*-?\s*(\d{1,4})\s*\)?|No\.?\s*(\d{1,4})\b|(\d{1,4})\b)?/i;
+const CTO =
+  /^[\s*]*CONDITIONAL\s+TRANSFER\s+ORDER\b\s*(?:\(?\s*CTO\s*-?\s*(\d{1,4})\s*\)?|No\.?\s*(\d{1,4})\b|(\d{1,4})\b)?/i;
 
 const VERDICT =
   /^[\s*]*(?:JURY\s+VERDICT\b|(?:CLERK'?S\s+)?JUDGMENT\s+(?:ON|UPON)\s+(?:THE\s+)?(?:JURY\s+)?VERDICT\b)/i;
@@ -190,7 +193,8 @@ const BANKRUPTCY_SUGGESTION =
 const BANKRUPTCY_NOTICE =
   /^[\s*]*NOTICE\s+(?:OF\s+)?(?:FILING\s+(?:OF\s+)?)?BANKRUPTCY\b[^.]{0,120}?\bAUTOMATIC\s+STAY\b/i;
 const STAY_NOTICE = /^[\s*]*NOTICE\s+OF\s+(?:THE\s+)?(?:AUTOMATIC\s+)?STAY\b/i;
-const BANKRUPTCY_WORDS = /\bbankrupt|\bchapter\s+11\b|\bautomatic\s+stay\b|§\s*362\b|\b11\s+U\.S\.C\./i;
+const BANKRUPTCY_WORDS =
+  /\bbankrupt|\bchapter\s+11\b|\bautomatic\s+stay\b|§\s*362\b|\b11\s+U\.S\.C\./i;
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -312,7 +316,11 @@ export function classifyDocketText(
   if (numbered) tags.push(numbered);
   if (cto) {
     const n = Number(cto[1] ?? cto[2] ?? cto[3] ?? NaN);
-    tags.push(tag("cto", cleanSubject(title.slice(cto[0].length)), { number: Number.isInteger(n) && n > 0 ? n : null }));
+    tags.push(
+      tag("cto", cleanSubject(title.slice(cto[0].length)), {
+        number: Number.isInteger(n) && n > 0 ? n : null,
+      }),
+    );
   }
   if (verdict) {
     const side = VERDICT_SIDE.exec(raw)?.[1]?.toLowerCase();
@@ -337,7 +345,8 @@ export function classifyDocketText(
 
   // Subject kinds come only from the printed title of an entry that starts as an order.
   if (orderStart && !SUBJECT_EXCLUDED.test(title)) {
-    for (const { kind, re } of SUBJECT_KINDS) if (re.test(title)) tags.push(tag(kind, numbered?.subject ?? title));
+    for (const { kind, re } of SUBJECT_KINDS)
+      if (re.test(title)) tags.push(tag(kind, numbered?.subject ?? title));
   }
 
   if (role === "order" || role === "clerk_setting") {
@@ -399,7 +408,10 @@ export type LedgerRow = {
   suffix: string | null;
   amended: string | null;
   subject: string | null;
-  entry: Pick<ClassifiedEntry, "id" | "entryNumber" | "date" | "sourceUrl" | "docketKey" | "documentIds">;
+  entry: Pick<
+    ClassifiedEntry,
+    "id" | "entryNumber" | "date" | "sourceUrl" | "docketKey" | "documentIds"
+  >;
 };
 
 export type LedgerSequence = {
@@ -421,7 +433,9 @@ export const NOT_IN_COLLECTED_TEXT = "Not in collected docket text";
 const suffixKey = (s: string | null) => (s ?? "").toLowerCase();
 
 /** The CMO and PTO ledgers of one MDL, with the numbers missing from the collected docket text. */
-export function orderLedger(entries: readonly ClassifiedEntry[]): Record<"cmo" | "pto", LedgerSequence> {
+export function orderLedger(
+  entries: readonly ClassifiedEntry[],
+): Record<"cmo" | "pto", LedgerSequence> {
   const build = (kind: "cmo" | "pto"): LedgerSequence => {
     const rows: LedgerRow[] = [];
     for (const e of entries)
@@ -486,7 +500,12 @@ export function orderLabel(kind: "cmo" | "pto", number: number, suffix: string |
 /* ------------------------------------------------------------------ court-page join */
 
 /** An order as listed on the transferee court's own MDL page (mdl_intel_court_pages). */
-export type CourtPageOrderInput = { title: string; url: string; date: string | null; vacated: boolean };
+export type CourtPageOrderInput = {
+  title: string;
+  url: string;
+  date: string | null;
+  vacated: boolean;
+};
 
 export type CourtPageMatch = {
   kind: "cmo" | "pto";

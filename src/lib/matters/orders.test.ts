@@ -64,8 +64,7 @@ const T = {
     "ORDER REGARDING PLAINTIFFS' CLASS CERTIFICATION REPLY AND DAUBERT MOTION OPPOSITION by Judge William H. Orrick granting 2429 Stipulation. (jmdS, COURT STAFF) (Filed on 10/7/2021) (",
   r702_minute_3094:
     "Minute Entry for proceedings held before DISTRICT JUDGE KAREN S. MARSTONin Courtroom 16B STATUS CONFERENCE AND Motion Hearing held on 5/19/25 re 359 MOTION to Exclude OPINIONS OF L",
-  cto52:
-    "CONDITIONAL TRANSFER ORDER No. 52. (daf) (Entered: 05/07/2020)",
+  cto52: "CONDITIONAL TRANSFER ORDER No. 52. (daf) (Entered: 05/07/2020)",
   cto71: "CONDITIONAL TRANSFER ORDER 71. (er) (Entered: 06/16/2021)",
   cto16: "CONDITIONAL TRANSFER ORDER No.16. (er) (Entered: 12/04/2018)",
   verdict_3081: "JURY VERDICT. (Divelbliss, CV23-1627-PHX-DGC.) (KMB) (Entered: 09/08/2026)",
@@ -94,12 +93,14 @@ const T = {
     "Minutes of proceedings before Judge Dan Aaron Polster. Jury Trial held 10/12/21. Trial to resume 10/13/21 at 9:00 AM (Court Reporter: Sue Trischan.)Time: 7.5 hrs. (P,R) (Entered: 10/13/2021)",
   leadership_3060:
     "ORDER REAPPOINTING PLAINTIFFS' CO-LEAD COUNSEL, EXECUTIVE COMMITTEE, STEERING COMMITTEE, AND LEADERSHIP DEVELOPMENT COMMITTEE Signed by the Honorable Mary M. Rowland on 4/22/2024. Mailed not",
-  pfs_2804: "Order Regarding Hospital Plaintiff Fact Sheets. Signed by Judge Dan Aaron Polster on 11/29/2023. (M,CE) (Entered: 11/29/2023)",
+  pfs_2804:
+    "Order Regarding Hospital Plaintiff Fact Sheets. Signed by Judge Dan Aaron Polster on 11/29/2023. (M,CE) (Entered: 11/29/2023)",
   pfs_extension_2804:
     "Order [non-document] granting 6479 Motion for Extension of Time until 04/08/2026 to Comply with Order No. 6417 regarding NAS Plaintiff Fact Sheets. Approved Judge Dan Aaron Polster on 3/10/2",
   cb_2804:
     "Order Establishing Application Protocols for Reimbursement of Common Benefit Attorneys' Fees Under the Janssen and Distributors Settlement Agreements. Judge Dan Aaron Polster on 4/1/22. (P,R)",
-  sm_2804: "Order regarding payments to Special Masters. Judge Dan Aaron Polster (MDL 2804) on 4/10/18. (P,R) (Entered: 04/10/2018)",
+  sm_2804:
+    "Order regarding payments to Special Masters. Judge Dan Aaron Polster (MDL 2804) on 4/10/18. (P,R) (Entered: 04/10/2018)",
   settlement_2804:
     "Order Regarding Settlement Negotiating Teams. Judge Dan Aaron Polster (MDL 2804) on 4/9/18. (P,R) (Entered: 04/09/2018)",
   bw_2804:
@@ -127,7 +128,12 @@ const kinds = (text: string) => tags(text).map((t) => t.kind);
 
 describe("classifyDocketText: numbered orders", () => {
   it("reads issued CMOs at the start of the text, with number, suffix and printed subject", () => {
-    expect(numberedOrder(T.cmo1_3047)).toMatchObject({ kind: "cmo", number: 1, suffix: null, subject: null });
+    expect(numberedOrder(T.cmo1_3047)).toMatchObject({
+      kind: "cmo",
+      number: 1,
+      suffix: null,
+      subject: null,
+    });
     expect(numberedOrder(T.cmo2_3047)).toMatchObject({
       kind: "cmo",
       number: 2,
@@ -156,9 +162,16 @@ describe("classifyDocketText: numbered orders", () => {
 
   it("reads court-specific PTO wording and amendment prefixes", () => {
     expect(numberedOrder(T.pto31_3014)).toMatchObject({ kind: "pto", number: 31, suffix: null });
-    expect(numberedOrder(T.pto12_3014)).toMatchObject({ kind: "pto", number: 12, amended: "SECOND AMENDED" });
+    expect(numberedOrder(T.pto12_3014)).toMatchObject({
+      kind: "pto",
+      number: 12,
+      amended: "SECOND AMENDED",
+    });
     expect(numberedOrder(T.pto37_3108)).toMatchObject({ kind: "pto", number: 37, amended: null });
-    expect(numberedOrder(T.pto31_2741)).toMatchObject({ number: 31, subject: "NOTICE TO STATE COURT JUDGES" });
+    expect(numberedOrder(T.pto31_2741)).toMatchObject({
+      number: 31,
+      subject: "NOTICE TO STATE COURT JUDGES",
+    });
     expect(numberedOrder(T.cmo50a_3081)).toMatchObject({
       kind: "cmo",
       number: 50,
@@ -207,15 +220,23 @@ describe("classifyDocketText: Rule 702 / Daubert", () => {
   });
 
   it("does not treat schedules, extensions, briefing orders or minute entries as rulings", () => {
-    for (const k of ["r702_schedule_3047", "r702_extension_2913", "r702_opposition_2913", "r702_minute_3094"] as const)
+    for (const k of [
+      "r702_schedule_3047",
+      "r702_extension_2913",
+      "r702_opposition_2913",
+      "r702_minute_3094",
+    ] as const)
       expect(kinds(T[k])).not.toContain("rule702");
     expect(classifyDocketText(T.r702_minute_3094).role).toBe("clerk_setting");
   });
 
   it("counts motions apart from rulings", () => {
-    const motion = "MOTION to Exclude the Opinions of Dr. Jane Roe Pursuant to Rule 702 filed by Defendants. (Attachments: # 1 Exhibit)";
+    const motion =
+      "MOTION to Exclude the Opinions of Dr. Jane Roe Pursuant to Rule 702 filed by Defendants. (Attachments: # 1 Exhibit)";
     expect(kinds(motion)).toEqual(["rule702_motion"]);
-    expect(kinds("Joint MOTION for Extension of Time to file Daubert briefs by Plaintiffs.")).toEqual([]);
+    expect(
+      kinds("Joint MOTION for Extension of Time to file Daubert briefs by Plaintiffs."),
+    ).toEqual([]);
   });
 
   it("states no outcome when the order title has no ruling verb", () => {
@@ -232,11 +253,19 @@ describe("classifyDocketText: other key orders", () => {
   });
 
   it("reads jury verdicts but never proposed or party verdict forms", () => {
-    expect(tags(T.verdict_3081)).toEqual([expect.objectContaining({ kind: "verdict", outcome: null })]);
+    expect(tags(T.verdict_3081)).toEqual([
+      expect.objectContaining({ kind: "verdict", outcome: null }),
+    ]);
     expect(
-      tags("JUDGMENT ON JURY VERDICT in favor of Defendants and against Plaintiff. Signed by Judge E on 8/31/2017."),
+      tags(
+        "JUDGMENT ON JURY VERDICT in favor of Defendants and against Plaintiff. Signed by Judge E on 8/31/2017.",
+      ),
     ).toContainEqual(expect.objectContaining({ kind: "verdict", outcome: "for_defendant" }));
-    for (const k of ["verdict_proposed_2592", "verdict_court_proposed_3081", "verdict_amended_forms_3081"] as const)
+    for (const k of [
+      "verdict_proposed_2592",
+      "verdict_court_proposed_3081",
+      "verdict_amended_forms_3081",
+    ] as const)
       expect(kinds(T[k])).not.toContain("verdict");
   });
 
@@ -246,7 +275,9 @@ describe("classifyDocketText: other key orders", () => {
     for (const k of ["bk_letter_3043", "death_3060", "remand_2804"] as const)
       expect(kinds(T[k])).not.toContain("bankruptcy_stay");
     expect(kinds("NOTICE OF STAY pending appeal by Defendant.")).not.toContain("bankruptcy_stay");
-    expect(kinds("NOTICE OF AUTOMATIC STAY under 11 U.S.C. § 362 by Debtor Co.")).toContain("bankruptcy_stay");
+    expect(kinds("NOTICE OF AUTOMATIC STAY under 11 U.S.C. § 362 by Debtor Co.")).toContain(
+      "bankruptcy_stay",
+    );
   });
 
   it("reads trial settings, vacated and continued settings, but not trial-day minutes", () => {
@@ -305,7 +336,10 @@ describe("server prefilter", () => {
     const res = ORDER_PREFILTER_PATTERNS.map((p) => new RegExp(p, "i"));
     for (const [key, text] of Object.entries(T)) {
       if (!classifyDocketText(text).tags.length) continue;
-      expect(res.some((r) => r.test(text)), key).toBe(true);
+      expect(
+        res.some((r) => r.test(text)),
+        key,
+      ).toBe(true);
     }
   });
 
@@ -337,7 +371,12 @@ describe("orderLedger", () => {
     entry("e1", 75, "2022-11-10", T.cmo1_3047),
     entry("e2", 82, "2022-11-15", T.cmo2_3047),
     entry("e3", 3062, "2026-05-21", "CASE MANAGEMENT ORDER NO. 5. Signed by Judge Y on 5/21/2026."),
-    entry("e4", 3100, "2026-06-01", "AMENDED CASE MANAGEMENT ORDER NO. 5. Signed by Judge Y on 6/1/2026."),
+    entry(
+      "e4",
+      3100,
+      "2026-06-01",
+      "AMENDED CASE MANAGEMENT ORDER NO. 5. Signed by Judge Y on 6/1/2026.",
+    ),
     entry("e5", 3200, "2026-06-02", T.pto37_3108),
     entry("e6", 3300, "2026-06-03", T.neg_motion_dismiss_2873),
   ];
@@ -350,7 +389,12 @@ describe("orderLedger", () => {
       [5, "e3"],
       [5, "e4"],
     ]);
-    expect(l.cmo).toMatchObject({ issuedEntries: 4, distinctNumbers: 3, highest: 5, missing: [3, 4] });
+    expect(l.cmo).toMatchObject({
+      issuedEntries: 4,
+      distinctNumbers: 3,
+      highest: 5,
+      missing: [3, 4],
+    });
     expect(l.cmo.latest?.entry.id).toBe("e4");
     expect(l.pto).toMatchObject({ highest: 37, distinctNumbers: 1 });
     expect(l.pto.missing).toHaveLength(36);
@@ -359,22 +403,37 @@ describe("orderLedger", () => {
 
   it("counts kinds once per entry", () => {
     const counts = countKinds(entries);
-    expect(counts.find((c) => c.kind === "cmo")).toEqual({ kind: "cmo", entries: 4, latest: "2026-06-01" });
+    expect(counts.find((c) => c.kind === "cmo")).toEqual({
+      kind: "cmo",
+      entries: 4,
+      latest: "2026-06-01",
+    });
     expect(counts.find((c) => c.kind === "leadership")?.entries).toBe(1);
   });
 
   it("joins court-page orders on exact (kind, number, suffix) only", () => {
     const l = orderLedger(entries);
     const joined = joinCourtPageOrders(l, [
-      { title: "CASE MANAGEMENT ORDER NO. 5. Signed by", url: "https://ecf/1", date: "2026-05-21", vacated: false },
       {
-        title: "CASE MANAGEMENT ORDER NO. 38 (Appointing a Special Master to Oversee Meta's Privilege Re-Review)",
+        title: "CASE MANAGEMENT ORDER NO. 5. Signed by",
+        url: "https://ecf/1",
+        date: "2026-05-21",
+        vacated: false,
+      },
+      {
+        title:
+          "CASE MANAGEMENT ORDER NO. 38 (Appointing a Special Master to Oversee Meta's Privilege Re-Review)",
         url: "https://ecf/2",
         date: "2026-10-16",
         vacated: false,
       },
       { title: "CASE MANAGEMENT ORDER NO. 5-A", url: "https://ecf/3", date: null, vacated: false },
-      { title: "Transcript of Proceedings ... Per General Order No. 59", url: "https://ecf/4", date: null, vacated: false },
+      {
+        title: "Transcript of Proceedings ... Per General Order No. 59",
+        url: "https://ecf/4",
+        date: null,
+        vacated: false,
+      },
     ]);
     expect(joined.map((j) => [j.number, j.suffix, j.docketEntryIds])).toEqual([
       [5, null, ["e3", "e4"]],

@@ -80,7 +80,12 @@ const row = (date: string, vacated: boolean, id: string): DatedEntry => ({
 });
 
 describe("upcoming and summary", () => {
-  const rows = [row("2026-11-16", false, "a"), row("2027-02-08", false, "b"), row("2026-12-01", true, "c"), row("2026-01-01", false, "d")];
+  const rows = [
+    row("2026-11-16", false, "a"),
+    row("2027-02-08", false, "b"),
+    row("2026-12-01", true, "c"),
+    row("2026-01-01", false, "d"),
+  ];
   it("keeps only non-vacated dates on or after today, soonest first", () => {
     expect(upcomingDates(rows, "2026-10-27").map((r) => r.entryId)).toEqual(["a", "b"]);
   });

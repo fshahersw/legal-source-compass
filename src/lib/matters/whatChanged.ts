@@ -10,7 +10,13 @@
  *  - Trial and deadline settings docketed in the window, and the ones the text says were vacated.
  */
 import type { DatedEntry } from "./docketDates";
-import { ORDER_KIND_LABEL, orderLabel, type ClassifiedEntry, type CourtPageMatch, type OrderKind } from "./orders";
+import {
+  ORDER_KIND_LABEL,
+  orderLabel,
+  type ClassifiedEntry,
+  type CourtPageMatch,
+  type OrderKind,
+} from "./orders";
 
 export type JpmlPoint = { date: string; pending: number; total: number };
 
@@ -37,7 +43,8 @@ const dayNumber = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / DAY_MS;
 export function jpmlDeltas(points: readonly JpmlPoint[]): JpmlDelta[] {
   const byDate = new Map<string, JpmlPoint>();
   for (const p of points)
-    if (ISO.test(p.date) && Number.isFinite(p.total) && Number.isFinite(p.pending)) byDate.set(p.date, p);
+    if (ISO.test(p.date) && Number.isFinite(p.total) && Number.isFinite(p.pending))
+      byDate.set(p.date, p);
   const sorted = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
   const out: JpmlDelta[] = [];
   for (let i = 1; i < sorted.length; i++) {
@@ -145,7 +152,13 @@ function windowOf(
       if (!ISSUED_KINDS.has(t.kind)) continue;
       counts.set(t.kind, (counts.get(t.kind) ?? new Set()).add(e.id));
       if (!named) {
-        orders.push({ entryId: e.id, date: e.date!, kind: t.kind, printed: printedFor(e, t.kind), sourceUrl: e.sourceUrl });
+        orders.push({
+          entryId: e.id,
+          date: e.date!,
+          kind: t.kind,
+          printed: printedFor(e, t.kind),
+          sourceUrl: e.sourceUrl,
+        });
         named = true;
       }
     }
@@ -194,8 +207,18 @@ export function whatChanged(input: {
   const figures: ChangeFigure[] = [];
   if (latest) {
     figures.push(
-      { label: "Actions pending (JPML)", value: latest.pendingTo, unit: "actions", period: `report of ${latest.to}` },
-      { label: "Actions pending at the prior report", value: latest.pendingFrom, unit: "actions", period: `report of ${latest.from}` },
+      {
+        label: "Actions pending (JPML)",
+        value: latest.pendingTo,
+        unit: "actions",
+        period: `report of ${latest.to}`,
+      },
+      {
+        label: "Actions pending at the prior report",
+        value: latest.pendingFrom,
+        unit: "actions",
+        period: `report of ${latest.from}`,
+      },
       {
         label: "Actions added between the two reports (difference of published totals)",
         value: latest.added,
@@ -226,11 +249,19 @@ export function whatChanged(input: {
   for (const o of windows[1]!.orders.slice(0, 8))
     figures.push({ label: "Order entered", value: o.printed, period: o.date });
   for (const c of courtPageNewer.slice(0, 5))
-    figures.push({ label: "Court-page order newer than the collected docket", value: c.printed, period: c.date });
+    figures.push({
+      label: "Court-page order newer than the collected docket",
+      value: c.printed,
+      period: c.date,
+    });
   const w90 = windows[1]!;
   figures.push(
     { label: "Settings docketed in the last 90 days", value: w90.settings.set, unit: "dates" },
-    { label: "Settings docketed as vacated in the last 90 days", value: w90.settings.vacated, unit: "dates" },
+    {
+      label: "Settings docketed as vacated in the last 90 days",
+      value: w90.settings.vacated,
+      unit: "dates",
+    },
   );
   return {
     asOf: input.asOf,

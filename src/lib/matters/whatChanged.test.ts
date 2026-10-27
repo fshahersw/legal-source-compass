@@ -12,7 +12,17 @@ const JPML = [
 
 const entry = (id: string, date: string, text: string): ClassifiedEntry => {
   const c = classifyDocketText(text);
-  return { id, entryNumber: 1, date, docketKey: "k", sourceUrl: null, documentIds: [], role: c.role, title: c.title, tags: c.tags };
+  return {
+    id,
+    entryNumber: 1,
+    date,
+    docketKey: "k",
+    sourceUrl: null,
+    documentIds: [],
+    role: c.role,
+    title: c.title,
+    tags: c.tags,
+  };
 };
 
 describe("jpmlDeltas", () => {
@@ -49,19 +59,76 @@ describe("jpmlDeltas", () => {
 describe("whatChanged", () => {
   const entries = [
     entry("a", "2026-10-02", "CASE MANAGEMENT ORDER NO. 37. Signed by Judge Y on 10/2/2026."),
-    entry("b", "2026-08-15", "ORDER GRANTING IN PART AND DENYING IN PART RULE 702 MOTIONS by Judge Y"),
+    entry(
+      "b",
+      "2026-08-15",
+      "ORDER GRANTING IN PART AND DENYING IN PART RULE 702 MOTIONS by Judge Y",
+    ),
     entry("c", "2026-05-01", "CASE MANAGEMENT ORDER NO. 30. Signed by Judge Y on 5/1/2026."),
-    entry("d", "2026-10-01", "MOTION to Dismiss for Failure to Comply with Case Management Order No. 37 by Defendants."),
+    entry(
+      "d",
+      "2026-10-01",
+      "MOTION to Dismiss for Failure to Comply with Case Management Order No. 37 by Defendants.",
+    ),
   ];
   const dates: DatedEntry[] = [
-    { date: "2027-02-08", printed: "2/8/2027", phrase: "set for", label: "Jury Trial", time: null, vacated: false, snippet: "", entryId: "x", entryNumber: 1, entryDate: "2026-09-20", sourceUrl: null },
-    { date: "2026-08-20", printed: "8/20/2026", phrase: "set for", label: "Jury Trial", time: null, vacated: true, snippet: "", entryId: "y", entryNumber: 2, entryDate: "2026-08-20", sourceUrl: null },
+    {
+      date: "2027-02-08",
+      printed: "2/8/2027",
+      phrase: "set for",
+      label: "Jury Trial",
+      time: null,
+      vacated: false,
+      snippet: "",
+      entryId: "x",
+      entryNumber: 1,
+      entryDate: "2026-09-20",
+      sourceUrl: null,
+    },
+    {
+      date: "2026-08-20",
+      printed: "8/20/2026",
+      phrase: "set for",
+      label: "Jury Trial",
+      time: null,
+      vacated: true,
+      snippet: "",
+      entryId: "y",
+      entryNumber: 2,
+      entryDate: "2026-08-20",
+      sourceUrl: null,
+    },
   ];
   const courtPage: CourtPageMatch[] = [
-    { kind: "cmo", number: 38, suffix: null, title: "CASE MANAGEMENT ORDER NO. 38", url: "https://ecf/38", date: "2026-10-16", vacated: false, docketEntryIds: [] },
-    { kind: "cmo", number: 37, suffix: null, title: "CASE MANAGEMENT ORDER NO. 37", url: "https://ecf/37", date: "2026-10-02", vacated: false, docketEntryIds: ["a"] },
+    {
+      kind: "cmo",
+      number: 38,
+      suffix: null,
+      title: "CASE MANAGEMENT ORDER NO. 38",
+      url: "https://ecf/38",
+      date: "2026-10-16",
+      vacated: false,
+      docketEntryIds: [],
+    },
+    {
+      kind: "cmo",
+      number: 37,
+      suffix: null,
+      title: "CASE MANAGEMENT ORDER NO. 37",
+      url: "https://ecf/37",
+      date: "2026-10-02",
+      vacated: false,
+      docketEntryIds: ["a"],
+    },
   ];
-  const w = whatChanged({ asOf: "2026-10-27", collectedThrough: "2026-10-03", jpml: JPML, entries, dates, courtPage });
+  const w = whatChanged({
+    asOf: "2026-10-27",
+    collectedThrough: "2026-10-03",
+    jpml: JPML,
+    entries,
+    dates,
+    courtPage,
+  });
 
   it("lists orders entered in each window, by printed label, never motions", () => {
     expect(w.windows[0]).toMatchObject({ days: 30, from: "2026-09-28" });
@@ -75,22 +142,33 @@ describe("whatChanged", () => {
 
   it("lists court-page orders newer than the collected docket", () => {
     expect(w.courtPageNewer).toEqual([
-      { printed: "CMO No. 38 (2026-10-16)", date: "2026-10-16", url: "https://ecf/38", title: "CASE MANAGEMENT ORDER NO. 38" },
+      {
+        printed: "CMO No. 38 (2026-10-16)",
+        date: "2026-10-16",
+        url: "https://ecf/38",
+        title: "CASE MANAGEMENT ORDER NO. 38",
+      },
     ]);
   });
 
   it("builds AI figures only from the computed values, with the collection caveat", () => {
     const labels = w.figures.map((f) => f.label);
-    expect(labels).toContain("Actions added between the two reports (difference of published totals)");
+    expect(labels).toContain(
+      "Actions added between the two reports (difference of published totals)",
+    );
     expect(w.figures.find((f) => f.label.startsWith("Actions added between"))).toMatchObject({
       value: 626,
       period: "2026-09-01 to 2026-10-01 (30 days)",
     });
-    expect(w.figures.find((f) => f.label.startsWith("Orders entered in the last 30"))).toMatchObject({
+    expect(
+      w.figures.find((f) => f.label.startsWith("Orders entered in the last 30")),
+    ).toMatchObject({
       value: 1,
       note: "docket text collected through 2026-10-03",
     });
-    expect(w.figures.filter((f) => f.label === "Court-page order newer than the collected docket")).toHaveLength(1);
+    expect(
+      w.figures.filter((f) => f.label === "Court-page order newer than the collected docket"),
+    ).toHaveLength(1);
   });
 
   it("subtracts days in UTC", () => {

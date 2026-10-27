@@ -50,7 +50,11 @@ function clauseStart(text: string, at: number): number {
 }
 
 function cleanLabel(raw: string): string | null {
-  let s = raw.replace(/\s+/g, " ").trim().replace(/[,;:]+$/, "").trim();
+  let s = raw
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[,;:]+$/, "")
+    .trim();
   for (let i = 0; i < 4 && LEAD_IN.test(s); i++) s = s.replace(LEAD_IN, "").trim();
   if (!s) return null;
   const words = s.split(" ");
