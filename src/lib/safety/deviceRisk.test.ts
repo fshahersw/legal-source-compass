@@ -18,7 +18,10 @@ describe("buildDeviceRisk", () => {
         { pc: "ZZZ", nid: "P1:S1", dd: "2024-01-01" },
       ],
       "2026-10-27T00:00:00Z",
+      new Set(["LWS"]),
     );
+    expect(p.codes.find((c) => c.code === "LWS")!.hasSubject).toBe(true);
+    expect(p.codes.find((c) => c.code === "DTK")!.hasSubject).toBe(false);
     expect(p.totals).toMatchObject({
       codes: 3,
       implantCodes: 2,

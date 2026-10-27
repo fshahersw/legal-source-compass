@@ -81,7 +81,7 @@ export function DeviceRiskMap() {
     <Section
       id={ID}
       title="Device risk map"
-      description="Device classes, implants and the design changes FDA approved."
+      description="Device classes, implants and the changes FDA approved after approval (PMA supplements)."
       actions={<AskAiButton sectionId={ID} context={context} size="icon" />}
     >
       <KpiGrid columns={4} label="Device classification figures">
@@ -198,7 +198,7 @@ export function DeviceRiskMap() {
           />
           <DataDrawer
             title="Device product codes"
-            description="Every FDA product code with its class, implant and life-sustaining flags and its PMA originals and supplements."
+            description="Every FDA product code with its class, implant and life-sustaining flags and its PMA originals and supplements. Codes with a product page link to it."
             triggerLabel={`See all ${d?.codes.length ?? 0}`}
             rows={d?.codes ?? []}
             rowKey={(c) => c.code}
@@ -208,11 +208,17 @@ export function DeviceRiskMap() {
                 key: "code",
                 label: "Code",
                 value: (c) => c.code,
-                render: (c) => (
-                  <a href={subjectHref(`maude:${c.code}`)} className="text-primary hover:underline">
-                    {c.code}
-                  </a>
-                ),
+                render: (c) =>
+                  c.hasSubject ? (
+                    <a
+                      href={subjectHref(`maude:${c.code}`)}
+                      className="text-primary hover:underline"
+                    >
+                      {c.code}
+                    </a>
+                  ) : (
+                    c.code
+                  ),
               },
               { key: "name", label: "Device", value: (c) => c.name },
               { key: "cls", label: "Class", value: (c) => CLASS_LABEL[c.cls] ?? c.cls },

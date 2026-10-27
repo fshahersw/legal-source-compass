@@ -60,10 +60,16 @@ export function ReportingContext({ p }: { p: SafetySubjectProfile }) {
         : [],
     [main, d],
   );
+  // The lawyer share comes from one MDL's product series: the MDL whose transfer the page shows when it has one,
+  // else the first linked MDL with lawyer data. Its MDL and product are named wherever the share appears.
   const lawyer = useMemo(() => {
     const own = d?.lawyer.filter((l) => l.years.some((y) => y.lawyer !== null)) ?? [];
-    return own[0] ?? null;
-  }, [d]);
+    const shownMdl = windows.find((w) => w.transferMonth)?.mdl;
+    return own.find((l) => l.mdl === shownMdl) ?? own[0] ?? null;
+  }, [d, windows]);
+  const lawyerLabel = lawyer
+    ? `MDL ${lawyer.mdl}${lawyer.product ? ` (${lawyer.product})` : ""} product series`
+    : "";
   const shares = lawyerShares(lawyer).filter((s) => Number(s.year) >= 2010);
   if (!mdls.length || !main || !d) return null;
   const dated = windows.filter((w) => w.transferMonth);
@@ -107,7 +113,7 @@ export function ReportingContext({ p }: { p: SafetySubjectProfile }) {
         ? [{ label: `MDL ${transfer.mdl} actions pending`, value: transfer.pending }]
         : []),
       ...shares.slice(-5).map((s) => ({
-        label: "Share of FAERS reports submitted by a lawyer",
+        label: `Share of FAERS reports submitted by a lawyer, ${lawyerLabel}`,
         value: s.share,
         unit: "%",
         period: s.year,
@@ -179,7 +185,7 @@ export function ReportingContext({ p }: { p: SafetySubjectProfile }) {
           value={latestComplete?.share == null ? null : `${latestComplete.share.toFixed(1)}%`}
           meta={
             latestComplete
-              ? `${latestComplete.year}${latestPartial ? ` · ${latestPartial.year} so far: ${latestPartial.share!.toFixed(1)}%` : ""}`
+              ? `${latestComplete.year} · ${lawyerLabel}${latestPartial ? ` · ${latestPartial.year} so far: ${latestPartial.share!.toFixed(1)}%` : ""}`
               : undefined
           }
           source={{

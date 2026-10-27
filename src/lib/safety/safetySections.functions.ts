@@ -105,8 +105,24 @@ export const getCpscDeaths = createServerFn({ method: "GET" }).handler(
 );
 
 // ------------------------------------------------------------------------------------------------ device risk map
+/** Product codes that have a maude:<code> safety subject, so the map links only codes with a product page. */
+async function readMaudeSubjectCodes(): Promise<Set<string>> {
+  const codes = new Set<string>();
+  const limit = 200;
+  for (let offset = 0; offset <= 20_000; offset += limit) {
+    const page = await rpcPostOptional<{ total: number; rows: { id: string }[] }>(
+      "safety_subjects_v1",
+      { p_type: "device_code", p_kind: null, p_q: null, p_limit: limit, p_offset: offset },
+    ).catch(() => null);
+    if (!page || !Array.isArray(page.rows)) break;
+    for (const r of page.rows) if (r.id.startsWith("maude:")) codes.add(r.id.slice(6));
+    if (page.rows.length < limit || offset + limit >= page.total) break;
+  }
+  return codes;
+}
+
 const readDeviceRisk = memoAsync(READ_TTL_MS, async (): Promise<DeviceRiskPayload> => {
-  const [cls, pma] = await Promise.all([
+  const [cls, pma, subjects] = await Promise.all([
     readAllRows<ClassificationRow>(
       `corpus_records?select=pc:item->cells->>product_code,name:item->cells->>device_name,cls:item->cells->>device_class,implant:item->cells->>implant_flag,life:item->cells->>life_sustain_support_flag&dataset=eq.${CLASSIFICATION_DATASET}&order=ordinal.asc,id.asc`,
       { max: 20_000 },
@@ -115,8 +131,9 @@ const readDeviceRisk = memoAsync(READ_TTL_MS, async (): Promise<DeviceRiskPayloa
       `corpus_records?select=pc:item->>product_code,nid:item->>native_id,dd:item->dates->>decision_date&dataset=eq.${PMA_DATASET}&order=ordinal.asc,id.asc`,
       { max: 120_000, concurrency: 6 },
     ),
+    readMaudeSubjectCodes(),
   ]);
-  return buildDeviceRisk(cls, pma, new Date().toISOString());
+  return buildDeviceRisk(cls, pma, new Date().toISOString(), subjects);
 });
 
 export const getDeviceRisk = createServerFn({ method: "GET" }).handler(

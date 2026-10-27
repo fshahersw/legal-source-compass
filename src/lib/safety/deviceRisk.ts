@@ -47,6 +47,8 @@ export type RiskCode = {
   originals: number;
   supplements: number;
   latestDecision: string | null;
+  /** A product page exists for this code (safety subject maude:<code>). */
+  hasSubject: boolean;
 };
 
 export type DeviceRiskPayload = {
@@ -73,6 +75,8 @@ export function buildDeviceRisk(
   classification: readonly ClassificationRow[],
   pma: readonly PmaRow[],
   readAt: string,
+  /** Product codes that have a maude:<code> safety subject (exact code); empty when the subject list is unavailable. */
+  subjectCodes: ReadonlySet<string> = new Set(),
 ): DeviceRiskPayload {
   const pmaBy = new Map<
     string,
@@ -107,6 +111,7 @@ export function buildDeviceRisk(
       originals: p?.originals ?? 0,
       supplements: p?.supplements ?? 0,
       latestDecision: p?.latest ?? null,
+      hasSubject: subjectCodes.has(code),
     });
     const implantLabel =
       implant === true ? "Implant" : implant === false ? "Not an implant" : "Not recorded";
