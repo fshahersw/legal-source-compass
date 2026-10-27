@@ -356,6 +356,13 @@ export const MATTERS = {
     pages: [{ id: 'mtd-3126-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mtd.uscourts.gov/snowflake-data-security-breach-litigation' }],
     index_pages: [],
   },
+  // M.D. Fla. MDL 3006 (Tasigna; cases-of-interest page with direct order PDFs under /sites/flmd/files/documents/orders/).
+  '3006': {
+    name: 'In re Tasigna (Nilotinib) Products Liability Litigation', court_id: 'flmd', host: 'www.flmd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3006',
+    pages: [{ id: 'flmd-3006-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.flmd.uscourts.gov/cases-of-interest/tasigna-nilotinib-products-liability-litigation-mdl-no-3006' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
