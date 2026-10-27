@@ -13,7 +13,16 @@ export const WATCH_PHRASES = [
   "statutes of repose",
   "limitation of actions",
   "limitations of actions",
+  "limitation of action",
+  "limitations of action",
 ] as const;
+
+/**
+ * Criminal-law words in a printed title. A title match is a reading aid that shows how many matched bills concern
+ * criminal periods; it is not a classification, and a bill can touch civil and criminal periods at once.
+ */
+export const CRIMINAL_TITLE_TERMS =
+  /\b(crim\w*|prosecut\w*|felon\w*|homicide|murder|offen[cs]es?)\b/i;
 
 export type WatchBill = {
   id: string;
@@ -28,6 +37,8 @@ export type WatchBill = {
   sourceUrl: string | null;
   /** Which of the phrases the printed title or subjects show ("repose" wins when both appear). */
   mentions: "repose" | "limitations" | "subject or summary";
+  /** The printed title contains a criminal-law word (CRIMINAL_TITLE_TERMS). Text match only. */
+  criminalTerms: boolean;
 };
 
 type Obj = Record<string, unknown>;
@@ -94,6 +105,7 @@ export function parseWatchRow(row: unknown): WatchBill | null {
     latestActionDate: day(c["latest_action_date"]),
     sourceUrl: httpUrl(r?.["source_url"]),
     mentions,
+    criminalTerms: CRIMINAL_TITLE_TERMS.test(title),
   };
 }
 
@@ -104,6 +116,8 @@ export type WatchSummary = {
   enactedStates: number;
   vetoed: number;
   pending: number;
+  /** Bills whose printed title contains a criminal-law word. */
+  criminalTitles: number;
   byState: { state: string; total: number; enacted: number }[];
   /** Bills by month of their latest recorded action (not the effective date). */
   byMonth: { month: string; enacted: number; other: number; partial: boolean }[];
@@ -164,6 +178,7 @@ export function summarizeWatch(bills: readonly WatchBill[], asOf: string | null)
     enactedStates: [...states.values()].filter((s) => s.enacted > 0).length,
     vetoed: bills.filter((b) => b.outcome === "vetoed").length,
     pending: bills.filter((b) => b.outcome === "pending").length,
+    criminalTitles: bills.filter((b) => b.criminalTerms).length,
     byState: [...states.entries()]
       .map(([state, s]) => ({ state, ...s }))
       .sort((a, b) => b.total - a.total || b.enacted - a.enacted || a.state.localeCompare(b.state)),

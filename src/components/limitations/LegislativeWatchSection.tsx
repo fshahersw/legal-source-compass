@@ -55,6 +55,21 @@ const columns: DataColumn<WatchBill>[] = [
     ),
   },
   { key: "title", label: "Title as printed", value: (b) => b.title },
+  {
+    key: "mentions",
+    label: "Phrase shown in",
+    value: (b) =>
+      b.mentions === "subject or summary"
+        ? "Summary or subject only"
+        : b.mentions === "repose"
+          ? "Title or subjects: repose"
+          : "Title or subjects: limitations",
+  },
+  {
+    key: "criminal",
+    label: "Title names a criminal term",
+    value: (b) => (b.criminalTerms ? "Yes" : "No"),
+  },
   { key: "outcome", label: "Outcome", value: (b) => OUTCOME_LABEL[b.outcome] },
   { key: "status", label: "Status", value: (b) => b.statusLabel },
   { key: "latest", label: "Latest action", value: (b) => b.latestAction },
@@ -108,6 +123,11 @@ export function LegislativeWatchSection() {
           { label: "States with a matched bill", value: s.states },
           { label: "Bills enacted", value: s.enacted },
           { label: "States with an enacted bill", value: s.enactedStates },
+          {
+            label: "Matched bills whose title names a criminal term",
+            value: s.criminalTitles,
+            note: "text match on the printed title",
+          },
           ...s.byState.slice(0, 8).map((x) => ({
             label: `Matched bills in ${stateName(x.state)}`,
             value: x.total,
@@ -121,7 +141,24 @@ export function LegislativeWatchSection() {
       id={SECTION_ID}
       title="Legislative change watch"
       description="State bills this session that mention limitation or repose periods. A review queue; it does not change any rule."
-      actions={<AskAiButton sectionId={SECTION_ID} context={context} />}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          {data && data.bills.length > 0 && (
+            <DataDrawer
+              title="Matched state bills, current sessions"
+              description="Text matches for review. Time Limits review status is not recorded for any bill yet."
+              columns={columns}
+              rows={data.bills}
+              rowKey={(b) => b.id}
+              source={kpiSource}
+              triggerLabel={`View all ${fmt(data.bills.length)}`}
+              searchable
+              searchLabel="Search bills"
+            />
+          )}
+          <AskAiButton sectionId={SECTION_ID} context={context} />
+        </div>
+      }
     >
       <KpiGrid columns={4} label="Legislative change watch figures">
         <KpiCard
@@ -161,6 +198,12 @@ export function LegislativeWatchSection() {
           source={kpiSource}
         />
       </KpiGrid>
+      {s && (
+        <p className="mt-2 text-xs text-muted-foreground" data-testid="watch-scope-note">
+          Text match only. Includes criminal limitation bills: {fmt(s.criminalTitles)} of{" "}
+          {fmt(s.bills)} titles name a criminal term.
+        </p>
+      )}
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <ChartCard
           title={
@@ -291,22 +334,7 @@ export function LegislativeWatchSection() {
       </div>
       {enactedRecent.length > 0 && (
         <div className="mt-4 rounded-md border border-border p-3 sm:p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold">Recently enacted, to review</h3>
-            {data && (
-              <DataDrawer
-                title="Matched state bills, current sessions"
-                description="Text matches for review. Time Limits review status is not recorded for any bill yet."
-                columns={columns}
-                rows={data.bills}
-                rowKey={(b) => b.id}
-                source={kpiSource}
-                triggerLabel={`View all ${fmt(data.bills.length)}`}
-                searchable
-                searchLabel="Search bills"
-              />
-            )}
-          </div>
+          <h3 className="text-sm font-semibold">Recently enacted, to review</h3>
           <ul className="mt-2 divide-y divide-border text-sm">
             {enactedRecent.map((b) => (
               <li key={b.id} className="py-2">

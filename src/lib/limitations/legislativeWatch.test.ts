@@ -59,6 +59,10 @@ describe("legislative change watch", () => {
     expect(path).toContain("dataset=eq.state_bills");
     expect(path).toContain('filters=cs.{"session_role":["current"]}');
     for (const p of WATCH_PHRASES) expect(path).toContain(`search_vector.phfts(simple).${p}`);
+    // Singular "action" titles (e.g. "Torts; limitation of action; ...") are watched too.
+    expect(WATCH_PHRASES).toContain("limitation of action");
+    expect(WATCH_PHRASES).toContain("limitations of action");
+    expect(WATCH_PHRASES).toHaveLength(10);
     expect(path).toContain("limit=500");
   });
   it("keeps the outcome and links as printed and says what the text mentions", () => {
@@ -73,6 +77,14 @@ describe("legislative change watch", () => {
     expect(parseWatchRow(ut)!.mentions).toBe("limitations");
     expect(parseWatchRow(pending)!.outcome).toBe("pending");
     expect(parseWatchRow({ id: "x", c: { state: "Texas" } })).toBeNull();
+  });
+  it("marks titles that name a criminal term, as a text match only", () => {
+    const crim = structuredClone(pending);
+    crim.c.title = "Relating to the statute of limitations for vehicular homicide";
+    expect(parseWatchRow(crim)!.criminalTerms).toBe(true);
+    expect(parseWatchRow(tn)!.criminalTerms).toBe(false);
+    const s = summarizeWatch([parseWatchRow(crim)!, parseWatchRow(tn)!], null);
+    expect(s.criminalTitles).toBe(1);
   });
   it("summarizes bills, states and enactments, with recorded zeros between months", () => {
     const bills = [tn, ut, pending].map((r) => parseWatchRow(r)!);
