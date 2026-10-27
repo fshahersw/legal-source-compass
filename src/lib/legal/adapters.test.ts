@@ -98,6 +98,14 @@ describe("native source adapters", () => {
     // A correction never proposes or finalizes a rule.
     const withRin = legalRecord.parse(adaptNative(frRow({ document_number: "03-5522", type: "Correction", publication_date: "2003-03-07", regulation_id_numbers: ["0910-AA01"] }), c).records[0]);
     expect(nativeRecordEdges(withRin, c)).toEqual([]);
+    // Nor does a post-2009 correction, which carries its parent's type and a C1- number (shape of C1-2026-20360).
+    const numbered = legalRecord.parse(adaptNative(frRow({ document_number: "C1-2026-20360", type: "Proposed Rule", regulation_id_numbers: ["3235-AN83"] }), c).records[0]);
+    expect(numbered.attributes["fr_document_type"]).toBe("PRORULE");
+    expect(numbered.attributes["regulation_id_numbers"]).toEqual(["3235-AN83"]);
+    expect(nativeRecordEdges(numbered, c)).toEqual([]);
+    // A republication (R1-) is the document itself and keeps its edge.
+    const republishedRule = legalRecord.parse(adaptNative(frRow({ document_number: "R1-2026-05039", type: "Rule", regulation_id_numbers: ["3235-AN83"] }), c).records[0]);
+    expect(nativeRecordEdges(republishedRule, c).map(e => [e.type, e.to.id])).toEqual([["finalizes", "3235-AN83"]]);
     // Free-text and non-canonical numbers stay rejected rather than rewritten.
     expect(legalRecord.safeParse(adaptNative(frRow({ document_number: "00-23477-Filed" }), c).records[0]).success).toBe(false);
   });

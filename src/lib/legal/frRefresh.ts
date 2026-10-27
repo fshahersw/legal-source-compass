@@ -82,6 +82,15 @@ export function isCanonicalRin(value: unknown): value is string {
   return typeof value === "string" && new RegExp(ID_PATTERNS["rule_proceeding"]!).test(value);
 }
 
+/**
+ * A post-2009 correction notice: the publisher numbers it C1-, C2-... and gives it its parent's type
+ * (e.g. C1-2026-20360, "Proposed Rule", correcting 2026-20360). Like a pre-2009 "Correction", it
+ * corrects a document; it does not itself propose or finalize the rule. (R1-/R2- republications do.)
+ */
+export function isCorrectionNumber(documentNumber: unknown): boolean {
+  return typeof documentNumber === "string" && /^C[0-9]+-/.test(documentNumber);
+}
+
 /** Missing round-3 fields on a native Federal Register document (empty when the field set is complete). */
 export function missingFields(data: Record<string, unknown>): string[] {
   return FEDERAL_REGISTER_FIELDS.filter((field) => !Object.prototype.hasOwnProperty.call(data, field));

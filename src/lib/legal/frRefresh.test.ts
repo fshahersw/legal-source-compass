@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import { FEDERAL_REGISTER_FIELDS, addDays, documentsUrl, heldUrlSet, isCanonicalRin, isIsoDay, missingFields, monthlyPeriods, windowProblems } from "./frRefresh";
+import { FEDERAL_REGISTER_FIELDS, addDays, documentsUrl, heldUrlSet, isCanonicalRin, isCorrectionNumber, isIsoDay, missingFields, monthlyPeriods, windowProblems } from "./frRefresh";
 // @ts-expect-error -- plain ESM script without type declarations
 import { FR_REFRESH_SQL, frRefreshSql } from "../../../scripts/legal/prepare-fr-refresh-update.mjs";
 
@@ -45,6 +45,10 @@ describe("Federal Register refresh windows", () => {
     expect(missingFields(Object.fromEntries(FEDERAL_REGISTER_FIELDS.map((f) => [f, null])))).toEqual([]);
     expect(missingFields({ document_number: "x", dates: "y" })).toContain("comments_close_on");
   });
+  it("recognises numbered correction notices but not republications", () => {
+    for (const id of ["C1-2026-20360", "C2-2003-5521"]) expect(isCorrectionNumber(id)).toBe(true);
+    for (const id of ["R1-2026-05038", "2026-20360", "03-5521", "", null]) expect(isCorrectionNumber(id)).toBe(false);
+  });
   it("matches held publications by exact publisher URL", () => {
     const held = heldUrlSet([{ id: "00-888", source_url: "https://www.federalregister.gov/documents/2000/01/05/00-888/a" }]);
     expect(held.has("https://www.federalregister.gov/documents/2000/01/05/00-888/a")).toBe(true);
@@ -68,8 +72,8 @@ describe("legal-atlas-v3-fr-refresh.sql", () => {
     expect(sql).toContain("'^([CR][0-9]+-)?([0-9]{2}|[0-9]{4}|[A-Z][0-9]{1,2})-[0-9]{1,6}$'");
   });
   it("keeps every new object service-role only", () => {
-    expect(sql).toContain("revoke all on function public.corpus_legal_fr_window_v3(date) from public,anon,authenticated;");
-    expect(sql).toContain("grant execute on function public.corpus_legal_fr_window_v3(date) to service_role;");
+    expect(sql).toContain("revoke all on function public.corpus_legal_fr_window_v3(date,text[]) from public,anon,authenticated;");
+    expect(sql).toContain("grant execute on function public.corpus_legal_fr_window_v3(date,text[]) to service_role;");
     expect(sql).toContain("revoke all on legal_atlas.fr_documents_current from public,anon,authenticated;");
     expect(sql).toMatch(/set search_path=''/);
     expect(sql).toContain("with (security_invoker=true)");

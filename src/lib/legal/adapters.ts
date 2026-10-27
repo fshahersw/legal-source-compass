@@ -1,6 +1,6 @@
 import { LEGAL_ENUMS, calendarDate, legalRecord, recordKey } from "./schema.ts";
 import type { LegalRecord, RecordRef } from "./schema.ts";
-import { FEDERAL_REGISTER_SCHEMA_VERSION, isCanonicalRin, missingFields } from "./frRefresh.ts";
+import { FEDERAL_REGISTER_SCHEMA_VERSION, isCanonicalRin, isCorrectionNumber, missingFields } from "./frRefresh.ts";
 
 export type NativeRow = { source_system: string; entity_type: string; native_id: string; data: Record<string, unknown>; provenance: Record<string, unknown> };
 type Lookup<T> = { get(key: string): T | undefined; set(key: string, value: T): unknown };
@@ -208,6 +208,9 @@ export function nativeCaseEdges(record: LegalRecord, context: AdapterContext) {
 export function nativeRecordEdges(record: LegalRecord, context: AdapterContext) {
   if (record.type === "case") return nativeCaseEdges(record, context);
   if (record.type !== "fr_document" || !["PRORULE", "RULE"].includes(String(record.attributes["fr_document_type"]))) return [];
+  // A correction notice (pre-2009 type "Correction", or a C1-/C2- number carrying its parent's type)
+  // never proposes or finalizes a rule; its RINs stay on the record as published.
+  if (isCorrectionNumber(record.id)) return [];
   const rins = record.attributes["regulation_id_numbers"];
   if (!Array.isArray(rins)) return [];
   return [...new Set(rins.map(scalar).filter(isCanonicalRin))].map(id => ({
