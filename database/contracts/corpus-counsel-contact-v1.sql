@@ -1,19 +1,24 @@
 -- public.corpus_counsel_contact_v1 — read-only, paged access (service_role only) to the counsel contact block as filed on the court record
 -- (CourtListener RECAP attorneys staged in corpus_ingest.entities: contact_raw, email, phone, fax).
 --
--- GATE: the owner decision of 2026-10-03 ("counsel without contact fields", AGENTS.md) is an explicit owner policy hold, and the 2026-10-27
--- decision ("dont withhold any data") keeps explicit owner/admin policy holds. Apply this file ONLY after the owner confirms in writing that
--- the 2026-10-27 decision supersedes the 2026-10-03 counsel rule, and record that decision in AGENTS.md in the same change.
+-- DECISION: the 2026-10-03 owner rule "counsel without contact fields" is superseded by the owner decision of 2026-10-27 ("dont withhold any
+-- data") as applied by the lead on 2026-10-27: professional contact details that courts publish for attorneys are shown exactly as published
+-- (AGENTS.md, lead decision 2026-10-27). Personal data of private individuals stays out; attorneys' filed contact blocks are professional.
 --
 -- What it returns, per attorney: native_attorney_id, name, contact_raw (the attorney block exactly as CourtListener holds it, outer whitespace
 -- trimmed), email, phone, fax (empty strings become null), as_of (CourtListener date_modified), retrieved_at, payload_sha256, source_api_url
--- (CourtListener resource_uri as recorded) and docket_ids (the dockets the attorney appears on in parties_represented). Nothing is inferred or
+-- (CourtListener resource_uri as recorded) and collected_docket_ids (the docket the attorney record was collected under: every staged record
+-- comes from an attorneys?docket=<id>&filter_nested_results=True query, so parties_represented lists that docket only; the holds below are
+-- evaluated against it, not against every docket the attorney may appear on elsewhere). Nothing is inferred or
 -- normalised; a field the source does not carry is null ("Not recorded" in the UI).
 --
 -- Held on explicit source evidence only (contact fields are null and contact_hold says why; name and id still returned):
 --   'sealed_group_role'  : any parties_represented role 3 (CourtListener people_db Role "Attorney in sealed group")
---   'blocked_docket'     : any represented docket whose staged CourtListener docket record has blocked=true (provider-reported restriction;
---                          CourtListener keeps one attorney block per attorney, so the block may come from that docket)
+--   'blocked_docket'     : any represented docket whose staged CourtListener docket record is blocked (provider-reported restriction). The
+--                          staged flag is stored as boolean true or the string 't', so the rule is the registry's: blocked not in
+--                          ('false','f','0'), or date_blocked set (as in project-docket-metadata-v1-publish.sql and master-entry-privacy.mjs).
+--                          31 staged dockets are blocked today; all 100 held attorneys were collected under docket 14916674.
+--                          CourtListener keeps one attorney block per attorney, so the block may come from that docket.
 -- Quarantined entities are skipped.
 --
 -- p_ids     : native attorney ids to read (null = all, paged); p_after: cursor (native id, numeric); p_limit: 1..1000 (default 500).
@@ -44,7 +49,7 @@ begin
            'payload_sha256', y.payload_sha256,
            'source_system', 'courtlistener',
            'source_api_url', y.data->>'resource_uri',
-           'docket_ids', y.docket_ids) order by y.nid), '[]'::jsonb), count(*), max(y.nid)::text
+           'collected_docket_ids', y.docket_ids) order by y.nid), '[]'::jsonb), count(*), max(y.nid)::text
     into out, n, last_id
   from (
     select x.native_id, x.nid, x.data, x.retrieved_at, x.payload_sha256, d.docket_ids,
@@ -61,7 +66,8 @@ begin
              coalesce(bool_or(r.role = '3'), false) as sealed_role,
              coalesce(bool_or(exists (select 1 from corpus_ingest.entities b
                                       where b.source_system = 'courtlistener' and b.entity_type = 'dockets' and b.native_id = r.did
-                                        and b.data->>'blocked' = 'true')), false) as blocked
+                                        and (lower(coalesce(b.data->>'blocked', '')) not in ('false', 'f', '0')
+                                             or nullif(b.data->>'date_blocked', '') is not null))), false) as blocked
       from (select substring(p->>'docket' from '/dockets/([0-9]+)/') as did, p->>'role' as role
             from jsonb_array_elements(case when jsonb_typeof(x.data->'parties_represented') = 'array' then x.data->'parties_represented' else '[]'::jsonb end) p) r
     ) d

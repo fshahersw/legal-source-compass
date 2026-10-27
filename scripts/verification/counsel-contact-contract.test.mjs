@@ -1,4 +1,4 @@
-// Offline checks of database/contracts/corpus-counsel-contact-v1.sql (+ rollback): owner gate stated, service_role only, explicit-evidence holds only.
+// Offline checks of database/contracts/corpus-counsel-contact-v1.sql (+ rollback): decision recorded, service_role only, explicit-evidence holds only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -6,9 +6,9 @@ import fs from 'node:fs/promises';
 const read = (name) => fs.readFile(new URL(`../../database/contracts/${name}`, import.meta.url), 'utf8');
 const strip = (sql) => sql.replace(/--[^\n]*/g, '');
 
-test('the contract is gated on the owner and records why', async () => {
+test('the contract records the decision that lifts the 2026-10-03 counsel rule', async () => {
   const sql = await read('corpus-counsel-contact-v1.sql');
-  assert.match(sql, /GATE:/);
+  assert.match(sql, /DECISION:/);
   assert.match(sql, /2026-10-03/);
   assert.match(sql, /2026-10-27/);
 });
@@ -29,7 +29,10 @@ test('holds are limited to explicit source evidence and blank contact fields', a
   const holds = [...sql.matchAll(/then '([a-z_]+)'/g)].map((m) => m[1]).sort();
   assert.deepEqual(holds, ['blocked_docket', 'sealed_group_role']);
   assert.match(sql, /r\.role = '3'/); // CourtListener people_db Role 3 = Attorney in sealed group
-  assert.match(sql, /b\.data->>'blocked' = 'true'/);
+  // blocked is stored as boolean true or the string 't': the registry's rule, plus date_blocked
+  assert.match(sql, /lower\(coalesce\(b\.data->>'blocked', ''\)\) not in \('false', 'f', '0'\)/);
+  assert.match(sql, /nullif\(b\.data->>'date_blocked', ''\) is not null/);
+  assert.doesNotMatch(sql, /b\.data->>'blocked' = 'true'/);
   for (const field of ['contact_raw', 'email', 'phone', 'fax']) {
     assert.match(sql, new RegExp(`'${field}', case when y\\.hold is null then nullif\\(btrim\\(y\\.data->>'${field}'\\), ''\\) end`));
   }
@@ -39,7 +42,7 @@ test('holds are limited to explicit source evidence and blank contact fields', a
 
 test('the result carries source facts and a page cursor', async () => {
   const sql = strip(await read('corpus-counsel-contact-v1.sql'));
-  for (const key of ['native_attorney_id', 'as_of', 'retrieved_at', 'payload_sha256', 'source_system', 'source_api_url', 'docket_ids', 'contact_hold']) {
+  for (const key of ['native_attorney_id', 'as_of', 'retrieved_at', 'payload_sha256', 'source_system', 'source_api_url', 'collected_docket_ids', 'contact_hold']) {
     assert.match(sql, new RegExp(`'${key}'`));
   }
   assert.match(sql, /least\(greatest\(coalesce\(p_limit, 500\), 1\), 1000\)/);
