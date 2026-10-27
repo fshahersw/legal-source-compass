@@ -19,7 +19,13 @@ The public whitelist contains native docket number/ID, native court ID, recorded
 
 Selection evidence is pinned to the September 30 bulk version and observation. A newer canonical native API version can supply safe current metadata without replacing the cited historical selection evidence. Both snapshot and current block/date-block flags are checked. Quarantined source courts are excluded.
 
-No captions, human names, contact data, parties, causes, outcomes or document contents are published. No PDFs were downloaded. The dataset's `mdl_number` and `court_id` filters permit exact navigation; its label is **FJC MDL number**, never verified membership.
+~~No captions, human names, contact data, parties, causes, outcomes or document contents are published.~~ Superseded on 2026-10-27 for the docket header fields (see "Header fields release" below). No PDFs were downloaded. The dataset's `mdl_number` and `court_id` filters permit exact navigation; its label is **FJC MDL number**, never verified membership.
+
+## Header fields release (2026-10-27)
+
+Owner decision 2026-10-27 ("dont withhold any data. If its accurate and valuable, USE IT") and owner rule 2026-10-22 (3) (judges and parties exactly as the publisher shows them) end the caption hold. `database/contracts/cl-docket-metadata-fields-v2.sql` adds, to each published row, CourtListener's own docket header fields from the staged entity with the same native id: `case_name`, `case_name_full`, `case_name_short`, `cause`, `nature_of_suit`, `jury_demand`, `jurisdiction_type`, `assigned_to_str` / `assigned_to_id`, `referred_to_str` / `referred_to_id`, `panel_str`, `appeal_from_str` and `mdl_status`. Values are copied verbatim (trimmed; an empty source string is stored as null and shown as "Not recorded"). The title becomes `<case_name>, No. <docket number> (<court id>)`; the CourtListener person ids are exact native ids, not links to judge profiles. `detail.provenance.header_source` cites the entity version (payload SHA-256, source URL and SHA-256, retrieval time).
+
+Still held, on explicit source evidence only: dockets CourtListener marks `blocked` or `date_blocked` (31 of 187,900 staged; 15 of them are published as docket-number-only rows and get no caption, cause or judge fields) and quarantined entities. The 956 candidate-only dockets remain outside the dataset because they lack the explicit selection evidence the dataset is defined by. Party contacts and document contents are not part of a docket header. Rollback: `cl-docket-metadata-fields-v2.rollback.sql` restores every row and the dataset metadata from private before-image tables. Offline test: `node --test scripts/admin/cl-docket-metadata-fields.contract.test.mjs`.
 
 ## Private native graph
 
