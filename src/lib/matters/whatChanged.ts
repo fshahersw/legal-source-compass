@@ -3,8 +3,10 @@
  * its AI summary context, so every value here is one the page also shows.
  *
  *  - JPML: actions added between two reports = the difference of the two published totals, with both report dates
- *    and the interval in days. A negative difference is kept as printed and flagged (JPML re-counts), never read as
- *    dismissals.
+ *    and the interval in days. A negative difference is kept as printed and flagged; the report does not say why, so
+ *    it is never read as dismissals or anything else.
+ *  - Order and settings windows (last 30 and 90 days to asOf) count only the part the collected docket text covers;
+ *    a window the text does not reach is "Not recorded", and one it reaches only partly is flagged with its range.
  *  - Orders issued in the last 30 and 90 days, by kind, with their printed labels ("CMO No. 36 (2026-07-23)").
  *  - Court-page orders dated after the last collected docket entry (the court page can be newer).
  *  - Trial and deadline settings docketed in the window, and the ones the text says were vacated.
@@ -31,7 +33,7 @@ export type JpmlDelta = {
   pendingFrom: number;
   pendingTo: number;
   pendingChange: number;
-  /** The published total fell between the two reports (a re-count); shown as printed with a note. */
+  /** The published total fell between the two reports; shown as printed, cause not recorded. */
   negative: boolean;
 };
 
@@ -80,14 +82,31 @@ export type ChangedOrder = {
   sourceUrl: string | null;
 };
 
+/**
+ * How much of a window the collected docket text covers:
+ *  - complete: collected through `asOf` or later;
+ *  - partial: collection stops inside the window, so only `from` .. `coveredTo` is counted;
+ *  - not_collected: no collected docket text falls in the window (or the collection date is not recorded), so its
+ *    counts are "Not recorded", never 0.
+ */
+export type WindowCoverage = "complete" | "partial" | "not_collected";
+
 export type ChangeWindow = {
   days: 30 | 90;
-  /** Inclusive start (yyyy-mm-dd); the window ends on `asOf`. */
+  /** Inclusive start (yyyy-mm-dd); the window nominally ends on `asOf`. */
   from: string;
+  coverage: WindowCoverage;
+  /** Last day the counts cover: min(asOf, collectedThrough); null when nothing in the window was collected. */
+  coveredTo: string | null;
+  /** Days of the window the collected text covers (0 when not collected). */
+  coveredDays: number;
+  /** Distinct order entries in the covered part; null when not collected. */
+  orderCount: number | null;
   /** Entries per kind (an entry counts once per kind). */
   byKind: { kind: OrderKind; entries: number }[];
   orders: ChangedOrder[];
-  settings: { set: number; vacated: number };
+  /** Settings docketed in the covered part; null when not collected. */
+  settings: { set: number; vacated: number } | null;
 };
 
 /** A figure in the shape the AI kit's buildSectionContext takes (label, value, unit, period, note). */
@@ -137,11 +156,26 @@ function printedFor(e: ClassifiedEntry, kind: OrderKind): string {
 function windowOf(
   days: 30 | 90,
   asOf: string,
+  collectedThrough: string | null,
   entries: readonly ClassifiedEntry[],
   dates: readonly DatedEntry[],
 ): ChangeWindow {
   const from = isoMinusDays(asOf, days - 1);
-  const inside = (d: string | null) => !!d && d >= from && d <= asOf;
+  if (!collectedThrough || collectedThrough < from)
+    return {
+      days,
+      from,
+      coverage: "not_collected",
+      coveredTo: null,
+      coveredDays: 0,
+      orderCount: null,
+      byKind: [],
+      orders: [],
+      settings: null,
+    };
+  const coveredTo = collectedThrough < asOf ? collectedThrough : asOf;
+  const coverage: WindowCoverage = collectedThrough < asOf ? "partial" : "complete";
+  const inside = (d: string | null) => !!d && d >= from && d <= coveredTo;
   const counts = new Map<OrderKind, Set<string>>();
   const orders: ChangedOrder[] = [];
   for (const e of entries) {
@@ -168,6 +202,10 @@ function windowOf(
   return {
     days,
     from,
+    coverage,
+    coveredTo,
+    coveredDays: Math.round(dayNumber(coveredTo) - dayNumber(from)) + 1,
+    orderCount: new Set(orders.map((o) => o.entryId)).size,
     byKind: [...counts.entries()].map(([kind, ids]) => ({ kind, entries: ids.size })),
     orders,
     settings: {
@@ -175,6 +213,25 @@ function windowOf(
       vacated: settingsIn.filter((d) => d.vacated).length,
     },
   };
+}
+
+/** The JPML report prints only date, pending and total; a fall in the total is shown as printed, cause unrecorded. */
+export const TOTAL_FELL_NOTE =
+  "the published total fell between the two reports; the report does not say why";
+
+/** The range the window's counts actually cover ("2026-09-28 to 2026-10-03"), or the nominal window when none. */
+export function windowPeriod(w: ChangeWindow): string {
+  return `${w.from} to ${w.coveredTo ?? isoMinusDays(w.from, -(w.days - 1))}`;
+}
+
+/** The coverage caveat carried with every window figure; undefined when the window is fully collected. */
+export function windowNote(w: ChangeWindow, collectedThrough: string | null): string | undefined {
+  if (w.coverage === "complete") return undefined;
+  if (w.coverage === "not_collected")
+    return collectedThrough
+      ? `not recorded: docket text is collected only through ${collectedThrough}, before this window`
+      : "not recorded: the date of the last collected docket entry is not recorded";
+  return `partial: docket text collected through ${collectedThrough}, so ${w.coveredDays} of ${w.days} days are counted`;
 }
 
 export function whatChanged(input: {
@@ -189,11 +246,11 @@ export function whatChanged(input: {
   const deltas = jpmlDeltas(input.jpml);
   const latest = deltas.at(-1) ?? null;
   const previous = deltas.at(-2) ?? null;
-  const windows = [
-    windowOf(30, input.asOf, input.entries, input.dates),
-    windowOf(90, input.asOf, input.entries, input.dates),
-  ];
   const cut = input.collectedThrough;
+  const windows = [
+    windowOf(30, input.asOf, cut, input.entries, input.dates),
+    windowOf(90, input.asOf, cut, input.entries, input.dates),
+  ];
   const courtPageNewer = input.courtPage
     .filter((o) => !!o.date && !!cut && o.date > cut)
     .map((o) => ({
@@ -224,7 +281,7 @@ export function whatChanged(input: {
         value: latest.added,
         unit: "actions",
         period: `${latest.from} to ${latest.to} (${latest.days} days)`,
-        note: latest.negative ? "total fell: JPML re-count, not dismissals" : undefined,
+        note: latest.negative ? TOTAL_FELL_NOTE : undefined,
       },
     );
   }
@@ -234,18 +291,16 @@ export function whatChanged(input: {
       value: previous.added,
       unit: "actions",
       period: `${previous.from} to ${previous.to} (${previous.days} days)`,
-      note: previous.negative ? "total fell: JPML re-count, not dismissals" : undefined,
+      note: previous.negative ? TOTAL_FELL_NOTE : undefined,
     });
-  for (const w of windows) {
-    const issued = new Set(w.orders.map((o) => o.entryId)).size;
+  for (const w of windows)
     figures.push({
       label: `Orders entered in the last ${w.days} days (collected docket text)`,
-      value: issued,
+      value: w.orderCount,
       unit: "entries",
-      period: `${w.from} to ${input.asOf}`,
-      note: cut && cut < input.asOf ? `docket text collected through ${cut}` : undefined,
+      period: windowPeriod(w),
+      note: windowNote(w, cut),
     });
-  }
   for (const o of windows[1]!.orders.slice(0, 8))
     figures.push({ label: "Order entered", value: o.printed, period: o.date });
   for (const c of courtPageNewer.slice(0, 5))
@@ -256,11 +311,19 @@ export function whatChanged(input: {
     });
   const w90 = windows[1]!;
   figures.push(
-    { label: "Settings docketed in the last 90 days", value: w90.settings.set, unit: "dates" },
     {
-      label: "Settings docketed as vacated in the last 90 days",
-      value: w90.settings.vacated,
+      label: "Settings docketed in the last 90 days (collected docket text)",
+      value: w90.settings?.set ?? null,
       unit: "dates",
+      period: windowPeriod(w90),
+      note: windowNote(w90, cut),
+    },
+    {
+      label: "Settings docketed as vacated in the last 90 days (collected docket text)",
+      value: w90.settings?.vacated ?? null,
+      unit: "dates",
+      period: windowPeriod(w90),
+      note: windowNote(w90, cut),
     },
   );
   return {

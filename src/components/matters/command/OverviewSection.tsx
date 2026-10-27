@@ -17,9 +17,11 @@ import { docketedNote } from "@/lib/matters/docketDates";
 import { ORDERS_RULE_VERSION } from "@/lib/matters/orders";
 import type { MdlCommandPayload } from "@/lib/matters/types";
 import {
+  NUMBERED_LABEL,
   SWIM_GROUPS,
   addedRows,
   headline,
+  numberedMeta,
   orderSwimlanes,
   sortedPoints,
   type Headline,
@@ -70,7 +72,7 @@ function Kpis({ cmd, h }: { cmd: MdlCommandPayload; h: Headline }) {
       }
       footnote={
         h.added?.negative
-          ? "The published total fell between the two reports: a JPML re-count, not dismissals."
+          ? "The published total fell between the two reports; the report does not say why."
           : "Difference of the two published totals."
       }
       source={{ source: { label: jpml.label, href: jpml.url } }}
@@ -78,15 +80,15 @@ function Kpis({ cmd, h }: { cmd: MdlCommandPayload; h: Headline }) {
     <KpiCard
       key="orders"
       as="li"
-      label="Numbered orders issued (CMO and PTO)"
+      label={NUMBERED_LABEL}
       value={h.numbered && h.numbered.distinct > 0 ? fmt(h.numbered.distinct) : null}
       unit="order numbers"
-      meta={
+      meta={numberedMeta(h.numbered?.series ?? [])}
+      footnote={`${
         h.numbered?.latest
-          ? `Latest ${h.numbered.latest.label}, ${day(h.numbered.latest.date)}`
-          : "No numbered order in the collected docket text"
-      }
-      footnote={collectedNote(h.collectedThrough)}
+          ? `Latest found: ${h.numbered.latest.label}, ${day(h.numbered.latest.date)}. `
+          : ""
+      }Not the number of orders issued. ${collectedNote(h.collectedThrough)}`}
       source={{ source: { label: docket.label, href: docket.url } }}
     />,
     <KpiCard
@@ -228,8 +230,9 @@ export function OverviewSection({ cmd }: { cmd: MdlCommandPayload }) {
           )}
           about={
             <p>
-              Each bar is the report's total minus the prior report's total. A negative value is a
-              JPML re-count, shown as printed. Report intervals differ in length.
+              Each bar is the report's total minus the prior report's total. A negative value is
+              shown as printed; the report does not say why the total fell. Report intervals differ
+              in length.
             </p>
           }
         >

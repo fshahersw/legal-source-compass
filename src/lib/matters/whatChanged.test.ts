@@ -164,11 +164,78 @@ describe("whatChanged", () => {
       w.figures.find((f) => f.label.startsWith("Orders entered in the last 30")),
     ).toMatchObject({
       value: 1,
-      note: "docket text collected through 2026-10-03",
+      period: "2026-09-28 to 2026-10-03",
+      note: "partial: docket text collected through 2026-10-03, so 6 of 30 days are counted",
     });
+    expect(w.figures.some((f) => /re-count|dismissal/i.test(`${f.note ?? ""}`))).toBe(false);
     expect(
       w.figures.filter((f) => f.label === "Court-page order newer than the collected docket"),
     ).toHaveLength(1);
+  });
+
+  it("counts only the collected part of a window and flags it partial", () => {
+    expect(w.windows[0]).toMatchObject({
+      coverage: "partial",
+      coveredTo: "2026-10-03",
+      coveredDays: 6,
+      orderCount: 1,
+    });
+    expect(w.windows[1]).toMatchObject({ coverage: "partial", coveredDays: 66, orderCount: 2 });
+  });
+
+  it("reports a window the docket text never reached as not recorded, never 0 (stale MDL)", () => {
+    // MDL 2100: docket text collected through 2020-12-23.
+    const stale = whatChanged({
+      asOf: "2026-10-27",
+      collectedThrough: "2020-12-23",
+      jpml: [],
+      entries: [entry("s", "2020-12-01", "CASE MANAGEMENT ORDER NO. 80. Signed by Judge Y.")],
+      dates,
+      courtPage: [],
+    });
+    for (const win of stale.windows)
+      expect(win).toMatchObject({
+        coverage: "not_collected",
+        coveredTo: null,
+        orderCount: null,
+        settings: null,
+        orders: [],
+      });
+    const f = stale.figures.find((x) => x.label.startsWith("Orders entered in the last 90"));
+    expect(f).toMatchObject({
+      value: null,
+      note: "not recorded: docket text is collected only through 2020-12-23, before this window",
+    });
+    expect(
+      stale.figures.find((x) => x.label.startsWith("Settings docketed in the last 90")),
+    ).toMatchObject({ value: null });
+  });
+
+  it("treats an unrecorded collection date as not recorded", () => {
+    const none = whatChanged({
+      asOf: "2026-10-27",
+      collectedThrough: null,
+      jpml: [],
+      entries,
+      dates,
+      courtPage: [],
+    });
+    expect(none.windows.map((x) => x.orderCount)).toEqual([null, null]);
+  });
+
+  it("marks a fully collected window complete", () => {
+    const full = whatChanged({
+      asOf: "2026-10-03",
+      collectedThrough: "2026-10-03",
+      jpml: [],
+      entries,
+      dates,
+      courtPage: [],
+    });
+    expect(full.windows[0]).toMatchObject({ coverage: "complete", coveredDays: 30 });
+    expect(
+      full.figures.find((x) => x.label.startsWith("Orders entered in the last 30"))?.note,
+    ).toBeUndefined();
   });
 
   it("subtracts days in UTC", () => {

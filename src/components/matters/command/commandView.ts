@@ -21,7 +21,7 @@ import {
   type OrderKind,
   type OrderOutcome,
 } from "@/lib/matters/orders";
-import { jpmlDeltas, type JpmlPoint } from "@/lib/matters/whatChanged";
+import { TOTAL_FELL_NOTE, jpmlDeltas, type JpmlPoint } from "@/lib/matters/whatChanged";
 import type { MdlCommandPayload } from "@/lib/matters/types";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -91,16 +91,33 @@ export function momentum(points: readonly JpmlPoint[]): Momentum[] {
 export type Headline = {
   pending: { value: number; date: string; prior: { value: number; date: string } | null } | null;
   added: { value: number; from: string; to: string; days: number; negative: boolean } | null;
+  /** CMO / PTO numbers found in the collected docket text: not the number of orders issued. */
   numbered: {
     distinct: number;
     issuedEntries: number;
     latest: { label: string; date: string | null } | null;
+    /** Per series with a number found: the highest number and how many below it are not in the collected text. */
+    series: { kind: "cmo" | "pto"; highest: number; found: number; missing: number }[];
   } | null;
   next: { date: string; label: string | null; entryDate: string | null } | null;
   members: number | null;
   rule702: { rulings: number; motions: number } | null;
   collectedThrough: string | null;
 };
+
+export const NUMBERED_LABEL = "CMO/PTO numbers found in collected docket text";
+
+/** "Highest CMO No. 36 (8 not in collected text) · highest PTO No. 4"; one part per series with a number found. */
+export function numberedMeta(series: NonNullable<Headline["numbered"]>["series"]): string {
+  if (!series.length) return "No numbered order in the collected docket text";
+  const text = series
+    .map(
+      (q) =>
+        `highest ${q.kind.toUpperCase()} No. ${q.highest}${q.missing ? ` (${q.missing} not in collected text)` : ""}`,
+    )
+    .join(" · ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 /** The figures of the page's KPI row; each null field prints "Not recorded" or is left out. */
 export function headline(cmd: MdlCommandPayload): Headline {
@@ -138,6 +155,18 @@ export function headline(cmd: MdlCommandPayload): Headline {
       ? {
           distinct,
           issuedEntries: (cmo?.issuedEntries ?? 0) + (pto?.issuedEntries ?? 0),
+          series: [cmo, pto].flatMap((q) =>
+            q && q.highest !== null
+              ? [
+                  {
+                    kind: q.kind,
+                    highest: q.highest,
+                    found: q.distinctNumbers,
+                    missing: q.missing.length,
+                  },
+                ]
+              : [],
+          ),
           latest: latest
             ? {
                 label: orderLabel(latest.kind, latest.number, latest.suffix),
@@ -427,14 +456,20 @@ export function headlineFigures(cmd: MdlCommandPayload, h: Headline): FigureInpu
       value: h.added.value,
       unit: "actions",
       period: `${h.added.from} to ${h.added.to} (${h.added.days} days)`,
-      note: h.added.negative ? "total fell: JPML re-count, not dismissals" : undefined,
+      note: h.added.negative ? TOTAL_FELL_NOTE : undefined,
     });
   if (h.numbered) {
     figures.push({
-      label: "Distinct CMO and PTO numbers in the collected docket text",
+      label: NUMBERED_LABEL,
       value: h.numbered.distinct,
       unit: "order numbers",
-      note: h.collectedThrough ? `docket text collected through ${h.collectedThrough}` : undefined,
+      note: [
+        numberedMeta(h.numbered.series),
+        "not the number of orders issued",
+        h.collectedThrough ? `docket text collected through ${h.collectedThrough}` : null,
+      ]
+        .filter(Boolean)
+        .join("; "),
     });
     if (h.numbered.latest)
       figures.push({

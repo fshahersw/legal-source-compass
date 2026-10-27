@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { classifyDocketText, orderLedger, type ClassifiedEntry } from "@/lib/matters/orders";
 import type { MdlCommandPayload } from "@/lib/matters/types";
 import {
+  NUMBERED_LABEL,
   addedRows,
   ctoPerMonth,
   headline,
@@ -9,6 +10,7 @@ import {
   kindRows,
   ledgerRows,
   momentum,
+  numberedMeta,
   orderSwimlanes,
   ordersPerYear,
   sortedPoints,
@@ -194,7 +196,12 @@ describe("headline figures", () => {
       distinct: 2,
       issuedEntries: 2,
       latest: { label: "CMO No. 4", date: "2023-01-27" },
+      series: [{ kind: "cmo", highest: 4, found: 2, missing: 2 }],
     });
+    expect(numberedMeta(h.numbered!.series)).toBe("Highest CMO No. 4 (2 not in collected text)");
+    const nf = headlineFigures(cmd, h).find((f) => f.label === NUMBERED_LABEL);
+    expect(nf?.note).toContain("not the number of orders issued");
+    expect(NUMBERED_LABEL).not.toMatch(/issued/i);
     expect(h.next?.date).toBe("2027-02-08");
     expect(h.rule702).toEqual({ rulings: 2, motions: 5 });
     expect(h.members).toBeNull();

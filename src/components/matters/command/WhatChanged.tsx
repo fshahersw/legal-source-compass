@@ -13,7 +13,25 @@ import {
 } from "@/components/kit";
 import { ORDER_KIND_LABEL } from "@/lib/matters/orders";
 import type { MdlCommandPayload } from "@/lib/matters/types";
+import { isoMinusDays, windowPeriod, type ChangeWindow } from "@/lib/matters/whatChanged";
 import { Note, Out, collectedNote, day, fmt, signed } from "./shared";
+
+/** The range the counts cover: the collected part of the window, never days that were not collected. */
+function coveredMeta(win: ChangeWindow): string {
+  if (win.coverage === "not_collected" || !win.coveredTo)
+    return `${day(win.from)} to ${day(isoMinusDays(win.from, -(win.days - 1)))}: no docket text collected`;
+  return `${day(win.from)} to ${day(win.coveredTo)}`;
+}
+
+/** The partial-period flag on a KPI whose window the collected docket text does not fully cover. */
+function coverageFlag(win: ChangeWindow, through: string | null): string | undefined {
+  if (win.coverage === "complete") return undefined;
+  if (win.coverage === "not_collected")
+    return through
+      ? `Not recorded: docket text is collected only through ${day(through)}.`
+      : "Not recorded: the date of the last collected docket entry is not recorded.";
+  return `Partial: docket text collected through ${day(through)}; ${win.coveredDays} of ${win.days} days counted.`;
+}
 
 export function WhatChanged({ cmd }: { cmd: MdlCommandPayload }) {
   const w = cmd.whatChanged;
@@ -22,7 +40,7 @@ export function WhatChanged({ cmd }: { cmd: MdlCommandPayload }) {
   const context = buildSectionContext({
     id: "mdl-changes",
     title: `MDL ${cmd.mdl}: what changed`,
-    period: `${w90?.from ?? ""} to ${w.asOf}`,
+    period: w90 ? windowPeriod(w90) : w.asOf,
     source: "JPML pending MDL reports; master-docket text; transferee court page",
     figures: w.figures,
     maxFigures: 24,
@@ -43,20 +61,27 @@ export function WhatChanged({ cmd }: { cmd: MdlCommandPayload }) {
           {
             key: "o30",
             label: "Orders entered, last 30 days",
-            value: w30 ? fmt(new Set(w30.orders.map((o) => o.entryId)).size) : null,
-            meta: w30 ? `${day(w30.from)} to ${day(w.asOf)}` : undefined,
+            value: w30?.orderCount != null ? fmt(w30.orderCount) : null,
+            meta: w30 ? coveredMeta(w30) : undefined,
+            partial: w30 ? coverageFlag(w30, w.collectedThrough) : undefined,
           },
           {
             key: "o90",
             label: "Orders entered, last 90 days",
-            value: w90 ? fmt(new Set(w90.orders.map((o) => o.entryId)).size) : null,
-            meta: w90 ? `${day(w90.from)} to ${day(w.asOf)}` : undefined,
+            value: w90?.orderCount != null ? fmt(w90.orderCount) : null,
+            meta: w90 ? coveredMeta(w90) : undefined,
+            partial: w90 ? coverageFlag(w90, w.collectedThrough) : undefined,
           },
           {
             key: "settings",
             label: "Settings docketed, last 90 days",
-            value: w90 ? fmt(w90.settings.set) : null,
-            meta: w90 ? `${fmt(w90.settings.vacated)} docketed as vacated` : undefined,
+            value: w90?.settings ? fmt(w90.settings.set) : null,
+            meta: w90?.settings
+              ? `${fmt(w90.settings.vacated)} docketed as vacated · ${coveredMeta(w90)}`
+              : w90
+                ? coveredMeta(w90)
+                : undefined,
+            partial: w90 ? coverageFlag(w90, w.collectedThrough) : undefined,
           },
         ]}
       />
@@ -77,7 +102,9 @@ export function WhatChanged({ cmd }: { cmd: MdlCommandPayload }) {
               </ul>
             ) : (
               <p className="mt-2 text-body text-muted-foreground">
-                No classified order in the collected docket text for this window.
+                {w90?.coverage === "not_collected"
+                  ? "Not recorded: no docket text was collected for these 90 days."
+                  : "No classified order in the collected docket text for this window."}
               </p>
             )}
             {orders.length > 10 ? (
