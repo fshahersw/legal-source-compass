@@ -339,16 +339,17 @@ export function OpenPaymentsPanel({
             key={a.entityId}
             title={`MAUDE device reports · ${a.name}`}
             subtitle={`SEC registrant (CIK ${a.entityId}${a.sicDescription ? `, ${a.sicDescription}` : ""}) · reports by date received, exact normalized-name match`}
-            footnote="No top-300 CMS Open Payments reporting entity has this exact name; affiliates report payments under their own names."
+            footnote="No exact match in CMS Open Payments: no top-300 reporting entity has this exact name, so no payments are shown; affiliates report payments under their own names."
           >
             <AdverseBlock adverse={a} deviceShare={null} />
           </ChartCard>
         ))
       ) : !q.data?.matches.length ? (
         <p className="rounded-md border border-dashed border-border px-3 py-3 text-xs text-muted-foreground">
-          No top-300 CMS Open Payments reporting entity has the name “{name}” (case and punctuation
-          ignored; the legal form, such as Inc. or plc, must agree). Affiliates report under their
-          own names;{" "}
+          <span className="font-medium text-foreground">No exact match.</span> No top-300 CMS Open
+          Payments reporting entity has the name “{name}” (case and punctuation ignored; the legal
+          form, such as Inc. or plc, must agree), so no payments are shown and none are attributed by
+          a similar name. Affiliates and subsidiaries report under their own names;{" "}
           <Link
             to="/companies/payments"
             search={{ q: name.split(/[\s,]+/)[0] ?? "" }}

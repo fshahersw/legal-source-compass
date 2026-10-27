@@ -82,3 +82,10 @@ export const getCompanyTransactions = createServerFn({ method: "GET" })
     const rows = matchTransactions(notices, key, companyKey);
     return { ...base, status: rows.length ? "matched" : "no_match", name: own.name, key, rows };
   });
+
+/** The FTC early-termination series by calendar year with its suspension years (merger review annotation). */
+export const getHsrSuspension = createServerFn({ method: "GET" }).handler(async () => {
+  const series = await hsrSeries();
+  const calendar = series?.calendar ?? [];
+  return { calendar, suspended: suspensionYears(calendar) };
+});
