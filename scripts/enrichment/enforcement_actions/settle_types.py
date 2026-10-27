@@ -168,6 +168,19 @@ def mdl_from_case_number(as_written):
     return n if 1 <= n <= 99_999 else None
 
 
+_MDL_DOCKET_TOKEN = re.compile(r"(?<![\w:-])(\d{1,2}):(\d{2})-(md|ml|mn)-0*(\d{1,5})(?![\d])", re.I)
+
+
+def mdl_docket_tokens(text):
+    """[(case number as written, MDL number)] for every MDL docket-form case number inside a longer text."""
+    out = []
+    for m in _MDL_DOCKET_TOKEN.finditer(text or ""):
+        n = int(m.group(4))
+        if 1 <= n <= 99_999:
+            out.append((m.group(0), n))
+    return out
+
+
 def mdl_links(case_numbers):
     """[{'mdl', 'case_number', 'basis'}] for every case number in MDL docket form, one per MDL number."""
     seen, out = set(), []
