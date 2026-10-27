@@ -11,6 +11,7 @@ import { axisTick, StateNote, tooltipStyle } from "@/components/enforcement/part
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { getRecallRecord, type RecallSample } from "@/lib/external/recallPatterns.functions";
 import { dayLabel, monthLabel, n } from "./recallInsights";
+import { RecallComplaintEffect } from "@/components/safety/RecallComplaintEffect";
 
 function Samples({
   title,
@@ -210,6 +211,9 @@ export function RecallDetailSheet({ id, onClose }: { id: string | null; onClose:
                 }
                 items={d.members.length ? d.members : d.recent}
                 total={d.membersTotal}
+              />
+              <RecallComplaintEffect
+                campaigns={[...d.members, ...d.recent].flatMap((s) => s.recallNumbers)}
               />
             </>
           )}

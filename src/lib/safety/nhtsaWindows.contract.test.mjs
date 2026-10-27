@@ -54,7 +54,19 @@ const complaint = (db, received, extra = {}) => {
   odino += 1;
   return db.query(
     `insert into safety.nhtsa_complaints values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-    [odino, received, c.manufacturer, c.makes, c.models, c.model_years, c.components, c.crash, c.fire, c.injured, c.deaths],
+    [
+      odino,
+      received,
+      c.manufacturer,
+      c.makes,
+      c.models,
+      c.model_years,
+      c.components,
+      c.crash,
+      c.fire,
+      c.injured,
+      c.deaths,
+    ],
   );
 };
 
@@ -83,7 +95,12 @@ test("applies twice, holds no DROP/DELETE/TRUNCATE and grants only service_role"
 test("complaint windows compare two 365-day windows and never add components up", async () => {
   const db = await fresh();
   // current window (to 2026-10-21): 3 complaints, one naming two components; prior window: 1 complaint.
-  await complaint(db, "2026-10-21", { components: ["SEATS", "AIR BAGS"], injured: 2, deaths: 1, crash: true });
+  await complaint(db, "2026-10-21", {
+    components: ["SEATS", "AIR BAGS"],
+    injured: 2,
+    deaths: 1,
+    crash: true,
+  });
   await complaint(db, "2026-05-01", { components: ["SEATS"] });
   await complaint(db, "2025-11-01", { components: ["SEATS:FRAME"], fire: true });
   await complaint(db, "2025-06-01", { components: ["SEATS"] });
@@ -139,7 +156,10 @@ test("recall complaints match exact make, model, year range and top-level compon
   const q3 = r.quarters.find((q) => q.quarter === "2025-Q3");
   assert.equal(q3.complaints, 1);
   assert.equal(q3.vehicle_complaints, 2);
-  assert.equal((await one(db, "select public.safety_nhtsa_recall_complaints_v1('99V999000') r")).r, null);
+  assert.equal(
+    (await one(db, "select public.safety_nhtsa_recall_complaints_v1('99V999000') r")).r,
+    null,
+  );
   await assert.rejects(db.query("select public.safety_nhtsa_recall_complaints_v1('x; select 1')"));
 });
 

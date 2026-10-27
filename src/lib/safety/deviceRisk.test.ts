@@ -19,8 +19,21 @@ describe("buildDeviceRisk", () => {
       ],
       "2026-10-27T00:00:00Z",
     );
-    expect(p.totals).toMatchObject({ codes: 3, implantCodes: 2, classIIICodes: 1, codesWithPma: 2, pmaRows: 5, pmaUnmatched: 1, implantSupplements: 3 });
-    expect(p.codes[0]).toMatchObject({ code: "LWS", originals: 1, supplements: 2, latestDecision: "2026-03-01" });
+    expect(p.totals).toMatchObject({
+      codes: 3,
+      implantCodes: 2,
+      classIIICodes: 1,
+      codesWithPma: 2,
+      pmaRows: 5,
+      pmaUnmatched: 1,
+      implantSupplements: 3,
+    });
+    expect(p.codes[0]).toMatchObject({
+      code: "LWS",
+      originals: 1,
+      supplements: 2,
+      latestDecision: "2026-03-01",
+    });
     expect(p.cells[0]).toMatchObject({ cls: "3", implant: "Implant", codes: 1, codesWithPma: 1 });
     const y2025 = p.years.find((y) => y.year === "2025")!;
     expect(y2025).toMatchObject({ implant: 0, other: 0 });

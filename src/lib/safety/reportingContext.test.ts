@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { lawyerShares, monthlyPoints, parseLawyerYears, transferWindow, windowSum } from "./reportingContext";
+import {
+  lawyerShares,
+  monthlyPoints,
+  parseLawyerYears,
+  transferWindow,
+  windowSum,
+} from "./reportingContext";
 
 // 36 months from 2023-01 to 2025-12: 10 a month in 2023, 20 in 2024, 50 in 2025.
 const series = {

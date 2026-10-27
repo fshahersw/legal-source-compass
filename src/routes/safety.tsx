@@ -19,27 +19,41 @@ import { SafetyRecallTrends, SafetyAgencyTrends } from "@/components/safety/Safe
 import { safetyViewOf } from "@/components/safety/safetyView";
 import { SectionHub } from "@/components/atlas/hub/SectionHub";
 import { TrendHeadline } from "@/components/charts/d3/TrendHeadline";
+import { SectionIndex } from "@/components/kit";
+import { FdaRecallEventsSection } from "@/components/safety/FdaRecallEventsSection";
+import { NhtsaPipelineSection } from "@/components/safety/NhtsaPipelineSection";
+import { ComplaintRadarSection } from "@/components/safety/ComplaintRadarSection";
+import { CpscDeathsSection } from "@/components/safety/CpscDeathsSection";
+import { SilicaSection } from "@/components/safety/SilicaSection";
+import {
+  COLLECTION_CAVEATS,
+  LANDING_RECALL_BLOCKS,
+  SUPERSEDED_DATASETS,
+} from "@/components/safety/safetyBlocks";
+import { sectionOf } from "@/lib/external/groups";
+import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
+import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
 
+// FDA recalls are shown as FDA events in their own section: the "fda-recalls" block counts product rows.
 const RECALL_LEAD = (
   <TrendHeadline
     sectionId="recall-trends"
     subject="recalls"
-    unitNote="Each agency counts and classifies recalls its own way, and one recall can cover many products and units, so compare the direction and size of change, not the levels."
+    unitNote="Each agency counts and classifies recalls its own way, and one recall can cover many products and units, so compare the direction and size of change, not the levels. FDA recalls are counted as events in the FDA section below."
     items={[
       { id: "cpsc-recalls", label: "CPSC product recalls" },
       { id: "nhtsa-recalls", label: "NHTSA vehicle recalls" },
-      { id: "fda-recalls", label: "FDA recall entries" },
       { id: "fsis-recalls", label: "USDA FSIS food recalls" },
     ]}
   />
 );
 
-/** The four agencies' own yearly cards, one click away under the lead charts. */
+/** Each agency's own yearly cards, one click away under the lead charts. */
 function EachAgencyRecalls() {
   return (
     <details className="group rounded-xl border border-border bg-card shadow-xs px-4 py-3">
       <summary className="cursor-pointer select-none text-sm font-medium text-foreground marker:text-muted-foreground">
-        Each agency&apos;s recalls by year (4 charts)
+        Each agency&apos;s recalls by year ({LANDING_RECALL_BLOCKS.length} charts)
       </summary>
       <div className="mt-3">
         <SafetyRecallTrends />
@@ -47,9 +61,50 @@ function EachAgencyRecalls() {
     </details>
   );
 }
-import { sectionOf } from "@/lib/external/groups";
-import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
-import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
+
+const OVERVIEW_INDEX = [
+  { id: "safety-intelligence", label: "Flags" },
+  { id: "fda-recall-events", label: "FDA recalls" },
+  { id: "nhtsa-pipeline", label: "Vehicle probes" },
+  { id: "complaint-radar", label: "Vehicle complaints" },
+  { id: "cpsc-deaths", label: "Recalls reporting deaths" },
+  { id: "occupational-exposure", label: "Silica" },
+];
+
+/** The landing page's sections, in reading order; the agency cards follow once the catalog loads. */
+function OverviewSections({ children }: { children?: React.ReactNode }) {
+  return (
+    <div className="space-y-6">
+      <SectionIndex items={OVERVIEW_INDEX} />
+      <DailyInsightCard section="safety" />
+      <div id="safety-intelligence">
+        <SafetyIntelligence />
+      </div>
+      <EachAgencyRecalls />
+      <FdaRecallEventsSection />
+      <NhtsaPipelineSection />
+      <ComplaintRadarSection />
+      <CpscDeathsSection />
+      <SilicaSection />
+      <FsisRecallsTable />
+      {children}
+    </div>
+  );
+}
+
+/** An agency page's own section next to its record kinds. */
+function AgencySection({ agency }: { agency: string }) {
+  if (agency === "FDA") return <FdaRecallEventsSection />;
+  if (agency === "NHTSA")
+    return (
+      <>
+        <NhtsaPipelineSection />
+        <ComplaintRadarSection />
+      </>
+    );
+  if (agency === "CPSC") return <CpscDeathsSection />;
+  return null;
+}
 
 type S = { ds?: string | undefined; view?: string | undefined; agency?: string | undefined };
 const str = (v: unknown) =>
@@ -141,13 +196,9 @@ function SafetyPage() {
     // The landing's counts, links and panels have their own queries; only the agency cards wait for the catalog.
     body = (
       <SectionHub section="safety" lead={RECALL_LEAD}>
-        <div className="space-y-6">
-          <DailyInsightCard section="safety" />
-          <SafetyIntelligence />
-          <EachAgencyRecalls />
-          <FsisRecallsTable />
+        <OverviewSections>
           {datasets.error ? <ExternalError error={datasets.error} /> : loadingCollections}
-        </div>
+        </OverviewSections>
       </SectionHub>
     );
   else if (datasets.error) body = <ExternalError error={datasets.error} />;
@@ -156,7 +207,9 @@ function SafetyPage() {
   else if (!agency) {
     const agencyCards = AGENCIES.map((a) => {
       const sets = list.filter((d) => safetyAgency(d.id) === a.key);
-      const count = inventoryRecordTotal(sets);
+      // A superseded snapshot repeats the agency's current records, so it is listed but never added to the count.
+      const counted = sets.filter((d) => !SUPERSEDED_DATASETS[d.id]);
+      const count = inventoryRecordTotal(counted);
       return {
         key: a.key,
         label: a.key,
@@ -165,12 +218,13 @@ function SafetyPage() {
         note: [
           a.note,
           count == null ? "Count not recorded" : null,
-          sets.length > 1 ? `${sets.length} collections` : null,
+          counted.length > 1 ? `${counted.length} collections` : null,
+          sets.length > counted.length ? "superseded snapshot not counted" : null,
         ]
           .filter(Boolean)
           .join(" · "),
         count: count ?? undefined,
-        summed: count != null && sets.length > 1,
+        summed: count != null && counted.length > 1,
         link: { to: "/safety", search: { agency: a.key } },
       };
     });
@@ -178,31 +232,29 @@ function SafetyPage() {
     const summed = agencyCards.some((c) => c.summed);
     body = (
       <SectionHub section="safety" lead={RECALL_LEAD}>
-        <div className="space-y-6">
-          <DailyInsightCard section="safety" />
-          <SafetyIntelligence />
-          <EachAgencyRecalls />
-          <FsisRecallsTable />
+        <OverviewSections>
           {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
           <FolderGrid
             title="Browse by agency"
             wrapNotes
             hint={
               summed
-                ? "Counts add up each agency's collections (rows across separate datasets and snapshots), so one recall or notice can be counted more than once."
+                ? "Counts add up each agency's collections (rows across separate datasets), so one recall or notice can be counted more than once. Superseded snapshots are not counted."
                 : undefined
             }
             items={agencyCards}
           />
-        </div>
+        </OverviewSections>
       </SectionHub>
     );
   } else {
     body = (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <SafetyAgencyTrends agency={agency} />
+        <AgencySection agency={agency} />
         <FolderGrid
           title="Record kind"
+          wrapNotes
           items={list
             .filter((d) => safetyAgency(d.id) === agency)
             .sort((a, b) => (b.records ?? -1) - (a.records ?? -1))
@@ -212,6 +264,8 @@ function SafetyPage() {
               count: d.records ?? undefined,
               note: [
                 d.ready === false ? "Held for publication" : null,
+                SUPERSEDED_DATASETS[d.id] ?? null,
+                COLLECTION_CAVEATS[d.id] ?? null,
                 d.records == null ? "Count not recorded" : datasetRecordGrain(d.id)?.unit,
               ]
                 .filter(Boolean)

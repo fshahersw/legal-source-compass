@@ -66,8 +66,7 @@ export type DeviceRiskPayload = {
   readAt: string;
 };
 
-const flag = (v: string | null): boolean | null =>
-  v === "Y" ? true : v === "N" ? false : null;
+const flag = (v: string | null): boolean | null => (v === "Y" ? true : v === "N" ? false : null);
 const isSupplement = (nid: string | null) => /:S\d+$/.test((nid ?? "").trim());
 
 export function buildDeviceRisk(
@@ -75,7 +74,10 @@ export function buildDeviceRisk(
   pma: readonly PmaRow[],
   readAt: string,
 ): DeviceRiskPayload {
-  const pmaBy = new Map<string, { originals: number; supplements: number; latest: string | null }>();
+  const pmaBy = new Map<
+    string,
+    { originals: number; supplements: number; latest: string | null }
+  >();
   for (const p of pma) {
     const code = (p.pc ?? "").trim();
     if (!code) continue;
@@ -127,7 +129,10 @@ export function buildDeviceRisk(
   const implantCodes = new Set(codes.filter((c) => c.implant === true).map((c) => c.code));
   let pmaUnmatched = 0;
   let latestDecision: string | null = null;
-  const years = new Map<string, { year: string; implant: number; other: number; partial: boolean }>();
+  const years = new Map<
+    string,
+    { year: string; implant: number; other: number; partial: boolean }
+  >();
   for (const p of pma) {
     const code = (p.pc ?? "").trim();
     if (!known.has(code)) {
@@ -151,14 +156,18 @@ export function buildDeviceRisk(
     const first = Number(yearRows[0]!.year);
     const last = Number(yearRows[yearRows.length - 1]!.year);
     for (let y = first; y <= last; y += 1)
-      filled.push(years.get(String(y)) ?? { year: String(y), implant: 0, other: 0, partial: false });
-    if (latestDecision && !latestDecision.endsWith("-12-31")) filled[filled.length - 1]!.partial = true;
+      filled.push(
+        years.get(String(y)) ?? { year: String(y), implant: 0, other: 0, partial: false },
+      );
+    if (latestDecision && !latestDecision.endsWith("-12-31"))
+      filled[filled.length - 1]!.partial = true;
   }
   codes.sort((a, b) => b.supplements - a.supplements || a.code.localeCompare(b.code));
   return {
     cells: [...cells.values()].sort(
       (a, b) =>
-        CLASS_ORDER.indexOf(a.cls) - CLASS_ORDER.indexOf(b.cls) || a.implant.localeCompare(b.implant),
+        CLASS_ORDER.indexOf(a.cls) - CLASS_ORDER.indexOf(b.cls) ||
+        a.implant.localeCompare(b.implant),
     ),
     codes,
     years: filled,

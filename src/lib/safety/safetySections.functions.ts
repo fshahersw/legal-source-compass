@@ -32,11 +32,7 @@ import {
   type DeviceRiskPayload,
   type PmaRow,
 } from "./deviceRisk";
-import {
-  parseLawyerYears,
-  type LawyerSeries,
-  type MdlTransfer,
-} from "./reportingContext";
+import { parseLawyerYears, type LawyerSeries, type MdlTransfer } from "./reportingContext";
 import type { ComplaintWindows, OshaSilica, RecallComplaints } from "./safetyWindows";
 
 const fail = (what: string) => (e: unknown) => {
@@ -83,7 +79,12 @@ const readCpscDeaths = memoAsync(READ_TTL_MS, async (): Promise<CpscDeathsPayloa
     ),
     latestDate(CPSC_API_DATASET, "item->cells->>date", "item->cells->>date"),
   ]);
-  return buildCpscDeaths(rows, meta.rows[0]?.imported_records ?? null, through, new Date().toISOString());
+  return buildCpscDeaths(
+    rows,
+    meta.rows[0]?.imported_records ?? null,
+    through,
+    new Date().toISOString(),
+  );
 });
 
 export const getCpscDeaths = createServerFn({ method: "GET" }).handler(

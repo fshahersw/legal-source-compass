@@ -125,7 +125,10 @@ export function buildNhtsaPipeline(
 
   const open: OpenProbe[] = [];
   const openCounts: Record<ProbeStatus, number> = { current: 0, legacy: 0, incomplete: 0 };
-  const conv = new Map<string, { closed: number; cites: number; matched: number; days: number[] }>();
+  const conv = new Map<
+    string,
+    { closed: number; cites: number; matched: number; days: number[] }
+  >();
   let citing = 0;
   let matched = 0;
   for (const i of investigations) {

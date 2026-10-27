@@ -58,7 +58,10 @@ export function windowSum(
 ): { value: number | null; partial: boolean } {
   if (!MONTH.test(s.coverage_from) || !MONTH.test(start)) return { value: null, partial: true };
   const base = monthIndex(s.coverage_from);
-  const last = Math.min(base + s.vals.length - 1, MONTH.test(s.coverage_to) ? monthIndex(s.coverage_to) : Infinity);
+  const last = Math.min(
+    base + s.vals.length - 1,
+    MONTH.test(s.coverage_to) ? monthIndex(s.coverage_to) : Infinity,
+  );
   const from = monthIndex(start);
   let sum = 0;
   let inside = 0;
@@ -72,7 +75,8 @@ export function windowSum(
 
 /** Before = the 12 months before the transfer month; after = the transfer month and the 11 after it. */
 export function transferWindow(s: MonthlySeries, t: MdlTransfer): TransferWindow {
-  const transferMonth = t.transferred && /^\d{4}-\d{2}/.test(t.transferred) ? t.transferred.slice(0, 7) : null;
+  const transferMonth =
+    t.transferred && /^\d{4}-\d{2}/.test(t.transferred) ? t.transferred.slice(0, 7) : null;
   if (!transferMonth)
     return {
       mdl: t.mdl,
@@ -118,9 +122,13 @@ export function monthlyPoints(
 }
 
 /** Lawyer-reported share by year (null when the year's lawyer count is not recorded or it has no reports). */
-export function lawyerShares(
-  l: LawyerSeries | null,
-): { year: string; share: number | null; lawyer: number | null; reports: number; partial: boolean }[] {
+export function lawyerShares(l: LawyerSeries | null): {
+  year: string;
+  share: number | null;
+  lawyer: number | null;
+  reports: number;
+  partial: boolean;
+}[] {
   if (!l) return [];
   return l.years
     .filter((y) => Number.isFinite(y.year))
@@ -129,7 +137,9 @@ export function lawyerShares(
       reports: y.reports,
       lawyer: y.lawyer,
       share:
-        y.lawyer === null || !(y.reports > 0) ? null : Math.round((y.lawyer / y.reports) * 1000) / 10,
+        y.lawyer === null || !(y.reports > 0)
+          ? null
+          : Math.round((y.lawyer / y.reports) * 1000) / 10,
       partial: y.partial,
     }));
 }
@@ -144,7 +154,10 @@ export function parseLawyerYears(raw: unknown): LawyerYear[] {
     const year = Number(o["year"]);
     const reports = Number(o["reports"]);
     if (!Number.isInteger(year) || !Number.isFinite(reports)) continue;
-    const lawyer = typeof o["lawyer"] === "number" && Number.isFinite(o["lawyer"]) ? (o["lawyer"] as number) : null;
+    const lawyer =
+      typeof o["lawyer"] === "number" && Number.isFinite(o["lawyer"])
+        ? (o["lawyer"] as number)
+        : null;
     out.push({ year, reports, lawyer, partial: o["partial"] === true });
   }
   return out.sort((a, b) => a.year - b.year);

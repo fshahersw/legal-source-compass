@@ -2,8 +2,14 @@
  * Shapes of the safety-nhtsa-windows/1 read RPCs (database/contracts/safety-nhtsa-windows-v1.sql) and the pure views the
  * /safety sections draw from them: the vehicle complaint surge radar, a recall's effect on complaints and the OSHA
  * silica tracker. Until the lead applies the contract the RPCs are missing and the server returns null; the sections
- * then show nothing but a "not loaded yet" note. Pure and tested (safetyWindows.test.ts).
+ * then render nothing. Pure and tested (safetyWindows.test.ts).
  */
+import { CAMPAIGN } from "./nhtsaPipeline";
+
+/** NHTSA campaign numbers among `ids`, in order, without repeats (exact NNVNNN000 only). */
+export function nhtsaCampaigns(ids: readonly string[]): string[] {
+  return [...new Set(ids.map((s) => s.trim()).filter((s) => CAMPAIGN.test(s)))];
+}
 
 export type ComplaintCounts = {
   current: number;
@@ -147,7 +153,10 @@ export function radarRows(w: ComplaintWindows | null, min = 100, limit = 15): Ra
 export function shortMaker(name: string): string {
   return name
     .replace(/\s*\(.*?\)\s*/g, " ")
-    .replace(/,?\s+(Inc\.?|LLC|Corp\.?|Corporation|Company|Co\.|Ltd\.?|North America|USA|America)\b\.?/gi, "")
+    .replace(
+      /,?\s+(Inc\.?|LLC|Corp\.?|Corporation|Company|Co\.|Ltd\.?|North America|USA|America)\b\.?/gi,
+      "",
+    )
     .replace(/\s{2,}/g, " ")
     .replace(/[,\s]+$/, "")
     .trim();
@@ -177,7 +186,13 @@ export function recallQuarterRows(
   const lastComplete = r.coverage_to.slice(0, 10) >= quarterEnd;
   const by = new Map(r.quarters.map((q) => [q.quarter, q]));
   const recallQ = r.recall_date ? toQ(r.recall_date) : null;
-  const out: { quarter: string; complaints: number; vehicle: number; recall: boolean; partial: boolean }[] = [];
+  const out: {
+    quarter: string;
+    complaints: number;
+    vehicle: number;
+    recall: boolean;
+    partial: boolean;
+  }[] = [];
   let y = Number(first.slice(0, 4));
   let q = Number(first.slice(6));
   for (let guard = 0; guard < 200; guard += 1) {

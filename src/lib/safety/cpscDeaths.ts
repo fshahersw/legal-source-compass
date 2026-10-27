@@ -96,9 +96,13 @@ export function buildCpscDeaths(
   }
   recalls.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.id.localeCompare(b.id));
   const latest = recalls.find((r) => r.date)?.date ?? null;
-  const years = new Map<string, { year: string; recalls: number; untagged: number; partial: boolean }>();
+  const years = new Map<
+    string,
+    { year: string; recalls: number; untagged: number; partial: boolean }
+  >();
   const dated = recalls.filter((r) => r.date);
-  const through = dataThrough && /^\d{4}-\d{2}-\d{2}/.test(dataThrough) ? dataThrough.slice(0, 10) : latest;
+  const through =
+    dataThrough && /^\d{4}-\d{2}-\d{2}/.test(dataThrough) ? dataThrough.slice(0, 10) : latest;
   if (dated.length && through) {
     const first = Math.max(2000, Number(dated[dated.length - 1]!.date!.slice(0, 4)));
     const last = Math.max(Number(through.slice(0, 4)), Number(latest!.slice(0, 4)));

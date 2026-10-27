@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { risingTerms, termSeries } from "./risingTerms";
 
-const periods = ["2024-Q3", "2024-Q4", "2025-Q1", "2025-Q2", "2025-Q3", "2025-Q4", "2026-Q1", "2026-Q2"];
+const periods = [
+  "2024-Q3",
+  "2024-Q4",
+  "2025-Q1",
+  "2025-Q2",
+  "2025-Q3",
+  "2025-Q4",
+  "2026-Q1",
+  "2026-Q2",
+];
 const data: Record<string, (number | null)[]> = {
   MENINGIOMA: [80, 80, 76, 80, 471, 692, 1237, 8360],
   NAUSEA: [500, 500, 500, 500, 400, 400, 400, 400],

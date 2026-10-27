@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  nhtsaCampaigns,
   pctChange,
   radarRows,
   recallQuarterRows,
@@ -8,6 +9,14 @@ import {
   type ComplaintWindows,
   type RecallComplaints,
 } from "./safetyWindows";
+
+describe("nhtsaCampaigns", () => {
+  it("keeps exact NHTSA campaign numbers only, once each", () => {
+    expect(
+      nhtsaCampaigns(["25V437000", "Z-0119-2027", " 25V437000", "25V43700", "24E001000"]),
+    ).toEqual(["25V437000", "24E001000"]);
+  });
+});
 
 const pair = (manufacturer: string, component: string, current: number, prior: number) => ({
   manufacturer,
@@ -43,7 +52,11 @@ describe("radarRows", () => {
       ],
     };
     const rows = radarRows(w, 100);
-    expect(rows.map((r) => r.manufacturer)).toEqual(["Mazda Motor Corp.", "Ford Motor Company", "New Maker LLC"]);
+    expect(rows.map((r) => r.manufacturer)).toEqual([
+      "Mazda Motor Corp.",
+      "Ford Motor Company",
+      "New Maker LLC",
+    ]);
     expect(rows[0]!.label).toBe("Mazda Motor · Steering");
     expect(rows[2]!.change).toBeNull();
     expect(radarRows(null)).toEqual([]);
@@ -67,7 +80,17 @@ describe("recallQuarterRows", () => {
       components: ["ENGINE AND ENGINE COOLING"],
       coverage_from: "2025-01-01",
       coverage_to: "2025-10-21",
-      quarters: [{ quarter: "2025-Q3", complaints: 88, vehicle_complaints: 120, injured: 0, crashes: 0, fires: 0, deaths: 0 }],
+      quarters: [
+        {
+          quarter: "2025-Q3",
+          complaints: 88,
+          vehicle_complaints: 120,
+          injured: 0,
+          crashes: 0,
+          fires: 0,
+          deaths: 0,
+        },
+      ],
       before: null,
       after: null,
     };
@@ -87,8 +110,20 @@ describe("silicaYears", () => {
       to: "2026-09-17",
       years: [
         { year: 2017, fabricator_general: 0, other_general: 0, construction: 26, penalties: 1 },
-        { year: 2024, fabricator_general: 508, other_general: 499, construction: 1118, penalties: 1 },
-        { year: 2026, fabricator_general: 163, other_general: 180, construction: 709, penalties: 1 },
+        {
+          year: 2024,
+          fabricator_general: 508,
+          other_general: 499,
+          construction: 1118,
+          penalties: 1,
+        },
+        {
+          year: 2026,
+          fabricator_general: 163,
+          other_general: 180,
+          construction: 709,
+          penalties: 1,
+        },
       ],
       last12: null,
       states: [],
