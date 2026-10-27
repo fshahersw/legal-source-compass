@@ -445,167 +445,176 @@ function toMdl(item: Record<string, unknown> | undefined, mdl: number): LensMdl 
 
 export const getMdlLens = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ mdl: z.number().int().min(1).max(99999) }).parse(d))
-  .handler(async ({ data }): Promise<MdlLens> => {
-    const id = String(data.mdl);
-    const linkFilter = encodeURIComponent(JSON.stringify({ mdl: [id] }));
-    const [
-      mdl,
-      court,
-      national,
-      judges,
-      signal,
-      insights,
-      links,
-      page,
-      hearingRows,
-      terminatedRows,
-      seriesRow,
-      orderRows,
-      sessionRange,
-      fdaRows,
-    ] = await Promise.all([
-      restGet<{ item: Record<string, unknown> }[]>(
-        `corpus_records?select=item&dataset=eq.mdl_analytics&id=eq.${id}&limit=1`,
-      ),
-      restGet<{ id: string; item: { analytics?: CourtAnalytics } }[]>(
-        `corpus_records?select=id,item&dataset=eq.court_analytics&item->analytics->mdls=cs.${contains(data.mdl)}&limit=3`,
-      ),
-      restGet<{ item: { analytics?: { distributions?: NationalDistribution } } }[]>(
-        "corpus_records?select=item&dataset=eq.court_analytics&id=eq.summary:national&limit=1",
-      ),
-      restGet<{ id: string; item: { profile?: FjcProfile } }[]>(
-        `corpus_records?select=id,item&dataset=eq.judge_profiles_fjc&item->profile->mdls=cs.${contains(data.mdl)}&limit=3`,
-      ),
-      restGet<{ item: Parameters<typeof toSignals>[0] }[]>(
-        `corpus_records?select=item&dataset=eq.agency_safety_mass_tort_signals&id=eq.${id}&limit=1`,
-      ),
-      restGet<{ item: { insight?: unknown } }[]>(
-        `corpus_records?select=item&dataset=eq.agency_safety_insights&item->insight->>entity=eq.${encodeURIComponent(`MDL ${id}`)}&limit=10`,
-      ),
-      restGet<{ id: string; link: Record<string, unknown> | null }[]>(
-        `corpus_records?select=id,link:item->link&dataset=eq.company_sec_mdl_links&filters=cs.${linkFilter}&limit=50`,
-      ),
-      restGet<{ court: unknown; source_url: unknown }[]>(
-        `corpus_records?select=court:item->court,source_url&dataset=eq.mdl_intel_court_pages&id=eq.${id}&limit=1`,
-      ),
-      // Matter ids are matter:<session>:<mdl>:<section>; the recorded MDL number is matched exactly.
-      restGet<{ source_url: unknown; matter: unknown }[]>(
-        `corpus_records?select=source_url,matter:item->matter&dataset=eq.mdl_intel_hearing_orders&id=like.matter:*&item->matter->>mdl=eq.${id}&limit=200`,
-      ),
-      // Terminated-history ids are <mdl>:<district code>, so the prefix "<mdl>:" never matches another number.
-      restGet<{ id: unknown; source_url: unknown; history: unknown }[]>(
-        `corpus_records?select=id,source_url,history:item->history&dataset=eq.mdl_terminated_history&id=like.${id}:*&limit=100`,
-      ),
-      restGet<{ first: unknown; as_of: unknown; reports: unknown; source_url: unknown }[]>(
-        "corpus_records?select=first:item->overview->first_report,as_of:item->overview->as_of,reports:item->overview->reports,source_url&dataset=eq.mdl_analytics&id=eq.summary:overview&limit=1",
-      ),
-      // GovInfo Panel orders (ids order:<package>-<part>); at most two are recorded per MDL number.
-      restGet<{ id: unknown; source_url: unknown; order: unknown }[]>(
-        `corpus_records?select=id,source_url,order:item->order&dataset=eq.mdl_intel_hearing_orders&id=like.order:*&item->order->>mdl=eq.${id}&limit=20`,
-      ),
-      // Session rows are stored oldest first, so the first and last entries bound the schedules read.
-      restGet<{ first: unknown; last: unknown }[]>(
-        "corpus_records?select=first:item->overview->session_rows->0->>date,last:item->overview->session_rows->-1->>date&dataset=eq.mdl_intel_hearing_orders&id=eq.summary:overview&limit=1",
-      ),
-      // openFDA report counts (FAERS, MAUDE, CAERS) keyed by the MDL number the product list states explicitly.
-      restGet<
-        {
-          dataset: unknown;
-          id: unknown;
-          title: unknown;
-          m: unknown;
-          cells: unknown;
-          facts: unknown;
-        }[]
-      >(
-        `corpus_records?select=dataset,id,title,m:item->>mdl,cells:item->cells,facts:detail->facts&dataset=in.(fda_faers_product_series,fda_device_event_series,fda_caers_series)&filters->mdl=cs.${encodeURIComponent(JSON.stringify([String(data.mdl)]))}&limit=10`,
-      ),
-    ]);
-    const parsedLinks = links.rows.flatMap((row) => {
-      const link = parseLink(row.link);
-      const cik = typeof row.link?.["cik"] === "string" ? row.link["cik"] : null;
-      const name = typeof row.link?.["company"] === "string" ? row.link["company"] : null;
-      return link && cik && /^\d{10}$/.test(cik) && link.mdl === data.mdl
-        ? [{ cik, name: name ?? cik, link }]
-        : [];
-    });
-    const summaries = parsedLinks.length
-      ? await restGet<{ id: string; summary: unknown }[]>(
-          `corpus_records?select=id,summary:item->summary&dataset=eq.company_sec_profiles&id=in.(${parsedLinks.map((l) => l.cik).join(",")})`,
-        )
-      : { rows: [] as { id: string; summary: unknown }[] };
-    const byCik = new Map(summaries.rows.map((r) => [r.id, parseCompanySummary(r.summary)]));
-    const tierOrder = { A: 0, B: 1, C: 2 } as const;
-    const companies = parsedLinks
-      .map((l) => ({ ...l, summary: byCik.get(l.cik) ?? null }))
-      .sort(
-        (a, b) =>
-          tierOrder[a.link.tier] - tierOrder[b.link.tier] ||
-          b.link.verifiedCount - a.link.verifiedCount,
-      );
-    const parsedPage = page.rows[0] ? parseCourtPage(page.rows[0].court) : null;
-    const courtPage = parsedPage && parsedPage.mdl === data.mdl ? parsedPage : null;
-    const hearings = hearingRows.rows
-      .map((row) => toHearing(row, data.mdl))
-      .filter((h): h is LensHearing => h !== null)
-      .sort(byNewestSession);
-    const terminated = terminatedRows.rows
-      .map((row) => toTerminated(row, data.mdl))
-      .filter((t): t is LensTerminated => t !== null)
-      .sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
-    const fdaReports = fdaRows.rows
-      .map((row) => toFdaReport(row, data.mdl))
-      .filter((r): r is LensFdaReport => r !== null);
-    const allOrders = orderRows.rows
-      .map((row) => toPanelOrder(row, data.mdl))
-      .filter((o): o is LensPanelOrder => o !== null)
-      .sort(byNewestOrder);
-    const panelOrders = withoutHearingEvidence(allOrders, hearings);
-    const s = seriesRow.rows[0];
-    const sourceUrl = str(s?.source_url);
-    const lensMdl = toMdl(mdl.rows[0]?.item, data.mdl);
-    const courtPageSourceUrl = courtPage ? httpUrl(page.rows[0]?.source_url) : null;
-    const courtPageSource = courtPageSourceLabel(courtPageSourceUrl);
-    return {
-      mdl: lensMdl,
-      // A court or judge is shown only when exactly one record lists this MDL.
-      court: court.rows.length === 1 ? (court.rows[0]!.item.analytics ?? null) : null,
-      courtDistributions: national.rows[0]?.item.analytics?.distributions ?? null,
-      judge: judges.rows.length === 1 ? (judges.rows[0]!.item.profile ?? null) : null,
-      judgeAmbiguous: judges.rows.length > 1,
-      signal: signal.rows[0] ? (toSignals(signal.rows[0].item)[0] ?? null) : null,
-      companies,
-      courtPage,
-      courtPageSourceUrl,
-      courtPageSourceLabel: courtPageSource,
-      insights: insights.rows.flatMap(({ item }) => {
-        const parsed = parseInsight(item?.insight);
-        return parsed ? [parsed] : [];
-      }),
-      hearings,
-      hearingCoverage: {
-        first: str(sessionRange.rows[0]?.first),
-        last: str(sessionRange.rows[0]?.last),
-      },
-      panelOrders,
-      panelOrdersInHearings: allOrders.length - panelOrders.length,
-      terminated,
-      fdaReports,
-      series: {
-        first: str(s?.first),
-        asOf: str(s?.as_of),
-        reports: num(s?.reports),
-        sourceUrl: sourceUrl && /^https?:\/\//.test(sourceUrl) ? sourceUrl : null,
-      },
-      recordedTitle: lensMdl
-        ? null
-        : recordedTitle({
-            courtPage,
-            courtPageSource,
-            hearings,
-            terminated,
-            panelOrders,
-            companies,
-          }),
-    };
+  .handler(async ({ data }): Promise<MdlLens> => loadMdlLens(data.mdl));
+
+/**
+ * Everything the lens reads for one MDL number (server-only; callers validate the number). Shared by getMdlLens and
+ * the matter command page (src/lib/matters/command.functions.ts).
+ */
+export async function loadMdlLens(mdlNumber: number): Promise<MdlLens> {
+  if (!Number.isInteger(mdlNumber) || mdlNumber < 1 || mdlNumber > 99999)
+    throw new Error("Invalid MDL number.");
+  const data = { mdl: mdlNumber };
+  const id = String(data.mdl);
+  const linkFilter = encodeURIComponent(JSON.stringify({ mdl: [id] }));
+  const [
+    mdl,
+    court,
+    national,
+    judges,
+    signal,
+    insights,
+    links,
+    page,
+    hearingRows,
+    terminatedRows,
+    seriesRow,
+    orderRows,
+    sessionRange,
+    fdaRows,
+  ] = await Promise.all([
+    restGet<{ item: Record<string, unknown> }[]>(
+      `corpus_records?select=item&dataset=eq.mdl_analytics&id=eq.${id}&limit=1`,
+    ),
+    restGet<{ id: string; item: { analytics?: CourtAnalytics } }[]>(
+      `corpus_records?select=id,item&dataset=eq.court_analytics&item->analytics->mdls=cs.${contains(data.mdl)}&limit=3`,
+    ),
+    restGet<{ item: { analytics?: { distributions?: NationalDistribution } } }[]>(
+      "corpus_records?select=item&dataset=eq.court_analytics&id=eq.summary:national&limit=1",
+    ),
+    restGet<{ id: string; item: { profile?: FjcProfile } }[]>(
+      `corpus_records?select=id,item&dataset=eq.judge_profiles_fjc&item->profile->mdls=cs.${contains(data.mdl)}&limit=3`,
+    ),
+    restGet<{ item: Parameters<typeof toSignals>[0] }[]>(
+      `corpus_records?select=item&dataset=eq.agency_safety_mass_tort_signals&id=eq.${id}&limit=1`,
+    ),
+    restGet<{ item: { insight?: unknown } }[]>(
+      `corpus_records?select=item&dataset=eq.agency_safety_insights&item->insight->>entity=eq.${encodeURIComponent(`MDL ${id}`)}&limit=10`,
+    ),
+    restGet<{ id: string; link: Record<string, unknown> | null }[]>(
+      `corpus_records?select=id,link:item->link&dataset=eq.company_sec_mdl_links&filters=cs.${linkFilter}&limit=50`,
+    ),
+    restGet<{ court: unknown; source_url: unknown }[]>(
+      `corpus_records?select=court:item->court,source_url&dataset=eq.mdl_intel_court_pages&id=eq.${id}&limit=1`,
+    ),
+    // Matter ids are matter:<session>:<mdl>:<section>; the recorded MDL number is matched exactly.
+    restGet<{ source_url: unknown; matter: unknown }[]>(
+      `corpus_records?select=source_url,matter:item->matter&dataset=eq.mdl_intel_hearing_orders&id=like.matter:*&item->matter->>mdl=eq.${id}&limit=200`,
+    ),
+    // Terminated-history ids are <mdl>:<district code>, so the prefix "<mdl>:" never matches another number.
+    restGet<{ id: unknown; source_url: unknown; history: unknown }[]>(
+      `corpus_records?select=id,source_url,history:item->history&dataset=eq.mdl_terminated_history&id=like.${id}:*&limit=100`,
+    ),
+    restGet<{ first: unknown; as_of: unknown; reports: unknown; source_url: unknown }[]>(
+      "corpus_records?select=first:item->overview->first_report,as_of:item->overview->as_of,reports:item->overview->reports,source_url&dataset=eq.mdl_analytics&id=eq.summary:overview&limit=1",
+    ),
+    // GovInfo Panel orders (ids order:<package>-<part>); at most two are recorded per MDL number.
+    restGet<{ id: unknown; source_url: unknown; order: unknown }[]>(
+      `corpus_records?select=id,source_url,order:item->order&dataset=eq.mdl_intel_hearing_orders&id=like.order:*&item->order->>mdl=eq.${id}&limit=20`,
+    ),
+    // Session rows are stored oldest first, so the first and last entries bound the schedules read.
+    restGet<{ first: unknown; last: unknown }[]>(
+      "corpus_records?select=first:item->overview->session_rows->0->>date,last:item->overview->session_rows->-1->>date&dataset=eq.mdl_intel_hearing_orders&id=eq.summary:overview&limit=1",
+    ),
+    // openFDA report counts (FAERS, MAUDE, CAERS) keyed by the MDL number the product list states explicitly.
+    restGet<
+      {
+        dataset: unknown;
+        id: unknown;
+        title: unknown;
+        m: unknown;
+        cells: unknown;
+        facts: unknown;
+      }[]
+    >(
+      `corpus_records?select=dataset,id,title,m:item->>mdl,cells:item->cells,facts:detail->facts&dataset=in.(fda_faers_product_series,fda_device_event_series,fda_caers_series)&filters->mdl=cs.${encodeURIComponent(JSON.stringify([String(data.mdl)]))}&limit=10`,
+    ),
+  ]);
+  const parsedLinks = links.rows.flatMap((row) => {
+    const link = parseLink(row.link);
+    const cik = typeof row.link?.["cik"] === "string" ? row.link["cik"] : null;
+    const name = typeof row.link?.["company"] === "string" ? row.link["company"] : null;
+    return link && cik && /^\d{10}$/.test(cik) && link.mdl === data.mdl
+      ? [{ cik, name: name ?? cik, link }]
+      : [];
   });
+  const summaries = parsedLinks.length
+    ? await restGet<{ id: string; summary: unknown }[]>(
+        `corpus_records?select=id,summary:item->summary&dataset=eq.company_sec_profiles&id=in.(${parsedLinks.map((l) => l.cik).join(",")})`,
+      )
+    : { rows: [] as { id: string; summary: unknown }[] };
+  const byCik = new Map(summaries.rows.map((r) => [r.id, parseCompanySummary(r.summary)]));
+  const tierOrder = { A: 0, B: 1, C: 2 } as const;
+  const companies = parsedLinks
+    .map((l) => ({ ...l, summary: byCik.get(l.cik) ?? null }))
+    .sort(
+      (a, b) =>
+        tierOrder[a.link.tier] - tierOrder[b.link.tier] ||
+        b.link.verifiedCount - a.link.verifiedCount,
+    );
+  const parsedPage = page.rows[0] ? parseCourtPage(page.rows[0].court) : null;
+  const courtPage = parsedPage && parsedPage.mdl === data.mdl ? parsedPage : null;
+  const hearings = hearingRows.rows
+    .map((row) => toHearing(row, data.mdl))
+    .filter((h): h is LensHearing => h !== null)
+    .sort(byNewestSession);
+  const terminated = terminatedRows.rows
+    .map((row) => toTerminated(row, data.mdl))
+    .filter((t): t is LensTerminated => t !== null)
+    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+  const fdaReports = fdaRows.rows
+    .map((row) => toFdaReport(row, data.mdl))
+    .filter((r): r is LensFdaReport => r !== null);
+  const allOrders = orderRows.rows
+    .map((row) => toPanelOrder(row, data.mdl))
+    .filter((o): o is LensPanelOrder => o !== null)
+    .sort(byNewestOrder);
+  const panelOrders = withoutHearingEvidence(allOrders, hearings);
+  const s = seriesRow.rows[0];
+  const sourceUrl = str(s?.source_url);
+  const lensMdl = toMdl(mdl.rows[0]?.item, data.mdl);
+  const courtPageSourceUrl = courtPage ? httpUrl(page.rows[0]?.source_url) : null;
+  const courtPageSource = courtPageSourceLabel(courtPageSourceUrl);
+  return {
+    mdl: lensMdl,
+    // A court or judge is shown only when exactly one record lists this MDL.
+    court: court.rows.length === 1 ? (court.rows[0]!.item.analytics ?? null) : null,
+    courtDistributions: national.rows[0]?.item.analytics?.distributions ?? null,
+    judge: judges.rows.length === 1 ? (judges.rows[0]!.item.profile ?? null) : null,
+    judgeAmbiguous: judges.rows.length > 1,
+    signal: signal.rows[0] ? (toSignals(signal.rows[0].item)[0] ?? null) : null,
+    companies,
+    courtPage,
+    courtPageSourceUrl,
+    courtPageSourceLabel: courtPageSource,
+    insights: insights.rows.flatMap(({ item }) => {
+      const parsed = parseInsight(item?.insight);
+      return parsed ? [parsed] : [];
+    }),
+    hearings,
+    hearingCoverage: {
+      first: str(sessionRange.rows[0]?.first),
+      last: str(sessionRange.rows[0]?.last),
+    },
+    panelOrders,
+    panelOrdersInHearings: allOrders.length - panelOrders.length,
+    terminated,
+    fdaReports,
+    series: {
+      first: str(s?.first),
+      asOf: str(s?.as_of),
+      reports: num(s?.reports),
+      sourceUrl: sourceUrl && /^https?:\/\//.test(sourceUrl) ? sourceUrl : null,
+    },
+    recordedTitle: lensMdl
+      ? null
+      : recordedTitle({
+          courtPage,
+          courtPageSource,
+          hearings,
+          terminated,
+          panelOrders,
+          companies,
+        }),
+  };
+}

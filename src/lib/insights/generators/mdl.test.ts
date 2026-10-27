@@ -152,7 +152,7 @@ describe("generateMdlInsights", () => {
     expect(i.points[0]).toMatchObject({
       label: "MDL 2000",
       value: "10,000",
-      href: "/matters/lens/2000",
+      href: "/matters/2000",
     });
   });
 

@@ -22,6 +22,7 @@ import build_common as bc  # noqa: E402
 import enf_common as ec  # noqa: E402
 import extract as ex  # noqa: E402
 import links  # noqa: E402
+import retype_claims as rt  # noqa: E402
 import settle_confirm as sc  # noqa: E402
 
 DIR = os.path.join(ec.ACQ, "settlesignal")
@@ -173,7 +174,10 @@ def main():
                      "verified": published, "has_amount": ["yes" if amounts else "no"]},
             links=link_list, extra={"settlement": settlement},
         ))
-    rows.sort(key=lambda r: (r["item"]["settlement"]["deadline"]["date"] or "0000"), reverse=True)
+    # amount roles and registry-verified MDL links; the lead list's links, licence and stored deadline states are
+    # dropped (the same retype the published rows get)
+    registry = rt.load_registry()
+    rows = sorted((rt.retype_row(r, today, registry) for r in rows), key=rt.sort_key_for(today))
     seen, unique = set(), []
     for r in rows:
         if r["id"] in seen:
@@ -194,10 +198,8 @@ def main():
         "deadline_note": "Deadlines are dates the official page states; deadline_state is computed against the build date. Confirm on the official page before relying on a date.",
         "stats": dict(stats), "excluded": dict(reasons),
     }
-    bc.write_build("settlement_claims_official", "Settlement claims confirmed on official pages", unique,
-                   bc.listing([("settlement", "Settlement"), ("deadline", "Claim deadline"), ("amount", "Dollar figure"), ("court", "Court"), ("case_number", "Case no."), ("official_page", "Official page"), ("verified", "Confirmed facts")],
-                              [("deadline_state", "Claim deadline", {"within_30_days": "Within 30 days", "future": "More than 30 days ahead", "passed": "Passed", "none": "No deadline confirmed"}),
-                               ("verified", "Confirmed fact", {"deadline": "Deadline", "amount": "Dollar figure", "court": "Court", "case number": "Case number"})]),
+    summary = rt.clean_summary(summary)
+    bc.write_build("settlement_claims_official", "Settlement claims confirmed on official pages", unique, rt.listing_block(),
                    summary, bc.manifest_inputs(["private/acq/enforcement_actions/settlesignal/"]))
     print(json.dumps(dict(stats)))
     print(json.dumps(dict(reasons)))

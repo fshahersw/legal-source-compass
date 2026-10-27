@@ -13,6 +13,9 @@ import {
   Search,
 } from "lucide-react";
 import { HowToRead } from "@/components/analysis/HowToRead";
+import { AiSummary, AskAiButton, buildSectionContext } from "@/components/kit";
+import { stateStandoutFigures } from "./placeAi";
+import { OutreachAndExposure } from "./profile/OutreachAndExposure";
 import { ANALYSIS_MEASURES } from "./analysisMeasures";
 import { ChartCard } from "@/components/fda-analytics/FdaCharts";
 import { useCorpus } from "@/lib/corpus/store";
@@ -169,6 +172,12 @@ export function StateAnalysisView({
           </div>
         </section>
       ) : null}
+      <OutreachAndExposure
+        usps={usps}
+        stateName={stateName}
+        counties={counties.data?.counties ?? null}
+        districts={analysis.data?.districts ?? []}
+      />
       <HowToRead measures={ANALYSIS_MEASURES} />
     </div>
   );
@@ -203,6 +212,22 @@ function StandOut({
   const [all, setAll] = useState(false);
   const items = analysis ? (all ? analysis.standouts : analysis.standouts.slice(0, 5)) : [];
   const hidden = analysis ? analysis.standouts.length - items.length : 0;
+  const context = useMemo(
+    () =>
+      analysis
+        ? buildSectionContext({
+            id: "state-standouts",
+            title: `What stands out in ${stateName}`,
+            scope: `${stateName}'s counties and federal districts`,
+            period: "FY2021-FY2025 legal activity; ACS 2020-2024",
+            source:
+              "FJC IDB, OSHA, CFPB, EPA ECHO, Census ACS and population estimates (state analysis)",
+            figures: stateStandoutFigures(analysis),
+            maxFigures: 24,
+          })
+        : null,
+    [analysis, stateName],
+  );
   return (
     <section className="resource-panel" aria-label="What stands out">
       <div className="research-band">
@@ -284,6 +309,24 @@ function StandOut({
               </span>
             </li>
           ) : null}
+          {context ? (
+            <li className="px-3 py-3">
+              <AiSummary
+                context={context}
+                actions={
+                  <AskAiButton
+                    sectionId="state-standouts"
+                    title={`What stands out in ${stateName}`}
+                    context={context}
+                    questions={[
+                      "Which of these patterns are strongest, and how many counties are behind them?",
+                      "What can and can't a county-level association tell me about residents?",
+                    ]}
+                  />
+                }
+              />
+            </li>
+          ) : null}
           {hidden || all ? (
             <li>
               <button
@@ -307,11 +350,14 @@ function MetricPicker({
   value,
   onChange,
   keys,
+  rows,
 }: {
   id: string;
   value: string;
   onChange: (k: string) => void;
   keys?: ReadonlySet<string>;
+  /** Only measures some row records are offered. */
+  rows?: readonly MetricRow[] | undefined;
 }) {
   return (
     <label htmlFor={id} className="flex min-w-0 flex-col gap-0.5 text-[11px]">
@@ -322,7 +368,7 @@ function MetricPicker({
         onChange={(e) => onChange(e.target.value)}
         className={selectClass}
       >
-        {metricGroups(keys).map(({ group, items }) => (
+        {metricGroups(keys, rows).map(({ group, items }) => (
           <optgroup key={group} label={group}>
             {items.map((m) => (
               <option key={m.key} value={m.key}>
@@ -360,11 +406,16 @@ function CountyMapView({
   onCounty: (fips: string) => void;
 }) {
   const corpus = useCorpus();
-  const def = METRIC_BY_KEY.get(metric) ?? METRIC_BY_KEY.get(DEFAULT_METRIC)!;
   const mrows: MetricRow[] = useMemo(
     () => (rows ?? []).map((r) => ({ id: r.id, name: r.name, metrics: r.metrics })),
     [rows],
   );
+  // A measure no county records (e.g. the non-MDL product rate before its packet is published) falls back to the default.
+  const requested = METRIC_BY_KEY.get(metric);
+  const def =
+    requested && (!mrows.length || mrows.some((r) => r.metrics[requested.key] != null))
+      ? requested
+      : METRIC_BY_KEY.get(DEFAULT_METRIC)!;
   const values = useMemo(
     () => new Map(mrows.map((r) => [r.id, r.metrics[def.key] ?? null])),
     [mrows, def.key],
@@ -398,7 +449,12 @@ function CountyMapView({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
-        <MetricPicker id={`metric-${usps}`} value={def.key} onChange={onMetric} />
+        <MetricPicker
+          id={`metric-${usps}`}
+          value={def.key}
+          onChange={onMetric}
+          rows={mrows.length ? mrows : undefined}
+        />
         <p className="m-0 min-w-0 flex-1 basis-64 text-[11px] leading-4 text-muted-foreground">
           {def.label}, {def.unit}. Source: {def.source}.
         </p>

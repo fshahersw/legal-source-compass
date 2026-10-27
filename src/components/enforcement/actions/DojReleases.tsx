@@ -26,6 +26,9 @@ import {
 } from "./bits";
 import { dojOverviewQuery } from "./actionsView";
 import { figureView, fmtInt, fmtUsd, headlineText } from "./format";
+import { DataDrawer } from "@/components/kit";
+import { HELD_LABEL, type HeldReason } from "@/lib/external/enforcementLargest";
+import { coverageBreak } from "@/lib/external/enforcementHealth";
 
 export function DojReleases() {
   const q = useQuery(dojOverviewQuery);
@@ -45,6 +48,29 @@ export function DojReleases() {
     );
   if (!q.data) return <StateNote>DOJ press releases have not been published yet.</StateNote>;
   return <Body overview={q.data} />;
+}
+
+/**
+ * The yearly partitions change coverage between 2012 and 2013 (about 1,100–1,500 releases a year before, 16,800–21,200
+ * after): a caveat shown above the DOJ trend charts so the jump never reads as more enforcement.
+ */
+export function DojCoverageNote() {
+  const q = useQuery(dojOverviewQuery);
+  const brk = q.data
+    ? coverageBreak(q.data.partitions.filter((p) => /_\d{4}$/.test(p.dataset)))
+    : null;
+  if (!brk) return null;
+  return (
+    <p
+      role="note"
+      className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground"
+    >
+      <span className="font-medium">Coverage change in {brk.year}: </span>
+      the DOJ News API holds {fmtInt(brk.before)} releases dated {Number(brk.year) - 1} and{" "}
+      {fmtInt(brk.after)} dated {brk.year}. The jump is the archive&rsquo;s coverage, not more
+      enforcement, so do not compare years across it. Topic tags start in 2015.
+    </p>
+  );
 }
 
 type Filters = {
@@ -375,89 +401,230 @@ function ReleaseDetail({ release: r }: { release: DojRelease }) {
   );
 }
 
+const HELD_ORDER: HeldReason[] = [
+  "title_contradicts",
+  "other_party",
+  "not_outcome",
+  "maximum",
+  "title_no_resolution",
+  "distribution",
+  "statistics",
+  "personnel",
+  "speech",
+  "filing",
+  "charge",
+];
+
+/**
+ * Largest resolutions, all years: ranked by the figure each release's own title states (never the largest figure its
+ * text mentions). Figures read only from the text are listed apart and unranked ("View figures read from the text");
+ * speeches, ceremonies, totals, victim distributions, filings, charges and implausible figures are held back (listed
+ * with the reason in "View held-back releases"); exact repeats of one release are collapsed into one entry.
+ */
 function Largest() {
   const q = useQuery({
-    queryKey: ["enforcement-actions", "doj-largest"],
+    queryKey: ["enforcement-actions", "doj-largest", "v3"],
     queryFn: () => getDojLargest(),
     staleTime: 10 * 60 * 1000,
   });
   const [expanded, setExpanded] = useState(false);
-  // releases stating the same figure (often follow-up releases about one resolution) are grouped, newest shown
-  const rows = useMemo(() => {
-    const groups = new Map<number, { latest: DojRelease; count: number }>();
-    for (const r of q.data ?? []) {
-      const key = r.maxResolutionUsd ?? 0;
-      const g = groups.get(key);
-      if (!g) groups.set(key, { latest: r, count: 1 });
-      else {
-        g.count += 1;
-        if ((r.date ?? "") > (g.latest.date ?? "")) g.latest = r;
-      }
-    }
-    return [...groups.values()].sort(
-      (a, b) => (b.latest.maxResolutionUsd ?? 0) - (a.latest.maxResolutionUsd ?? 0),
-    );
-  }, [q.data]);
-  const shown = expanded ? rows.slice(0, 100) : rows.slice(0, 12);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const entries = q.data?.entries ?? [];
+  const held = useMemo(
+    () =>
+      [...(q.data?.held ?? [])].sort(
+        (a, b) =>
+          HELD_ORDER.indexOf(a.reason) - HELD_ORDER.indexOf(b.reason) ||
+          (b.release.headline?.valueUsd ?? 0) - (a.release.headline?.valueUsd ?? 0),
+      ),
+    [q.data],
+  );
+  const shown = expanded ? entries.slice(0, 100) : entries.slice(0, 12);
   return (
     <Panel
-      title="Largest stated resolution figures, all years"
-      subtitle="Releases whose largest settlement, penalty, restitution, forfeiture, disgorgement or judgment figure is $1 billion or more"
-      footnote="A figure is what the release states in a sentence with one of those keywords; it can belong to a related or earlier matter the release mentions, so the release's own headline figure is shown beside it when it is another value. Several releases can describe the same resolution, so figures are not summed."
+      title="Largest resolutions, all years"
+      subtitle="Releases whose title states a resolution of $1 billion or more"
+      footnote={
+        <>
+          Ranked only by the amount the release title states. Figures found only in the release text
+          are listed apart, unranked. Speeches, totals, victim payouts, filings, charges and
+          statutory maximums are held back. Only exact repeats of one release are merged. Figures
+          are as stated, not verified payments, and are never summed.
+          {q.data
+            ? ` ${fmtInt(q.data.candidates)} releases reached $1 billion: ${fmtInt(entries.length)} ranked, ${fmtInt(q.data.textOnly.length)} text-only, ${fmtInt(held.length)} held back.`
+            : ""}
+        </>
+      }
     >
       {q.isLoading ? (
         <div className="p-3">
-          <LoadingBlock label="Loading largest figures" />
+          <LoadingBlock label="Loading largest resolutions" />
         </div>
       ) : q.isError ? (
         <div className="p-3">
           <StateNote tone="error">The list could not be loaded.</StateNote>
         </div>
-      ) : !rows.length ? (
+      ) : !entries.length ? (
         <div className="p-3">
           <StateNote>No release states a resolution figure of $1 billion or more.</StateNote>
         </div>
       ) : (
-        <div className="px-3 py-2">
+        <div className="space-y-2 px-3 py-2">
           <ol className="space-y-1 text-xs" id="doj-largest">
-            {shown.map(({ latest: r, count }) => (
-              <li key={r.id} className="flex min-w-0 items-baseline gap-2">
-                <span className="w-28 shrink-0 text-right font-mono">
-                  {fmtUsd(r.maxResolutionUsd)}
-                </span>
-                <span className="w-20 shrink-0 font-mono text-muted-foreground">
-                  {r.date ?? "—"}
-                </span>
-                <span className="min-w-0 truncate" title={r.title}>
-                  {r.url ? <SourceLink href={r.url}>{r.title}</SourceLink> : r.title}
-                </span>
-                {r.headline?.differsFromLargest ? (
+            {shown.map(({ release: r, valueUsd, related }) => (
+              <li key={r.id} className="min-w-0">
+                <div className="flex min-w-0 items-baseline gap-2">
                   <span
-                    className="shrink-0 text-[11px] text-muted-foreground"
-                    title={figureView(r.headline, r.maxResolutionUsd).note ?? undefined}
+                    className="w-32 shrink-0 text-right font-mono"
+                    title={
+                      r.headline ? (figureView(r.headline, null).note ?? undefined) : undefined
+                    }
                   >
-                    headline figure {headlineText(r.headline)}
+                    {r.headline ? headlineText(r.headline) : fmtUsd(valueUsd)}
                   </span>
-                ) : null}
-                {count > 1 ? (
-                  <span className="shrink-0 text-[11px] text-muted-foreground">
-                    +{fmtInt(count - 1)} more releases state this figure
+                  <span className="w-20 shrink-0 font-mono text-muted-foreground">
+                    {r.date ?? "Not recorded"}
                   </span>
+                  <span className="min-w-0 truncate" title={r.title}>
+                    {r.url ? <SourceLink href={r.url}>{r.title}</SourceLink> : r.title}
+                  </span>
+                  {related.length ? (
+                    <button
+                      type="button"
+                      aria-expanded={openId === r.id}
+                      aria-controls={`doj-related-${r.id}`}
+                      onClick={() => setOpenId(openId === r.id ? null : r.id)}
+                      className="shrink-0 rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      +{fmtInt(related.length)} related release{related.length === 1 ? "" : "s"}
+                    </button>
+                  ) : null}
+                </div>
+                {openId === r.id ? (
+                  <ul id={`doj-related-${r.id}`} className="mt-0.5 space-y-0.5 sm:ml-[13.5rem]">
+                    {related.map((x) => (
+                      <li
+                        key={x.id}
+                        className="flex min-w-0 gap-2 text-[11px] text-muted-foreground"
+                      >
+                        <span className="w-20 shrink-0 font-mono">{x.date ?? "Not recorded"}</span>
+                        <span className="w-28 shrink-0 font-mono">
+                          {x.headline ? headlineText(x.headline) : "Not recorded"}
+                        </span>
+                        <span className="min-w-0 truncate" title={x.title}>
+                          {x.url ? <SourceLink href={x.url}>{x.title}</SourceLink> : x.title}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 ) : null}
               </li>
             ))}
           </ol>
-          {rows.length > 12 ? (
-            <button
-              type="button"
-              aria-expanded={expanded}
-              aria-controls="doj-largest"
-              onClick={() => setExpanded((v) => !v)}
-              className="mt-1 rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              {expanded ? "Show fewer" : `Show ${fmtInt(Math.min(rows.length, 100) - 12)} more`}
-            </button>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-3">
+            {entries.length > 12 ? (
+              <button
+                type="button"
+                aria-expanded={expanded}
+                aria-controls="doj-largest"
+                onClick={() => setExpanded((v) => !v)}
+                className="rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                {expanded
+                  ? "Show fewer"
+                  : `Show ${fmtInt(Math.min(entries.length, 100) - 12)} more`}
+              </button>
+            ) : null}
+            {q.data?.textOnly.length ? (
+              <DataDrawer
+                title="Figures read only from the release text"
+                description="The title states no amount, so these are not ranked. Each figure comes from the sentence shown; check the release before relying on it."
+                rows={q.data.textOnly}
+                rowKey={(e) => e.release.id}
+                triggerLabel={`View ${fmtInt(q.data.textOnly.length)} figures read from the text`}
+                searchable
+                columns={[
+                  {
+                    key: "figure",
+                    label: "Figure (USD)",
+                    align: "right",
+                    value: (e) => e.valueUsd,
+                    render: (e) =>
+                      e.release.headline ? headlineText(e.release.headline) : fmtUsd(e.valueUsd),
+                  },
+                  { key: "kind", label: "Kind", value: (e) => e.release.headline?.keyword ?? null },
+                  { key: "date", label: "Date", value: (e) => e.release.date },
+                  {
+                    key: "title",
+                    label: "Release",
+                    value: (e) => e.release.title,
+                    render: (e) =>
+                      e.release.url ? (
+                        <SourceLink href={e.release.url}>{e.release.title}</SourceLink>
+                      ) : (
+                        e.release.title
+                      ),
+                  },
+                  {
+                    key: "sentence",
+                    label: "Sentence",
+                    value: (e) => e.release.headline?.sentence ?? null,
+                  },
+                  {
+                    key: "related",
+                    label: "Same release elsewhere",
+                    value: (e) => e.related.length,
+                  },
+                ]}
+                source={{
+                  source: {
+                    label: "DOJ News API (justice.gov)",
+                    href: "https://www.justice.gov/news",
+                  },
+                }}
+              />
+            ) : null}
+            {held.length ? (
+              <DataDrawer
+                title="Releases held back from the largest resolutions"
+                description="Each release reached $1 billion by its headline figure but is not ranked, for the reason shown."
+                rows={held}
+                rowKey={(h) => h.release.id}
+                triggerLabel={`View ${fmtInt(held.length)} held-back releases`}
+                searchable
+                columns={[
+                  { key: "reason", label: "Reason", value: (h) => HELD_LABEL[h.reason] },
+                  {
+                    key: "figure",
+                    label: "Headline figure (USD)",
+                    align: "right",
+                    value: (h) => h.release.headline?.valueUsd ?? null,
+                    render: (h) =>
+                      h.release.headline ? headlineText(h.release.headline) : "Not recorded",
+                  },
+                  { key: "date", label: "Date", value: (h) => h.release.date },
+                  {
+                    key: "title",
+                    label: "Release",
+                    value: (h) => h.release.title,
+                    render: (h) =>
+                      h.release.url ? (
+                        <SourceLink href={h.release.url}>{h.release.title}</SourceLink>
+                      ) : (
+                        h.release.title
+                      ),
+                  },
+                  { key: "detail", label: "Detail", value: (h) => h.detail },
+                ]}
+                source={{
+                  source: {
+                    label: "DOJ News API (justice.gov)",
+                    href: "https://www.justice.gov/news",
+                  },
+                }}
+              />
+            ) : null}
+          </div>
         </div>
       )}
     </Panel>

@@ -83,13 +83,20 @@ import {
   type PartiesModel,
 } from "./registryParties";
 import { SW_MATTERS } from "./tiers";
+import {
+  buildVelocity,
+  type JpmlMdlInput,
+  type JpmlPoint,
+} from "@/components/matters/hub/velocity";
 import type {
   AppearancesPayload,
   CaseDocumentsPayload,
   CasesScope,
   EntriesPayload,
   FjcCasesPage,
+  HubRegistry,
   HubRow,
+  MdlVelocityPayload,
   JpmlReference,
   LegacyDocument,
   MasterDocketMeta,
@@ -622,10 +629,11 @@ function cachedRegistryRead(
   if (hit && Date.now() - hit.at < ttl) return hit.value;
   const value = read();
   cache.set(key, { at: Date.now(), value });
-  // An unconnected reader or a failed read is not worth remembering.
+  // An unconnected reader, a failed read or a read whose alias lookup failed is not worth remembering.
   value.then(
     (v) => {
-      if (!v.connected && cache.get(key)?.value === value) cache.delete(key);
+      if ((!v.connected || aliasFallbackReads.has(v)) && cache.get(key)?.value === value)
+        cache.delete(key);
     },
     () => {
       if (cache.get(key)?.value === value) cache.delete(key);
@@ -652,24 +660,20 @@ function registryCacheKey(caseIds: CaseIdPlanEntry[], mdl: string | null): strin
 
 /**
  * Registered case ids to add to a matter document query: formatting variants of a docket id already
- * requested, and an `MDL` / `MDL No.` label for this matter's number. A failed lookup leaves the
- * original ids in place. Member-docket drawers do not call this.
+ * requested, and an `MDL` / `MDL No.` label for this matter's number. Throws when the lookup fails or
+ * answers with something other than a list; `expandRegisteredCaseIdsCached` turns that into the
+ * original ids without remembering the failure. Member-docket drawers do not call this.
  */
 async function expandRegisteredCaseIds(
   caseIds: CaseIdPlanEntry[],
   mdl: string | null,
 ): Promise<CaseIdPlanEntry[]> {
   const matter = matterMdlNumber(mdl);
-  let raw: unknown;
-  try {
-    raw = await rpcPost<unknown>("corpus_pdf_case_aliases_v1", {
-      p_case_ids: caseIds.map((c) => c.id),
-      p_mdl: matter,
-    });
-  } catch {
-    return caseIds;
-  }
-  if (!Array.isArray(raw)) return caseIds;
+  const raw = await rpcPost<unknown>("corpus_pdf_case_aliases_v1", {
+    p_case_ids: caseIds.map((c) => c.id),
+    p_mdl: matter,
+  });
+  if (!Array.isArray(raw)) throw new Error("Unexpected alias response");
   const asked = caseIds.map((c) => c.id);
   const out = [...caseIds];
   const seen = new Set(asked);
@@ -681,6 +685,44 @@ async function expandRegisteredCaseIds(
     out.push({ id, basis: "registered" });
   }
   return out;
+}
+
+const aliasCache = new Map<string, { at: number; value: Promise<CaseIdPlanEntry[]> }>();
+/**
+ * Registry reads that ran on the unexpanded ids because the alias lookup failed. They are served once (the page
+ * behaves as before) but no cache keeps them, so the next read asks for the aliases again.
+ */
+const aliasFallbackReads = new WeakSet<RegistryDocumentsPayload>();
+/**
+ * Six hours: the registered ids change only when a PDF intake adds native_case_ids (the last intake
+ * verified rows on 2026-10-08). The summary, the Documents tab and the timeline archive share one entry
+ * per matter, so a matter page makes one alias call instead of two.
+ */
+const ALIAS_TTL_MS = 6 * 60 * 60_000;
+
+/**
+ * The alias expansion, shared by every reader of the same matter plan. A failed call falls back to the
+ * unexpanded ids exactly as before, but it is never remembered: the next read asks again, so a transient
+ * failure cannot undercount a matter for hours.
+ */
+function expandRegisteredCaseIdsCached(
+  caseIds: CaseIdPlanEntry[],
+  mdl: string | null,
+): Promise<CaseIdPlanEntry[]> {
+  const key = registryCacheKey(caseIds, mdl);
+  const hit = aliasCache.get(key);
+  if (hit && Date.now() - hit.at < ALIAS_TTL_MS) return hit.value.catch(() => caseIds);
+  const value = expandRegisteredCaseIds(caseIds, mdl);
+  aliasCache.set(key, { at: Date.now(), value });
+  value.catch(() => {
+    if (aliasCache.get(key)?.value === value) aliasCache.delete(key);
+  });
+  while (aliasCache.size > 100) {
+    const oldest = aliasCache.keys().next().value;
+    if (oldest === undefined) break;
+    aliasCache.delete(oldest);
+  }
+  return value.catch(() => caseIds);
 }
 
 export function loadRegistryDocuments(
@@ -713,7 +755,18 @@ async function readRegistryDocuments(
   }
   // Matter pages also ask for a registered spelling of a docket they already request, and for
   // this MDL's own label. Drawers pass no MDL number and keep the docket's own ids.
-  const queried = mdl === null ? caseIds : await expandRegisteredCaseIds(caseIds, mdl);
+  const queried = mdl === null ? caseIds : await expandRegisteredCaseIdsCached(caseIds, mdl);
+  const result = await readRegistryPages(queried, summaryOnly, rowCap);
+  // The cached alias reader hands back the very list it was given only when its lookup failed.
+  if (mdl !== null && queried === caseIds) aliasFallbackReads.add(result);
+  return result;
+}
+
+async function readRegistryPages(
+  queried: CaseIdPlanEntry[],
+  summaryOnly: boolean,
+  rowCap: number,
+): Promise<RegistryDocumentsPayload> {
   const caseKeys = queried.map((c) => c.id);
   const readPage = async (offset: number, limit: number) => {
     const page = await rpcPost<unknown>("corpus_matter_pdf_documents_v1", {
@@ -1289,9 +1342,42 @@ type HubSummaryRow = {
   cases_total: number | null;
   activity_total: number | null;
   documents_total: number | null;
+  /** The record-level keys the matter header reads before the summary's (parseMdlDetail's coalesce order). */
+  detail_id: unknown;
+  mdl_number: unknown;
+  cl_court_id: unknown;
+  court_cl_court_id: unknown;
+  master_docket: unknown;
 };
 
-let hubRegistryCache: { at: number; byMdl: Map<string, HubRow["registry"]> } | null = null;
+/**
+ * The case keys the matter header derives for a matter: `parseMdlDetail` on the same MDL record fields (record-level
+ * keys before the summary's), or the matter registry's own overview when the record is absent or names another MDL,
+ * exactly as `loadMatterOverview` does. Keeps the hub's PDF counts on the header's case-id plan.
+ */
+function hubDerivedKeys(
+  mdl: string,
+  row: HubSummaryRow | null | undefined,
+  registry: RegistryMatter | null,
+): string[] {
+  const fromDirectory = row
+    ? parseMdlDetail({
+        id: row.detail_id,
+        mdl_number: row.mdl_number,
+        cl_court_id: row.cl_court_id,
+        court: row.court_cl_court_id !== undefined ? { cl_court_id: row.court_cl_court_id } : {},
+        master_docket: row.master_docket,
+        summary: row.summary ?? {},
+      })
+    : null;
+  const parsed =
+    fromDirectory && fromDirectory.mdl === mdl
+      ? fromDirectory
+      : registry
+        ? overviewFromRegistry(registry)
+        : null;
+  return parsed?.keys.all ?? [];
+}
 
 /** The `judges` profile id on an MDL record's summary, when it is an id and not something else. */
 function judgeProfileId(summary: Record<string, unknown> | null): string | null {
@@ -1317,71 +1403,98 @@ async function mapLimit<T, R>(
   return out;
 }
 
-export async function loadHub(): Promise<HubRow[]> {
+type HubSources = {
+  summaries: Map<string, HubSummaryRow>;
+  sw: Map<string, number>;
+  registryMatters: Map<string, RegistryMatter>;
+  /** True when the matter registry was published and read; false leaves "in our registry" unknown. */
+  registryRead: boolean;
+  /**
+   * True when the registry is published but its read failed. Unlike "not published", this is transient: the sources
+   * are served to the callers already waiting and then forgotten, and nothing built from them is cached.
+   */
+  registryFailed: boolean;
+};
+
+/** Five minutes, shared by the rows request and the PDF-counts request; concurrent callers share one read. */
+const HUB_SOURCES_TTL_MS = 5 * 60_000;
+let hubSourcesCache: { at: number; value: Promise<HubSources> } | null = null;
+
+function hubSources(): Promise<HubSources> {
+  if (hubSourcesCache && Date.now() - hubSourcesCache.at < HUB_SOURCES_TTL_MS)
+    return hubSourcesCache.value;
+  const value = readHubSources();
+  hubSourcesCache = { at: Date.now(), value };
+  const forget = () => {
+    if (hubSourcesCache?.value === value) hubSourcesCache = null;
+  };
+  value.then((v) => {
+    if (v.registryFailed) forget();
+  }, forget);
+  return value;
+}
+
+/** The hub's three small reads, in parallel once the publication list is known. */
+async function readHubSources(): Promise<HubSources> {
   const ids = SW_MATTERS.map((m) => String(m.mdl));
-  const published = await isPublished("mdls");
-  const summaries = new Map<string, HubSummaryRow>();
-  if (published) {
-    const r = await restGet<HubSummaryRow[]>(
-      `corpus_records?select=id,title,summary:detail->summary,cases_total:detail->cases->total,activity_total:detail->docket_activity->total,documents_total:detail->docket_documents->total&dataset=eq.mdls&id=in.(${ids.join(",")})&limit=100`,
-    );
-    for (const row of r.rows) summaries.set(row.id, row);
-  }
-  const sw = new Map<string, number>();
-  if (await isPublished("mdl_appearances")) {
-    const a = await restGet<{ filters: { mdl?: string[] } | null }[]>(
-      `corpus_records?select=filters&dataset=eq.mdl_appearances&filters=cs.${enc(JSON.stringify({ firm: ["seeger_weiss"] }))}&limit=2000`,
-    );
-    for (const row of a.rows)
-      for (const m of row.filters?.mdl ?? []) sw.set(m, (sw.get(m) ?? 0) + 1);
-  }
-  // The matter registry's records (explicit PDF case ids, docket counts, caption) for the matters it covers.
-  const registryMatters = new Map<string, RegistryMatter>();
-  if (await isPublished("sw_matters_v1")) {
-    try {
-      const reg = await restGet<
-        { id: string; title: unknown; cells: unknown; facts: unknown; registry: unknown }[]
-      >(
-        "corpus_records?select=id,title,cells:item->cells,facts:detail->facts,registry:detail->registry&dataset=eq.sw_matters_v1&limit=200",
+  const ready = await publishedDatasets();
+  const [summaries, sw, registry] = await Promise.all([
+    (async () => {
+      const out = new Map<string, HubSummaryRow>();
+      if (!ready.has("mdls")) return out;
+      const r = await restGet<HubSummaryRow[]>(
+        `corpus_records?select=id,title,summary:detail->summary,cases_total:detail->cases->total,activity_total:detail->docket_activity->total,documents_total:detail->docket_documents->total,detail_id:detail->id,mdl_number:detail->mdl_number,cl_court_id:detail->cl_court_id,court_cl_court_id:detail->court->cl_court_id,master_docket:detail->master_docket&dataset=eq.mdls&id=in.(${ids.join(",")})&limit=100`,
       );
-      for (const row of reg.rows) {
-        const mdl = /^sw-matter:(\d{1,6})$/.exec(row.id)?.[1];
-        const parsed = mdl ? parseRegistryRecord(row, mdl) : null;
-        if (mdl && parsed) registryMatters.set(mdl, parsed);
-      }
-    } catch {
-      registryMatters.clear();
-    }
-  }
-  const registryFresh =
-    hubRegistryCache && Date.now() - hubRegistryCache.at < 5 * 60_000
-      ? hubRegistryCache.byMdl
-      : null;
-  const byMdl = registryFresh ?? new Map<string, HubRow["registry"]>();
-  if (!registryFresh) {
-    await mapLimit(SW_MATTERS, 6, async (m) => {
-      const key = String(m.mdl);
-      const s = summaries.get(key)?.summary;
-      const derived = s ? matterCaseKeys(str(s["cl_court_id"]), str(s["master_docket"])).all : [];
-      const plan = caseIdPlan(registryMatters.get(key) ?? null, derived);
-      if (!plan.length) {
-        byMdl.set(key, null);
-        return;
-      }
-      const docs = await loadRegistryDocuments(plan, true, key);
-      if (!docs.connected) {
-        byMdl.set(key, { notConnected: true });
-        return;
-      }
-      byMdl.set(
-        key,
-        docs.summary.total > 0
-          ? { open: docs.summary.open, held: docs.summary.held, total: docs.summary.total }
-          : { none: true },
+      for (const row of r.rows) out.set(row.id, row);
+      return out;
+    })(),
+    (async () => {
+      const out = new Map<string, number>();
+      if (!ready.has("mdl_appearances")) return out;
+      const a = await restGet<{ filters: { mdl?: string[] } | null }[]>(
+        `corpus_records?select=filters&dataset=eq.mdl_appearances&filters=cs.${enc(JSON.stringify({ firm: ["seeger_weiss"] }))}&limit=2000`,
       );
-    });
-    hubRegistryCache = { at: Date.now(), byMdl };
-  }
+      for (const row of a.rows)
+        for (const m of row.filters?.mdl ?? []) out.set(m, (out.get(m) ?? 0) + 1);
+      return out;
+    })(),
+    // The matter registry's records (explicit PDF case ids, docket counts, caption) for the matters it covers.
+    (async () => {
+      const out = new Map<string, RegistryMatter>();
+      if (!ready.has("sw_matters_v1")) return { out, read: false, failed: false };
+      try {
+        const reg = await restGet<
+          { id: string; title: unknown; cells: unknown; facts: unknown; registry: unknown }[]
+        >(
+          "corpus_records?select=id,title,cells:item->cells,facts:detail->facts,registry:detail->registry&dataset=eq.sw_matters_v1&limit=200",
+        );
+        for (const row of reg.rows) {
+          const mdl = /^sw-matter:(\d{1,6})$/.exec(row.id)?.[1];
+          const parsed = mdl ? parseRegistryRecord(row, mdl) : null;
+          if (mdl && parsed) out.set(mdl, parsed);
+        }
+        return { out, read: true, failed: false };
+      } catch {
+        // Published but not read: served as unknown to the callers waiting now, never cached (see hubSources).
+        return { out: new Map<string, RegistryMatter>(), read: false, failed: true };
+      }
+    })(),
+  ]);
+  return {
+    summaries,
+    sw,
+    registryMatters: registry.out,
+    registryRead: registry.read,
+    registryFailed: registry.failed,
+  };
+}
+
+/**
+ * The hub table: one row per priority matter, from three small reads (no PDF registry calls). The verified-PDF
+ * counts come from `loadHubPdfCounts`, requested separately so the table never waits for them.
+ */
+export async function loadHub(): Promise<HubRow[]> {
+  const { summaries, sw, registryMatters } = await hubSources();
   return SW_MATTERS.map((m): HubRow => {
     const key = String(m.mdl);
     const row = summaries.get(key);
@@ -1407,7 +1520,10 @@ export async function loadHub(): Promise<HubRow[]> {
       title: row?.title ?? rec?.caption ?? null,
       status: s ? str(s["status"]) : (rec?.status ?? null),
       courtName: s ? str(s["court_name"]) : (rec?.transfereeCourt ?? null),
-      masterDocket: s ? str(s["master_docket"]) : (registryMaster?.docketNumber ?? null),
+      // The record-level docket first, as the matter header reads it.
+      masterDocket: s
+        ? (str(row?.master_docket) ?? str(s["master_docket"]))
+        : (registryMaster?.docketNumber ?? null),
       judgePrinted: s ? str(s["judge_name_as_printed"]) : (rec?.judgeAsPrinted ?? null),
       judgeProfileId: judgeProfileId(s),
       metrics: registryMetrics(reg),
@@ -1420,7 +1536,154 @@ export async function loadHub(): Promise<HubRow[]> {
         row && typeof row.activity_total === "number" ? row.activity_total : null,
       savedDocuments: row && typeof row.documents_total === "number" ? row.documents_total : null,
       swAppearances: sw.get(key) ?? null,
-      registry: byMdl.get(key) ?? null,
+      // Filled by the separate PDF-counts request (loadHubPdfCounts).
+      registry: null,
     };
   });
+}
+
+/**
+ * Three minutes, the same as the matter header's summary cache (`registrySummaryCache`), so after a PDF intake the hub
+ * never serves an older count than a header for longer than the header itself would. Each matter's count is a hit on
+ * that cache while it holds, so this map only saves the fan-out. A result with any unconnected matter, any matter read
+ * on unexpanded ids, any registry read failure, or a failure is not kept.
+ */
+const HUB_PDF_TTL_MS = 3 * 60_000;
+let hubPdfCache: { at: number; value: Promise<Record<string, HubRegistry>> } | null = null;
+/** Count maps that include a matter read on unexpanded ids (its alias lookup failed): served once, never kept. */
+const hubPdfIncomplete = new WeakSet<Record<string, HubRegistry>>();
+
+/**
+ * Verified-PDF record counts per hub matter, keyed by MDL number. Each matter goes through exactly the call its page
+ * header makes (`loadRegistryDocuments(caseIdPlan(registry, derived), true, mdl)`), so the hub and the header agree.
+ */
+export function loadHubPdfCounts(): Promise<Record<string, HubRegistry>> {
+  if (hubPdfCache && Date.now() - hubPdfCache.at < HUB_PDF_TTL_MS) return hubPdfCache.value;
+  const value = readHubPdfCounts();
+  hubPdfCache = { at: Date.now(), value };
+  const forget = () => {
+    if (hubPdfCache?.value === value) hubPdfCache = null;
+  };
+  value.then((v) => {
+    if (hubPdfIncomplete.has(v) || Object.values(v).some((x) => x !== null && "notConnected" in x))
+      forget();
+  }, forget);
+  return value;
+}
+
+async function readHubPdfCounts(): Promise<Record<string, HubRegistry>> {
+  const { summaries, registryMatters, registryFailed } = await hubSources();
+  const out: Record<string, HubRegistry> = {};
+  // Counts planned without the registry's case ids (its read failed) are served once, never kept.
+  let fallback = registryFailed;
+  await mapLimit(SW_MATTERS, 6, async (m) => {
+    const key = String(m.mdl);
+    const reg = registryMatters.get(key) ?? null;
+    const plan = caseIdPlan(reg, hubDerivedKeys(key, summaries.get(key), reg));
+    if (!plan.length) {
+      out[key] = null;
+      return;
+    }
+    const docs = await loadRegistryDocuments(plan, true, key);
+    if (aliasFallbackReads.has(docs)) fallback = true;
+    if (!docs.connected) {
+      out[key] = { notConnected: true };
+      return;
+    }
+    out[key] =
+      docs.summary.total > 0
+        ? { open: docs.summary.open, held: docs.summary.held, total: docs.summary.total }
+        : { none: true };
+  });
+  if (fallback) hubPdfIncomplete.add(out);
+  return out;
+}
+
+/* ------------------------------------------------------------------ hub: JPML filing velocity */
+
+const VELOCITY_DATASET = "jpml_pending_history_mdls";
+/** Ten minutes: the series changes once a month, when a JPML report is added. */
+const VELOCITY_TTL_MS = 10 * 60_000;
+let velocityCache: { at: number; value: Promise<MdlVelocityPayload> } | null = null;
+/** Payloads built while the registry read failed ("in our registry" unknown): served once, never kept. */
+const velocityIncomplete = new WeakSet<MdlVelocityPayload>();
+
+/**
+ * Actions added per MDL over the last 3 and 12 JPML monthly reports, the national pending series and the hub
+ * portfolio's share of it, with each MDL flagged by an exact MDL-number match against the matter registry
+ * (`sw_matters_v1`). One read of the published series (about 214 MDLs × 25 reports), kept ten minutes; a failure is
+ * not kept.
+ */
+export function loadMdlVelocity(): Promise<MdlVelocityPayload> {
+  if (velocityCache && Date.now() - velocityCache.at < VELOCITY_TTL_MS) return velocityCache.value;
+  const value = readMdlVelocity();
+  velocityCache = { at: Date.now(), value };
+  const forget = () => {
+    if (velocityCache?.value === value) velocityCache = null;
+  };
+  value.then((v) => {
+    if (velocityIncomplete.has(v)) forget();
+  }, forget);
+  return value;
+}
+
+async function readMdlVelocity(): Promise<MdlVelocityPayload> {
+  const [meta, sources] = await Promise.all([
+    restGet<{ ready: boolean; updated_at: string | null }[]>(
+      `corpus_datasets?select=ready,updated_at&id=eq.${VELOCITY_DATASET}&limit=1`,
+    ),
+    hubSources(),
+  ]);
+  const ds = meta.rows[0];
+  if (!ds || ds.ready !== true) return { published: false };
+  const r = await restGet<
+    {
+      id: string;
+      title: string | null;
+      source_url: string | null;
+      type: string | null;
+      series: unknown;
+    }[]
+  >(
+    `corpus_records?select=id,title,source_url,type:item->history->>type,series:item->analytics->series&dataset=eq.${VELOCITY_DATASET}&order=ordinal.asc&limit=1000`,
+  );
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+  const inputs: JpmlMdlInput[] = [];
+  const urls = new Map<string, string>();
+  for (const row of r.rows) {
+    if (!/^[1-9]\d{0,5}$/.test(row.id)) continue;
+    const points: JpmlPoint[] = [];
+    for (const p of Array.isArray(row.series) ? row.series : []) {
+      if (!isObj(p)) continue;
+      const date = str(p["date"]);
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+      points.push({ date, total: num(p["total"]), pending: num(p["pending"]) });
+    }
+    inputs.push({ mdl: row.id, title: row.title, type: str(row.type), points });
+    const url = str(row.source_url);
+    if (url && /^https:\/\/www\.jpml\.uscourts\.gov\//.test(url)) urls.set(row.id, url);
+  }
+  const model = buildVelocity(inputs, {
+    portfolio: new Set(SW_MATTERS.map((m) => String(m.mdl))),
+    registry: sources.registryRead ? new Set(sources.registryMatters.keys()) : null,
+  });
+  // A record of an MDL listed in the latest report cites that report.
+  const cited = model.rows.find((v) => v.inLatest && urls.has(v.mdl));
+  const payload: MdlVelocityPayload = {
+    published: true,
+    ...model,
+    reportUrl: cited ? (urls.get(cited.mdl) ?? null) : null,
+    datasetUpdatedAt: ds.updated_at,
+    registryRead: sources.registryRead,
+  };
+  if (sources.registryFailed) velocityIncomplete.add(payload);
+  return payload;
+}
+
+/** Test hook: forget every hub-level cache (sources, PDF counts, velocity, publication list). */
+export function resetHubCachesForTests(): void {
+  hubSourcesCache = null;
+  hubPdfCache = null;
+  velocityCache = null;
+  readyCache = null;
 }

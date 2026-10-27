@@ -116,3 +116,22 @@ export function risingThemes(insights: readonly SafetyInsight[], limit = 6) {
     .sort((a, b) => (b.metric.ratio ?? 0) - (a.metric.ratio ?? 0))
     .slice(0, limit);
 }
+
+const WARNING_LETTERS = "agency_safety_fda_warning_letters";
+const CPSC_LOCAL = "agency_safety_cpsc_recalls_local";
+
+/**
+ * A caveat a flag needs before anyone relies on it, or null. Flags built from the uneven warning-letter sample, from the
+ * superseded CPSC snapshot, or (before the 2026-10-27 rebuild) with FDA recall events keyed on firm, date and reason
+ * text instead of FDA's event id say so on the card.
+ */
+export function insightCaveat(i: SafetyInsight): string | null {
+  const sets = new Set(i.evidence.map((e) => e.dataset));
+  if (sets.has(WARNING_LETTERS) || i.tags.includes("Uneven sample"))
+    return "Built on an uneven 1,000-row sample of FDA warning letters (none from September 2025 to February 2026), so the rise may reflect the sample.";
+  if (sets.has(CPSC_LOCAL))
+    return "Built from the superseded CPSC snapshot that ends 2026-08-20; newer recalls are not counted.";
+  if (i.kind === "firm_cluster" && !/event_id/i.test(i.method))
+    return "Built before recall events were grouped on FDA's event id: one recall listing many products can count as several events.";
+  return null;
+}

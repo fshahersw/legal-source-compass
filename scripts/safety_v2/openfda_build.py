@@ -22,6 +22,8 @@ series, as count aggregations (no bulk downloads), plus record-level MAUDE repor
                           openFDA allows 240 requests/minute per key)
     --max-requests N      stop after N requests (resumable: rerun to continue; finished tasks are in done.txt)
     --record-limit N      at most N records per MDL device group (validation samples)
+    --keyless             run without DATA_GOV_API_KEY (openFDA keyless limits: 240/minute, 1,000/day per address)
+    --skip-breakdowns     faers/maude: series only (breakdowns from the bulk files: scripts/safety_v2/openfda_bulk.py)
 
 Output: gzip NDJSON loader chunks per target (common.ChunkWriter) under <outdir>/<stream>/, done.txt (finished task
 keys, so a rerun continues), state.json (per-subject coverage), requests.jsonl (every request: public URL, status,
@@ -112,8 +114,9 @@ class Run:
                 (self.out / name).unlink(missing_ok=True)
         self.http = c.Http(min_interval=args.interval, log_path=self.out / "requests.jsonl")
         self.key = c.openfda_key()
-        if not self.key:
-            raise SystemExit("DATA_GOV_API_KEY must be set (load it from private/scratch/secrets.env inside the command)")
+        if not self.key and not getattr(args, "keyless", False):
+            raise SystemExit("DATA_GOV_API_KEY must be set (load it from private/scratch/secrets.env inside the command), "
+                             "or pass --keyless (openFDA's keyless limit: 240 requests/minute, 1,000/day per address)")
         self.done = set()
         done_path = self.out / "done.txt"
         if done_path.exists():
@@ -561,7 +564,7 @@ def build_faers(args):
             months = series_task(run, s, "faers", series, extra, unit, "drug/event.json", "receivedate", FAERS_FLOOR, through, "openfda_faers")
             if series == "faers_reports" and months is not None:
                 run.subject_state(s["id"])["months"] = {m: v for m, v in months.items() if v}
-        if s["subject_type"] == "national" or not run.budget_left():
+        if s["subject_type"] == "national" or args.skip_breakdowns or not run.budget_left():
             return
         breakdown_task(run, s, "faers", "drug/event.json", "meddra_pt", "patient.reaction.reactionmeddrapt.exact", "all",
                        args.alltime_limit, None, "serious:1", "openfda_faers")
@@ -598,7 +601,7 @@ def build_maude(args):
             months = series_task(run, s, "maude", series, extra, unit, "device/event.json", "date_received", MAUDE_FLOOR, through, "openfda_maude")
             if series == "maude_reports" and months is not None:
                 run.subject_state(s["id"])["months"] = {m: v for m, v in months.items() if v}
-        if s["subject_type"] == "national":
+        if s["subject_type"] == "national" or args.skip_breakdowns:
             return
         for dim, field, limit in (("device_problem", "product_problems.exact", 1000), ("patient_problem", "patient.patient_problems.exact", 200),
                                   ("manufacturer", "device.manufacturer_d_name.exact", 50), ("brand_name", "device.brand_name.exact", 50)):
@@ -802,6 +805,8 @@ def main():
     ap.add_argument("--record-limit", type=int, default=0)
     ap.add_argument("--chunk-rows", type=int, default=2000)
     ap.add_argument("--interval", type=float, default=0.27)
+    ap.add_argument("--keyless", action="store_true", help="run without DATA_GOV_API_KEY (openFDA keyless limits; use --max-requests)")
+    ap.add_argument("--skip-breakdowns", action="store_true", help="faers/maude: series only (breakdowns come from openfda_bulk.py)")
     args = ap.parse_args()
     {"subjects": build_subjects, "faers": build_faers, "maude": build_maude, "other": build_other, "records": build_records}[args.stream](args)
 
