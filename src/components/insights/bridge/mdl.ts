@@ -42,7 +42,7 @@ export function monthOffset(a: string, b: string): number | null {
 
 export const mdlLabel = (r: Pick<MdlRow, "mdl" | "title">) =>
   `MDL ${r.mdl}${r.title ? `: ${r.title}` : ""}`;
-export const mdlHref = (mdl: number) => `/matters/lens/${mdl}`;
+export const mdlHref = (mdl: number) => `/matters/${mdl}`;
 
 export function mdlMetricDefs(data: MdlAnalytics): MetricDef[] {
   const common = {

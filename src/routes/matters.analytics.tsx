@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { MdlAnalytics, mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
+import { VelocityLeaderboard } from "@/components/matters/hub/VelocityLeaderboard";
+import { mdlVelocityQuery } from "@/components/matters/hub/hubQueries";
 import { CitationGridOverview } from "@/components/litviz/CitationMap";
 import { MdlLanesOverview } from "@/components/litviz/MdlLanesOverview";
 import { JpmlNationalPanel } from "@/components/mdl/jpml-series/JpmlNationalPanel";
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/matters/analytics")({
     Promise.all([
       context.queryClient.prefetchQuery(mdlAnalyticsQuery),
       context.queryClient.prefetchQuery(jpmlNationalQuery),
+      context.queryClient.prefetchQuery(mdlVelocityQuery),
     ]),
   head: () =>
     pageHead(
@@ -43,6 +46,9 @@ function Page() {
         <CitationGridOverview />
       </section>
       <JpmlNationalPanel />
+      <div className="my-8">
+        <VelocityLeaderboard />
+      </div>
       <MdlAnalytics />
     </AppShell>
   );

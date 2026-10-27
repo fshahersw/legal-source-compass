@@ -7,6 +7,7 @@ import { JudgeDisclosuresPanel } from "@/components/judges/clb/JudgeDisclosuresP
 import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServicePanel";
 import { JudgeServicePanel } from "@/components/judges/clb/JudgeServicePanel";
 import { JudgeDisclosureContentsPanel } from "@/components/judges/clb/JudgeDisclosureContentsPanel";
+import { JudgeGlance } from "@/components/judges/JudgeGlance";
 import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
@@ -87,6 +88,14 @@ function Page() {
             after={[{ id: "entity-record", label: "Record" }]}
             sections={[
               {
+                id: "judge-glance",
+                title: "At a glance",
+                description: "MDL load, docket flow and docket mix from exactly linked records.",
+                content: /^[a-z0-9]{8,64}$/.test(id) ? (
+                  <JudgeGlance judgeId={id} name={view.title || "This judge"} />
+                ) : null,
+              },
+              {
                 id: "judge-career",
                 title: "Career",
                 description:
@@ -98,12 +107,6 @@ function Page() {
                     <JudgeServicePanel judgeId={id} />
                   </>
                 ),
-              },
-              {
-                id: "judge-practices",
-                title: "Practices",
-                description: "Standing orders and chambers procedures.",
-                content: <JudgePracticesPanel judgeId={id} />,
               },
               {
                 id: "judge-cases",
@@ -120,6 +123,12 @@ function Page() {
                     ) : null}
                   </>
                 ),
+              },
+              {
+                id: "judge-practices",
+                title: "Practices",
+                description: "Standing orders and chambers procedures.",
+                content: <JudgePracticesPanel judgeId={id} />,
               },
               {
                 id: "judge-disclosures",
