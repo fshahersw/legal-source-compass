@@ -349,3 +349,31 @@ def hhi(shares):
     if not total:
         return None
     return round(sum((100 * s / total) ** 2 for s in shares))
+
+
+def profile_ids_by_nid(fjc_profile_ids, crosswalk_rows):
+    """{FJC nid: /judges profile id} by exact ids only.
+
+    fjc_profile_ids: {nid: judge_profile_id stored on the judge_profiles_fjc record (or None)}
+    crosswalk_rows: judge_cl_crosswalk rows {"id": judges id, "item": {"profile": {"fjc_nid": ...}}} (the directory record's own FJC bridge)
+
+    A nid gets a profile when the FJC record names one, or else when exactly one directory record carries that nid. A nid whose two sources
+    disagree, a nid carried by several directory records, and a profile claimed by several nids get no profile (never a guess)."""
+    by_nid = {}
+    for r in crosswalk_rows:
+        nid = (((r.get("item") or {}).get("profile") or {}).get("fjc_nid"))
+        if nid:
+            by_nid.setdefault(str(nid), set()).add(r["id"])
+    out = {}
+    for nid in set(fjc_profile_ids) | set(by_nid):
+        stored = fjc_profile_ids.get(nid)
+        bridged = by_nid.get(nid, set())
+        if len(bridged) > 1 or (stored and bridged and bridged != {stored}):
+            continue
+        pid = stored or (next(iter(bridged)) if bridged else None)
+        if pid:
+            out[nid] = pid
+    owners = {}
+    for nid, pid in out.items():
+        owners.setdefault(pid, []).append(nid)
+    return {nid: pid for nid, pid in out.items() if len(owners[pid]) == 1}

@@ -12,14 +12,17 @@ produced them (recorded by the caller in snapshots/_manifest.json) and the sha25
 """
 import hashlib
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-# The acquisition dir is git-ignored and sits in the main checkout so it survives worktree removal.
-ACQ = Path(r"C:\Users\firas\Downloads\corpusfolder\private\acq\de-judges-data")
+# The acquisition dir is git-ignored. Workstream agents run in temporary worktrees, so it sits in the main checkout (which survives
+# worktree removal) when that exists; DE_JUDGES_ACQ overrides it, and elsewhere it is <repo>/private/acq/de-judges-data.
+MAIN_CHECKOUT = Path(r"C:\Users\firas\Downloads\corpusfolder")
+ACQ = Path(os.environ.get("DE_JUDGES_ACQ") or ((MAIN_CHECKOUT if MAIN_CHECKOUT.is_dir() else ROOT) / "private" / "acq" / "de-judges-data"))
 SNAP = ACQ / "snapshots"
 MARK = re.compile(r"<untrusted-data-[0-9a-f-]+>\s*(\[.*\])\s*</untrusted-data-[0-9a-f-]+>", re.S)
 

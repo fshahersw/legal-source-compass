@@ -212,5 +212,62 @@ class DisclosureTiers(unittest.TestCase):
             self.assertIsNone(dm.non_company_reason(name), name)
 
 
+def xw(judges_id, nid):
+    return {"id": judges_id, "item": {"profile": {"fjc_nid": nid}}}
+
+
+class ProfileIdsByNid(unittest.TestCase):
+    """Exact /judges profile per FJC nid (de-judges-data): stored id, else a single bridging directory record; conflicts stay unlinked."""
+
+    def test_stored_id_wins_and_agrees_with_bridge(self):
+        self.assertEqual(c.profile_ids_by_nid({"1": "p1"}, [xw("p1", "1")]), {"1": "p1"})
+
+    def test_bridge_fills_a_missing_stored_id(self):
+        self.assertEqual(c.profile_ids_by_nid({"9280736": None}, [xw("bdfb", "9280736"), xw("stub", None)]), {"9280736": "bdfb"})
+
+    def test_disagreement_is_never_resolved(self):
+        self.assertEqual(c.profile_ids_by_nid({"1": "p1"}, [xw("p2", "1")]), {})
+
+    def test_two_bridging_records_are_ambiguous(self):
+        self.assertEqual(c.profile_ids_by_nid({"1": None}, [xw("p1", "1"), xw("p2", "1")]), {})
+
+    def test_one_profile_claimed_by_two_nids_is_dropped(self):
+        self.assertEqual(c.profile_ids_by_nid({"1": "p1", "2": None}, [xw("p1", "2")]), {})
+
+
+class RelinkJudgeCross(unittest.TestCase):
+    """relink_judge_cross_profiles.resolve and the contract text (synthetic snapshots)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import relink_judge_cross_profiles as R
+        cls.R = R
+
+    def snapshot(self):
+        rec = lambda rid, prof, filt: {"id": rid, "kind": "judge", "nid": rid, "name": f"Judge {rid}", "judge_profile_id": prof, "photo": None,
+                                       "filter_judge_profile": filt, "row_md5": "f" * 32}
+        return {"records": [rec("1", None, []), rec("2", "p2", ["p2"]), rec("3", "p3", ["p3"]), rec("4", None, []),
+                            {"id": "summary:overview", "kind": "summary", "row_md5": "e" * 32,
+                             "scatter": [{"nid": "1", "judge_profile_id": None}, {"nid": "2", "judge_profile_id": "p2"}]}],
+                "photos": {"p1": "/supplement-files/judge_portraits/x"}}
+
+    def test_fills_only_missing_profiles_and_reports_conflicts(self):
+        fjc = [{"nid": "1", "profiles": ["p1"]}, {"nid": "2", "profiles": ["p2"]}, {"nid": "3", "profiles": ["p3-other"]}, {"nid": "4", "profiles": []}]
+        fills, conflicts, summary = self.R.resolve(self.snapshot(), fjc, [{"judges_id": "p1", "fjc_nid": "1"}])
+        self.assertEqual([(f["id"], f["profile"], f["photo"]) for f in fills], [("1", "p1", "/supplement-files/judge_portraits/x")])
+        self.assertEqual(conflicts, [{"id": "3", "name": "Judge 3", "stored": "p3", "resolved": "p3-other"}])  # kept, reported
+        self.assertEqual(summary["entries"], [{"nid": "1", "profile": "p1", "photo": "/supplement-files/judge_portraits/x"}])
+
+    def test_contract_guards_rows_and_writes_no_deletes(self):
+        fills, conflicts, summary = self.R.resolve(self.snapshot(), [{"nid": "1", "profiles": ["p1"]}], [])
+        sql = self.R.render_sql(fills, summary, conflicts, {"judge_cross_profiles": "x"},
+                                {"judge_records": 4, "with_profile": 3, "with_profile_filter": 3})
+        self.assertIn("md5(to_jsonb(r)::text) = c.original_record->>'row_md5'", sql)
+        self.assertIn("'judge_profile', jsonb_build_array(x.profile)", sql)
+        self.assertIn("ROLLBACK (exact", sql)
+        self.assertNotIn("delete from", sql.lower())
+        self.assertNotIn("insert into", self.R.preview_sql(fills).lower())
+
+
 if __name__ == "__main__":
     unittest.main()
