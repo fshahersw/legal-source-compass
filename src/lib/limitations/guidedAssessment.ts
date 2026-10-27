@@ -12,6 +12,7 @@ import {
   type ReviewedResult,
 } from "./tollingPolicy";
 import type { BaselineInput, LimitationsSnapshot } from "./types";
+import { currentAccepted, exportAccepted, type AcceptedPublicDate } from "./publicDates";
 
 export type GuidedReview = {
   answers: ScreeningAnswers;
@@ -80,6 +81,7 @@ export function assessmentExport(
   input: BaselineInput,
   review: GuidedReview,
   result: ReviewedResult,
+  acceptedPublicDates: readonly AcceptedPublicDate[] = [],
 ) {
   const rule = result.rule;
   return {
@@ -106,6 +108,9 @@ export function assessmentExport(
     })),
     recordedQualifications: rule ? assessExceptions(snapshot, rule, review.answers).inventory : [],
     authorities: rule ? snapshot.sources.filter((s) => rule.sourceIds.includes(s.id)) : [],
+    publicDateSuggestionsAccepted: exportAccepted(
+      currentAccepted(Object.fromEntries(acceptedPublicDates.map((a) => [a.field, a])), input),
+    ),
     comprehensiveLawReview: false,
     verifiedFilingDeadline: false,
   };

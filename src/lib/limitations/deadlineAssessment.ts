@@ -12,8 +12,13 @@ import {
   type ReviewState,
 } from "./reviewInventory";
 import type { BaselineInput, BaselineResult, LimitationsSnapshot } from "./types";
+import { currentAccepted, exportAccepted, type AcceptedPublicDate } from "./publicDates";
 
-export type AssessmentRuntime = { sourceRefreshFailed?: boolean };
+export type AssessmentRuntime = {
+  sourceRefreshFailed?: boolean;
+  /** Public dates the user accepted into case facts (provenance only; never read by the calculation). */
+  acceptedPublicDates?: readonly AcceptedPublicDate[] | undefined;
+};
 
 export type DeadlineAssessment = {
   status: "needs_information" | "needs_legal_review" | "invalid" | "baseline" | "reviewed_scenario";
@@ -254,6 +259,13 @@ export function createAssessmentExport(
       calendar: assessment.calendar,
       reasons: assessment.reasons,
     },
+    // Only suggestions whose field still holds the accepted date; an edited field no longer carries it.
+    publicDateSuggestionsAccepted: exportAccepted(
+      currentAccepted(
+        Object.fromEntries((runtime.acceptedPublicDates ?? []).map((a) => [a.field, a])),
+        input,
+      ),
+    ),
     reviewDecisions: structuredClone(review?.decisions ?? {}),
     factorInventory: structuredClone(assessment.factors),
     reviewCurrent: !!rule && review?.contextKey === reviewContextKey(snapshot, rule, input),
