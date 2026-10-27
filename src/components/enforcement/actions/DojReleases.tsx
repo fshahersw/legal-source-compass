@@ -473,7 +473,9 @@ function Largest() {
                 <div className="flex min-w-0 items-baseline gap-2">
                   <span
                     className="w-32 shrink-0 text-right font-mono"
-                    title={r.headline ? (figureView(r.headline, null).note ?? undefined) : undefined}
+                    title={
+                      r.headline ? (figureView(r.headline, null).note ?? undefined) : undefined
+                    }
                   >
                     {r.headline ? headlineText(r.headline) : fmtUsd(valueUsd)}
                   </span>
@@ -576,4 +578,3 @@ function Largest() {
     </Panel>
   );
 }
-

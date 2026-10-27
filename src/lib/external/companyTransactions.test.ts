@@ -15,7 +15,9 @@ const keyOf = (n: string) =>
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .split(/\s+/)
     .filter(Boolean)
-    .filter((w, i, a) => !(i === a.length - 1 && ["inc", "corporation", "company", "co"].includes(w)))
+    .filter(
+      (w, i, a) => !(i === a.length - 1 && ["inc", "corporation", "company", "co"].includes(w)),
+    )
     .join(" ");
 
 const notice = (tx: string, date: string, acquiring: string, acquired: string) =>
@@ -28,7 +30,9 @@ describe("parseNotice", () => {
   it("keeps parties as published and drops rows without them", () => {
     const n = notice("19991703", "1999-03-09", "Pfizer, Inc.", "Cardinal Health, Inc.");
     expect(n).toMatchObject({ transaction: "19991703", acquiring: "Pfizer, Inc." });
-    expect(parseNotice({ c: { transaction_number: "1", acquiring_party: "", acquired_party: "x" } })).toBeNull();
+    expect(
+      parseNotice({ c: { transaction_number: "1", acquiring_party: "", acquired_party: "x" } }),
+    ).toBeNull();
   });
 });
 
@@ -49,7 +53,9 @@ describe("matchTransactions", () => {
     ]);
   });
   it("never matches a longer name that only starts with the key", () => {
-    expect(matchTransactions(rows, "pfizer", keyOf).some((r) => r.transaction === "20009999")).toBe(false);
+    expect(matchTransactions(rows, "pfizer", keyOf).some((r) => r.transaction === "20009999")).toBe(
+      false,
+    );
   });
   it("counts deals per year by role with empty years kept", () => {
     const years = dealsByYear(matchTransactions(rows, "pfizer", keyOf));

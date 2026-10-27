@@ -30,11 +30,20 @@ import {
 const GROUPS: CoverageGroup[] = ["ab", "c", "unclear", "none"];
 const SLOT: Record<CoverageGroup, number> = { ab: 0, c: 2, unclear: 3, none: 1 };
 const SOURCES = [
-  { label: "JPML pending MDL report (mdl_analytics)", url: "https://www.jpml.uscourts.gov/pending-mdls-0" },
-  { label: "SEC EDGAR filings (company_sec_mdl_links)", url: "https://efts.sec.gov/LATEST/search-index?q=%22MDL%20No.%22" },
+  {
+    label: "JPML pending MDL report (mdl_analytics)",
+    url: "https://www.jpml.uscourts.gov/pending-mdls-0",
+  },
+  {
+    label: "SEC EDGAR filings (company_sec_mdl_links)",
+    url: "https://efts.sec.gov/LATEST/search-index?q=%22MDL%20No.%22",
+  },
 ];
 const short = (r: CoverageMdl) => {
-  const t = mdlTitle(r.title, r.titleTruncated, r.mdl).replace(/ (Products|Marketing|Sales).*$/i, "");
+  const t = mdlTitle(r.title, r.titleTruncated, r.mdl).replace(
+    / (Products|Marketing|Sales).*$/i,
+    "",
+  );
   return `MDL ${r.mdl} · ${t.length > 48 ? `${t.slice(0, 46).trimEnd()}…` : t}`;
 };
 
@@ -54,7 +63,9 @@ export function CoverageMapSection({ data }: { data: CompaniesData }) {
       children: GROUPS.filter((g) => totals.groups[g].mdls).map((g) => ({
         name: COVERAGE_GROUP_LABEL[g],
         slot: SLOT[g],
-        children: rows.filter((r) => r.group === g).map((r) => ({ name: short(r), value: r.pending })),
+        children: rows
+          .filter((r) => r.group === g)
+          .map((r) => ({ name: short(r), value: r.pending })),
       })),
     }),
     [rows, totals],
@@ -75,7 +86,10 @@ export function CoverageMapSection({ data }: { data: CompaniesData }) {
           { label: "Pending actions in them (MDL-wide)", value: totals.pending },
           ...GROUPS.flatMap((g) => [
             { label: `MDLs: ${COVERAGE_GROUP_LABEL[g]}`, value: totals.groups[g].mdls },
-            { label: `Pending actions: ${COVERAGE_GROUP_LABEL[g]}`, value: totals.groups[g].pending },
+            {
+              label: `Pending actions: ${COVERAGE_GROUP_LABEL[g]}`,
+              value: totals.groups[g].pending,
+            },
           ]),
           ...unlinked.slice(0, 10).map((r) => ({
             label: `No SEC filer: MDL ${r.mdl} pending actions`,
@@ -212,9 +226,23 @@ export function CoverageMapSection({ data }: { data: CompaniesData }) {
                     </Link>
                   ),
                 },
-                { key: "title", label: "Litigation", value: (r) => mdlTitle(r.title, r.titleTruncated, r.mdl) },
-                { key: "pending", label: "Pending actions", align: "right", value: (r) => r.pending },
-                { key: "change", label: "12-month change", align: "right", value: (r) => r.change12m },
+                {
+                  key: "title",
+                  label: "Litigation",
+                  value: (r) => mdlTitle(r.title, r.titleTruncated, r.mdl),
+                },
+                {
+                  key: "pending",
+                  label: "Pending actions",
+                  align: "right",
+                  value: (r) => r.pending,
+                },
+                {
+                  key: "change",
+                  label: "12-month change",
+                  align: "right",
+                  value: (r) => r.change12m,
+                },
                 { key: "group", label: "Evidence", value: (r) => COVERAGE_GROUP_LABEL[r.group] },
                 {
                   key: "filers",

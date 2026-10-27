@@ -46,10 +46,7 @@ import {
 } from "./companyData";
 import { FlagBadge, LoadingBlocks, Notice, Spark, TierBadge } from "./CompanyUi";
 import { pendingActionsValue } from "./companyViewNotes";
-import {
-  ChartCard as KitChartCard,
-  DumbbellRange,
-} from "@/components/charts/recharts";
+import { ChartCard as KitChartCard, DumbbellRange } from "@/components/charts/recharts";
 import {
   AiSummary,
   AskAiButton,
@@ -102,10 +99,7 @@ export function CompaniesDashboard() {
 
 function Dashboard({ data: raw }: { data: CompaniesData }) {
   // Exposure under the UI rule: tier C links never count; pending actions are MDL-wide.
-  const data = useMemo(
-    () => ({ ...raw, companies: raw.companies.map(applyUiExposure) }),
-    [raw],
-  );
+  const data = useMemo(() => ({ ...raw, companies: raw.companies.map(applyUiExposure) }), [raw]);
   const { overview: o, companies } = data;
   const [filter, setFilter] = useState<CompanyFilter>(EMPTY_FILTER);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
@@ -133,7 +127,9 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
     return coverageTotals(coverageMap(o.coverage, change).rows);
   }, [o.coverage, raw.mdlChange]);
   const share = (n: number) =>
-    coverage.pending ? `${((n / coverage.pending) * 100).toFixed(0)}% of ${count(coverage.pending)}` : null;
+    coverage.pending
+      ? `${((n / coverage.pending) * 100).toFixed(0)}% of ${count(coverage.pending)}`
+      : null;
   const kpiSource = {
     source: { label: "SEC EDGAR filings; JPML pending MDL report" },
     asOf: o.jpmlAsOf ?? o.asOf,
@@ -205,7 +201,11 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
 
       <CoverageMapSection data={raw} />
 
-      <ReserveSection companies={companies} medianRatio={median(ratios)} ratioCount={ratios.length} />
+      <ReserveSection
+        companies={companies}
+        medianRatio={median(ratios)}
+        ratioCount={ratios.length}
+      />
 
       <FlagPanel
         rules={o.flagRules}
@@ -328,9 +328,9 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
         <div className="flex flex-wrap items-center gap-3 border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
           <span>
             Showing {Math.min(limit, rows.length)} of {rows.length}. Pending actions are the JPML
-            count of each counted MDL, for the whole docket and shared with co-defendants: never
-            add them across companies. Accrual is the company-wide XBRL loss-contingency figure,
-            not an MDL reserve. &ldquo;Not recorded&rdquo; = no such XBRL fact.
+            count of each counted MDL, for the whole docket and shared with co-defendants: never add
+            them across companies. Accrual is the company-wide XBRL loss-contingency figure, not an
+            MDL reserve. &ldquo;Not recorded&rdquo; = no such XBRL fact.
           </span>
           {rows.length > limit ? (
             <button
@@ -821,11 +821,28 @@ function ReserveSection({
         scope: "SEC registrants named in MDLs, current XBRL filers",
         source: XBRL_SOURCE.label,
         figures: [
-          { label: "Median accrual / revenue, current FY", value: medianRatio, unit: "%", decimals: 2 },
+          {
+            label: "Median accrual / revenue, current FY",
+            value: medianRatio,
+            unit: "%",
+            decimals: 2,
+          },
           { label: "Companies in the median", value: ratioCount },
           ...rows.flatMap((r) => [
-            { label: `${r.label} accrual / revenue`, value: r.a, unit: "%", period: r.note.split(" → ")[0], decimals: 2 },
-            { label: `${r.label} accrual / revenue`, value: r.b, unit: "%", period: r.note.split(" → ")[1], decimals: 2 },
+            {
+              label: `${r.label} accrual / revenue`,
+              value: r.a,
+              unit: "%",
+              period: r.note.split(" → ")[0],
+              decimals: 2,
+            },
+            {
+              label: `${r.label} accrual / revenue`,
+              value: r.b,
+              unit: "%",
+              period: r.note.split(" → ")[1],
+              decimals: 2,
+            },
           ]),
         ],
       }),
@@ -850,14 +867,18 @@ function ReserveSection({
         status={
           rows.length
             ? { kind: "ready" }
-            : { kind: "empty", reason: "No current filer reports an accrual and revenue in two consecutive years." }
+            : {
+                kind: "empty",
+                reason: "No current filer reports an accrual and revenue in two consecutive years.",
+              }
         }
         about={
           <>
             <p>
-              The accrual is the company&rsquo;s whole loss-contingency or litigation reserve under the
-              XBRL concept it uses, not a reserve for any one MDL; concepts differ between companies.
-              Only companies whose latest XBRL fiscal year is after FY{STALE_FY} are shown.
+              The accrual is the company&rsquo;s whole loss-contingency or litigation reserve under
+              the XBRL concept it uses, not a reserve for any one MDL; concepts differ between
+              companies. Only companies whose latest XBRL fiscal year is after FY{STALE_FY} are
+              shown.
             </p>
             <p className="mt-2">
               Each company page sets its accrual against the pending actions of the MDLs it is named
@@ -892,4 +913,3 @@ function ReserveSection({
     </Section>
   );
 }
-

@@ -46,7 +46,10 @@ export function DisclosureRadarSection() {
     [d],
   );
   const cell = (term: string, fy: string) => d?.cells.find((c) => c.term === term && c.fy === fy);
-  const newLatest = d && latest ? d.firsts.filter((f) => f.fy === latest) : [];
+  const newLatest = useMemo(
+    () => (d && latest ? d.firsts.filter((f) => f.fy === latest) : []),
+    [d, latest],
+  );
   const newTerms = new Set(newLatest.map((f) => f.term));
   const newMdls = d && latest ? d.newMdls.filter((m) => m.fy === latest) : [];
   const byTerm = [...newTerms]

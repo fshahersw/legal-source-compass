@@ -22,15 +22,17 @@ export function ReserveVsDocket({ d }: { d: CompanyDetail }) {
   const counted = sumSeries(pending.filter((l) => l.countsTowardExposure).map((l) => l.series));
   const tierC = sumSeries(
     pending
-      .filter((l) => !l.countsTowardExposure && l.tier === "C" && l.role === "defendant" && !l.dismissed)
+      .filter(
+        (l) => !l.countsTowardExposure && l.tier === "C" && l.role === "defendant" && !l.dismissed,
+      )
       .map((l) => l.series),
   );
   const built = reserveDocketSeries(f?.quarterly.litigation_accrual ?? [], counted, tierC);
   const accrual = built.series.find((s) => s.id === "accrual");
   const withAccrual = accrual?.points.filter((p) => p.value !== null) ?? [];
   const dates = accrual?.points.map((p) => p.date) ?? [];
-  const firstBoth = dates.findIndex((dt, i) =>
-    built.series.every((s) => (s.points[i]?.value ?? 0) > 0) && dt.length > 0,
+  const firstBoth = dates.findIndex(
+    (dt, i) => built.series.every((s) => (s.points[i]?.value ?? 0) > 0) && dt.length > 0,
   );
   const ready = built.series.length >= 2 && withAccrual.length >= 2;
   const period = dates.length ? `${dates[0]} to ${dates.at(-1)}` : undefined;
@@ -46,7 +48,8 @@ export function ReserveVsDocket({ d }: { d: CompanyDetail }) {
             figures: built.series.flatMap((s) =>
               s.points.map((p) => ({
                 label: s.label,
-                value: p.value === null ? null : s.id === "accrual" ? money(p.value, "USD") : p.value,
+                value:
+                  p.value === null ? null : s.id === "accrual" ? money(p.value, "USD") : p.value,
                 period: p.date,
               })),
             ),
@@ -84,8 +87,8 @@ export function ReserveVsDocket({ d }: { d: CompanyDetail }) {
           <>
             <p>
               Each line is rebased to the quarter chosen with the slider: 0% means unchanged since
-              then. The accrual is the company&rsquo;s whole loss-contingency or litigation balance at
-              each quarter end (one XBRL concept), not a reserve for these MDLs.
+              then. The accrual is the company&rsquo;s whole loss-contingency or litigation balance
+              at each quarter end (one XBRL concept), not a reserve for these MDLs.
             </p>
             <p className="mt-2">
               Pending actions are the JPML report dated in the first week after each quarter end,

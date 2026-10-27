@@ -66,7 +66,11 @@ const FILING =
   /\b(motion for|files? (?:a |an )?(?:motion|brief|complaint|lawsuit|suit|statement of interest|amicus)|filed (?:a |an )?(?:motion|brief|complaint|lawsuit|statement of interest)|strikes? down|challenge to)\b/i;
 const CHARGE = /\b(indicted|indictment|faces charges|charged with|arrested|extradited)\b/i;
 const OUTCOME = /\b(plead\w*|guilty|sentenc\w*|agree\w*|pay|pays|settle\w*|convicted|ordered)\b/i;
-const NON_RESOLUTION_TOPICS = new Set(["Office and Personnel Updates", "Community Outreach", "Speeches"]);
+const NON_RESOLUTION_TOPICS = new Set([
+  "Office and Personnel Updates",
+  "Community Outreach",
+  "Speeches",
+]);
 const RESOLUTION_WORD =
   /\b(pay|pays|paid|paying|settle\w*|agree\w*|resol\w*|plead\w*|guilty|sentenc\w*|forfeit\w*|penalt\w*|fine|fines|fined|restitution|judgment|verdict|ordered|consent decree|recover\w*|convicted)\b/i;
 /**
@@ -77,7 +81,8 @@ const KEYWORD_TITLE: Record<string, RegExp> = {
   settlement: /\b(settle\w*|agree\w*|resol\w*|pay|pays|paid|consent decree)\b/i,
   forfeiture: /\b(forfeit\w*|sentenc\w*|plead\w*|guilty|convicted|ordered)\b/i,
   judgment: /\b(judgment|verdict|ordered|jury|awarded)\b/i,
-  "penalty or fine": /\b(pay|pays|paid|penalt\w*|fine|fines|fined|plead\w*|guilty|sentenc\w*|agree\w*|settle\w*|resol\w*)\b/i,
+  "penalty or fine":
+    /\b(pay|pays|paid|penalt\w*|fine|fines|fined|plead\w*|guilty|sentenc\w*|agree\w*|settle\w*|resol\w*)\b/i,
   restitution: /\b(restitution|sentenc\w*|ordered|plead\w*|guilty|pay|pays)\b/i,
 };
 
@@ -96,7 +101,8 @@ const MULTIPLIER: Record<string, number> = {
 /** Dollar amounts written in a title ("$4 Billion", "$378 Million", "$22,164,212.92"), in USD. */
 export function titleAmounts(title: string): number[] {
   const out: number[] = [];
-  const re = /\$\s?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(?:\s*(thousand|million|billion|trillion|mm|bn|[kmb])\b)?/gi;
+  const re =
+    /\$\s?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)(?:\s*(thousand|million|billion|trillion|mm|bn|[kmb])\b)?/gi;
   for (const m of title.matchAll(re)) {
     const n = Number(m[1]!.replace(/,/g, ""));
     if (!Number.isFinite(n)) continue;
@@ -184,7 +190,10 @@ function newer(a: DojRelease, b: DojRelease) {
  * Rank releases by their own headline figure (at least `minUsd`), leaving out non-resolutions and implausible figures
  * and collapsing repeats of one resolution. Releases repeated across partitions (same id or same URL) count once.
  */
-export function rankLargestResolutions(releases: readonly DojRelease[], minUsd = 1e9): LargestResult {
+export function rankLargestResolutions(
+  releases: readonly DojRelease[],
+  minUsd = 1e9,
+): LargestResult {
   const seen = new Set<string>();
   const unique: DojRelease[] = [];
   for (const r of releases) {
@@ -212,8 +221,7 @@ export function rankLargestResolutions(releases: readonly DojRelease[], minUsd =
     const d = r.date;
     const g = groups.find(
       (x) =>
-        within(x.value, v, 0.01) &&
-        ((d !== null && x.dates.has(d)) || shares(x.tokens, tokens)),
+        within(x.value, v, 0.01) && ((d !== null && x.dates.has(d)) || shares(x.tokens, tokens)),
     );
     if (g) {
       g.members.push(r);

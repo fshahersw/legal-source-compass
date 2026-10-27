@@ -6,12 +6,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { StackedBarsOverTime } from "@/components/charts/d3/charts";
-import {
-  ChartCard,
-  periodTable,
-  TrendLines,
-  trendTakeaway,
-} from "@/components/charts/recharts";
+import { ChartCard, periodTable, TrendLines, trendTakeaway } from "@/components/charts/recharts";
 import {
   AiSummary,
   AskAiButton,
@@ -38,7 +33,10 @@ export const dojHealthQuery = {
   staleTime: 10 * 60 * 1000,
 };
 
-const SOURCE = { label: "DOJ News API (justice.gov), press releases", url: "https://www.justice.gov/news" };
+const SOURCE = {
+  label: "DOJ News API (justice.gov), press releases",
+  url: "https://www.justice.gov/news",
+};
 const KPI_SOURCE = { source: { label: "DOJ press releases", href: SOURCE.url } };
 
 export function DojHealthSection() {
@@ -190,8 +188,8 @@ export function DojHealthSection() {
           about={
             <>
               <p>
-                Counts are press releases dated in each year that DOJ tagged with the topic. A release
-                can carry several topics, so the lines are never added together.
+                Counts are press releases dated in each year that DOJ tagged with the topic. A
+                release can carry several topics, so the lines are never added together.
               </p>
               <p className="mt-2">
                 DOJ applies topic tags consistently only from 2015, so earlier years are left out.
@@ -203,7 +201,11 @@ export function DojHealthSection() {
             "year",
             HEALTH_TOPICS.map((t) => ({ key: t.id, label: t.label })),
             fmtInt,
-            { caption: "DOJ health-care releases per year, by topic", xLabel: "Year", partialKey: "partial" },
+            {
+              caption: "DOJ health-care releases per year, by topic",
+              xLabel: "Year",
+              partialKey: "partial",
+            },
           )}
         >
           <TrendLines
@@ -266,11 +268,11 @@ export function DojHealthSection() {
           period={period}
           about={
             <p>
-              Releases tagged False Claims Act, health-care fraud, opioids or prescription drugs whose
-              headline figure is $100 million or more. Speeches, annual totals, distributions, filings
-              and figures the title contradicts are left out
-              {d ? ` (${fmtInt(d.topHeld)} of ${fmtInt(d.topCandidates)})` : ""}; releases stating the
-              same resolution are listed once. Never summed.
+              Releases tagged False Claims Act, health-care fraud, opioids or prescription drugs
+              whose headline figure is $100 million or more. Speeches, annual totals, distributions,
+              filings and figures the title contradicts are left out
+              {d ? ` (${fmtInt(d.topHeld)} of ${fmtInt(d.topCandidates)})` : ""}; releases stating
+              the same resolution are listed once. Never summed.
             </p>
           }
           actions={

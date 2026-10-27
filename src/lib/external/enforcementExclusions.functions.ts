@@ -45,7 +45,13 @@ const read = memoAsync(READ_TTL_MS, async (): Promise<ExclusionsPayload> => {
     };
   const layer = await readLayer(
     INSIGHTS_RPC.series,
-    { p_metric: "leie_exclusions", p_entity_type: "nation", p_entity_ids: null, p_from: null, p_to: null },
+    {
+      p_metric: "leie_exclusions",
+      p_entity_type: "nation",
+      p_entity_ids: null,
+      p_from: null,
+      p_to: null,
+    },
     parseFacts,
   ).catch(() => null);
   const facts = layer?.status === "ok" ? layer.data : [];

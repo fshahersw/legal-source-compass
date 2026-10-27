@@ -24,7 +24,10 @@ export const SAM_GROUPS = [
 ] as const;
 export type SamGroup = (typeof SAM_GROUPS)[number]["id"];
 
-export type YearRow<K extends string> = { year: string; partial: boolean; total: number } & Record<K, number>;
+export type YearRow<K extends string> = { year: string; partial: boolean; total: number } & Record<
+  K,
+  number
+>;
 
 export type ExclusionTrends = {
   asOf: string;
@@ -41,8 +44,7 @@ export type ExclusionTrends = {
 type Cell = { year: string; group: string; n: number };
 const obj = (v: unknown) =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
-const int = (v: unknown) =>
-  typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
+const int = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null);
 
 function cells(v: unknown): Cell[] {
   return (Array.isArray(v) ? v : []).flatMap((x) => {
@@ -85,7 +87,8 @@ const SAM_KEYS = SAM_GROUPS.map((g) => g.id);
 
 export function parseExclusionTrends(raw: unknown): ExclusionTrends | null {
   const o = obj(raw);
-  const asOf = typeof o?.["as_of"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(o["as_of"]) ? o["as_of"] : null;
+  const asOf =
+    typeof o?.["as_of"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(o["as_of"]) ? o["as_of"] : null;
   if (!o || !asOf) return null;
   return {
     asOf,
@@ -122,7 +125,13 @@ export type NpdbYear = {
   delayYears: number | null;
   judgmentShare: number | null;
 };
-export type NpdbGroup = { id: string; label: string; reports: number | null; median: number | null; deathShare: number | null };
+export type NpdbGroup = {
+  id: string;
+  label: string;
+  reports: number | null;
+  median: number | null;
+  deathShare: number | null;
+};
 export type NpdbNational = {
   years: NpdbYear[];
   allegations: NpdbGroup[];

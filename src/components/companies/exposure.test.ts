@@ -59,7 +59,9 @@ describe("countsInUi and uiExposure", () => {
       tierCPendingMdls: 1,
       tierCPendingActions: 23324,
     });
-    expect(exposureSentence(e)).toBe("Named in 1 pending MDL with 15,264 pending actions (MDL-wide)");
+    expect(exposureSentence(e)).toBe(
+      "Named in 1 pending MDL with 15,264 pending actions (MDL-wide)",
+    );
   });
 
   it("says when nothing is counted and tier C links need review", () => {
@@ -89,15 +91,18 @@ describe("applyUiExposure", () => {
 describe("dataFlags", () => {
   it("flags stale XBRL (FY2023 or earlier), missing XBRL and co-registrant filers", () => {
     // EIDP: latest FY2016 while it files as a Corteva co-registrant (co_registrant_of empty in the record)
-    expect(dataFlags({ latestFy: 2016, coRegistrantOf: [], hasFinancials: true }, ["Corteva, Inc."]).map((f) => f.id)).toEqual([
-      "stale",
-      "co_registrant",
-    ]);
+    expect(
+      dataFlags({ latestFy: 2016, coRegistrantOf: [], hasFinancials: true }, ["Corteva, Inc."]).map(
+        (f) => f.id,
+      ),
+    ).toEqual(["stale", "co_registrant"]);
     expect(dataFlags({ latestFy: 2024, coRegistrantOf: [], hasFinancials: true })).toEqual([]);
     expect(dataFlags({ latestFy: 2023, coRegistrantOf: [], hasFinancials: true })[0]!.label).toBe(
       "Latest XBRL FY2023",
     );
-    expect(dataFlags({ latestFy: null, coRegistrantOf: [], hasFinancials: false })[0]!.id).toBe("no_xbrl");
+    expect(dataFlags({ latestFy: null, coRegistrantOf: [], hasFinancials: false })[0]!.id).toBe(
+      "no_xbrl",
+    );
   });
 });
 
@@ -112,7 +117,12 @@ describe("coverage map", () => {
     review: false,
     ...p,
   });
-  const row = (mdlNo: number, pending: number | null, companies: CoverageRow["companies"], extra: Partial<CoverageRow> = {}): CoverageRow => ({
+  const row = (
+    mdlNo: number,
+    pending: number | null,
+    companies: CoverageRow["companies"],
+    extra: Partial<CoverageRow> = {},
+  ): CoverageRow => ({
     mdl: mdlNo,
     title: `IN RE: ${mdlNo}`,
     status: "pending",
@@ -170,8 +180,18 @@ describe("reserve vs docket", () => {
 
   it("aligns accrual balances and docket counts on quarter ends with gaps kept null", () => {
     const acc = [
-      { end: "2024-09-30", value: 1.6e9, unit: "USD", concept: "LossContingencyAccrualAtCarryingValue" },
-      { end: "2025-09-30", value: 1.8e9, unit: "USD", concept: "LossContingencyAccrualAtCarryingValue" },
+      {
+        end: "2024-09-30",
+        value: 1.6e9,
+        unit: "USD",
+        concept: "LossContingencyAccrualAtCarryingValue",
+      },
+      {
+        end: "2025-09-30",
+        value: 1.8e9,
+        unit: "USD",
+        concept: "LossContingencyAccrualAtCarryingValue",
+      },
     ];
     const series = [
       { date: "2024-10-01", pending: 521 },

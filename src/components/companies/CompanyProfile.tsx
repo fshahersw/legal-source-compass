@@ -420,7 +420,9 @@ function Litigation({ d: published }: { d: CompanyDetail }) {
       {reportsToCms(p.sic) ? (
         <section aria-label="Industry payments and device reports" className="space-y-2">
           <div>
-            <h3 className="text-label font-semibold text-foreground">Industry payments and device reports</h3>
+            <h3 className="text-label font-semibold text-foreground">
+              Industry payments and device reports
+            </h3>
             <p className="text-xs text-muted-foreground">
               CMS Open Payments and FDA MAUDE, matched on the exact registrant name. Subsidiaries
               that report under their own names are not included.
@@ -716,7 +718,9 @@ function Exposure({
   return (
     <section className="rounded-md border border-border bg-surface" aria-label="MDL exposure">
       <div className="border-b border-border/70 px-3 py-2">
-        <h3 className="text-label font-semibold text-foreground">MDL exposure and evidence filings</h3>
+        <h3 className="text-label font-semibold text-foreground">
+          MDL exposure and evidence filings
+        </h3>
         <p className="text-xs text-muted-foreground">
           Each MDL below is named in this company&apos;s own SEC filings. Expand a row for the
           filings, the matched text and an excerpt. {TIER_LABEL.C}: confirm against the filing

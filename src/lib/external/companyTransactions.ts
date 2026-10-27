@@ -63,12 +63,17 @@ export function matchTransactions(
     out.push({ ...n, role: a && t ? "both" : a ? "acquirer" : "target" });
   }
   return out.sort(
-    (x, y) => (y.date ?? "").localeCompare(x.date ?? "") || y.transaction.localeCompare(x.transaction),
+    (x, y) =>
+      (y.date ?? "").localeCompare(x.date ?? "") || y.transaction.localeCompare(x.transaction),
   );
 }
 
 /** Whether the key identifies exactly one profiled company (else the join is not made). */
-export function uniqueKey(key: string, profileNames: readonly string[], keyOf: (name: string) => string) {
+export function uniqueKey(
+  key: string,
+  profileNames: readonly string[],
+  keyOf: (name: string) => string,
+) {
   return !!key && profileNames.filter((n) => keyOf(n) === key).length === 1;
 }
 
@@ -79,12 +84,16 @@ export function uniqueKey(key: string, profileNames: readonly string[], keyOf: (
 export function suspensionYears(calendar: readonly { year: number; count: number }[]): number[] {
   const sorted = [...calendar].sort((a, b) => a.year - b.year);
   for (let i = 5; i < sorted.length; i++) {
-    const prior = sorted.slice(0, i).map((c) => c.count).sort((a, b) => a - b);
+    const prior = sorted
+      .slice(0, i)
+      .map((c) => c.count)
+      .sort((a, b) => a - b);
     const mid = Math.floor(prior.length / 2);
     const median = prior.length % 2 ? prior[mid]! : (prior[mid - 1]! + prior[mid]!) / 2;
     if (median <= 0 || sorted[i]!.count >= median / 10) continue;
     const run: number[] = [];
-    for (let j = i; j < sorted.length && sorted[j]!.count < median / 10; j++) run.push(sorted[j]!.year);
+    for (let j = i; j < sorted.length && sorted[j]!.count < median / 10; j++)
+      run.push(sorted[j]!.year);
     return run;
   }
   return [];

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { DojRelease, HeadlineFigure } from "./enforcementActions.functions";
-import { heldReason, rankLargestResolutions, titleAmounts, titleTokens } from "./enforcementLargest";
+import {
+  heldReason,
+  rankLargestResolutions,
+  titleAmounts,
+  titleTokens,
+} from "./enforcementLargest";
 
 let n = 0;
 function rel(
@@ -143,23 +148,33 @@ describe("heldReason", () => {
       "personnel",
     );
     expect(
-      t("The Fraud Division Launches West Coast Strike Force to Target Health Care Fraud", "forfeiture"),
+      t(
+        "The Fraud Division Launches West Coast Strike Force to Target Health Care Fraud",
+        "forfeiture",
+      ),
     ).toBe("personnel");
-    expect(t("Statement Of Manhattan U.S. Attorney Preet Bharara On The Guilty Plea By BNP Paribas")).toBe(
-      "speech",
-    );
     expect(
-      t("Chairman of Prince Group Indicted for Operating Cambodian Forced-Labor Scam Compounds", "forfeiture"),
+      t("Statement Of Manhattan U.S. Attorney Preet Bharara On The Guilty Plea By BNP Paribas"),
+    ).toBe("speech");
+    expect(
+      t(
+        "Chairman of Prince Group Indicted for Operating Cambodian Forced-Labor Scam Compounds",
+        "forfeiture",
+      ),
     ).toBe("charge");
-    expect(t("Justice Department Surpasses $12 Billion in Compensation to Crime Victims Since 2000")).toBe(
-      "statistics",
-    );
     expect(
-      t("Eastern District Of California U.S. Attorney’s Office Collects Over $9 Billion In Civil And Criminal Actions"),
+      t("Justice Department Surpasses $12 Billion in Compensation to Crime Victims Since 2000"),
+    ).toBe("statistics");
+    expect(
+      t(
+        "Eastern District Of California U.S. Attorney’s Office Collects Over $9 Billion In Civil And Criminal Actions",
+      ),
     ).toBe("statistics");
     // a settlement figure under a plea title belongs to another matter
     expect(
-      t("Former Illinois Attorney Pleads Guilty to Tax Evasion in Connection with Legal Fees Stemming from Multi-Billion Dollar Settlement Paid"),
+      t(
+        "Former Illinois Attorney Pleads Guilty to Tax Evasion in Connection with Legal Fees Stemming from Multi-Billion Dollar Settlement Paid",
+      ),
     ).toBe(undefined); // title itself names a settlement paid: kept
     expect(t("Former Illinois Attorney Pleads Guilty to Tax Evasion")).toBe("title_no_resolution");
     expect(t("Co-Founder of the Sinaloa Cartel Pleads Guilty", "forfeiture")).toBeUndefined();
@@ -236,7 +251,10 @@ describe("rankLargestResolutions", () => {
   });
 
   it("ignores releases below the threshold or without a headline figure", () => {
-    const small = rel("X Agrees to Pay $5 Million", "2020-01-01", { valueUsd: 5e6, source: "title" });
+    const small = rel("X Agrees to Pay $5 Million", "2020-01-01", {
+      valueUsd: 5e6,
+      source: "title",
+    });
     const none = { ...BP, id: "doj-pr:none", url: null, headline: null };
     expect(rankLargestResolutions([small, none]).candidates).toBe(0);
   });

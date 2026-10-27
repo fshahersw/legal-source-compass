@@ -19,11 +19,7 @@ type LinkLike = Pick<CompanyMdl, "countsTowardExposure" | "tier" | "review" | "d
 /** Whether a link counts toward exposure in the UI (published rule plus: tier C never counts). */
 export function countsInUi(m: LinkLike): boolean {
   return (
-    m.countsTowardExposure &&
-    m.tier !== "C" &&
-    !m.review &&
-    !m.dismissed &&
-    m.role === "defendant"
+    m.countsTowardExposure && m.tier !== "C" && !m.review && !m.dismissed && m.role === "defendant"
   );
 }
 
@@ -265,7 +261,11 @@ export function reportAfterQuarter(quarterEnd: string, reports: ReadonlyMap<stri
   return null;
 }
 
-export type IndexSeries = { id: string; label: string; points: { date: string; value: number | null }[] };
+export type IndexSeries = {
+  id: string;
+  label: string;
+  points: { date: string; value: number | null }[];
+};
 
 /**
  * Reserve vs docket series for one company on shared quarter-end dates: the company-wide litigation accrual (XBRL,

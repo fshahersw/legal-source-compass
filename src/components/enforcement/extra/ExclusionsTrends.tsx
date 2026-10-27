@@ -32,9 +32,15 @@ export const exclusionsTrendsQuery = {
   staleTime: 10 * 60 * 1000,
 };
 
-const LEIE = { label: "HHS-OIG List of Excluded Individuals/Entities (LEIE)", url: "https://oig.hhs.gov/exclusions/exclusions_list.asp" };
+const LEIE = {
+  label: "HHS-OIG List of Excluded Individuals/Entities (LEIE)",
+  url: "https://oig.hhs.gov/exclusions/exclusions_list.asp",
+};
 const SAM = { label: "SAM.gov exclusions", url: "https://sam.gov/content/exclusions" };
-const NPDB = { label: "National Practitioner Data Bank public use data (HRSA)", url: "https://www.npdb.hrsa.gov/resources/publicData.jsp" };
+const NPDB = {
+  label: "National Practitioner Data Bank public use data (HRSA)",
+  url: "https://www.npdb.hrsa.gov/resources/publicData.jsp",
+};
 const fmt = (v: number) => v.toLocaleString("en-US");
 const usd = (v: number) => `$${Math.round(v).toLocaleString("en-US")}`;
 const FROM = 2006;
@@ -80,7 +86,11 @@ export function ExclusionsTrendsSection() {
                   }))
                 : []),
               ...(samLast
-                ? SAM_GROUPS.map((g) => ({ label: `SAM: ${g.label}`, value: samLast[g.id], period: samLast.year }))
+                ? SAM_GROUPS.map((g) => ({
+                    label: `SAM: ${g.label}`,
+                    value: samLast[g.id],
+                    period: samLast.year,
+                  }))
                 : []),
               { label: "SAM rows with a future date (not charted)", value: t?.samFuture ?? null },
             ],
@@ -115,7 +125,11 @@ export function ExclusionsTrendsSection() {
         />
         <KpiCard
           as="li"
-          label={partialYear ? `LEIE exclusions, ${partialYear.year} so far` : "LEIE exclusions, this year"}
+          label={
+            partialYear
+              ? `LEIE exclusions, ${partialYear.year} so far`
+              : "LEIE exclusions, this year"
+          }
           value={partialYear ? fmt(partialYear.total) : null}
           meta={t ? `through ${t.asOf}` : undefined}
           partial={partialNote}
@@ -126,7 +140,11 @@ export function ExclusionsTrendsSection() {
           as="li"
           label="SAM firms excluded"
           value={samLast ? fmt(samLast.Firm) : null}
-          meta={samLast ? `${samLast.year}, still listed` : "Not recorded until the exclusions RPC is applied"}
+          meta={
+            samLast
+              ? `${samLast.year}, still listed`
+              : "Not recorded until the exclusions RPC is applied"
+          }
           state={q.isPending ? "loading" : "ready"}
           source={{ source: { label: "SAM.gov", href: SAM.url } }}
         />
@@ -179,9 +197,16 @@ export function ExclusionsTrendsSection() {
               ? periodTable(
                   t.leie,
                   "year",
-                  [...LEIE_GROUPS.map((g) => ({ key: g.id, label: g.label })), { key: "total", label: "Total" }],
+                  [
+                    ...LEIE_GROUPS.map((g) => ({ key: g.id, label: g.label })),
+                    { key: "total", label: "Total" },
+                  ],
                   fmt,
-                  { caption: "LEIE exclusions by year and authority", xLabel: "Year", partialKey: "partial" },
+                  {
+                    caption: "LEIE exclusions by year and authority",
+                    xLabel: "Year",
+                    partialKey: "partial",
+                  },
                 )
               : periodTable(totals, "year", [{ key: "value", label: "LEIE exclusions" }], fmt, {
                   caption: "LEIE exclusions by year",
@@ -231,9 +256,9 @@ export function ExclusionsTrendsSection() {
           asOf={t?.asOf}
           about={
             <p>
-              SAM.gov lists exclusions in force across federal agencies, including OFAC special entity
-              designations and vessels. Bars count exclusions still listed by the year they became
-              active.
+              SAM.gov lists exclusions in force across federal agencies, including OFAC special
+              entity designations and vessels. Bars count exclusions still listed by the year they
+              became active.
               {t
                 ? ` ${fmt(t.samUndated ?? 0)} rows carry no active date and ${fmt(t.samFuture ?? 0)} carry a date in the future as published; neither is charted.`
                 : ""}
@@ -244,9 +269,16 @@ export function ExclusionsTrendsSection() {
               ? periodTable(
                   t.sam,
                   "year",
-                  [...SAM_GROUPS.map((g) => ({ key: g.id, label: g.label })), { key: "total", label: "Total" }],
+                  [
+                    ...SAM_GROUPS.map((g) => ({ key: g.id, label: g.label })),
+                    { key: "total", label: "Total" },
+                  ],
                   fmt,
-                  { caption: "SAM exclusions by year and classification", xLabel: "Year", partialKey: "partial" },
+                  {
+                    caption: "SAM exclusions by year and classification",
+                    xLabel: "Year",
+                    partialKey: "partial",
+                  },
                 )
               : undefined
           }
@@ -271,7 +303,7 @@ export function ExclusionsTrendsSection() {
 export function MalpracticeBenchmarksSection() {
   const q = useQuery(exclusionsTrendsQuery);
   const n = q.data?.npdb;
-  const years = n?.years ?? [];
+  const years = useMemo(() => n?.years ?? [], [n]);
   const complete = years.filter((y) => !y.partial);
   const last = complete.at(-1) ?? null;
   const first = years[0]?.year ?? "";
@@ -289,7 +321,11 @@ export function MalpracticeBenchmarksSection() {
         ? ({ kind: "empty", reason: "Not recorded: no NPDB national series was read." } as const)
         : ({ kind: "ready" } as const);
   const sources = [{ label: NPDB.label, url: n?.sourceUrl ?? NPDB.url }];
-  const medianPoints = years.map((y) => ({ label: y.year, value: y.median2025, partial: y.partial }));
+  const medianPoints = years.map((y) => ({
+    label: y.year,
+    value: y.median2025,
+    partial: y.partial,
+  }));
   const topAllegation =
     [...(n?.allegations ?? [])]
       .filter((a) => a.median !== null && a.label !== "Not recorded")
@@ -304,8 +340,17 @@ export function MalpracticeBenchmarksSection() {
             source: NPDB.label,
             figures: [
               ...years.flatMap((y) => [
-                { label: "Payment reports", value: y.reports, period: y.year, ...(y.partial ? { note: "partial year" } : {}) },
-                { label: "Median payment (2025 dollars)", value: y.median2025 === null ? null : usd(y.median2025), period: y.year },
+                {
+                  label: "Payment reports",
+                  value: y.reports,
+                  period: y.year,
+                  ...(y.partial ? { note: "partial year" } : {}),
+                },
+                {
+                  label: "Median payment (2025 dollars)",
+                  value: y.median2025 === null ? null : usd(y.median2025),
+                  period: y.year,
+                },
               ]),
               ...n.allegations.map((a) => ({
                 label: `Median payment, ${a.label}`,
@@ -362,7 +407,10 @@ export function MalpracticeBenchmarksSection() {
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
         <ChartCard
           variant="editorial"
-          title={trendTakeaway("The median payment in 2025 dollars", medianPoints, usd) ?? "Median malpractice payment"}
+          title={
+            trendTakeaway("The median payment in 2025 dollars", medianPoints, usd) ??
+            "Median malpractice payment"
+          }
           subtitle={`Median payment per report, adjusted to 2025 dollars · USD · ${period}`}
           status={status}
           sources={sources}
@@ -370,9 +418,9 @@ export function MalpracticeBenchmarksSection() {
           partial={partialNote}
           about={
             <p>
-              The NPDB publishes the median of each year&rsquo;s payment reports and its value in 2025
-              dollars. A year still in progress has no adjusted median; 1990 holds only the reports
-              from the Data Bank&rsquo;s opening months.
+              The NPDB publishes the median of each year&rsquo;s payment reports and its value in
+              2025 dollars. A year still in progress has no adjusted median; 1990 holds only the
+              reports from the Data Bank&rsquo;s opening months.
             </p>
           }
           table={periodTable(
@@ -385,7 +433,11 @@ export function MalpracticeBenchmarksSection() {
               { key: "delayYears", label: "Median years to payment" },
             ],
             fmt,
-            { caption: "NPDB malpractice payment reports by year", xLabel: "Year", partialKey: "partial" },
+            {
+              caption: "NPDB malpractice payment reports by year",
+              xLabel: "Year",
+              partialKey: "partial",
+            },
           )}
         >
           <TrendLines

@@ -81,7 +81,11 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
         </KpiGrid>
       ) : null}
       <ChartCard
-        title={rows.length ? `${name} appears in ${fmt(rows.length)} early termination notices` : "Early termination notices"}
+        title={
+          rows.length
+            ? `${name} appears in ${fmt(rows.length)} early termination notices`
+            : "Early termination notices"
+        }
         subtitle="Notices per year by role · notices · exact normalised name match"
         status={status}
         sources={[SOURCE]}
@@ -97,9 +101,9 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
         about={
           <>
             <p>
-              A notice is the FTC&rsquo;s publication that early termination of the HSR waiting period
-              was granted. It covers only filings granted early termination, so a year without
-              notices is not evidence that no deal happened.
+              A notice is the FTC&rsquo;s publication that early termination of the HSR waiting
+              period was granted. It covers only filings granted early termination, so a year
+              without notices is not evidence that no deal happened.
             </p>
             <p className="mt-2">
               Parties are matched to this company only when the party&rsquo;s name, normalised
@@ -145,7 +149,12 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
                   value: (r) => r.transaction,
                   render: (r) =>
                     r.url ? (
-                      <a href={r.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-primary hover:underline"
+                      >
                         {r.transaction}
                       </a>
                     ) : (

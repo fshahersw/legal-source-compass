@@ -67,7 +67,10 @@ export function fcaYear(
   year: string,
   partial: boolean,
   headlines: readonly (number | null)[],
-): { sizes: SizeYear; median: { year: string; partial: boolean; median: number | null; n: number } } {
+): {
+  sizes: SizeYear;
+  median: { year: string; partial: boolean; median: number | null; n: number };
+} {
   const sizes: SizeYear = { year, partial, none: 0, m1: 0, m10: 0, m100: 0 };
   const stated: number[] = [];
   for (const h of headlines) {
@@ -99,7 +102,13 @@ export function coverageBreak(
 export function lastChange(
   rows: readonly TopicYear[],
   id: HealthTopicId,
-): { year: string; value: number; prior: number | null; delta: number | null; pct: number | null } | null {
+): {
+  year: string;
+  value: number;
+  prior: number | null;
+  delta: number | null;
+  pct: number | null;
+} | null {
   const complete = rows.filter((r) => !r.partial && r[id] != null);
   const last = complete.at(-1);
   if (!last) return null;

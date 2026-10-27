@@ -61,7 +61,13 @@ describe("disclosureRadar", () => {
 
   it("flags MDL numbers a company cites for the first time", () => {
     expect(out.newMdls).toEqual([
-      { cik: "0000078003", company: "Company 0000078003", fy: "2024", mdl: 3140, accession: "0000078003-2024" },
+      {
+        cik: "0000078003",
+        company: "Company 0000078003",
+        fy: "2024",
+        mdl: 3140,
+        accession: "0000078003-2024",
+      },
     ]);
   });
 
@@ -82,7 +88,13 @@ describe("parseFilingText", () => {
     const f = parseFilingText({
       id: "10k:x",
       source_url: "https://www.sec.gov/Archives/edgar/data/1/x.htm",
-      f: { cik: "0000104169", accession: "0000104169-26-000055", period: "2026-01-31", company: "Walmart Inc.", filed: "2026-03-13" },
+      f: {
+        cik: "0000104169",
+        accession: "0000104169-26-000055",
+        period: "2026-01-31",
+        company: "Walmart Inc.",
+        filed: "2026-03-13",
+      },
       t3: "ITEM 3. LEGAL PROCEEDINGS MDL No. 2804",
       n: [{ text: "Note 9. Contingencies" }, { heading: "no text" }],
       m: [{ mdl_number: 2804 }, { mdl_number: "x" }],
@@ -91,6 +103,8 @@ describe("parseFilingText", () => {
     expect(f.text).toBe("ITEM 3. LEGAL PROCEEDINGS MDL No. 2804\nNote 9. Contingencies");
     expect(f.mdls).toEqual([2804]);
     expect(f.url).toBe("https://www.sec.gov/Archives/edgar/data/1/x.htm");
-    expect(parseFilingText({ id: 1, source_url: null, f: { cik: "1" }, t3: null, n: null, m: null })).toBeNull();
+    expect(
+      parseFilingText({ id: 1, source_url: null, f: { cik: "1" }, t3: null, n: null, m: null }),
+    ).toBeNull();
   });
 });

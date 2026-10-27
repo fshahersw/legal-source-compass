@@ -18,16 +18,21 @@ function HsrSuspensionNote() {
   const years = q.data?.suspended ?? [];
   if (!years.length) return null;
   const counts = years
-    .map((y) => `${y}: ${(q.data?.calendar.find((c) => c.year === y)?.count ?? 0).toLocaleString("en-US")}`)
+    .map(
+      (y) =>
+        `${y}: ${(q.data?.calendar.find((c) => c.year === y)?.count ?? 0).toLocaleString("en-US")}`,
+    )
     .join(", ");
   return (
     <p
       role="note"
       className="max-w-3xl rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-foreground"
     >
-      <span className="font-medium">Policy gap, {years[0]}–{years.at(-1)}: </span>
-      the FTC suspended early termination grants in February 2021, so the notices fall to{" "}
-      {counts}. These years reflect that policy, not fewer mergers; do not read them as a trend.
+      <span className="font-medium">
+        Policy gap, {years[0]}–{years.at(-1)}:{" "}
+      </span>
+      the FTC suspended early termination grants in February 2021, so the notices fall to {counts}.
+      These years reflect that policy, not fewer mergers; do not read them as a trend.
     </p>
   );
 }
