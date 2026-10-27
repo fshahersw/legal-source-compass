@@ -4,12 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { STATES } from "@/lib/corpus/geo";
 import { getStateRates, type StateRate } from "@/lib/calculators/econ.functions";
-import { Field, Note, Panel } from "./shared";
+import { daysToEnd, isoToday, rateStatus } from "@/lib/calculators/damagesInputs";
+import { Field, Figure, Note, Panel } from "./shared";
 import { controlClass } from "./format";
 
 const KIND = { prejudgment: "Prejudgment", postjudgment: "Post-judgment" } as const;
 
-function rateText(r: StateRate) {
+/** Rates set for a stated period read Not recorded once the period has ended, until a newer rate is captured. */
+function rateText(r: StateRate, today: string) {
+  const status = rateStatus(r, today);
+  if (status === "ended") return `Not recorded (the stated period ended ${r.effectiveTo})`;
+  if (status === "not_started") return `Not recorded yet (the stated period starts ${r.effectiveFrom})`;
   if (r.ratePercent) return `${r.ratePercent}% per year`;
   if (r.rateType === "same_as_prejudgment") return "Same rate as the prejudgment interest awarded";
   if (r.rateType === "published_periodically")
@@ -28,6 +33,13 @@ export function StateRatesTable() {
   const byState = new Map<string, StateRate[]>();
   for (const r of rates) byState.set(r.state, [...(byState.get(r.state) ?? []), r]);
   const shown = STATES.filter((s) => !state || s.usps === state);
+  const today = isoToday();
+  const covered = byState.size;
+  const inForce = rates.filter((r) => r.ratePercent && rateStatus(r, today) === "in_force").length;
+  const endingSoon = rates.filter((r) => {
+    const d = daysToEnd(r, today);
+    return d !== null && d <= 30;
+  });
   return (
     <Panel
       title="State prejudgment and post-judgment interest rates"
@@ -57,6 +69,29 @@ export function StateRatesTable() {
         rules (e.g. public entities, consumer debt) and rates set elsewhere are not computed. Every
         other state shows Not recorded.
       </p>
+      {q.data && q.data.available ? (
+        <div className="grid gap-2 sm:grid-cols-3">
+          <Figure
+            label="States with a cited rate"
+            value={`${covered} of ${STATES.length}`}
+            sub="every other state: Not recorded"
+          />
+          <Figure
+            label="Stated percentages in force today"
+            value={String(inForce)}
+            sub={`as of ${today}`}
+          />
+          <Figure
+            label="Stated periods ending within 30 days"
+            value={String(endingSoon.length)}
+            sub={
+              endingSoon.length
+                ? endingSoon.map((r) => `${r.state} ${r.effectiveTo}`).join(", ")
+                : "none"
+            }
+          />
+        </div>
+      ) : null}
       {q.isLoading ? <Note kind="loading">Reading the cited rates…</Note> : null}
       {q.data?.error ? <Note kind="error">{q.data.error}</Note> : null}
       {q.data && !q.data.error && !q.data.available ? (
@@ -93,7 +128,7 @@ export function StateRatesTable() {
                   <td className="py-1 pr-3">{i === 0 ? s.name : ""}</td>
                   <td className="py-1 pr-3">{KIND[r.kind]}</td>
                   <td className="py-1 pr-3 tabular-nums">
-                    {rateText(r)}
+                    {rateText(r, today)}
                     {r.effectiveFrom ? (
                       <span className="block text-[11px] text-muted-foreground">
                         for {r.effectiveFrom} to {r.effectiveTo}
