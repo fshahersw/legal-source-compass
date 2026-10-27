@@ -457,6 +457,26 @@ class CourtSummaryBuilder(unittest.TestCase):
         ]}
         self.assertEqual(bcs.leadership_from_pages([page])[0]["updated"], "Last Updated: May 27, 2016")
 
+    def test_counsel_rule_reaches_counsel_text_only(self):
+        """Owner decisions 2026-10-03 (counsel without contact fields) and 2026-10-27 (nothing else withheld)."""
+        m = bcs.CONTACT_MARKER
+        court = "Order | Open Court Conference November 10, 2016 at 1:00 p.m. Courtroom 16B, Carl B. Stokes U.S. Courthouse, 801 West Superior Avenue, Cleveland, OH 44113 | 10/20/2016"
+        self.assertEqual(bcs.counsel_redact(court, marker=m), (cr.tidy(court), False))
+        self.assertIn("801 West Superior Avenue", bcs.counsel_redact(court, "bellwether", marker=m)[0])
+        admin = "Claims Administrator: | Hon. James J. Roe, 100 Main Street, Columbus, OH 43215"
+        self.assertEqual(bcs.counsel_redact(admin, "settlement", marker=m)[0], cr.tidy(admin))
+        counsel = "Plaintiffs' liaison counsel Jane Doe, Doe LLP, 100 Main Street, Columbus, OH 43215, (614) 555-0100."
+        text, removed = bcs.counsel_redact(counsel, "settlement", marker=m)
+        self.assertTrue(removed)
+        self.assertNotIn("555-0100", text)
+        self.assertNotIn("100 Main Street", text)
+        firm = "Write to Roe Smith LLP at 100 Main Street, Columbus, OH 43215."
+        self.assertTrue(bcs.counsel_redact(firm, marker=m)[1])
+        dial = "To participate in the status conference, call (877) 336-1831 and enter access code 455209."
+        self.assertTrue(bcs.counsel_redact(dial, "leadership", marker=m)[1])  # leadership statements always follow the counsel rule
+        self.assertFalse(bcs.counsel_redact(dial, "bellwether", marker=m)[1])
+        self.assertEqual(cr.redact("Order of 10/14/2026 at 9:30 ."), (cr.tidy("Order of 10/14/2026 at 9:30 ."), False))
+
 
 class MassTortTermMerge(unittest.TestCase):
     # build_mass_tort_signals.py lives one directory up; tested here so the CI Python contract suite covers it.

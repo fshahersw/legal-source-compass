@@ -161,7 +161,7 @@ def process(job: dict, store, upload: bool, stop_at: int) -> dict:
             except Exception as e:  # noqa: BLE001 - recorded; the document stays unarchived
                 rec["storage_error"] = f"{type(e).__name__}: {str(e)[:200]}"
         ex = xt.extract(path, detected)
-        text, counts = xt.redact(ex.text) if ex.text else ("", {"emails": 0, "phones": 0, "staff_lines": 0})
+        text, counts = xt.redact(ex.text) if ex.text else ("", {"access_codes": 0})
         capped, truncated, total = xt.cap(text)
         rec.update(text=capped, text_chars=len(capped), text_chars_total=total, text_truncated=truncated, text_method=ex.method, pages=ex.pages,
                    text_error=ex.error, redactions=counts, text_sha256=hashlib.sha256(capped.encode()).hexdigest() if capped else None)
@@ -251,7 +251,7 @@ def process_pagetext(job: dict, store, upload: bool, manifest: dict[str, dict]) 
         text, counts = xt.redact_page(ex.text)
         capped, truncated, total = xt.cap(text)
         rec.update(text=capped, text_chars=len(capped), text_chars_total=total, text_truncated=truncated,
-                   text_method=ex.method + "; staff contact blocks in the page header omitted", pages=None, text_error=None, redactions=counts,
+                   text_method=ex.method, pages=None, text_error=None, redactions=counts,
                    text_sha256=hashlib.sha256(capped.encode()).hexdigest() if capped else None)
     finally:
         if os.path.exists(path):

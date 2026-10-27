@@ -1,5 +1,9 @@
 """Remove counsel contact details from court-page text (owner decision 2026-10-03: counsel shown without contact fields).
 
+This is an explicit owner policy hold, which the owner decision of 2026-10-27 ("dont withhold any data") keeps by its own terms ("or an
+explicit owner/admin policy hold"); it stays in force until the owner says the 2026-10-27 entry supersedes the 2026-10-03 counsel rule.
+It covers counsel only: chambers and court-staff contact text in judges' practice documents is released (judge_practices/extract_text.py).
+
 Kept: names, firm names, roles exactly as printed. Removed, by explicit pattern only:
   - e-mail addresses (with an optional "Email:" label)
   - NANP phone / fax numbers, e.g. (212) 584-0700, 419-841-9623, 212.584.0700, +1 212 584 0700 (optional label/extension)
@@ -95,10 +99,14 @@ def redact(text: str, marker: str | None = None):
     out = re.sub(rf"{MARK}(?:[\s.,;:()]*{MARK})*", MARK, out)
     out = re.sub(rf"\(\s*{MARK}\s*\)", MARK, out)
     out = out.replace(MARK, f" {marker} " if marker else " ")
-    out = re.sub(r"\s+([,;.)])", r"\1", out)
+    return tidy(out), removed
+
+
+def tidy(text: str) -> str:
+    """The whitespace and punctuation tidying redact() gives every text, with nothing removed."""
+    out = re.sub(r"\s+([,;.)])", r"\1", " ".join(text.split()))
     out = re.sub(r"([.,;])(?:\s*[.,;])+", r"\1", out)
-    out = " ".join(out.split()).strip(" ,;")
-    return out, removed
+    return " ".join(out.split()).strip(" ,;")
 
 
 def redact_lines(lines):

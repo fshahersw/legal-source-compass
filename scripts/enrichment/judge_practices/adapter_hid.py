@@ -4,8 +4,9 @@ That service is the court's publication of the same data; it is read through the
 second), asking only for the fields kept here.
 
 Kept per judge: name and title as the service returns them (the app prints "<title> <first> <middle> <last>"), the address of the judge's page
-in the app (/judges/<id>), and the requirement files with the titles the app prints. Not kept: telephone numbers, e-mail addresses, courtroom
-managers and reporters, photographs.
+in the app (/judges/<id>), and the requirement files with the titles the app prints. Not collected by this adapter: telephone numbers,
+e-mail addresses, courtroom managers and reporters, photographs (not a hold: under the owner decision of 2026-10-27 they may be collected as
+the court publishes them, which is new acquisition, not yet done).
 """
 from __future__ import annotations
 

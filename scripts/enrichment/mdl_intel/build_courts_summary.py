@@ -13,7 +13,7 @@ from datetime import date
 from pathlib import Path
 
 import parse_jpml as pj
-from contact_redaction import redact, redact_lines
+from contact_redaction import redact, redact_lines, tidy
 from extract_court_pages import clip, parse_date
 
 CONTACT_MARKER = "[contact removed]"
@@ -26,8 +26,24 @@ CONTACT_METHOD = (
     "('Third and Fourth Floor', 'Plaza Seven Bldg.') or a building name printed above its street line ('Terminus 200'; "
     "a firm name on the same line is kept). Counsel blocks that lost text are marked 'contact lines removed'; in quoted "
     "sentences, and in a counsel line whose sentence points at the removed contact ('may be sent to …'), each removal is "
-    "shown as '[contact removed]'. Names, firms and roles are kept as printed."
+    "shown as '[contact removed]'. Names, firms and roles are kept as printed. The rule covers counsel only (owner decision 2026-10-27: "
+    "nothing else is withheld): it applies to leadership lists and leadership statements, and to an order row or a bellwether / settlement "
+    "statement only when that text names counsel (counsel, attorney, law firm, LLP, LLC, P.C., Esq.); a courthouse address or a court "
+    "conference line in any other order row or statement is shown as the court prints it."
 )
+# Owner decision 2026-10-27: contact text is held only under an explicit policy. The 2026-10-03 policy is about counsel, so outside the
+# leadership lists and leadership statements the counsel rule applies only to text that names counsel.
+RE_COUNSEL_CONTEXT = re.compile(r"counsel|attorney|law\s+firm|\bL\.?L\.?P\b|\bP?L\.?L\.?C\b|\bP\.\s?C\.|\bEsq\b", re.I)
+
+
+def counsel_redact(text, category=None, marker=None):
+    """contact_redaction.redact() where the owner's counsel rule reaches: always for leadership statements, otherwise only for text
+    that names counsel; other text gets the same whitespace and punctuation tidying and nothing removed. Returns (text, removed)."""
+    if not text:
+        return text, False
+    if category == "leadership" or RE_COUNSEL_CONTEXT.search(text):
+        return redact(text, marker=marker)
+    return tidy(text), False
 from common import ACQ, HERE, JPML, TODAY, cw, district_name, fmt, months_between, normalize_district, pct  # noqa: E402
 
 COURT_DATASET = "mdl_intel_court_pages"
@@ -165,7 +181,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
         quotes, seen_q = [], set()
         for p in items:
             for q in p.get("quotes", []):
-                text, removed = redact(q["text"], marker=CONTACT_MARKER)
+                text, removed = counsel_redact(q["text"], q["category"], marker=CONTACT_MARKER)
                 if len(text.replace(CONTACT_MARKER, "").strip(" .,;:()")) < 15:
                     continue  # nothing but contact details
                 key = (q["category"], text)
@@ -179,7 +195,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
                 if o["url"] in seen_o:
                     continue
                 seen_o.add(o["url"])
-                orders.append(o | {"title": redact(o["title"])[0], "row_text": redact(o["row_text"], marker=CONTACT_MARKER)[0], "page": p["url"]})
+                orders.append(o | {"title": counsel_redact(o["title"])[0], "row_text": counsel_redact(o["row_text"], marker=CONTACT_MARKER)[0], "page": p["url"]})
         orders.sort(key=lambda o: (o["date"] or "", o["title"]), reverse=True)
         lead_blocks = leadership_from_pages(items)
         by_cat = collections.defaultdict(list)

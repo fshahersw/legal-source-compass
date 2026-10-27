@@ -4,7 +4,9 @@ https://apps.cacd.uscourts.gov/Jps/) whose HTML is an empty shell. The app reads
 data, so it is read through the same polite fetch layer (robots.txt, one request per second) and nothing is rendered or bypassed.
 
 Kept per judge: the name and title exactly as the service returns them, the address of the judge's page in the app, and the documents the
-page lists under "Documents". Not kept: telephone numbers, Zoom credentials, staff names, calendars and tentative rulings.
+page lists under "Documents". Not collected by this adapter: telephone numbers, staff names, calendars and tentative rulings (not a hold:
+under the owner decision of 2026-10-27 they may be collected as the court publishes them, which is new acquisition, not yet done). Zoom
+credentials stay out: they are access credentials, not data.
 """
 from __future__ import annotations
 
