@@ -143,7 +143,7 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | U.S. Courts pages | uscourts_pages | Courts and court resources | 1,404 | 40.86 MB | Available |
 | FDA device classification (openFDA) | agency_safety_openfda_device_classification | Science and product safety | 7,093 | 39.49 MB | Available |
 | MDL counsel and parties | mdl_counsel | Matters and dockets | 6,940 | 39.12 MB | Available |
-| Coverage topics | coverage_topics | Sources and captured pages | 17,942 | 38.83 MB | Held |
+| Coverage topics | coverage_topics | Sources and captured pages | 17,942 | 38.83 MB | Published 2026-10-27: 127 rows (release-coverage-topics-20261027-v1, run 5792288a; 7 rows removed and ledgered: 1 trellis.law, 6 unsupported NJ tags) |
 | FDA device category metadata — October 2, 2026 | agency_safety_openfda_device_classification_20261002 | Science and product safety | 7,094 | 37.98 MB | Available |
 | MDL case inventory | mdl_case_inventory | Matters and dockets | 4,159 | 36.87 MB | Available |
 | Source documents | source_documents | Sources and captured pages | 612 | 35.17 MB | Available |
