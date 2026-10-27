@@ -47,7 +47,11 @@ const hub = (mdl: string, over: Partial<HubRow> = {}): HubRow => ({
 });
 
 const pts = (totals: number[]) =>
-  totals.map((total, i) => ({ date: `${shiftMonth("2025-10", i)}-01`, total, pending: total - 50 }));
+  totals.map((total, i) => ({
+    date: `${shiftMonth("2025-10", i)}-01`,
+    total,
+    pending: total - 50,
+  }));
 
 const velocity: MdlVelocityPayload = {
   published: true,
@@ -77,9 +81,7 @@ function render(node: ReactNode, data: { pdf?: unknown; velocity?: unknown }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   if (data.velocity) client.setQueryData(mdlVelocityQuery.queryKey, data.velocity);
   if (data.pdf) client.setQueryData(matterHubPdfQuery.queryKey, data.pdf);
-  return renderToStaticMarkup(
-    createElement(QueryClientProvider, { client }, node) as never,
-  );
+  return renderToStaticMarkup(createElement(QueryClientProvider, { client }, node) as never);
 }
 
 describe("PortfolioSection", () => {
@@ -107,7 +109,9 @@ describe("PortfolioSection", () => {
 describe("VelocityLeaderboard", () => {
   it("ranks MDLs by actions added and flags the one outside the registry", () => {
     const html = render(createElement(VelocityLeaderboard), { velocity });
-    expect(html).toContain("Depo-Provera (MDL 3140) added 4,800 actions in the 12 months to Oct 2026");
+    expect(html).toContain(
+      "Depo-Provera (MDL 3140) added 4,800 actions in the 12 months to Oct 2026",
+    );
     expect(html).toContain("not in registry");
     expect(html).toContain("1 of 2"); // top growers outside our registry
   });

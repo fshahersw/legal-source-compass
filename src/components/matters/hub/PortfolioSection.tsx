@@ -280,7 +280,7 @@ function ShareChart({
   status: Status;
   period: string | undefined;
 }) {
-  const months = model?.months ?? [];
+  const months = useMemo(() => model?.months ?? [], [model]);
   const axis = useMemo(
     () => ({
       keys: months.map((m) => m.month),
