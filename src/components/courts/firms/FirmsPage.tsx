@@ -31,9 +31,12 @@ import { Facts, FirmName, RankScatter, ShareMeter, SideBar, SideLegend } from ".
 import {
   isOrganisation,
   landscapeQuery,
+  MIN_CONCENTRATION_APPEARANCES,
   NOT_RECORDED,
   SIDE_COLOR,
   SIDE_LABEL,
+  sortMdls,
+  type MdlSort,
 } from "./firmQueries";
 import { patchFirmSearch, type FirmSearch } from "./firmSearch";
 
@@ -56,10 +59,10 @@ export function FirmsPage({ search, onNavigate }: { search: FirmSearch; onNaviga
     <div className="space-y-4">
       <Callout>
         One <strong>appearance</strong> is one counsel entry for one party on an MDL master docket
- in the matter registry (CourtListener party records). Member dockets are not counted, so
- these figures describe who appears on the master dockets, not a firm&rsquo;s whole caseload
- or market share. Firm spellings are merged only by stated rules (case, punctuation, &amp;,
- entity forms such as LLP, a trailing office name); government counsel is kept apart.
+        in the matter registry (CourtListener party records). Member dockets are not counted, so
+        these figures describe who appears on the master dockets, not a firm&rsquo;s whole caseload
+        or market share. Firm spellings are merged only by stated rules (case, punctuation, &amp;,
+        entity forms such as LLP, a trailing office name); government counsel is kept apart.
       </Callout>
       <Overview />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
@@ -293,8 +296,6 @@ function PairList({ pairs, kind }: { pairs: FirmPair[]; kind: "cocounsel" | "opp
 
 // ------------------------------------------------------------------------------------------------ MDL concentration
 
-type MdlSort = "mdl" | "hhi" | "firms" | "top5";
-
 function MdlConcentration({
   selected,
   onSelect,
@@ -303,7 +304,7 @@ function MdlConcentration({
   onSelect: (mdl: number | undefined) => void;
 }) {
   const q = useQuery(landscapeQuery);
-  const [sort, setSort] = useState<MdlSort>("hhi");
+  const [sort, setSort] = useState<MdlSort>("appearances");
   return (
     <Panel
       id="firms-mdls"
@@ -314,6 +315,7 @@ function MdlConcentration({
           label="Sort MDLs"
           value={sort}
           options={[
+            { id: "appearances", label: "Appearances" },
             { id: "hhi", label: "Concentration" },
             { id: "top5", label: "Top-5 share" },
             { id: "firms", label: "Firms" },
@@ -322,7 +324,7 @@ function MdlConcentration({
           onChange={setSort}
         />
       }
-      footnote="HHI is the sum of squared appearance shares (0 to 10,000): higher means a few firms account for most plaintiff-side entries. It describes counsel entries on the master docket, not fees, leadership appointments or market share. Select a row for the firms behind it."
+      footnote={`HHI is the sum of squared appearance shares (0 to 10,000): higher means a few firms account for most plaintiff-side entries. n is the number of plaintiff-side appearances it rests on; concentration is ranked only for MDLs with at least ${MIN_CONCENTRATION_APPEARANCES}, the rest follow marked "small sample". It describes counsel entries on the master docket, not fees, leadership appointments or market share. Select a row for the firms behind it.`}
     >
       <QueryPanel
         query={q}
@@ -348,15 +350,7 @@ function MdlTable({
   selected: number | undefined;
   onSelect: (mdl: number | undefined) => void;
 }) {
-  const key = (m: MdlLandscape) =>
-    sort === "mdl"
-      ? -m.mdl
-      : sort === "hhi"
-        ? (m.plaintiff.hhi ?? -1)
-        : sort === "firms"
-          ? (m.plaintiff.firms ?? -1)
-          : (m.plaintiff.top5 ?? -1);
-  const rows = [...mdls].sort((a, b) => key(b) - key(a));
+  const { rows, small } = sortMdls(mdls, sort);
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[46rem] text-xs">
@@ -380,6 +374,13 @@ function MdlTable({
             </th>
             <th scope="col" className="px-2 py-1.5 text-right font-medium">
               HHI
+            </th>
+            <th
+              scope="col"
+              className="px-2 py-1.5 text-right font-medium"
+              title="Plaintiff-side appearances the shares are computed from"
+            >
+              n
             </th>
             <th
               scope="col"
@@ -420,9 +421,23 @@ function MdlTable({
                     label={`Top-5 share for MDL ${m.mdl}`}
                   />
                 </td>
-                <td className="px-2 py-1.5 text-right font-mono">
+                <td
+                  className={cn(
+                    "px-2 py-1.5 text-right font-mono",
+                    small.has(m.mdl) && "text-muted-foreground",
+                  )}
+                  title={
+                    small.has(m.mdl)
+                      ? `Small sample: fewer than ${MIN_CONCENTRATION_APPEARANCES} plaintiff-side appearances`
+                      : undefined
+                  }
+                >
                   {m.plaintiff.hhi != null ? int(Math.round(m.plaintiff.hhi)) : "—"}
+                  {small.has(m.mdl) && m.plaintiff.hhi != null ? (
+                    <span className="ml-1 font-sans text-[10px]">small sample</span>
+                  ) : null}
                 </td>
+                <td className="px-2 py-1.5 text-right font-mono">{fmt(m.plaintiff.appearances)}</td>
                 <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono">
                   {fmt(m.plaintiff.firms)} / {fmt(m.defense.firms)}
                 </td>
@@ -477,7 +492,7 @@ function MdlRow({
       </tr>
       {open ? (
         <tr id={detailId} className="bg-muted/20">
-          <td colSpan={5} className="px-3 pb-3 pt-1">
+          <td colSpan={6} className="px-3 pb-3 pt-1">
             <MdlDetail m={m} />
           </td>
         </tr>
