@@ -8,8 +8,12 @@
 --   * a case id requested for exactly one MDL keeps that MDL and its listing basis, exactly as before;
 --   * every other open association with a case id (not requested, or requested for two MDLs) enters with
 --     listed_by = 'docket_case', mdl = null, dataset = 'pdf_document_assets', record_id = the native case id.
---     The UI shows "No MDL listing". MDL membership is never inferred from text, caption, court or case number;
---     a check constraint keeps mdl null exactly for 'docket_case' rows.
+--     The UI shows "MDL not linked". MDL membership is never inferred from text, caption, court or case number;
+--     a check constraint keeps mdl null exactly for 'docket_case' rows;
+--   * exact master-docket evidence the `mdls` dataset records links such a filing to its MDL instead (listed_by
+--     'derived_master_docket'): the DocketBird form of the JPML master docket (also for MDLs the registry covers), a
+--     CourtListener docket the record names as its supporting master docket, or a court-website / GovInfo case number
+--     whose docket key equals the master docket's in the record's own court. A key naming two MDLs is not used.
 -- Unchanged: rule 1 (open under public.corpus_pdf_availability_v1; courtlistener-public-locator is not a source of this
 -- layer), rule 3 (bytes with an explicit seal / restriction / policy flag on any association, or a local
 -- 'locally_flagged_sealed' occurrence, are left out), the source-flag text rule (entry_withheld / same_bytes_withheld),
@@ -45,7 +49,7 @@ begin
   -- the work tables are dropped at commit; a second call in the same transaction starts from fresh ones
   if to_regclass('pg_temp._doc_keys') is not null then
     drop table if exists pg_temp._doc_keys, pg_temp._doc_cand, pg_temp._doc_out, pg_temp._doc_db, pg_temp._doc_cl,
-      pg_temp._doc_dk, pg_temp._doc_new;
+      pg_temp._doc_dk, pg_temp._doc_new, pg_temp._doc_mx;
   end if;
 
   -- case ids the published matter pages request, each with its one MDL
@@ -91,6 +95,50 @@ begin
      and a.native_case_id is not null
      and public.corpus_pdf_availability_v1(a.source_system, a.provider_flags) = 'open'
    order by a.source_system, a.native_document_id, (k.case_id is null), a.verified_at desc;
+
+  -- exact master-docket evidence the `mdls` dataset itself records: a 'docket_case' filing whose case id is an MDL's
+  -- master docket by an exact key carries that MDL (listed_by 'derived_master_docket'). Keys: the DocketBird form of the
+  -- JPML master docket (court-office:yyyy-type-nnnnn), also for MDLs the matter registry covers; a CourtListener docket id
+  -- the record names as its supporting master docket (cases.sample id 'cl_docket:<id>', status 'supporting_master'); for a
+  -- court-website or GovInfo filing, the docket key of its printed case number equal to that of the master docket, in the
+  -- record's own court (cl_court_id = the listing's court). A key that names two MDLs is not used; nothing is inferred
+  -- from captions, products, judges or firms.
+  create temp table _doc_mx on commit drop as
+  with m as (
+    select r.id as mdl, lower(btrim(r.detail ->> 'cl_court_id')) as court, r.detail,
+           regexp_match(btrim(r.detail ->> 'master_docket'), '^(\d{1,2}):(\d{2}|\d{4})-([A-Za-z]{2})-0*(\d{1,6})$') as g
+      from public.corpus_records r where r.dataset = 'mdls' and r.id ~ '^[1-9][0-9]{0,5}$'),
+  x as (
+    select 'docketbird'::text as src, null::text as court,
+           m.court || '-' || m.g[1] || ':' ||
+             (case when length(m.g[2]) = 4 then m.g[2]::integer when m.g[2]::integer >= 68 then 1900 + m.g[2]::integer
+                   else 2000 + m.g[2]::integer end) || '-' || lower(m.g[3]) || '-' || lpad(m.g[4], 5, '0') as case_id, m.mdl
+      from m where m.g is not null and m.court ~ '^[a-z0-9]{2,12}$'
+    union all
+    select 'courtlistener', null, substring(s ->> 'id' from '^cl_docket:([0-9]{1,12})$'), m.mdl
+      from m cross join lateral jsonb_array_elements(case when jsonb_typeof(m.detail -> 'cases' -> 'sample') = 'array'
+                                                         then m.detail -> 'cases' -> 'sample' else '[]'::jsonb end) s
+     where s ->> 'status' = 'supporting_master' and s ->> 'id' ~ '^cl_docket:[0-9]{1,12}$'
+       and coalesce(s ->> 'mdl_number', m.mdl) = m.mdl
+    union all
+    select 'court', m.court, documents.docket_key(m.detail ->> 'master_docket'), m.mdl
+      from m where m.court ~ '^[a-z0-9]{2,12}$' and documents.docket_key(m.detail ->> 'master_docket') is not null)
+  select x.src, x.court, x.case_id, min(x.mdl) as mdl from x where x.case_id is not null
+   group by 1, 2, 3 having count(distinct x.mdl) = 1;
+  update _doc_cand c set mdl = x.mdl, basis = 'derived_master_docket'
+    from (select c2.source_system, c2.native_document_id,
+                 case when c2.source_system = 'docketbird' then 'docketbird'
+                      when c2.source_system in ('courtlistener', 'courtlistener-public-locator') then 'courtlistener'
+                      else 'court' end as src,
+                 case when c2.source_system in ('official-court', 'govinfo') then documents.docket_key(c2.native_case_id)
+                      else c2.native_case_id end as case_id,
+                 case when c2.source_system in ('official-court', 'govinfo') then
+                   (select lower(btrim(o -> 'listing' ->> 'court_id')) from jsonb_array_elements(c2.origins) o
+                     where o ? 'listing' and jsonb_typeof(o -> 'listing') = 'object'
+                     order by o ->> 'retrieved_at' desc limit 1) end as court
+            from _doc_cand c2 where c2.basis = 'docket_case') y
+    join _doc_mx x on x.src = y.src and x.case_id = y.case_id and coalesce(x.court, '') = coalesce(y.court, '')
+   where c.source_system = y.source_system and c.native_document_id = y.native_document_id and c.basis = 'docket_case';
 
   -- bytes carrying an explicit seal, restriction or policy flag anywhere are left out entirely
   create temp table _doc_out on commit drop as

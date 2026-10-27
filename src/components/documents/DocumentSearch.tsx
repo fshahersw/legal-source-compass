@@ -62,7 +62,7 @@ function StatusLine() {
     <p className="text-[12px] text-muted-foreground">
       {fmtCount(d.documents)} filings from {fmtCount(d.mdls)} MDLs
       {d.withoutMdl
-        ? ` and other tracked dockets (${fmtCount(d.withoutMdl)} with no MDL listing)`
+        ? ` and other tracked dockets (${fmtCount(d.withoutMdl)} with no MDL linked)`
         : ""}{" "}
       in {fmtCount(d.courts)} courts · {fmtCount(d.pagesIndexed)} pages of text searchable
     </p>

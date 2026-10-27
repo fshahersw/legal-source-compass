@@ -23,7 +23,7 @@ export const DOCUMENT_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "search_documents",
     description:
-      'Search the text of the stored court filings of the dockets this workspace tracks (orders, opinions, motions, briefs, transcripts from the docket sheets, the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number (or "none" for filings no MDL listing names), document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL (null when no MDL listing names the filing; never guess one), docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings the docket source marks as held or sealed are listed but never searched or quoted; scanned filings without text are not searched.',
+      'Search the text of the stored court filings of the dockets this workspace tracks (orders, opinions, motions, briefs, transcripts from the docket sheets, the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number (or "none" for filings with no MDL linked), document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL (null when no explicit listing links the filing to an MDL; never guess one), docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings the docket source marks as held or sealed are listed but never searched or quoted; scanned filings without text are not searched.',
     input_schema: {
       type: "object",
       properties: {
@@ -34,7 +34,7 @@ export const DOCUMENT_TOOL_DEFINITIONS: ToolDefinition[] = [
         court: { type: "string", description: "Court id, e.g. njd." },
         mdl: {
           type: "string",
-          description: 'MDL number, e.g. 2738, or "none" for filings no MDL listing names.',
+          description: 'MDL number, e.g. 2738, or "none" for filings with no MDL linked.',
         },
         type: { type: "string", enum: [...DOC_TYPES] },
         filed_from: { type: "string", description: "YYYY-MM-DD" },
@@ -112,7 +112,7 @@ async function searchDocumentsTool(input: Record<string, unknown>): Promise<Tool
   }));
   const where = [
     court && `court ${court}`,
-    mdl && (mdl === "none" ? "no MDL listing" : `MDL ${mdl}`),
+    mdl && (mdl === "none" ? "no MDL linked" : `MDL ${mdl}`),
     type && typeLabel(type),
     from && `from ${from}`,
     to && `to ${to}`,

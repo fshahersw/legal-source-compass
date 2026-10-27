@@ -79,7 +79,8 @@ export type CitationGrid = {
 
 export type FilingCitations = {
   document: string;
-  mdl: string;
+  /** The filing's MDL listing; null for a filing on a tracked docket with no MDL linked (documents/2 'docket_case'). */
+  mdl: string | null;
   textStatus: string;
   refreshed: string | null;
   mdlCiting: number | null;
@@ -216,7 +217,8 @@ export function parseFilingCitations(raw: unknown): FilingCitations | null {
   const o = obj(raw);
   const document = text(o?.["document"]);
   const mdl = text(o?.["mdl"]);
-  if (!o || !document || !mdl || !Array.isArray(o["authorities"])) return null;
+  // a filing with no MDL linked still has its own authorities and corpus-wide counts
+  if (!o || !document || (o["mdl"] != null && !mdl) || !Array.isArray(o["authorities"])) return null;
   return {
     document,
     mdl,

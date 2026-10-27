@@ -285,6 +285,41 @@ describe("view states", () => {
       ),
     ).toContain("not published yet");
   });
+
+  it("filing citation context for a filing with no MDL linked: its authorities with corpus counts", () => {
+    const f = parseFilingCitations({
+      document: "d_242fe029bdcc9b326f741e12",
+      mdl: null,
+      text_status: "text_layer",
+      mdl_citing: null,
+      authorities: [
+        {
+          key: "record|caselaw/769404",
+          to_type: "record",
+          to_id: "caselaw/769404",
+          kind: "case",
+          class: "federal_appellate",
+          label: "Pride v. BIC Corp.",
+          mentions: 3,
+          first_page: 2,
+          mdl_filings: null,
+          all_filings: 57,
+        },
+      ],
+    });
+    expect(f).not.toBeNull();
+    expect(f?.mdl).toBeNull();
+    state.byKey.set("filing", { data: { available: true, data: f } });
+    const out = text(
+      renderToStaticMarkup(
+        createElement(FilingCitationContext, { document: "d_242fe029bdcc9b326f741e12" }),
+      ),
+    );
+    expect(out).toContain("3 mentions, first on p. 2");
+    expect(out).toContain("cited in 57 MDL filings");
+    expect(out).not.toContain("not published yet");
+    expect(parseFilingCitations({ document: "d_242fe029bdcc9b326f741e12", mdl: 7, authorities: [] })).toBeNull();
+  });
 });
 
 describe("network labels", () => {

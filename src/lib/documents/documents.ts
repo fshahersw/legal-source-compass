@@ -33,7 +33,7 @@ export const LISTED_BY = [
 export type ListedBy = (typeof LISTED_BY)[number];
 
 /** A filing of a tracked docket that no MDL listing names (documents/2 'docket_case'); its MDL is never guessed. */
-export const NO_MDL_LABEL = "No MDL listing";
+export const NO_MDL_LABEL = "MDL not linked";
 /** The search filter value for filings with no MDL listing. */
 export const NO_MDL_FILTER = "none";
 
