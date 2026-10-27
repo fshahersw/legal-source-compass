@@ -69,7 +69,7 @@ export function extractDocketDates(text: string | null | undefined): DocketDate[
     const phrase = m[1]!.toLowerCase().replace(/\s+/g, " ") as DatePhrase;
     const start = clauseStart(text, index);
     // "Jury Trial set for 8/20/2026, is vacated and continued to 8/24/2026": the second date is the same event.
-    const label =
+    const label: string | null =
       prev && prev.index >= start ? prev.label : cleanLabel(text.slice(start, index));
     const end = index + m[0].length;
     const after = text.slice(end, end + 80);
