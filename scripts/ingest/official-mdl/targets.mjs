@@ -299,6 +299,13 @@ export const MATTERS = {
     pages: [{ id: 'wied-2688-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.wied.uscourts.gov/mdl-no-2688-re-windsor-wood-clad-window-products-liability-litigation' }],
     index_pages: ['wied-mdl-index'],
   },
+  // W.D. Ky. MDL 2016 (Rhino ATV; per-MDL orders page — parsed PDF URLs are 2016-specific).
+  '2016': {
+    name: 'In re Yamaha Motor Corp. Rhino ATV Products Liability Litigation', court_id: 'kywd', host: 'www.kywd.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL 2016', page_id: 'kywd-2016-orders', note: 'printed in the page title on the court MDL orders page' },
+    pages: [{ id: 'kywd-2016-orders', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.kywd.uscourts.gov/multidistrict-litigation/mdl-2016/orders' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
