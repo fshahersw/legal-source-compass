@@ -117,11 +117,14 @@ begin
 end $$;
 
 -- ===== statement 1: run row =====
-insert into corpus_ingest.runs (id, contract_version, status, scope, counts)
+insert into corpus_ingest.runs (id, contract_version, status, scope, counts, finished_at)
 values ('c36e2186-fb92-42bb-8632-4bd599772cff'::uuid, 'court-reference-release/2026-10-27.2', 'completed',
         jsonb_build_object('dataset', 'court_reference', 'owner_decision', '2026-10-27 dont withhold any data',
-                           'branch', 'release/dataset-court-reference'),
-        jsonb_build_object('records_released', 253, 'artifacts_released', 250, 'artifacts_kept_held', 3));
+                           'branch', 'release/dataset-court-reference',
+                           'dataset_updated_at_before', (select updated_at from public.corpus_datasets where id = 'court_reference')),
+        jsonb_build_object('records_released', 253, 'artifacts_released', 250, 'artifacts_kept_held', 3,
+                           'distinct_objects_served', 248),
+        now());
 
 -- ===== statement 2: ilsd, mdd, nyappdiv keep their facts and lose the wrong court's seal (ledgered before-images) =====
 with src as (

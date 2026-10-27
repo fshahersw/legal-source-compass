@@ -3,7 +3,8 @@
 -- all 253 seal artifacts held, and the ilsd, mdd and nyappdiv records restored byte-for-byte from the ledger before-images.
 -- Storage objects uploaded by scripts/admin/upload-court-reference-seals.mjs stay in the private corpus-originals bucket;
 -- with every artifact row held they are unreachable from the site. Remove them only on a separate, ledgered decision.
--- The run row stays (status failed, rolled_back_at); a re-release needs a new run id.
+-- The run row stays (status failed, rolled_back_at); a re-release needs a new run id. corpus_datasets.updated_at is restored
+-- from the run scope (dataset_updated_at_before).
 -- Run as one transaction.
 
 begin;
@@ -22,7 +23,8 @@ end $$;
 update public.corpus_datasets
    set ready = false,
        metadata = jsonb_set(metadata, '{ready}', 'false'::jsonb) - 'release_20261027',
-       updated_at = now()
+       updated_at = coalesce((select (scope->>'dataset_updated_at_before')::timestamptz from corpus_ingest.runs
+                               where id = 'c36e2186-fb92-42bb-8632-4bd599772cff'), now())
  where id = 'court_reference';
 
 -- 2. every seal artifact held again (all 253 were ready = false before the release)
