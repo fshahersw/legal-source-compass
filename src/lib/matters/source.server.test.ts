@@ -9,6 +9,7 @@ import {
   parseLegacyDocument,
   resetHubCachesForTests,
 } from "./source.server";
+import { parseMdlDetail } from "./overview";
 import { caseIdPlan, parseRegistryRecord } from "./registry";
 import type { MatterOverviewPayload } from "./types";
 
@@ -321,6 +322,10 @@ type HubFixture = {
   /** Alias ids returned for a matter, or "fail" for a failed call. */
   aliases?: Record<string, string[] | "fail">;
   registryReady?: boolean;
+  /** How many registry reads fail (HTTP 500) before they succeed. */
+  registryFailures?: number;
+  /** Rows the `mdls` read returns (the hub's select shape). */
+  mdls?: Record<string, unknown>[];
 };
 
 /**
@@ -328,7 +333,7 @@ type HubFixture = {
  * summary is a pure function of the ids asked for, so a count that includes alias ids differs from one that does not.
  */
 function hubFetch(fx: HubFixture) {
-  const calls = { alias: 0, docs: 0, rest: 0, rpc: 0 };
+  const calls = { alias: 0, docs: 0, rest: 0, rpc: 0, registry: 0, docIds: [] as string[][] };
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = decodeURIComponent(String(input));
     if (url.includes("/rpc/")) calls.rpc += 1;
@@ -343,6 +348,7 @@ function hubFetch(fx: HubFixture) {
       calls.docs += 1;
       const ids = (JSON.parse(String(init?.body)) as { p_native_case_ids: string[] })
         .p_native_case_ids;
+      calls.docIds.push(ids);
       const total = 100 * ids.length + ids.filter((i) => i.startsWith("MDL ")).length * 7;
       return json({ rows: [], summary: { total, open: ids.length, held: total - ids.length } });
     }
@@ -355,12 +361,18 @@ function hubFetch(fx: HubFixture) {
       );
     if (url.includes("corpus_datasets?select=ready,updated_at"))
       return json([{ ready: true, updated_at: "2026-10-18T18:08:06Z" }]);
-    if (url.includes("dataset=eq.mdls")) return json([]);
+    if (url.includes("dataset=eq.mdls")) return json(fx.mdls ?? []);
     if (url.includes("dataset=eq.mdl_appearances")) return json([{ filters: { mdl: ["3140"] } }]);
-    if (url.includes("dataset=eq.sw_matters_v1"))
+    if (url.includes("dataset=eq.sw_matters_v1")) {
+      calls.registry += 1;
+      if ((fx.registryFailures ?? 0) > 0) {
+        fx.registryFailures! -= 1;
+        return new Response("boom", { status: 500 });
+      }
       return json(
         Object.entries(fx.plans).map(([mdl, ids]) => registryRow(mdl, ids, ids.length * 10)),
       );
+    }
     if (url.includes("dataset=eq.jpml_pending_history_mdls"))
       return json([
         {
@@ -501,5 +513,78 @@ describe("matters hub", () => {
     vi.stubGlobal("fetch", unread.fetchMock);
     const u = await loadMdlVelocity();
     expect(u.published && u.rows.every((r) => r.inRegistry === null)).toBe(true);
+  });
+
+  it("never caches a failed registry read: the next request re-reads it and plans on the registry ids", async () => {
+    const fx: HubFixture = {
+      plans: { "3140": ["flnd-3:2025-md-03140-t7", "69674950-t7"] },
+      // The first two registry reads fail: one behind the PDF counts, one behind the velocity request (a failed read
+      // is not shared with later requests, so each one asks again).
+      registryFailures: 2,
+    };
+    const { fetchMock, calls } = hubFetch(fx);
+    vi.stubGlobal("fetch", fetchMock);
+    // The registry read fails: no record and no derived keys, so the count is unknown, never 0 and never kept.
+    const first = await loadHubPdfCounts();
+    expect(first["3140"]).toBeNull();
+    const v1 = await loadMdlVelocity();
+    expect(v1.published && v1.rows.find((r) => r.mdl === "3140")?.inRegistry).toBeNull();
+    expect(calls.registry).toBe(2);
+    // The next requests read the registry again and count on its case ids, as the matter header does.
+    const second = await loadHubPdfCounts();
+    expect(second["3140"]).toEqual({ open: 2, held: 198, total: 200 });
+    const v2 = await loadMdlVelocity();
+    expect(v2.published && v2.rows.find((r) => r.mdl === "3140")?.inRegistry).toBe(true);
+    expect(calls.registry).toBe(3);
+    // Now the good results are kept.
+    const before = fetchMock.mock.calls.length;
+    await loadHubPdfCounts();
+    await loadMdlVelocity();
+    expect(fetchMock.mock.calls.length).toBe(before);
+  });
+
+  it("derives a matter's case keys as its header does, record-level fields before the summary's", async () => {
+    // A record whose record-level court and docket differ from its summary's; no registry case ids for it.
+    const detail = {
+      id: "3187",
+      mdl_number: 3187,
+      cl_court_id: "njd",
+      court: { cl_court_id: "njd" },
+      master_docket: "1:26-md-3187",
+      summary: { cl_court_id: "flnd", master_docket: "3:25-md-3188", status: "pending" },
+    };
+    const { fetchMock, calls } = hubFetch({
+      plans: {},
+      mdls: [
+        {
+          id: "2738",
+          title: "IN RE: Matter 2738",
+          summary: detail.summary,
+          cases_total: null,
+          activity_total: null,
+          documents_total: null,
+          detail_id: "2738",
+          mdl_number: 2738,
+          cl_court_id: detail.cl_court_id,
+          court_cl_court_id: detail.court.cl_court_id,
+          master_docket: detail.master_docket,
+        },
+      ],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const counts = await loadHubPdfCounts();
+    const header = parseMdlDetail({ ...detail, id: "2738", mdl_number: 2738 })!;
+    expect(header.keys.all).toEqual(["njd-1:2026-md-03187", "1:26md3187"]);
+    expect(calls.docIds).toContainEqual(header.keys.all);
+    expect(calls.docIds.flat()).not.toContain("flnd-3:2025-md-03188");
+    const docs = await loadRegistryDocuments(caseIdPlan(null, header.keys.all), true, "2738");
+    expect(docs.connected).toBe(true);
+    if (!docs.connected) return;
+    const { open, held, total } = docs.summary;
+    expect(counts["2738"]).toEqual({ open, held, total });
+    // The table shows the same master docket the header shows.
+    resetHubCachesForTests();
+    const rows = await loadHub();
+    expect(rows.find((r) => r.mdl === "2738")?.masterDocket).toBe("1:26-md-3187");
   });
 });
