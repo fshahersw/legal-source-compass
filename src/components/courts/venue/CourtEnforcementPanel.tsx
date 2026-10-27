@@ -1,28 +1,37 @@
 /**
  * Court page: federal enforcement tied to this district by year. SEC enforcement releases whose recorded court is
  * this district, and Justice Department press releases that name this court. A press release naming a court is not
- * a filed case; the current year is partial. Renders nothing for a court that is not a federal district or when
- * neither source records anything for it.
+ * a filed case; the current year is partial. DOJ years whose partition holds far fewer releases than a full year
+ * (2009-2012) are not counted or drawn, so thin and full years are never compared. Renders nothing for a court that
+ * is not a federal district or when neither source records anything for it.
  */
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ChartCard, TrendColumns, periodTable } from "@/components/charts/recharts";
 import { AiSummary, AskAiButton, KpiCard, KpiGrid, buildSectionContext } from "@/components/kit";
-import { enforcementYears, lastCompleteYears } from "@/lib/courts/districtEnforcement";
-import { DISTRICT_ID, SOURCES, districtEnforcementQuery, fmtInt } from "./venueQueries";
+import {
+  dojCoverage,
+  enforcementYears,
+  lastCompleteYears,
+} from "@/lib/courts/districtEnforcement";
+import { SOURCES, districtEnforcementQuery, fmtInt, isFederalDistrict } from "./venueQueries";
 
-/** The chart starts where both sources cover full years (DOJ yearly releases from 2009; SEC from 1996). */
-const FIRST_CHART_YEAR = 2009;
-const SEC_YEARS = { first: 1995, last: 2100 };
+/** SEC releases with a recorded court are counted from 1996 (1995 holds only part of a year). */
+const SEC_FIRST_YEAR = 1996;
+/** Used only when the DOJ partition sizes cannot be read. */
+const DOJ_FALLBACK_FIRST_FULL = 2013;
 
 export function CourtEnforcementPanel({
   courtId,
   courtName,
+  system,
 }: {
   courtId: string;
   courtName: string;
+  /** The court's recorded system ("Federal", "State"); only federal district courts are read. */
+  system: string;
 }) {
-  const enabled = DISTRICT_ID.test(courtId);
+  const enabled = isFederalDistrict(courtId, system);
   const q = useQuery({ ...districtEnforcementQuery(courtId), enabled });
   if (!enabled) return null;
   if (q.isPending)
@@ -46,16 +55,22 @@ export function CourtEnforcementPanel({
       </p>
     );
   const d = q.data;
-  const dojTotal = d.doj.reduce((a, [, n]) => a + n, 0);
+  const cov = dojCoverage(new Map(d.dojTotals), d.asOfYear);
+  const firstFull = cov.firstFull !== null ? Number(cov.firstFull) : DOJ_FALLBACK_FIRST_FULL;
+  // DOJ counts only from full-coverage years; thin years read Not recorded and are never drawn.
+  const dojFull = new Map(d.doj.filter(([y]) => Number(y) >= firstFull));
+  const dojTotal = [...dojFull.values()].reduce((a, n) => a + n, 0);
   if (!d.secTotal && !dojTotal) return null;
-  const all = enforcementYears(d.sec, new Map(d.doj), d.asOfYear, {
-    first: SEC_YEARS.first,
+  const all = enforcementYears(d.sec, dojFull, d.asOfYear, {
+    first: SEC_FIRST_YEAR,
     last: d.asOfYear,
   });
-  const rows = all.filter((r) => Number(r.year) >= FIRST_CHART_YEAR);
+  const rows = all.filter((r) => Number(r.year) >= firstFull);
   const last5Sec = lastCompleteYears(all, "sec", 5);
   const last5Doj = lastCompleteYears(all, "doj", 5);
-  const litigation = d.sec.filter((s) => s.type === "litigation_release").length;
+  const thinNote = cov.thin.length
+    ? `The DOJ collection holds far fewer releases for ${cov.thin[0]!.year}–${cov.thin.at(-1)!.year} (${cov.thin.map((t) => fmtInt(t.total)).join(", ")} a year) than for later years (typically ${fmtInt(cov.typical ?? 0)}), so DOJ counts and the chart start in ${firstFull}.`
+    : null;
   const withCivil = d.sec.filter((s) => s.civilAction).length;
   const span = rows.length ? `${rows[0]!.year}–${rows.at(-1)!.year}` : undefined;
   const partial = rows.at(-1)?.partial
@@ -69,16 +84,15 @@ export function CourtEnforcementPanel({
     source: `${SOURCES.sec.label}; ${SOURCES.doj.label}`,
     figures: [
       {
-        label: "SEC enforcement releases recorded for this court",
+        label: "SEC litigation releases recorded for this court",
         value: d.secTotal,
-        period: "1995 onward",
+        period: "all years recorded",
       },
-      { label: "SEC litigation releases", value: litigation },
-      { label: "SEC releases with a civil action number", value: withCivil },
+      { label: "SEC litigation releases with a civil action number", value: withCivil },
       ...(last5Sec
         ? [
             {
-              label: "SEC releases",
+              label: "SEC litigation releases",
               value: last5Sec.total,
               period: `${last5Sec.from}-${last5Sec.to}`,
             },
@@ -95,7 +109,7 @@ export function CourtEnforcementPanel({
         : []),
       ...rows.slice(-6).flatMap((r) => [
         {
-          label: "SEC releases",
+          label: "SEC litigation releases",
           value: r.sec,
           period: r.year,
           note: r.partial ? "partial year" : undefined,
@@ -115,14 +129,14 @@ export function CourtEnforcementPanel({
       <KpiGrid columns={4} label={`Federal enforcement in ${courtName}`}>
         <KpiCard
           as="li"
-          label="SEC releases for this court"
+          label="SEC litigation releases for this court"
           value={fmtInt(d.secTotal)}
-          meta="All years recorded (1995 onward)"
+          meta="All years recorded"
           source={{ source: { label: SOURCES.sec.label, href: SOURCES.sec.url } }}
         />
         <KpiCard
           as="li"
-          label="SEC releases, last 5 full years"
+          label="SEC litigation releases, last 5 full years"
           value={last5Sec?.total != null ? fmtInt(last5Sec.total) : null}
           meta={last5Sec ? `${last5Sec.from}–${last5Sec.to}` : undefined}
         />
@@ -135,7 +149,7 @@ export function CourtEnforcementPanel({
         />
         <KpiCard
           as="li"
-          label="SEC releases with a civil action number"
+          label="With a civil action number"
           value={fmtInt(withCivil)}
           meta={`of ${fmtInt(d.secTotal)} · links to a filed case`}
         />
@@ -154,24 +168,26 @@ export function CourtEnforcementPanel({
         about={
           <ul className="list-disc space-y-1 pl-4">
             <li>
-              SEC: litigation releases and administrative proceedings whose court was read from the
-              release by an exact court-name map.
+              SEC: litigation releases whose court was read from the release by an exact court-name
+              map. Administrative proceedings carry no court and are not counted.
+            </li>
+            <li>
+              The share of SEC releases with a recorded court changes from year to year, so part of
+              a change between years can come from that rather than from enforcement.
             </li>
             <li>
               DOJ: press releases that name this court. Naming a court is not the same as a filed
               case, and a release can name several courts.
             </li>
-            <li>
-              The chart starts in {FIRST_CHART_YEAR}, the first year of the DOJ release collection.
-              The current year is partial and drawn hatched.
-            </li>
+            {thinNote ? <li>{thinNote}</li> : null}
+            <li>The current year is partial and drawn hatched.</li>
           </ul>
         }
         table={periodTable(
           rows,
           "year",
           [
-            { key: "sec", label: "SEC releases" },
+            { key: "sec", label: "SEC litigation releases" },
             { key: "doj", label: "DOJ releases naming the court" },
           ],
           fmtInt,
@@ -203,7 +219,7 @@ export function CourtEnforcementPanel({
           rows={rows}
           xKey="year"
           series={[
-            { key: "sec", label: "SEC releases" },
+            { key: "sec", label: "SEC litigation releases" },
             { key: "doj", label: "DOJ releases naming the court" },
           ]}
           format={fmtInt}

@@ -19,7 +19,7 @@ import {
   buildSectionContext,
 } from "@/components/kit";
 import { median } from "@/lib/courts/fcmsHistory";
-import { aoDisplayName, type BoardRow } from "@/lib/courts/vacancyMdl";
+import { vacantRankText, type BoardRow } from "@/lib/courts/vacancyMdl";
 import {
   SOURCES,
   fmtDate,
@@ -50,6 +50,9 @@ export function VacancyMdlBoard() {
   const jpml = d?.jpmlAsOf ? fmtDate(d.jpmlAsOf) : "the latest JPML report";
   const fcms = d?.fcmsPeriod ? `12 months to ${fmtDate(d.fcmsPeriod)}` : "the latest FCMS period";
   const listDate = d ? fmtDate(d.vacancyAsOf) : "";
+  const unlinkedNote = d
+    ? `${d.unlinkedInMdlDistricts} vacanc${d.unlinkedInMdlDistricts === 1 ? "y" : "ies"} in MDL districts have no exact judge link and are not matched by name`
+    : undefined;
   const k = d?.kpis;
   const status = q.isPending
     ? ({ kind: "loading" } as const)
@@ -99,9 +102,16 @@ export function VacancyMdlBoard() {
                 ]
               : []),
             {
-              label: "Judges who created a vacancy and still hold MDLs",
+              label:
+                "Judges who created a vacancy and still hold MDLs, counting only vacancies linked to the judge by FJC id",
               value: d.departing.length,
               period: jpml,
+            },
+            {
+              label:
+                "Vacancies in MDL districts without an exact judge link (their MDLs cannot be checked)",
+              value: d.unlinkedInMdlDistricts,
+              period: listDate,
             },
             ...withVacancy.slice(0, 6).map((r) => ({
               label: `${r.name}, pending MDL actions`,
@@ -125,7 +135,11 @@ export function VacancyMdlBoard() {
           as="li"
           label="MDL districts with a vacancy"
           value={k ? String(k.mdlDistrictsWithVacancy) : null}
-          meta={k ? `of ${k.mdlDistricts} districts holding MDL actions` : undefined}
+          meta={
+            k
+              ? `of ${k.mdlDistricts} districts holding MDL actions · ${k.openInMdlDistricts} open, ${k.announcedInMdlDistricts} announced vacancies`
+              : undefined
+          }
           state={q.isPending ? "loading" : undefined}
           source={{ source: { label: SOURCES.vacancies.label, href: SOURCES.vacancies.url } }}
         />
@@ -147,9 +161,9 @@ export function VacancyMdlBoard() {
         />
         <KpiCard
           as="li"
-          label="Departing judges who hold MDLs"
+          label="Departing MDL judges linked by FJC id"
           value={d ? String(d.departing.length) : null}
-          meta={d ? `Linked by FJC id; ${d.unlinked} vacancies have no exact link` : undefined}
+          meta={unlinkedNote}
           state={q.isPending ? "loading" : undefined}
         />
       </KpiGrid>
@@ -237,8 +251,9 @@ export function VacancyMdlBoard() {
           about={
             <ul className="list-disc space-y-1 pl-4">
               <li>
-                FCMS counts vacant judgeship months over the 12-month period; it ranks districts 1 =
-                most months.
+                FCMS counts vacant judgeship months over the 12-month period. The rank is computed
+                here from those values across districts (1 = most months); districts with the same
+                value share a rank, and a zero shared with other districts is not ranked.
               </li>
               <li>
                 The line is the median of all districts holding pending MDL actions with a recorded
@@ -251,14 +266,14 @@ export function VacancyMdlBoard() {
             columns: [
               { label: "District" },
               { label: "Vacant judgeship months", align: "right" },
-              { label: "FCMS rank" },
+              { label: "Rank among districts (computed; ties share a rank)" },
             ],
             rows: dots.map((r) => ({
               key: r.courtId,
               cells: [
                 r.name,
                 fmtOne(r.vacantJudgeshipMonths!),
-                r.vacantRank ? `${r.vacantRank.rank} of ${r.vacantRank.of}` : "Not recorded",
+                vacantRankText(r),
               ],
             })),
           }}
@@ -281,7 +296,7 @@ export function VacancyMdlBoard() {
       <div className="mt-3 flex flex-wrap justify-end gap-2">
         <DataDrawer
           title="Judges who created a vacancy and still hold MDLs"
-          description="Linked from the vacancy to the JPML judge list by the exact FJC judge id; vacancies without such a link are not matched."
+          description={`Linked from the vacancy to the JPML judge list by the exact FJC judge id; vacancies without such a link are not matched.${unlinkedNote ? ` ${unlinkedNote}.` : ""}`}
           rows={d?.departing ?? []}
           rowKey={(r) => r.vacancyId}
           triggerLabel={`Departing MDL judges (${d?.departing.length ?? 0})`}
@@ -289,7 +304,7 @@ export function VacancyMdlBoard() {
             {
               key: "judge",
               label: "Judge (as the AO lists)",
-              value: (r) => aoDisplayName(r.incumbent),
+              value: (r) => r.incumbent,
               render: (r) =>
                 r.judgeProfileId ? (
                   <Link
@@ -297,10 +312,10 @@ export function VacancyMdlBoard() {
                     params={{ id: r.judgeProfileId }}
                     className="text-primary hover:underline"
                   >
-                    {aoDisplayName(r.incumbent)}
+                    {r.incumbent}
                   </Link>
                 ) : (
-                  aoDisplayName(r.incumbent)
+                  r.incumbent
                 ),
             },
             { key: "court", label: "Court", value: (r) => r.courtName },

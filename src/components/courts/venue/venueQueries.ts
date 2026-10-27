@@ -54,6 +54,9 @@ export const districtEnforcementQuery = (id: string) => ({
 
 /** Federal district court ids (njd, ohsd, cacd ...); circuits, state and special courts are not district profiles. */
 export const DISTRICT_ID = /^[a-z]{2,4}d$/;
+/** A federal district court: the court's recorded system is Federal and its id has the district form (njd, ilnd). */
+export const isFederalDistrict = (courtId: string, system: string | null | undefined) =>
+  system === "Federal" && DISTRICT_ID.test(courtId);
 
 export const SOURCES = {
   jb: {
@@ -78,14 +81,14 @@ export const SOURCES = {
   },
   cvap: {
     label: "U.S. Census Bureau, ACS 5-year 2020-2024, table B29001 (citizen voting-age population)",
-    url: "https://www.census.gov/programs-surveys/decennial-census/about/voting-rights/cvap.html",
+    url: "https://api.census.gov/data/2024/acs/acs5/groups/B29001.html",
   },
   districts: {
     label: "28 U.S.C. chapter 5 (judicial districts and their counties)",
     url: "https://www.govinfo.gov/content/pkg/USCODE-2024-title28/html/USCODE-2024-title28-partI-chap5.htm",
   },
   sec: {
-    label: "SEC litigation releases and administrative proceedings",
+    label: "SEC litigation releases (court read from the release)",
     url: "https://www.sec.gov/enforcement-litigation/litigation-releases",
   },
   doj: {

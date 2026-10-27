@@ -16,13 +16,14 @@ import {
   FCMS_METRIC,
   latestValue,
   medianByPeriod,
+  rankText,
   type FcmsDistrict,
   type FcmsMetric,
 } from "@/lib/courts/fcmsHistory";
 import { fy, reconciliationNotes, valueAt, type HubDistrict } from "@/lib/courts/mdlHubs";
 import {
-  DISTRICT_ID,
   SOURCES,
+  isFederalDistrict,
   courtMdlLoadQuery,
   fcmsCourtQuery,
   fcmsVenuesQuery,
@@ -33,14 +34,21 @@ import {
   mdlHubsQuery,
 } from "./venueQueries";
 
-export function CourtVenueHistoryPanel({ courtId }: { courtId: string }) {
-  const enabled = DISTRICT_ID.test(courtId);
+export function CourtVenueHistoryPanel({
+  courtId,
+  system,
+}: {
+  courtId: string;
+  /** The court's recorded system ("Federal", "State"); only federal district courts are read. */
+  system: string;
+}) {
+  const enabled = isFederalDistrict(courtId, system);
   const court = useQuery({ ...fcmsCourtQuery(courtId), enabled });
   const all = useQuery({ ...fcmsVenuesQuery, enabled });
   const hubs = useQuery({ ...mdlHubsQuery, enabled });
   const load = useQuery({ ...courtMdlLoadQuery(courtId), enabled });
   if (!enabled) return null;
-  if (court.isPending || hubs.isPending)
+  if (court.isPending || hubs.isPending || all.isPending)
     return (
       <div
         className="mb-6 h-56 animate-pulse rounded-lg border border-border bg-muted/40"
@@ -78,6 +86,8 @@ export function CourtVenueHistoryPanel({ courtId }: { courtId: string }) {
       d={d}
       hub={hub}
       all={all.data?.districts ?? []}
+      allFailed={all.isError}
+      onRetryAll={() => void all.refetch()}
       jpml={
         load.data
           ? { pending: load.data.pendingActions, mdls: load.data.pendingMdls, asOf: load.data.asOf }
@@ -92,20 +102,21 @@ function Body({
   d,
   hub,
   all,
+  allFailed,
+  onRetryAll,
   jpml,
 }: {
   courtId: string;
   d: FcmsDistrict | null;
   hub: HubDistrict | null;
   all: FcmsDistrict[];
+  allFailed: boolean;
+  onRetryAll: () => void;
   jpml: { pending: number | null; mdls: number | null; asOf: string | null } | null;
 }) {
   const latest = d ? `12 months to ${fmtDate(d.latest)}` : undefined;
   const k = (m: FcmsMetric) => (d ? (latestValue(d, m)?.value ?? null) : null);
-  const rank = (m: FcmsMetric) => {
-    const r = d?.rank[m];
-    return r ? `rank ${r.rank} of ${r.of} (1 = highest)` : "rank not recorded";
-  };
+  const rank = (m: FcmsMetric) => (d ? rankText(all, d, m) : "rank not recorded");
   const hubYear = hub ? Math.max(...hub.years) : null;
   const hubPending = hub && hubYear !== null ? valueAt(hub, "mdl_pending", hubYear) : null;
   const name = d?.name ?? hub?.name ?? courtId;
@@ -148,7 +159,6 @@ function Body({
         period: latest,
       },
       { label: "Vacant judgeship months", value: k("vacant_judgeship_months"), period: latest },
-      { label: "Weighted filings per judgeship", value: k("pj_weighted_filings"), period: latest },
       ...(hubYear !== null
         ? [
             {
@@ -183,6 +193,18 @@ function Body({
 
   return (
     <div id="court-venue-history" className="mb-6 space-y-4">
+      {allFailed && d ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-border px-4 py-2 text-meta text-muted-foreground"
+        >
+          The all-district figures could not be loaded, so the median-district lines and tie notes
+          are missing.{" "}
+          <button type="button" className="text-primary underline" onClick={onRetryAll}>
+            Retry
+          </button>
+        </p>
+      ) : null}
       <KpiGrid columns={4} label={`Speed and MDL load, ${name}`}>
         <KpiCard
           as="li"
@@ -252,6 +274,10 @@ function Body({
                 </li>
                 <li>
                   MDL member cases count in the transferee district&apos;s pending civil caseload.
+                </li>
+                <li>
+                  Ranks in the figures above are computed here from the FCMS values of all
+                  districts (1 = highest); districts with the same value share a rank.
                 </li>
               </ul>
             }

@@ -48,7 +48,10 @@ export type BoardRow = {
   announced: number;
   longestDaysOpen: number | null;
   vacantJudgeshipMonths: number | null;
+  /** Rank computed in the corpus from FCMS values (1 = most months; ties share a rank). */
   vacantRank: { rank: number; of: number } | null;
+  /** Other districts with the same number of vacant judgeship months. */
+  vacantTied: number | null;
 };
 
 export type DepartingJudge = {
@@ -69,6 +72,8 @@ export type Board = {
   departing: DepartingJudge[];
   /** Open or announced vacancies whose incumbent has no exact FJC link (left unlinked, never guessed). */
   unlinked: number;
+  /** Of those, the vacancies in districts that hold pending MDL actions: their MDLs cannot be checked. */
+  unlinkedInMdlDistricts: number;
   kpis: {
     mdlDistricts: number;
     mdlDistrictsWithVacancy: number;
@@ -86,7 +91,7 @@ export function buildBoard(
   districts: readonly DistrictLoadInput[],
   vacantMonths: ReadonlyMap<
     string,
-    { value: number | null; rank: { rank: number; of: number } | null }
+    { value: number | null; rank: { rank: number; of: number } | null; tied?: number | null }
   >,
   judges: readonly MdlJudgeInput[],
 ): Board {
@@ -111,16 +116,20 @@ export function buildBoard(
         longestDaysOpen: days.length ? Math.max(...days) : null,
         vacantJudgeshipMonths: vm?.value ?? null,
         vacantRank: vm?.rank ?? null,
+        vacantTied: vm?.tied ?? null,
       };
     })
     .sort((a, b) => b.pendingActions - a.pendingActions || a.courtId.localeCompare(b.courtId));
 
   const judgeByNid = new Map(judges.map((j) => [j.nid, j]));
   const departing: DepartingJudge[] = [];
+  const mdlCourts = new Set(rows.map((r) => r.courtId));
   let unlinked = 0;
+  let unlinkedInMdlDistricts = 0;
   for (const v of vacancies) {
     if (v.linkBasis !== "exact" || !v.fjcNid) {
       unlinked++;
+      if (v.courtId && mdlCourts.has(v.courtId)) unlinkedInMdlDistricts++;
       continue;
     }
     const j = judgeByNid.get(v.fjcNid);
@@ -158,6 +167,7 @@ export function buildBoard(
     rows,
     departing,
     unlinked,
+    unlinkedInMdlDistricts,
     kpis: {
       mdlDistricts: rows.length,
       mdlDistrictsWithVacancy: withVacancy.length,
@@ -167,6 +177,14 @@ export function buildBoard(
       longestOpen,
     },
   };
+}
+
+/** Rank text for vacant judgeship months: ties are said, and a zero shared with other districts is not ranked. */
+export function vacantRankText(r: Pick<BoardRow, "vacantJudgeshipMonths" | "vacantRank" | "vacantTied">) {
+  if (!r.vacantRank) return "Not recorded";
+  if (r.vacantJudgeshipMonths === 0 && r.vacantTied) return "Not ranked (zero, shared)";
+  const base = `${r.vacantRank.rank} of ${r.vacantRank.of}`;
+  return r.vacantTied ? `${base}, tied with ${r.vacantTied}` : base;
 }
 
 /** "Hayes,William Q." -> "William Q. Hayes", as printed otherwise. */

@@ -153,8 +153,15 @@ export type HubSummary = {
   top: { courtId: string; name: string; pending: number; share: number | null } | null;
   /** Fewest districts whose published shares reach 75% of national pending MDL actions; null when shares are missing. */
   districtsFor75: number | null;
-  /** Pending actions of the top district five fiscal years earlier, for the change KPI. */
+  /** Pending actions of this year's top district five fiscal years earlier (not that year's leader). */
   topFiveYearsEarlier: number | null;
+  /** The district that actually held the most pending actions five fiscal years earlier. */
+  leaderFiveYearsEarlier: {
+    courtId: string;
+    name: string;
+    pending: number;
+    share: number | null;
+  } | null;
   districtsWithPending: number;
 };
 
@@ -182,6 +189,10 @@ export function hubSummary(districts: readonly HubDistrict[], year: number): Hub
       : null,
     districtsFor75,
     topFiveYearsEarlier: first ? valueAt(first.d, "mdl_pending", year - 5) : null,
+    leaderFiveYearsEarlier: (() => {
+      const e = rankHubs(districts, year - 5)[0];
+      return e ? { courtId: e.d.courtId, name: e.d.name, pending: e.pending, share: e.share } : null;
+    })(),
     districtsWithPending: ranked.filter((r) => r.pending > 0).length,
   };
 }

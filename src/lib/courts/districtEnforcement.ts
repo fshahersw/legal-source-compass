@@ -76,6 +76,39 @@ export function enforcementYears(
   return out;
 }
 
+export type DojCoverage = {
+  /** First year from which every complete partition holds a full year's collection; null when none does. */
+  firstFull: string | null;
+  /** Complete years whose partition is far smaller than a typical year (thin coverage), with their sizes. */
+  thin: { year: string; total: number }[];
+  /** Median size of the complete-year partitions. */
+  typical: number | null;
+};
+
+/**
+ * Which DOJ yearly partitions hold a full year's releases. A complete year whose partition holds under a quarter of
+ * the median complete year is thin coverage (2009-2012 hold about 1,100-1,500 releases against 18,000-21,000 a year
+ * from 2013); counts from thin years are never compared with full years. The current, partial year is left out.
+ */
+export function dojCoverage(
+  totals: ReadonlyMap<string, number | null>,
+  asOfYear: number,
+): DojCoverage {
+  const complete = [...totals.entries()]
+    .filter((e): e is [string, number] => e[1] !== null && Number(e[0]) < asOfYear)
+    .sort((a, b) => a[0].localeCompare(b[0]));
+  if (!complete.length) return { firstFull: null, thin: [], typical: null };
+  const sizes = complete.map(([, n]) => n).sort((a, b) => a - b);
+  const mid = Math.floor(sizes.length / 2);
+  const typical = sizes.length % 2 ? sizes[mid]! : (sizes[mid - 1]! + sizes[mid]!) / 2;
+  const thin = complete
+    .filter(([, n]) => n < typical / 4)
+    .map(([year, total]) => ({ year, total }));
+  const lastThin = thin.at(-1)?.year;
+  const firstFull = complete.find(([y]) => !lastThin || y > lastThin)?.[0] ?? null;
+  return { firstFull, thin, typical };
+}
+
 /** Sum of the last `n` complete years of a column; null when any of them is not recorded. */
 export function lastCompleteYears(
   rows: readonly EnforcementYear[],

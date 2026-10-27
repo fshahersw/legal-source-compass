@@ -47,7 +47,8 @@ export function VenueScorecardSection() {
   const picks = sized.slice(0, PICK);
   const baseline = median(sized.map((r) => r.weightedFilings));
   const top = rows[0];
-  const busiest = [...sized]
+  // Chosen among the plotted districts, so the headline never names a district the chart does not draw.
+  const busiest = [...picks]
     .filter((r) => r.weightedFilings !== null)
     .sort((a, b) => b.weightedFilings! - a.weightedFilings!)[0];
   const fcms = d?.fcmsPeriod ? `12 months to ${fmtDate(d.fcmsPeriod)}` : "latest FCMS period";
@@ -133,7 +134,7 @@ export function VenueScorecardSection() {
           label="Busiest MDL bench"
           value={busiest?.weightedFilings != null ? fmtInt(busiest.weightedFilings) : null}
           unit="weighted filings per judgeship"
-          meta={busiest ? `${busiest.name}, ${fcms}` : undefined}
+          meta={busiest ? `${busiest.name}, ${fcms} · among the ${picks.length} largest MDL districts` : undefined}
           state={q.isPending ? "loading" : undefined}
         />
       </KpiGrid>
@@ -224,7 +225,7 @@ export function VenueScorecardSection() {
                 Counties are added to a district only through the district the county profile
                 records from 28 U.S.C. chapter 5
                 {d
-                  ? `; ${d.countiesWithoutDistrict} of ${d.counties} counties have none (six Virginia independent cities) and are left out`
+                  ? `; ${d.countiesWithoutDistrict} of ${d.counties} counties have none${d.countiesWithoutDistrictIds.length ? ` (county FIPS ${d.countiesWithoutDistrictIds.join(", ")})` : ""} and are left out`
                   : ""}
                 .
               </li>

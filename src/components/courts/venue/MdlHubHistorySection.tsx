@@ -52,10 +52,9 @@ export function MdlHubHistorySection() {
   const notes = top.flatMap((d) =>
     reconciliationNotes(d, ["mdl_pending"]).shown.map((n) => `${d.name}: ${n}`),
   );
-  const fiveYear =
-    summary?.top && summary.topFiveYearsEarlier !== null
-      ? { from: summary.topFiveYearsEarlier, to: summary.top.pending }
-      : null;
+  // The leader five years earlier is that year's own leader; the current leader's own value then is a separate figure.
+  const earlier = summary?.leaderFiveYearsEarlier ?? null;
+  const topThen = summary?.top ? summary.topFiveYearsEarlier : null;
   const context =
     summary?.top && year !== null
       ? buildSectionContext({
@@ -86,11 +85,26 @@ export function MdlHubHistorySection() {
               value: summary.districtsWithPending,
               period: fy(year),
             },
-            ...(fiveYear
+            ...(earlier
               ? [
                   {
-                    label: `${summary.top.name}, MDL actions pending`,
-                    value: fiveYear.from,
+                    label: `Largest MDL district five years earlier: ${earlier.name}, MDL actions pending`,
+                    value: earlier.pending,
+                    period: fy(year - 5),
+                  },
+                  {
+                    label: `Largest MDL district five years earlier: ${earlier.name}, share of national MDL actions pending`,
+                    value: earlier.share,
+                    unit: "%",
+                    period: fy(year - 5),
+                  },
+                ]
+              : []),
+            ...(topThen !== null && earlier?.courtId !== summary.top.courtId
+              ? [
+                  {
+                    label: `${summary.top.name}, MDL actions pending five years earlier`,
+                    value: topThen,
                     period: fy(year - 5),
                   },
                 ]
@@ -142,9 +156,20 @@ export function MdlHubHistorySection() {
         <KpiCard
           as="li"
           label="Largest district five years earlier"
-          value={fiveYear ? fmtInt(fiveYear.from) : null}
+          value={earlier ? fmtInt(earlier.pending) : null}
           unit="actions"
-          meta={year !== null && summary?.top ? `${summary.top.name}, ${fy(year - 5)}` : undefined}
+          meta={
+            year !== null && earlier
+              ? [
+                  `${earlier.name}, ${fy(year - 5)}`,
+                  summary?.top && earlier.courtId !== summary.top.courtId && topThen !== null
+                    ? `${summary.top.name} then: ${fmtInt(topThen)}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : undefined
+          }
           state={q.isPending ? "loading" : undefined}
         />
       </KpiGrid>

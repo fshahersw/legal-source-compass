@@ -11,7 +11,7 @@ import { restGet } from "./rest.server";
 import { countRows, mapLimit, readAllRows } from "@/lib/analytics/tally.server";
 import { memoAsync, READ_TTL_MS } from "@/lib/insights/readers/cache";
 import { parseHubDistrict, type HubDistrict } from "@/lib/courts/mdlHubs";
-import { parseFcmsDistrict, type FcmsDistrict } from "@/lib/courts/fcmsHistory";
+import { parseFcmsDistrict, tiedWith, type FcmsDistrict } from "@/lib/courts/fcmsHistory";
 import {
   buildBoard,
   type Board,
@@ -46,14 +46,15 @@ const failed = (what: string) => (e: unknown) => {
   throw new Error("This data could not be read just now.");
 };
 
-/** Keyed variant of memoAsync: one memo per key. */
-function memoBy<T>(fn: (key: string) => Promise<T>): (key: string) => Promise<T> {
+/** Keyed variant of memoAsync: one memo per key, at most `cap` keys (the oldest key is dropped first). */
+function memoBy<T>(fn: (key: string) => Promise<T>, cap = 256): (key: string) => Promise<T> {
   const memos = new Map<string, () => Promise<T>>();
   return (key) => {
     let m = memos.get(key);
     if (!m) {
       m = memoAsync(READ_TTL_MS, () => fn(key));
       memos.set(key, m);
+      if (memos.size > cap) memos.delete(memos.keys().next().value!);
     }
     return m();
   };
@@ -236,23 +237,44 @@ export function parseMdlJudge(raw: unknown): MdlJudgeInput | null {
   };
 }
 
-const VAC_SELECT =
-  "id,court_id:item->court_id,court_name:item->court_name,status:item->status,incumbent:item->incumbent,reason:item->reason,vacancy_date:item->vacancy_date,days:item->days_open_as_of_2026_10_22,link:item->incumbent_fjc_link,basis:item->incumbent_link_basis";
+const VAC_BASE =
+  "id,court_id:item->court_id,court_name:item->court_name,status:item->status,incumbent:item->incumbent,reason:item->reason,vacancy_date:item->vacancy_date,link:item->incumbent_fjc_link,basis:item->incumbent_link_basis";
 
-const readVacancies = memoAsync(READ_TTL_MS, async (): Promise<VacancyInput[]> => {
-  const lists = await Promise.all(
-    ["open", "announced"].map((s) =>
-      readAllRows<Json>(
-        `corpus_records?select=${VAC_SELECT}&dataset=eq.judicial_vacancies&filters=cs.${cs({ status: [s] })}&order=ordinal.asc`,
-        { max: 1000 },
-      ),
-    ),
+/**
+ * The list date of the vacancy dataset (metadata summary.as_of). Each record's days-open figure is stored under a key
+ * named for that date (days_open_as_of_YYYY_MM_DD), so the key is derived from it; with no recorded date both the
+ * list date and every days-open figure read as Not recorded.
+ */
+const vacancyListDate = memoAsync(READ_TTL_MS, async (): Promise<string | null> => {
+  const r = await restGet<{ as_of: unknown }[]>(
+    "corpus_datasets?select=as_of:metadata->summary->>as_of&id=eq.judicial_vacancies&limit=1",
   );
-  return lists.flat().flatMap((r) => {
-    const v = parseVacancyInput(r);
-    return v ? [v] : [];
-  });
+  const d = r.rows[0]?.as_of;
+  return typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
 });
+
+const readVacancies = memoAsync(
+  READ_TTL_MS,
+  async (): Promise<{ asOf: string | null; rows: VacancyInput[] }> => {
+    const asOf = await vacancyListDate();
+    const select = asOf ? `${VAC_BASE},days:item->days_open_as_of_${asOf.replace(/-/g, "_")}` : VAC_BASE;
+    const lists = await Promise.all(
+      ["open", "announced"].map((s) =>
+        readAllRows<Json>(
+          `corpus_records?select=${select}&dataset=eq.judicial_vacancies&filters=cs.${cs({ status: [s] })}&order=ordinal.asc`,
+          { max: 1000 },
+        ),
+      ),
+    );
+    return {
+      asOf,
+      rows: lists.flat().flatMap((r) => {
+        const v = parseVacancyInput(r);
+        return v ? [v] : [];
+      }),
+    };
+  },
+);
 
 const readMdlJudges = memoAsync(READ_TTL_MS, async (): Promise<MdlJudgeInput[]> => {
   const raw = await readAllRows<Json>(
@@ -268,12 +290,13 @@ const readMdlJudges = memoAsync(READ_TTL_MS, async (): Promise<MdlJudgeInput[]> 
 export type BoardPayload = Board & {
   jpmlAsOf: string | null;
   fcmsPeriod: string | null;
-  vacancyAsOf: string;
+  /** List date of the vacancy dataset; null when the dataset records none (days open then read Not recorded). */
+  vacancyAsOf: string | null;
 };
 
 export const getVacancyMdlBoard = createServerFn({ method: "GET" }).handler(
   async (): Promise<BoardPayload> => {
-    const [vacancies, loads, fcms, judges] = await Promise.all([
+    const [vac, loads, fcms, judges] = await Promise.all([
       readVacancies(),
       readLoads(),
       readFcms(),
@@ -285,17 +308,18 @@ export const getVacancyMdlBoard = createServerFn({ method: "GET" }).handler(
         {
           value: d.june.vacant_judgeship_months.at(-1)?.value ?? null,
           rank: d.rank.vacant_judgeship_months ?? null,
+          tied: tiedWith(fcms.districts, d, "vacant_judgeship_months"),
         },
       ]),
     );
-    const board = buildBoard(vacancies, loads, months, judges);
+    const board = buildBoard(vac.rows, loads, months, judges);
     const asOf =
       loads
         .map((l) => l.asOf)
         .filter((x): x is string => !!x)
         .sort()
         .at(-1) ?? null;
-    return { ...board, jpmlAsOf: asOf, fcmsPeriod: fcms.period, vacancyAsOf: "2026-10-22" };
+    return { ...board, jpmlAsOf: asOf, fcmsPeriod: fcms.period, vacancyAsOf: vac.asOf };
   },
 );
 
@@ -350,6 +374,7 @@ export const getVenuePractice = createServerFn({ method: "GET" })
 
 // ------------------------------------------------------------------------------------------------ venue scorecard
 
+const CVAP_YEAR = "2024";
 const readCvapByDistrict = memoAsync(READ_TTL_MS, async () => {
   const [counties, cvap] = await Promise.all([
     readAllRows<Json>(
@@ -357,6 +382,7 @@ const readCvapByDistrict = memoAsync(READ_TTL_MS, async () => {
       { max: 6000 },
     ),
     readAllRows<Json>(
+      // The whole years object is read: PostgREST takes a digits-only path segment (->2024) as an array index.
       "corpus_records?select=id,years:item->census->years&dataset=eq.census_acs_cvap_counties&order=ordinal.asc",
       { max: 6000 },
     ),
@@ -366,12 +392,16 @@ const readCvapByDistrict = memoAsync(READ_TTL_MS, async () => {
     return c ? [c] : [];
   });
   const cv = cvap.flatMap((r) => {
-    const c = parseCvapCounty(r);
+    const c = parseCvapCounty(r, CVAP_YEAR);
     return c ? [c] : [];
   });
   return {
     byDistrict: districtCvap(cd, cv),
     countiesWithoutDistrict: cd.filter((c) => !c.courtId).length,
+    countiesWithoutDistrictIds: cd
+      .filter((c) => !c.courtId)
+      .map((c) => c.fips)
+      .sort(),
     counties: cd.length,
   };
 });
@@ -395,6 +425,8 @@ export type ScorecardPayload = {
   fcmsPeriod: string | null;
   cvapYear: string;
   countiesWithoutDistrict: number;
+  /** County FIPS codes with no recorded district (left out of every district total). */
+  countiesWithoutDistrictIds: string[];
   counties: number;
 };
 
@@ -440,8 +472,9 @@ export const getVenueScorecard = createServerFn({ method: "GET" }).handler(
           .sort()
           .at(-1) ?? null,
       fcmsPeriod: fcms.period,
-      cvapYear: "2024",
+      cvapYear: CVAP_YEAR,
       countiesWithoutDistrict: cvap.countiesWithoutDistrict,
+      countiesWithoutDistrictIds: cvap.countiesWithoutDistrictIds,
       counties: cvap.counties,
     };
   },
@@ -463,19 +496,21 @@ export type DistrictEnforcementPayload = {
   secTotal: number;
   /** Calendar year -> DOJ press releases naming the court, for each yearly partition that exists. */
   doj: [string, number][];
+  /** Calendar year -> all releases in that DOJ partition (coverage of the collection, not of the court). */
+  dojTotals: [string, number | null][];
   asOfYear: number;
   readAt: string;
 };
 
 const dojPartitions = memoAsync(
   READ_TTL_MS,
-  async (): Promise<{ dataset: string; year: string }[]> => {
-    const r = await restGet<{ id: string }[]>(
-      "corpus_datasets?select=id&id=like.doj_press_releases_*&order=id.asc&limit=100",
+  async (): Promise<{ dataset: string; year: string; total: number | null }[]> => {
+    const r = await restGet<{ id: string; imported_records: unknown }[]>(
+      "corpus_datasets?select=id,imported_records&id=like.doj_press_releases_*&order=id.asc&limit=100",
     );
     return r.rows.flatMap((x) => {
       const m = /^doj_press_releases_(\d{4})$/.exec(x.id);
-      return m ? [{ dataset: x.id, year: m[1]! }] : [];
+      return m ? [{ dataset: x.id, year: m[1]!, total: num(x.imported_records) }] : [];
     });
   },
 );
@@ -504,6 +539,7 @@ const readEnforcement = memoBy(async (court: string): Promise<DistrictEnforcemen
     sec,
     secTotal: sec.length,
     doj,
+    dojTotals: parts.map((p) => [p.year, p.total] as [string, number | null]),
     asOfYear: readAt.getUTCFullYear(),
     readAt: readAt.toISOString(),
   };

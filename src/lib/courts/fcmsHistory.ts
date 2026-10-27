@@ -170,3 +170,32 @@ export function span(d: FcmsDistrict, m: FcmsMetric) {
   if (!first || !last || first === last) return null;
   return { first, last, years: Number(last.period.slice(0, 4)) - Number(first.period.slice(0, 4)) };
 }
+
+/** How many other districts share `d`'s latest value of `m` (they share its rank); null when it is not recorded. */
+export function tiedWith(
+  districts: readonly FcmsDistrict[],
+  d: FcmsDistrict,
+  m: FcmsMetric,
+): number | null {
+  const v = latestValue(d, m)?.value;
+  if (!isNum(v)) return null;
+  return districts.filter((o) => o.courtId !== d.courtId && latestValue(o, m)?.value === v).length;
+}
+
+/**
+ * The district's position among districts on one metric. The rank is computed in the corpus from the FCMS values of
+ * the latest edition (1 = highest; ties share a rank); FCMS does not publish a standing for every metric. A value
+ * shared with other districts says so, and a zero shared with other districts is not given a rank.
+ */
+export function rankText(
+  districts: readonly FcmsDistrict[],
+  d: FcmsDistrict,
+  m: FcmsMetric,
+): string {
+  const r = d.rank[m];
+  if (!r) return "rank not recorded";
+  const tied = districts.length ? tiedWith(districts, d, m) : null;
+  if (latestValue(d, m)?.value === 0 && tied) return `zero, as in ${tied} other districts (not ranked)`;
+  const base = `rank ${r.rank} of ${r.of} districts (1 = highest)`;
+  return tied ? `${base}, tied with ${tied}` : base;
+}

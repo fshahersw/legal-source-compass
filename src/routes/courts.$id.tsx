@@ -141,7 +141,7 @@ function Page() {
                   "Speed, backlog and MDL load over time, then filings, appeals, criminal, bankruptcy and sentencing.",
                 content: (
                   <>
-                    <CourtVenueHistoryPanel courtId={id} />
+                    <CourtVenueHistoryPanel courtId={id} system={system} />
                     <CourtAnalyticsPanel courtId={id} />
                     <CaseloadHistoryPanel courtId={id} />
                     <CourtStatsTrendsPanel courtId={id} />
@@ -176,7 +176,9 @@ function Page() {
                 id: "court-enforcement",
                 title: "Federal enforcement",
                 description: "SEC and Justice Department releases tied to this district, by year.",
-                content: <CourtEnforcementPanel courtId={id} courtName={view.title} />,
+                content: (
+                  <CourtEnforcementPanel courtId={id} courtName={view.title} system={system} />
+                ),
               },
               {
                 id: "court-rules",
