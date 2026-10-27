@@ -39,8 +39,8 @@ export function DocketView({ docketId }: { docketId: string }) {
   if (!q.data)
     return (
       <StateNote>
-        No docket {docketId} is held. It may belong to an agency outside the twelve this atlas
-        reads, or the collection is not loaded yet.{" "}
+        No docket {docketId} is held. It may belong to an agency whose dockets this atlas does not
+        read (SEC dockets, for example, are not held), or the collection is not loaded yet.{" "}
         <a
           href={`https://www.regulations.gov/docket/${encodeURIComponent(docketId)}`}
           target="_blank"

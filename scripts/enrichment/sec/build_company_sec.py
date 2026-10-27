@@ -18,6 +18,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import corpus_writer as cw  # noqa: E402
+import exposure as xp  # noqa: E402
 import fetch_xbrl as fx  # noqa: E402
 import financials as fin  # noqa: E402
 import sec_http as h  # noqa: E402
@@ -40,8 +41,9 @@ ROLE_LABEL = {
     "unclear": "Role not stated in excerpt",
 }
 # Only links whose evidence excerpt reads the company as a defendant count toward exposure totals;
-# "unclear" links are shown and summed separately, never mixed in.
-EXPOSURE_ROLES = {"defendant"}
+# "unclear" links are shown and summed separately, never mixed in. Tier C links always carry a review
+# note and are never counted (exposure.py holds the rule for this builder and retype_mdl_links.py).
+EXPOSURE_ROLES = xp.EXPOSURE_ROLES
 
 # Decisions from the independent verification of the first publication (2026-10-18). Each one was made
 # by reading the evidence filing; the reason is published on the link. Rules are tried first; these
@@ -219,7 +221,7 @@ def main(dry_run=False):
             role_source = "rule" if reviewed == role else "review"
             role = reviewed
         dismissed = bool(p["verified"][-1].get("dismissed"))
-        review_note = REVIEW_NOTE.get((p["cik"], p["mdl"]))
+        review_note = xp.review_note_for(p["tier"], REVIEW_NOTE.get((p["cik"], p["mdl"])))
         title = t["title"]
         truncated = len(tg.caption_core(title).split()) <= 3
         search = p["search_hits"].get(p["tier"], [])
@@ -249,7 +251,7 @@ def main(dry_run=False):
                 for i, v in enumerate(p["verified"])
             ],
             "search_urls": queries_by_mdl[(p["mdl"], p["tier"])],
-            "counts_toward_exposure": role in EXPOSURE_ROLES and not dismissed and not review_note,
+            "counts_toward_exposure": xp.counts_toward_exposure(role, dismissed, review_note),
             "dismissed": dismissed, "review": bool(review_note), "review_note": review_note,
             "role_source": role_source, "role_note": role_note,
             # Monthly JPML pending counts for this MDL as published in mdl_analytics (unchanged).
@@ -264,19 +266,10 @@ def main(dry_run=False):
     for cik, c in companies.items():
         prof, fdata = c["profile"], c["fin"]
         links = sorted(by_company[cik], key=lambda l: (-(l["pending"] or 0), l["mdl"]))
-        exposure_links = [l for l in links if l["counts_toward_exposure"]]
-        pending_links = [l for l in exposure_links if l["mdl_status"] == "pending"]
-        pending_actions = sum(l["pending"] or 0 for l in pending_links) if pending_links else None
-        # Split by evidence strength, and the "unclear role" links kept apart from the total.
-        pending_ab = sum(l["pending"] or 0 for l in pending_links if l["tier"] in ("A", "B")) if pending_links else None
-        pending_c = sum(l["pending"] or 0 for l in pending_links if l["tier"] == "C") if pending_links else None
-        unclear_links = [l for l in links if l["mdl_status"] == "pending" and l["role"] == "unclear"
-                         and not l["dismissed"] and not l["review"]]
-        pending_unclear = sum(l["pending"] or 0 for l in unclear_links) if unclear_links else None
-        changes = [l["change_12m"] for l in pending_links if l["change_12m"] is not None]
-        change_12m = sum(changes) if changes else None
-        base = (pending_actions - change_12m) if pending_actions is not None and change_12m is not None else None
-        change_pct = round(100 * change_12m / base, 1) if base else None
+        # Split by evidence strength, and the "unclear role" links kept apart from the total (exposure.py).
+        exposure, pending_links = xp.company_exposure(links, pending_total_all)
+        pending_actions, change_12m, change_pct = exposure["pending_actions"], exposure["pending_change_12m"], exposure["pending_change_pct"]
+        pending_ab, pending_c = exposure["pending_actions_ab"], exposure["pending_actions_c"]
         annual = fdata["annual"] if fdata else {m: [] for m in fin.METRICS}
         derived = fdata["derived"] if fdata else {"accrual_pct_revenue": [], "expense_pct_revenue": [], "yoy": {}}
         latest = {m: compact_point(latest_point(annual[m])) for m in fin.METRICS}
@@ -316,8 +309,7 @@ def main(dry_run=False):
                     for co in v["co_registrants"]:
                         co_parents.add(co)
         # Badge = strongest evidence among the links that contribute to the pending-actions total.
-        tier_best = min((l["tier"] for l in pending_links), default=None)
-        tier_any = min(l["tier"] for l in links)
+        tier_best = exposure["strongest_tier"]
         unit = (latest["revenue"] or latest["net_income"] or latest["assets"] or {}).get("unit")
         spark = {m: [{"fy": p["fy"], "v": p["value"]} for p in annual[m]] for m in ("revenue", "net_income", "litigation_accrual", "litigation_expense")}
         years = defaultdict(lambda: {"verified": set(), "search": set()})
@@ -332,28 +324,13 @@ def main(dry_run=False):
         mentions = [{"year": y, "verified": len(v["verified"]), "search": len(v["search"])} for y, v in sorted(years.items())]
         # Sum of JPML pending actions across the company's pending exposure MDLs, per monthly report;
         # "mdls" says how many of those MDLs appear in that report (an MDL created later is absent).
-        pend_sum = defaultdict(lambda: [0, 0])
-        for l in pending_links:
-            for x in l["series"]:
-                pend_sum[x["date"]][0] += x["pending"]
-                pend_sum[x["date"]][1] += 1
-        pending_series = [{"date": d, "pending": v[0], "mdls": v[1]} for d, v in sorted(pend_sum.items())]
+        pending_series = xp.pending_series(pending_links, {l["mdl"]: l["series"] for l in links})
         summary = {
             "company": prof,
             "has_financials": has_fin, "co_registrant_of": sorted(co_parents)[:4] if co_parents else [],
             "currency": unit, "taxonomy": fdata["taxonomy"] if fdata else None,
             "mdls": [{k: l[k] for k in ("mdl", "mdl_title", "mdl_status", "mdl_type", "pending", "change_12m", "tier", "role", "verified_count", "first_verified", "last_verified", "counts_toward_exposure", "district", "judge", "dismissed", "review", "title_truncated")} for l in links],
-            "exposure": {
-                "linked_mdls": len(links), "pending_mdls": len(pending_links), "pending_actions": pending_actions,
-                "pending_change_12m": change_12m, "pending_change_pct": change_pct,
-                "share_of_all_pending_pct": round(100 * pending_actions / pending_total_all, 2) if pending_actions and pending_total_all else None,
-                "strongest_tier": tier_best, "strongest_tier_any": tier_any,
-                "excluded_by_role": len(links) - len(exposure_links),
-                "roles": dict(Counter(l["role"] for l in links)),
-                "pending_actions_ab": pending_ab, "pending_actions_c": pending_c,
-                "pending_actions_unclear": pending_unclear, "pending_mdls_unclear": len(unclear_links),
-                "dismissed_links": sum(1 for l in links if l["dismissed"]), "review_links": sum(1 for l in links if l["review"]),
-            },
+            "exposure": exposure,
             "latest": latest, "accrual_pct_revenue": ratio, "accrual_yoy_pct": acc_yoy, "expense_yoy_pct": exp_yoy,
             "accrual_current": accrual_current, "accrual_pct_revenue_any": ratio_any, "latest_fy": latest_fy,
             "accrual_pct_series": derived["accrual_pct_revenue"],
@@ -493,18 +470,7 @@ def overview_record(inputs, targets, pairs, by_company, companies, profiles):
                            "counted": l["counts_toward_exposure"], "dismissed": l["dismissed"], "review": l["review"],
                            "has_financials": bool(companies[cik]["fin"])} for cik, l in sorted(linked, key=lambda x: (not x[1]["counts_toward_exposure"], x[1]["tier"]))],
         })
-    counted_ab = counted_c = unclear_only = 0
-    for row in coverage:
-        if row["status"] != "pending" or not row["pending"]:
-            continue
-        counted = [c for c in row["companies"] if c["counted"]]
-        if counted:
-            if any(c["tier"] in ("A", "B") for c in counted):
-                counted_ab += row["pending"]
-            else:
-                counted_c += row["pending"]
-        elif any(c["role"] == "unclear" and not c["dismissed"] and not c["review"] for c in row["companies"]):
-            unclear_only += row["pending"]
+    counted_ab, counted_c, unclear_only = xp.coverage_totals(coverage)
     years = defaultdict(lambda: {"A": set(), "B": set(), "C": set()})
     for p in pairs:
         for v in p["verified"]:
@@ -527,6 +493,7 @@ def overview_record(inputs, targets, pairs, by_company, companies, profiles):
         "pending_actions_counted": counted_ab + counted_c, "pending_actions_counted_ab": counted_ab,
         "pending_actions_counted_c": counted_c, "pending_actions_unclear_only": unclear_only,
         "dropped_by_review": len(REVIEWED_DROP), "role_reviews": len(REVIEWED_ROLE), "review_notes": len(REVIEW_NOTE),
+        "tier_c_review_links": sum(1 for p in pairs if p["tier"] == "C"),
         "pending_mdls_with_links": len({p["mdl"] for p in pairs if targets[p["mdl"]]["status"] == "pending"}),
         "companies": len(companies), "companies_with_financials": sum(1 for c in companies.values() if c["fin"]),
         "links": len(pairs), "tiers": dict(tiers), "roles": dict(roles),
@@ -541,7 +508,7 @@ def overview_record(inputs, targets, pairs, by_company, companies, profiles):
             "Candidates come from EDGAR full-text search (2001 onward). Every candidate filing is downloaded and the rule is re-checked against the document text; search hits alone never create a link.",
             "Tier A: the filing contains 'MDL No. <n>', 'MDL <n>', 'MDL Docket No. <n>' or the federal master docket '<yy>-md-<n>'. Tier B: the filing contains every word of the official JPML caption in order. Tier C (requires review): 'MDL' or 'multidistrict' in the same paragraph as a caption subject term and within 500 characters of it, with a products-liability term and every required manufacturer term in that paragraph, a filing date on or after the JPML docket date, and no other target MDL's subject in the MDL sentence or closer to the MDL mention.",
             "Only the registrant's own 10-K, 10-Q, 8-K, 20-F, 6-K, 40-F, registration statements and annual reports count; fund, ownership and asset-backed filers are excluded, and a paragraph describing the registrant as an insurer defending policyholders' claims never counts.",
-            "Role is a deterministic phrase reading of the match's own paragraph and the next one (never an earlier paragraph). Only links read as 'defendant' count toward pending-action totals; 'role not stated' links are summed separately; 'not named', claimant, dismissal-language and review-flagged links are never counted. Totals are split by evidence strength (A/B vs C).",
+            "Role is a deterministic phrase reading of the match's own paragraph and the next one (never an earlier paragraph). Only links read as 'defendant' count toward pending-action totals; 'role not stated' links are summed separately; 'not named', claimant, dismissal-language, tier C and review-flagged links are never counted (every tier C link carries a review note). Totals are split by evidence strength (A/B vs C); the C share is zero while tier C links await review.",
             "Reviewed decisions from an independent verification are published on the link (dropped links, role corrections, review notes).",
             "Financials are the registrant's own XBRL facts (standard us-gaap / ifrs-full concepts only; company-specific extension tags are not in the SEC companyfacts API). The litigation accrual is the company's total reported accrual for the concept named, company-wide and not MDL-specific; it is 'current' only for the latest or prior fiscal year of a company still filing XBRL.",
         ],

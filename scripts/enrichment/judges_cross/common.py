@@ -349,3 +349,43 @@ def hhi(shares):
     if not total:
         return None
     return round(sum((100 * s / total) ** 2 for s in shares))
+
+
+# judge_cl_crosswalk tiers whose FJC bridge the crosswalk itself publishes as not linked ("Source bridge withheld for review",
+# "FJC ids disagree", "Service dates disagree"): their fjc_nid is never evidence that the nid and the directory record are one judge.
+UNLINKED_BRIDGE_TIERS = frozenset({"withheld_for_review", "fjc_conflict", "date_conflict"})
+
+
+def bridge_usable(tier):
+    """True when a judge_cl_crosswalk row's fjc_nid may serve as the directory record's own FJC bridge (its tier is not a not-linked bridge)."""
+    return tier not in UNLINKED_BRIDGE_TIERS
+
+
+def profile_ids_by_nid(fjc_profile_ids, crosswalk_rows):
+    """{FJC nid: /judges profile id} by exact ids only.
+
+    fjc_profile_ids: {nid: judge_profile_id stored on the judge_profiles_fjc record (or None)}
+    crosswalk_rows: judge_cl_crosswalk rows {"id": judges id, "item": {"profile": {"fjc_nid": ..., "tier": ...}}} (the directory record's own
+    FJC bridge); rows whose tier marks the bridge as not linked (UNLINKED_BRIDGE_TIERS) are ignored.
+
+    A nid gets a profile when the FJC record names one, or else when exactly one directory record carries that nid. A nid whose two sources
+    disagree, a nid carried by several directory records, and a profile claimed by several nids get no profile (never a guess)."""
+    by_nid = {}
+    for r in crosswalk_rows:
+        prof = (r.get("item") or {}).get("profile") or {}
+        nid = prof.get("fjc_nid")
+        if nid and bridge_usable(prof.get("tier")):
+            by_nid.setdefault(str(nid), set()).add(r["id"])
+    out = {}
+    for nid in set(fjc_profile_ids) | set(by_nid):
+        stored = fjc_profile_ids.get(nid)
+        bridged = by_nid.get(nid, set())
+        if len(bridged) > 1 or (stored and bridged and bridged != {stored}):
+            continue
+        pid = stored or (next(iter(bridged)) if bridged else None)
+        if pid:
+            out[nid] = pid
+    owners = {}
+    for nid, pid in out.items():
+        owners.setdefault(pid, []).append(nid)
+    return {nid: pid for nid, pid in out.items() if len(owners[pid]) == 1}

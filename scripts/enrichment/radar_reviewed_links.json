@@ -1,0 +1,76 @@
+{
+  "_note": "Reviewed, explicit links used by build_emerging_tort_radar.py. Nothing here is inferred by name similarity at build time: every entry was checked by a person (or the build agent, marked pending lead review) against the cited official records. class_members: openFDA generic names that are members of the class an MDL title names, used to EXCLUDE them from 'No MDL linked' when the openFDA NDC class is missing or differs (errs toward 'in an MDL'). jpml_links: recalls tied to a JPML matter by the recall's own product words matching the caption's product words, with the reviewer's note.",
+  "class_members": [
+    {
+      "mdl": 3094,
+      "class": "GLP-1 Receptor Agonist (title: 'Glucagon-like Peptide-1 Receptor Agonists (GLP-1 RAs)')",
+      "generic_names": ["SEMAGLUTIDE", "ORAL SEMAGLUTIDE", "LIRAGLUTIDE", "DULAGLUTIDE", "EXENATIDE", "LIXISENATIDE", "ALBIGLUTIDE", "TIRZEPATIDE"],
+      "evidence": [
+        {"dataset": "mdls", "id": "3094", "url": "https://www.jpml.uscourts.gov/pending-mdl-reports-archive"},
+        {"dataset": "openfda_ndc", "url": "https://download.open.fda.gov/drug/ndc/drug-ndc-0001-of-0001.json.zip", "field": "openfda.pharm_class_epc"}
+      ],
+      "tirzepatide_note": "Tirzepatide is a dual GIP and GLP-1 receptor agonist; the openFDA NDC directory (last_updated 2026-10-27) lists both 'GLP-1 Receptor Agonist' and 'Glucose-dependent Insulinotropic Polypeptide Receptor Agonist' as its classes. Kept here too so it stays excluded if the NDC class is ever missing.",
+      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_on": "2026-10-27"
+    },
+    {
+      "mdl": 3163,
+      "class": "GLP-1 Receptor Agonist (title: 'GLP-1 RAs ... Non-Arteritic Anterior Ischemic Optic Neuropathy')",
+      "generic_names": ["SEMAGLUTIDE", "ORAL SEMAGLUTIDE", "LIRAGLUTIDE", "DULAGLUTIDE", "EXENATIDE", "LIXISENATIDE", "ALBIGLUTIDE", "TIRZEPATIDE"],
+      "evidence": [{"dataset": "mdls", "id": "3163", "url": "https://www.jpml.uscourts.gov/pending-mdl-reports-archive"}],
+      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_on": "2026-10-27"
+    },
+    {
+      "mdl": 2789,
+      "class": "Proton Pump Inhibitor (title: 'Proton-Pump Inhibitor Products Liability Litigation (No. II)')",
+      "generic_names": ["OMEPRAZOLE", "ESOMEPRAZOLE", "LANSOPRAZOLE", "DEXLANSOPRAZOLE", "PANTOPRAZOLE", "RABEPRAZOLE"],
+      "evidence": [
+        {"dataset": "mdls", "id": "2789", "url": "https://www.jpml.uscourts.gov/pending-mdl-reports-archive"},
+        {"dataset": "openfda_ndc", "url": "https://download.open.fda.gov/drug/ndc/drug-ndc-0001-of-0001.json.zip", "field": "openfda.pharm_class_epc"}
+      ],
+      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_on": "2026-10-27"
+    },
+    {
+      "mdl": 2974,
+      "class": "Paragard copper intrauterine device (title: 'Paragard IUD Products Liability Litigation')",
+      "generic_names": ["COPPER"],
+      "evidence": [
+        {"dataset": "agency_safety_openfda_drugsfda", "id": "openfda:drug/drugsfda:NDA018680", "field": "brand_names PARAGARD T 380A; active_ingredients COPPER"},
+        {"dataset": "mdls", "id": "2974", "url": "https://www.jpml.uscourts.gov/pending-mdl-reports-archive"}
+      ],
+      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_on": "2026-10-27"
+    }
+  ],
+  "jpml_links": [
+    {
+      "mdl": 3204,
+      "caption_tokens": ["Igloo", "90 Quart", "Rolling Cooler"],
+      "note": "Both CPSC recalls are of Igloo 90-quart rolling coolers ('90 Quart' / '90 Qt.' in the recall titles), the product the caption names.",
+      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_on": "2026-10-27",
+      "recalls": [
+        {"dataset": "agency_safety_cpsc_recalls_api", "id": "cpsc-api:25136", "recall_number": "25136", "date": "2025-02-13",
+         "label": "CPSC recall 25136: Igloo 90 Quart Rolling Coolers",
+         "url": "https://www.cpsc.gov/Recalls/2025/Igloo-Recalls-More-Than-One-Million-90-Quart-Rolling-Coolers-Due-to-Fingertip-Amputation-and-Crushing-Hazards"},
+        {"dataset": "agency_safety_cpsc_recalls_api", "id": "cpsc-api:25253", "recall_number": "25253", "date": "2025-05-08",
+         "label": "CPSC recall 25253: Igloo 90 Qt. Rolling Coolers (expansion)",
+         "url": "https://www.cpsc.gov/Recalls/2025/Igloo-Expands-Recall-of-90-Qt-Rolling-Coolers-Due-to-Fingertip-Amputation-and-Crushing-Hazards-Total-Recalled-Now-Nearly-1-2-Million"}
+      ]
+    },
+    {
+      "mdl": 3172,
+      "caption_tokens": ["Cartiva", "Synthetic Cartilage Implant"],
+      "note": "FDA device recall Z-0598-2025 is of the Cartiva Synthetic Cartilage Implant by Cartiva, Inc, the product the caption names. Backtest case: recall reported 2024-12-11, MDL centralized 2026-02-05.",
+      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_on": "2026-10-27",
+      "recalls": [
+        {"dataset": "agency_safety_openfda_device_enforcement", "id": "openfda:device/enforcement:Z-0598-2025", "recall_number": "Z-0598-2025",
+         "date": "2024-12-11", "classification": "Class II", "label": "FDA device recall Z-0598-2025 (Class II): Cartiva Synthetic Cartilage Implant",
+         "url": "https://api.fda.gov/device/enforcement.json?search=recall_number:%22Z-0598-2025%22"}
+      ]
+    }
+  ]
+}

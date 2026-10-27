@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { Activity, ShieldAlert, Stethoscope, type LucideIcon } from "lucide-react";
+import { Activity, Radar, ShieldAlert, Stethoscope, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { SafetyView } from "./safetyView";
+import type { SafetyView, SignalsView } from "./safetyView";
 
-type TabDef = { id: SafetyView; label: string; short: string; Icon: LucideIcon };
+type TabDef<V extends string> = { id: V; label: string; short: string; Icon: LucideIcon };
 
-const LANDING: TabDef[] = [
+const LANDING: TabDef<SafetyView>[] = [
   { id: "overview", label: "Safety overview", short: "Overview", Icon: ShieldAlert },
   {
     id: "reports",
@@ -16,8 +16,10 @@ const LANDING: TabDef[] = [
   { id: "neiss", label: "NEISS injury estimates", short: "NEISS estimates", Icon: Stethoscope },
 ];
 
-const SIGNALS: TabDef[] = [
-  { id: "overview", label: "Mass-tort signals", short: "Mass-tort", Icon: ShieldAlert },
+/** /safety/signals: four modes, the emerging radar first. */
+const SIGNALS: TabDef<SignalsView>[] = [
+  { id: "emerging", label: "Emerging (no MDL linked)", short: "Emerging", Icon: Radar },
+  { id: "mdl", label: "In an MDL", short: "In an MDL", Icon: ShieldAlert },
   { id: "reports", label: "Consumer-report growth", short: "Consumer reports", Icon: Activity },
   { id: "neiss", label: "NEISS product signals", short: "NEISS", Icon: Stethoscope },
 ];
@@ -30,7 +32,7 @@ export function SafetyTabPanel({
   children,
 }: {
   mode: "landing" | "signals";
-  active: SafetyView;
+  active: SafetyView | SignalsView;
   className?: string;
   children: ReactNode;
 }) {
@@ -46,20 +48,19 @@ export function SafetyTabPanel({
   );
 }
 
+type TabsProps =
+  | { mode: "landing"; active: SafetyView; onSelect: (view: SafetyView) => void }
+  | { mode: "signals"; active: SignalsView; onSelect: (view: SignalsView) => void };
+
 /**
  * Tab strip shared by /safety and /safety/signals. The tab is URL state (`?view=`) so back/forward and links work;
  * the caller owns navigation through `onSelect`.
  */
-export function SafetyTabs({
-  mode,
-  active,
-  onSelect,
-}: {
-  mode: "landing" | "signals";
-  active: SafetyView;
-  onSelect: (view: SafetyView) => void;
-}) {
-  const tabs = mode === "landing" ? LANDING : SIGNALS;
+export function SafetyTabs(props: TabsProps) {
+  const { mode, active } = props;
+  const tabs: TabDef<string>[] = mode === "landing" ? LANDING : SIGNALS;
+  const select = (id: string) =>
+    props.mode === "landing" ? props.onSelect(id as SafetyView) : props.onSelect(id as SignalsView);
   return (
     <div
       role="tablist"
@@ -74,7 +75,7 @@ export function SafetyTabs({
           id={`safety-${mode}-tab-${id}`}
           aria-selected={active === id}
           aria-controls={`safety-${mode}-panel`}
-          onClick={() => onSelect(id)}
+          onClick={() => select(id)}
           className={cn(
             "flex items-center gap-1.5 rounded px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
             active === id

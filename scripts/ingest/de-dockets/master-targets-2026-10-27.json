@@ -1,0 +1,791 @@
+{
+ "schema_version": "de-dockets-master-targets/1",
+ "frozen_at": "2026-10-27T14:40:00Z",
+ "source": "Read-only SELECTs on corpus_records (project corpussite): sw_matter_dockets_v1 rows with filters.role=master (detail.registry.native_case_ids) and per-MDL aggregates of sw_docket_entries_v1.",
+ "docketbird_id_rule": "DocketBird case id = docket_key with its first ':' replaced by '-' (docs/sw-matter-registry-contract.md section 1). 'registry' means the id is listed in the master row; 'derived_exact_docket_key' means it was built by that rule and confirmed by the provider's own document ids (and get_case for 2545).",
+ "targets": [
+  {
+   "mdl": "2323",
+   "docket_key": "paed:2:2012-md-02323",
+   "court_id": "paed",
+   "docket_number": "2:12-md-02323",
+   "docketbird_case_id": "paed-2:2012-md-02323",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "4369937"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 0,
+    "max_date": null,
+    "max_entry_number": null,
+    "providers": []
+   },
+   "entries_docket_number": "2:12-md-02323"
+  },
+  {
+   "mdl": "2545",
+   "docket_key": "ilnd:1:2014-cv-01748",
+   "court_id": "ilnd",
+   "docket_number": "1:14-cv-01748",
+   "docketbird_case_id": "ilnd-1:2014-cv-01748",
+   "docketbird_basis": "derived_exact_docket_key",
+   "cl_docket_ids": [],
+   "cl_note": "CourtListener 4261857 and 18704765 share the key (ambiguous); neither is used",
+   "cl_blocked": false,
+   "before": {
+    "rows": 0,
+    "max_date": null,
+    "max_entry_number": null,
+    "providers": []
+   },
+   "entries_docket_number": "1:14-cv-01748"
+  },
+  {
+   "mdl": "2592",
+   "docket_key": "laed:2:2014-md-02592",
+   "court_id": "laed",
+   "docket_number": "2:14-md-02592",
+   "docketbird_case_id": "laed-2:2014-md-02592",
+   "docketbird_basis": "derived_exact_docket_key",
+   "cl_docket_ids": [
+    "4270519"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 3920,
+    "max_date": "2026-02-12",
+    "max_entry_number": 18108,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:14-md-02592"
+  },
+  {
+   "mdl": "2606",
+   "docket_key": "njd:1:2015-md-02606",
+   "court_id": "njd",
+   "docket_number": "1:15-md-02606",
+   "docketbird_case_id": "njd-1:2015-md-02606",
+   "docketbird_basis": "derived_exact_docket_key",
+   "cl_docket_ids": [
+    "5838695"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 1337,
+    "max_date": "2020-07-28",
+    "max_entry_number": 1282,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "1:15-md-02606"
+  },
+  {
+   "mdl": "2672",
+   "docket_key": "cand:3:2015-md-02672",
+   "court_id": "cand",
+   "docket_number": "3:15-md-02672",
+   "docketbird_case_id": "cand-3:2015-md-02672",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "4182438"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 0,
+    "max_date": null,
+    "max_entry_number": null,
+    "providers": []
+   },
+   "entries_docket_number": "3:15-md-02672"
+  },
+  {
+   "mdl": "2738",
+   "docket_key": "njd:3:2016-md-02738",
+   "court_id": "njd",
+   "docket_number": "3:16-md-02738",
+   "docketbird_case_id": "njd-3:2016-md-02738",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [],
+   "cl_blocked": true,
+   "before": {
+    "rows": 81,
+    "max_date": "2026-07-22",
+    "max_entry_number": 60,
+    "providers": [
+     "courtlistener",
+     "govinfo",
+     "official-court"
+    ]
+   },
+   "entries_docket_number": "3:16-md-2738"
+  },
+  {
+   "mdl": "2741",
+   "docket_key": "cand:3:2016-md-02741",
+   "court_id": "cand",
+   "docket_number": "3:16-md-02741",
+   "docketbird_case_id": "cand-3:2016-md-02741",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "5981306"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 1060,
+    "max_date": "2026-10-02",
+    "max_entry_number": 22688,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "3:16-md-2741"
+  },
+  {
+   "mdl": "2782",
+   "docket_key": "gand:1:2017-md-02782",
+   "court_id": "gand",
+   "docket_number": "1:17-md-02782",
+   "docketbird_case_id": "gand-1:2017-md-02782",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "6078886"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 928,
+    "max_date": "2025-09-11",
+    "max_entry_number": 880,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "1:17-md-02782"
+  },
+  {
+   "mdl": "2789",
+   "docket_key": "njd:2:2017-md-02789",
+   "court_id": "njd",
+   "docket_number": "2:17-md-02789",
+   "docketbird_case_id": "njd-2:2017-md-02789",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "6224301"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 1264,
+    "max_date": "2026-10-02",
+    "max_entry_number": 1104,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:17-md-02789"
+  },
+  {
+   "mdl": "2800",
+   "docket_key": "gand:1:2017-md-02800",
+   "court_id": "gand",
+   "docket_number": "1:17-md-02800",
+   "docketbird_case_id": "gand-1:2017-md-02800",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [],
+   "cl_blocked": true,
+   "before": {
+    "rows": 1001,
+    "max_date": "2026-10-02",
+    "max_entry_number": 1299,
+    "providers": [
+     "docketbird",
+     "govinfo"
+    ]
+   },
+   "entries_docket_number": "1:17-md-02800"
+  },
+  {
+   "mdl": "2804",
+   "docket_key": "ohnd:1:2017-md-02804",
+   "court_id": "ohnd",
+   "docket_number": "1:17-md-02804",
+   "docketbird_case_id": "ohnd-1:2017-md-02804",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "6240169"
+   ],
+   "cl_note": "6240169 is the identity whose entries were captured first; 61465334 and 62647370 share the key and are not used",
+   "cl_blocked": false,
+   "before": {
+    "rows": 7605,
+    "max_date": "2026-10-01",
+    "max_entry_number": 6732,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "1:17-md-02804"
+  },
+  {
+   "mdl": "2843",
+   "docket_key": "cand:3:2018-md-02843",
+   "court_id": "cand",
+   "docket_number": "3:18-md-02843",
+   "docketbird_case_id": "cand-3:2018-md-02843",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "7067512"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 0,
+    "max_date": null,
+    "max_entry_number": null,
+    "providers": []
+   },
+   "entries_docket_number": "3:18-md-02843"
+  },
+  {
+   "mdl": "2846",
+   "docket_key": "ohsd:2:2018-md-02846",
+   "court_id": "ohsd",
+   "docket_number": "2:18-md-02846",
+   "docketbird_case_id": "ohsd-2:2018-md-02846",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "7603829"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 994,
+    "max_date": "2026-08-26",
+    "max_entry_number": 935,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:18-md-2846"
+  },
+  {
+   "mdl": "2873",
+   "docket_key": "scd:2:2018-mn-02873",
+   "court_id": "scd",
+   "docket_number": "2:18-mn-02873",
+   "docketbird_case_id": "scd-2:2018-mn-02873",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "8408916"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 6775,
+    "max_date": "2026-10-02",
+    "max_entry_number": 11775,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:18-mn-2873"
+  },
+  {
+   "mdl": "2885",
+   "docket_key": "flnd:3:2019-md-02885",
+   "court_id": "flnd",
+   "docket_number": "3:19-md-02885",
+   "docketbird_case_id": "flnd-3:2019-md-02885",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [],
+   "cl_blocked": true,
+   "before": {
+    "rows": 60,
+    "max_date": "2026-07-03",
+    "max_entry_number": null,
+    "providers": [
+     "govinfo"
+    ]
+   },
+   "entries_docket_number": "3:19-md-02885"
+  },
+  {
+   "mdl": "2921",
+   "docket_key": "njd:2:2019-md-02921",
+   "court_id": "njd",
+   "docket_number": "2:19-md-02921",
+   "docketbird_case_id": "njd-2:2019-md-02921",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [],
+   "cl_blocked": true,
+   "before": {
+    "rows": 1006,
+    "max_date": "2026-08-28",
+    "max_entry_number": 788,
+    "providers": [
+     "docketbird",
+     "govinfo"
+    ]
+   },
+   "entries_docket_number": "2:19-md-02921"
+  },
+  {
+   "mdl": "2924",
+   "docket_key": "flsd:9:2020-md-02924",
+   "court_id": "flsd",
+   "docket_number": "9:20-md-02924",
+   "docketbird_case_id": "flsd-9:2020-md-02924",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "16813256"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 0,
+    "max_date": null,
+    "max_entry_number": null,
+    "providers": []
+   },
+   "entries_docket_number": "9:20-md-02924"
+  },
+  {
+   "mdl": "2973",
+   "docket_key": "njd:2:2020-md-02973",
+   "court_id": "njd",
+   "docket_number": "2:20-md-02973",
+   "docketbird_case_id": "njd-2:2020-md-02973",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "18753355"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 419,
+    "max_date": "2026-09-04",
+    "max_entry_number": 359,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:20-md-02973"
+  },
+  {
+   "mdl": "3014",
+   "docket_key": "pawd:2:2021-mc-01230",
+   "court_id": "pawd",
+   "docket_number": "2:21-mc-01230",
+   "docketbird_case_id": "pawd-2:2021-mc-01230",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "60866823"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 4794,
+    "max_date": "2026-10-01",
+    "max_entry_number": 4414,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:21-mc-1230"
+  },
+  {
+   "mdl": "3026",
+   "docket_key": "ilnd:1:2022-cv-00071",
+   "court_id": "ilnd",
+   "docket_number": "1:22-cv-00071",
+   "docketbird_case_id": "ilnd-1:2022-cv-00071",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "61690868"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 986,
+    "max_date": "2026-10-02",
+    "max_entry_number": 844,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "1:22-cv-71"
+  },
+  {
+   "mdl": "3031",
+   "docket_key": "mnd:0:2022-md-03031",
+   "court_id": "mnd",
+   "docket_number": "0:22-md-03031",
+   "docketbird_case_id": "mnd-0:2022-md-03031",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "63363039"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 0,
+    "max_date": null,
+    "max_entry_number": null,
+    "providers": []
+   },
+   "entries_docket_number": "0:22-md-03031"
+  },
+  {
+   "mdl": "3043",
+   "docket_key": "nysd:1:2022-md-03043",
+   "court_id": "nysd",
+   "docket_number": "1:22-md-03043",
+   "docketbird_case_id": "nysd-1:2022-md-03043",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "65408277"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 2160,
+    "max_date": "2026-09-14",
+    "max_entry_number": 1667,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "1:22-md-3043"
+  },
+  {
+   "mdl": "3047",
+   "docket_key": "cand:4:2022-md-03047",
+   "court_id": "cand",
+   "docket_number": "4:22-md-03047",
+   "docketbird_case_id": "cand-4:2022-md-03047",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "65407433"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 4035,
+    "max_date": "2026-10-03",
+    "max_entry_number": 3544,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "4:22-md-3047"
+  },
+  {
+   "mdl": "3060",
+   "docket_key": "ilnd:1:2023-cv-00818",
+   "court_id": "ilnd",
+   "docket_number": "1:23-cv-00818",
+   "docketbird_case_id": "ilnd-1:2023-cv-00818",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "66801859"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 2060,
+    "max_date": "2026-10-01",
+    "max_entry_number": 2049,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "1:23-cv-818"
+  },
+  {
+   "mdl": "3080",
+   "docket_key": "njd:2:2023-md-03080",
+   "court_id": "njd",
+   "docket_number": "2:23-md-03080",
+   "docketbird_case_id": "njd-2:2023-md-03080",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "67665081"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 1391,
+    "max_date": "2026-10-01",
+    "max_entry_number": 1083,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:23-md-3080"
+  },
+  {
+   "mdl": "3081",
+   "docket_key": "azd:2:2023-md-03081",
+   "court_id": "azd",
+   "docket_number": "2:23-md-03081",
+   "docketbird_case_id": "azd-2:2023-md-03081",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "67678440"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 16807,
+    "max_date": "2026-10-02",
+    "max_entry_number": 11118,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:23-md-3081"
+  },
+  {
+   "mdl": "3094",
+   "docket_key": "paed:2:2024-md-03094",
+   "court_id": "paed",
+   "docket_number": "2:24-md-03094",
+   "docketbird_case_id": "paed-2:2024-md-03094",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "68222905"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 1036,
+    "max_date": "2026-10-02",
+    "max_entry_number": 904,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:24-md-3094"
+  },
+  {
+   "mdl": "3108",
+   "docket_key": "mnd:0:2024-md-03108",
+   "court_id": "mnd",
+   "docket_number": "0:24-md-03108",
+   "docketbird_case_id": "mnd-0:2024-md-03108",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "68837976"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 778,
+    "max_date": "2026-10-02",
+    "max_entry_number": 745,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "0:24-md-3108"
+  },
+  {
+   "mdl": "3113",
+   "docket_key": "njd:2:2024-md-03113",
+   "court_id": "njd",
+   "docket_number": "2:24-md-03113",
+   "docketbird_case_id": "njd-2:2024-md-03113",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "68869775"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 496,
+    "max_date": "2026-10-02",
+    "max_entry_number": 381,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:24-md-3113"
+  },
+  {
+   "mdl": "3114",
+   "docket_key": "txnd:3:2024-md-03114",
+   "court_id": "txnd",
+   "docket_number": "3:24-md-03114",
+   "docketbird_case_id": "txnd-3:2024-md-03114",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "68936135"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 85,
+    "max_date": "2026-10-02",
+    "max_entry_number": 86,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "3:24-md-3114"
+  },
+  {
+   "mdl": "3125",
+   "docket_key": "casd:3:2024-md-03125",
+   "court_id": "casd",
+   "docket_number": "3:24-md-03125",
+   "docketbird_case_id": "casd-3:2024-md-03125",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "69255166"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 1079,
+    "max_date": "2026-09-30",
+    "max_entry_number": 843,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "3:24-md-3125"
+  },
+  {
+   "mdl": "3140",
+   "docket_key": "flnd:3:2025-md-03140",
+   "court_id": "flnd",
+   "docket_number": "3:25-md-03140",
+   "docketbird_case_id": "flnd-3:2025-md-03140",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "69674950"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 1057,
+    "max_date": "2026-09-25",
+    "max_entry_number": 770,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "3:25-md-3140"
+  },
+  {
+   "mdl": "3144",
+   "docket_key": "cacd:2:2025-ml-03144",
+   "court_id": "cacd",
+   "docket_number": "2:25-ml-03144",
+   "docketbird_case_id": "cacd-2:2025-ml-03144",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "69871659"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 465,
+    "max_date": "2026-09-30",
+    "max_entry_number": 425,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:25-ml-3144"
+  },
+  {
+   "mdl": "3149",
+   "docket_key": "casd:3:2025-md-03149",
+   "court_id": "casd",
+   "docket_number": "3:25-md-03149",
+   "docketbird_case_id": "casd-3:2025-md-03149",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "69912599"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 643,
+    "max_date": "2026-09-30",
+    "max_entry_number": 564,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "3:25-md-3149"
+  },
+  {
+   "mdl": "3163",
+   "docket_key": "paed:2:2025-md-03163",
+   "court_id": "paed",
+   "docket_number": "2:25-md-03163",
+   "docketbird_case_id": "paed-2:2025-md-03163",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "72052106"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 168,
+    "max_date": "2026-09-30",
+    "max_entry_number": 167,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "2:25-md-3163"
+  },
+  {
+   "mdl": "3166",
+   "docket_key": "cand:3:2025-md-03166",
+   "court_id": "cand",
+   "docket_number": "3:25-md-03166",
+   "docketbird_case_id": "cand-3:2025-md-03166",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "72030009"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 532,
+    "max_date": "2026-10-02",
+    "max_entry_number": 467,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "3:25-md-3166"
+  },
+  {
+   "mdl": "3180",
+   "docket_key": "njd:3:2026-md-03180",
+   "court_id": "njd",
+   "docket_number": "3:26-md-03180",
+   "docketbird_case_id": "njd-3:2026-md-03180",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "73443394"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 43,
+    "max_date": "2026-10-02",
+    "max_entry_number": 37,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "3:26-md-3180"
+  },
+  {
+   "mdl": "3185",
+   "docket_key": "moed:4:2026-md-03185",
+   "court_id": "moed",
+   "docket_number": "4:26-md-03185",
+   "docketbird_case_id": "moed-4:2026-md-03185",
+   "docketbird_basis": "registry",
+   "cl_docket_ids": [
+    "73454806"
+   ],
+   "cl_blocked": false,
+   "before": {
+    "rows": 70,
+    "max_date": "2026-09-29",
+    "max_entry_number": 63,
+    "providers": [
+     "courtlistener"
+    ]
+   },
+   "entries_docket_number": "4:26-md-3185"
+  }
+ ],
+ "entries_docket_number_note": "Docket number as already printed on the MDL's sw_docket_entries_v1 rows (kept identical); the master row's number for MDLs with no rows yet."
+}

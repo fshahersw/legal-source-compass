@@ -15,6 +15,7 @@ import { ConsumerComplaints } from "./ConsumerComplaints";
 import { CpscRecalls } from "./CpscRecalls";
 import { EnforcementSources } from "./EnforcementSources";
 import { ExclusionsSearch } from "./extra/ExclusionsSearch";
+import { ExclusionsTrendsSection, MalpracticeBenchmarksSection } from "./extra/ExclusionsTrends";
 import { EpaEnforcement } from "./EpaEnforcement";
 import { FtcMergerReview } from "./FtcMergerReview";
 import { OshaEnforcement } from "./OshaEnforcement";
@@ -46,7 +47,13 @@ export function EnforcementPage({
         />
       );
     case "exclusions":
-      return <ExclusionsSearch />;
+      return (
+        <div className="min-w-0 space-y-8">
+          <ExclusionsTrendsSection />
+          <MalpracticeBenchmarksSection />
+          <ExclusionsSearch />
+        </div>
+      );
     case "oversight":
       return <OversightReports />;
     case "merger":

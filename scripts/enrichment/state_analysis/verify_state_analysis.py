@@ -112,6 +112,13 @@ def main(fast: bool) -> None:
             n += 1
             if not close(got, want):
                 fails.append([f, rate, got, want])
+        # non-MDL product liability: core NOS split, suppressed under 5 filings, never above the core count
+        if "fjc_core_product_5y" in lg:
+            p5 = lg.get("fjc_core_product_5y")
+            want = None if lg.get("fjc_flag") or p5 is None or p5 < 5 or not den else round(p5 / 5 / den * 100000, 2)
+            n += 1
+            if not close(lg.get("fjc_core_product_rate"), want) or (p5 is not None and p5 > (lg.get("fjc_core_5y") or 0)):
+                fails.append([f, "fjc_core_product_rate", lg.get("fjc_core_product_rate"), want])
     res["rates"] = {"checked": n, "failures": len(fails), "examples": fails[:10]}
 
     # ---- Spearman in DuckDB SQL, BH independently

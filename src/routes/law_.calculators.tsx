@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import {
-  CALCULATOR_TABS,
   CalculatorsPage,
+  calculatorTab,
   type CalculatorTab,
 } from "@/components/calculators/CalculatorsPage";
 import { pageHead } from "@/lib/corpus/head";
@@ -24,10 +24,10 @@ const str = (v: unknown) =>
 
 export const Route = createFileRoute("/law_/calculators")({
   validateSearch: (s: Record<string, unknown>): S => {
-    const tab = str(s["tab"]);
     const amount = str(s["amount"]);
     return {
-      tab: CALCULATOR_TABS.some((t) => t.id === tab) ? (tab as CalculatorTab) : undefined,
+      // former ids (life, state-rates, sources) open the tab that now holds their content
+      tab: calculatorTab(s["tab"]),
       amount: amount && /^[\d,.]{1,20}$/.test(amount) ? amount : undefined,
       judgment: isIsoDate(s["judgment"]) ? (s["judgment"] as string) : undefined,
       payment: isIsoDate(s["payment"]) ? (s["payment"] as string) : undefined,
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/law_/calculators")({
   head: () =>
     pageHead(
       "Litigation calculators",
-      "Federal post-judgment interest (28 U.S.C. § 1961), inflation adjustment, present value at Treasury yields, life expectancy and cited state judgment rates, each showing the official values and method used.",
+      "Federal post-judgment interest (28 U.S.C. § 1961) and cited state judgment rates, inflation by area, present value at Treasury yields, and damages inputs (wage percentiles, wage index, life tables), each with its official source.",
     ),
   component: Page,
 });
@@ -60,7 +60,7 @@ function Page() {
         { label: "Calculators" },
       ]}
       title="Litigation calculators"
-      description="Interest, inflation, present value and life expectancy from official published series; every result shows its inputs, the values used and the method."
+      description="Interest, inflation, present value and damages inputs from official series; every figure shows its source."
     >
       <CalculatorsPage
         tab={tab}

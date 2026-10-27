@@ -210,6 +210,8 @@ const PAGES: [string, SearchParams, NavigationSection | null, string | null][] =
   ["/matters", undefined, "litigation", "MDLs & mass torts"],
   ["/matters", { ds: "mdls" }, "litigation", "MDLs & mass torts"],
   ["/matters/3026", undefined, "litigation", "MDLs & mass torts"],
+  ["/matters/3026", { tab: "documents" }, "litigation", "MDLs & mass torts"],
+  ["/matters/3026", { entry: "12" }, "litigation", "MDLs & mass torts"],
   ["/matters/analytics", undefined, "litigation", "MDLs & mass torts"],
   ["/matters/intel", undefined, "litigation", "MDLs & mass torts"],
   ["/matters/lens/3026", undefined, "litigation", "MDLs & mass torts"],
@@ -485,6 +487,7 @@ describe("header menu (sectionMenu)", () => {
       menuOf(path, search).map((m) => m.label);
     expect(labelsOf("/courts/nysd")).toEqual(labelsOf("/courts/vacancies"));
     expect(labelsOf("/matters/lens/3026")).toEqual(labelsOf("/litigation"));
+    expect(labelsOf("/matters/3026")).toEqual(labelsOf("/matters/lens/3026"));
   });
 });
 
@@ -606,6 +609,22 @@ describe("breadcrumbs: Section › sub-area › entity", () => {
     ).toEqual([
       { label: "Litigation", to: "/litigation" },
       { label: "MDLs & mass torts", to: "/matters/analytics" },
+      { label: "MDL 2873" },
+    ]);
+  });
+  it("litigation: the MDL command page (which the former lens redirects to) keeps its Litigation trail", () => {
+    expect(
+      trail("/matters/2873", { tab: "documents" }, [
+        HOME,
+        { label: "Matters", to: "/matters" },
+        { label: "Seeger Weiss hub", to: "/matters/seeger-weiss" },
+        { label: "MDL 2873" },
+      ]),
+    ).toEqual([
+      { label: "Litigation", to: "/litigation" },
+      { label: "MDLs & mass torts", to: "/matters/analytics" },
+      { label: "Matters", to: "/matters" },
+      { label: "Seeger Weiss hub", to: "/matters/seeger-weiss" },
       { label: "MDL 2873" },
     ]);
   });

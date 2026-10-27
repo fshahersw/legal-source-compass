@@ -17,7 +17,18 @@ export type PlaceMetric = {
   source: string;
   /** Five-year count behind a rate; below SMALL_BASE the rate is flagged as unstable. */
   base?: string;
+  /**
+   * false: shown where the record is described (county table) but never offered as a map or ranking measure, because
+   * it does not measure what its place in a picker implies.
+   */
+  pickable?: boolean;
+  /** Reading note shown beside the value wherever the measure appears. */
+  caveat?: string;
 };
+
+/** Why fjc_rate is not a residence measure (Middlesex NJ: 45,053 of 47,891 filings FY2021-25 carry an MDL number). */
+export const FJC_ALL_CAVEAT =
+  "Includes MDL-numbered filings, which the FJC codes to the court's or defendant's county rather than where the plaintiff lives; use the core or non-MDL product-liability rates for residence.";
 
 export const SMALL_BASE = 10;
 
@@ -35,14 +46,27 @@ export const PLACE_METRICS: PlaceMetric[] = [
     base: "fjc_core_5y",
   },
   {
-    key: "fjc_rate",
-    label: "Federal civil filings by residents (all)",
-    short: "All federal filings",
+    key: "fjc_core_product_rate",
+    label: "Product-liability filings by residents, outside MDLs",
+    short: "Non-MDL product liability",
     unit: "per 100,000 a year",
     format: "rate",
     group: "Legal activity",
-    source: "FJC Integrated Database, FY2021-FY2025, first plaintiff's county of residence",
+    source:
+      "FJC Integrated Database, FY2021-FY2025, first plaintiff's county of residence; core filings (no MDL number, prisoner petition or U.S. plaintiff) with a product-liability nature of suit; not published under 5 filings",
+    base: "fjc_core_product_5y",
+  },
+  {
+    key: "fjc_rate",
+    label: "Federal civil filings coded to the county, incl. MDL (not a residence measure)",
+    short: "Filings coded to county, incl. MDL",
+    unit: "per 100,000 a year",
+    format: "rate",
+    group: "Legal activity",
+    source: "FJC Integrated Database, FY2021-FY2025, IDB county code of the first plaintiff",
     base: "fjc_5y",
+    pickable: false,
+    caveat: FJC_ALL_CAVEAT,
   },
   {
     key: "osha_rate",
@@ -111,6 +135,9 @@ export const PLACE_METRICS: PlaceMetric[] = [
     format: "int",
     group: "Legal activity",
     source: "county_litigation records tagged with the county",
+    pickable: false,
+    caveat:
+      "Counts saved court web pages in this corpus: coverage of the corpus, not legal activity.",
   },
   {
     key: "population",
@@ -290,10 +317,26 @@ export const LEGAL_KEYS = PLACE_METRICS.filter((m) => m.group === "Legal activit
   (m) => m.key,
 );
 
-export function metricGroups(keys?: ReadonlySet<string>) {
+export const isPickable = (m: PlaceMetric): boolean => m.pickable !== false;
+/** Measures a map or ranking picker may offer. */
+export const PICKABLE_KEYS: ReadonlySet<string> = new Set(
+  PLACE_METRICS.filter(isPickable).map((m) => m.key),
+);
+
+/**
+ * Picker groups: pickable measures only, and (when `rows` is given) only measures at least one row records, so a
+ * measure whose packet is not published yet (fjc_core_product_rate) is never offered as an empty map.
+ */
+export function metricGroups(
+  keys?: ReadonlySet<string>,
+  rows?: readonly { metrics: Record<string, number | null | undefined> }[],
+) {
   const out = new Map<PlaceMetricGroup, PlaceMetric[]>();
   for (const m of PLACE_METRICS) {
+    if (!isPickable(m)) continue;
     if (keys && !keys.has(m.key)) continue;
+    if (rows && !rows.some((r) => r.metrics[m.key] != null && Number.isFinite(r.metrics[m.key]!)))
+      continue;
     out.set(m.group, [...(out.get(m.group) ?? []), m]);
   }
   return [...out.entries()].map(([group, items]) => ({ group, items }));

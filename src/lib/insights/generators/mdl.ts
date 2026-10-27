@@ -84,7 +84,7 @@ const SOURCES: InsightSourceLink[] = [
     href: "https://www.jpml.uscourts.gov/pending-mdl-reports-archive",
   },
 ];
-const lens = (mdl: number) => `/matters/lens/${mdl}`;
+const mdlPage = (mdl: number) => `/matters/${mdl}`;
 /** "MDL 3140 (Depo-Provera)": the MDL number plus a short, balanced version of the stored title. */
 export function mdlName(mdl: number, title: string): string {
   let t = title
@@ -187,10 +187,10 @@ export function generateMdlInsights(d: MdlInput): Insight[] {
               label: `MDL ${r1.mdl}`,
               value: fmtInt(r1.pending),
               note: fmtPct(s1),
-              href: lens(r1.mdl),
+              href: mdlPage(r1.mdl),
             },
-            { label: `MDL ${r2.mdl}`, value: fmtInt(r2.pending), href: lens(r2.mdl) },
-            { label: `MDL ${r3.mdl}`, value: fmtInt(r3.pending), href: lens(r3.mdl) },
+            { label: `MDL ${r2.mdl}`, value: fmtInt(r2.pending), href: mdlPage(r2.mdl) },
+            { label: `MDL ${r3.mdl}`, value: fmtInt(r3.pending), href: mdlPage(r3.mdl) },
             { label: "Top three combined", value: fmtPct(top3) },
             { label: "Top ten combined", value: fmtPct(d.top10SharePct) },
           ],
@@ -229,19 +229,19 @@ export function generateMdlInsights(d: MdlInput): Insight[] {
             label: `MDL ${g1.mdl}`,
             value: fmtSignedInt(g1.change12m),
             note: `now ${fmtInt(g1.pending)}`,
-            href: lens(g1.mdl),
+            href: mdlPage(g1.mdl),
           },
           {
             label: `MDL ${g2.mdl}`,
             value: fmtSignedInt(g2.change12m),
             note: `now ${fmtInt(g2.pending)}`,
-            href: lens(g2.mdl),
+            href: mdlPage(g2.mdl),
           },
           {
             label: `MDL ${g3.mdl}`,
             value: fmtSignedInt(g3.change12m),
             note: `now ${fmtInt(g3.pending)}`,
-            href: lens(g3.mdl),
+            href: mdlPage(g3.mdl),
           },
           growing > 0
             ? {
@@ -282,19 +282,19 @@ export function generateMdlInsights(d: MdlInput): Insight[] {
             label: `MDL ${x1.mdl}`,
             value: fmtSignedInt(x1.change12m),
             note: `now ${fmtInt(x1.pending)}`,
-            href: lens(x1.mdl),
+            href: mdlPage(x1.mdl),
           },
           {
             label: `MDL ${x2.mdl}`,
             value: fmtSignedInt(x2.change12m),
             note: `now ${fmtInt(x2.pending)}`,
-            href: lens(x2.mdl),
+            href: mdlPage(x2.mdl),
           },
           {
             label: `MDL ${x3.mdl}`,
             value: fmtSignedInt(x3.change12m),
             note: `now ${fmtInt(x3.pending)}`,
-            href: lens(x3.mdl),
+            href: mdlPage(x3.mdl),
           },
         ],
         caveat:
@@ -423,17 +423,17 @@ export function generateMdlInsights(d: MdlInput): Insight[] {
             label: `Oldest: MDL ${o1.mdl}`,
             value: `${o1.ageYears!.toLocaleString("en-US", { maximumFractionDigits: 1 })} years`,
             note: `${fmtInt(o1.pending)} pending`,
-            href: lens(o1.mdl),
+            href: mdlPage(o1.mdl),
           },
           {
             label: `MDL ${o2.mdl}`,
             value: `${o2.ageYears!.toLocaleString("en-US", { maximumFractionDigits: 1 })} years`,
-            href: lens(o2.mdl),
+            href: mdlPage(o2.mdl),
           },
           {
             label: `MDL ${o3.mdl}`,
             value: `${o3.ageYears!.toLocaleString("en-US", { maximumFractionDigits: 1 })} years`,
-            href: lens(o3.mdl),
+            href: mdlPage(o3.mdl),
           },
         ],
         caveat:
@@ -484,7 +484,7 @@ export function generateMdlInsights(d: MdlInput): Insight[] {
               label: `Largest: MDL ${big.mdl}`,
               value: fmtInt(big.closed + big.remanded),
               note: `ended ${big.year}`,
-              href: lens(big.mdl),
+              href: mdlPage(big.mdl),
             },
           ],
           caveat:
