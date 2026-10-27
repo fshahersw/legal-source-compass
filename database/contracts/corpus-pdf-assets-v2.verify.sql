@@ -2,8 +2,8 @@
 -- Every statement is a SELECT; none writes. Expected values were read on 2026-10-27.
 set local statement_timeout = '90s';
 
--- V1. live function body fingerprint. before: c9cc6c7aee5d16b6d4b4ef293f8c8099 / 10595 / writes_ppa true.
---     after: 395ddc99322510b0fe34cbf6543ccd6d / 10635 / writes_ppa false / writes_pqr false.
+-- V1. live registration function: this file does not change it. Live since 2026-10-27 is corpus-register-pdf-assets-v2.sql
+--     (pg_get_functiondef md5 f245cb3985cf2b2bf13a6f357fb828a1); before and after this file the same.
 select md5(prosrc) body_md5, length(prosrc) len, prosecdef, proconfig,
        prosrc ~ 'public_projection_allowed' writes_ppa, prosrc ~ 'private_quarantine_required' writes_pqr
   from pg_proc where oid = 'public.corpus_admin_register_pdf_assets_v1(jsonb)'::regprocedure;
@@ -39,15 +39,14 @@ select a.attname, obj_description('corpus_ingest.pdf_asset_observations'::regcla
  where a.attrelid = 'corpus_ingest.local_pdf_asset_occurrences'::regclass
    and a.attname in ('private_quarantine_required', 'public_projection_allowed', 'source_seal_status');
 
--- V7. live functions that mention the PDF annotation keys. before: corpus_admin_register_pdf_assets_v1 (pqr, spq),
---     corpus_admin_register_local_bundle_pdf_assets_v1 (pqr), corpus_admin_local_bundle_pdf_assets_status_v1 (pqr).
---     after: corpus_admin_register_pdf_assets_v1 still matches spq (it strips the key) but not pqr; the two local
---     intake functions are unchanged (they assert the frozen packet values, they do not gate any reader).
+-- V7. live functions that mention the PDF annotation keys (unchanged by this file): corpus_admin_register_pdf_assets_v1
+--     (pqr: its replay guard rebuilds the v1 label; spq), corpus_admin_register_local_bundle_pdf_assets_v1 (pqr),
+--     corpus_admin_local_bundle_pdf_assets_status_v1 (pqr). None gates a reader.
 select n.nspname || '.' || p.proname fn, p.prosrc ~ 'private_quarantine_required' pqr, p.prosrc ~ 'source_privacy_qualification' spq
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
  where p.prosrc ~ '(private_quarantine_required|source_privacy_qualification)' order by 1;
 
--- V8. after the next real registration batch: new observations carry source_seal_status and no v1 annotation.
-select count(*) filter (where observation ? 'source_privacy_qualification') with_v1_annotation,
-       count(*) filter (where observation ? 'source_seal_status' and not observation ? 'source_privacy_qualification') v2_rows
+-- V8. after the next real registration batch: new observations carry the v2 label (rule corpus_pdf_availability_v2).
+select count(*) filter (where observation -> 'source_privacy_qualification' ? 'private_quarantine_required') with_v1_annotation,
+       count(*) filter (where observation -> 'source_privacy_qualification' ->> 'rule' = 'corpus_pdf_availability_v2') v2_rows
   from corpus_ingest.pdf_asset_observations where registered_at > now() - interval '1 day';
