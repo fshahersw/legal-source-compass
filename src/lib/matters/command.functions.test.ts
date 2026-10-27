@@ -11,7 +11,8 @@ vi.mock("@/components/mdl/jpml-series/jpmlSeries.server", () => ({ readMdlSeries
 vi.mock("./source.server", () => ({ overviewFor: vi.fn() }));
 vi.mock("./command.server", () => ({}));
 
-const { assembleCommand, lensHasRecords } = await import("./command.functions");
+const { COMMAND_READ_FAILED, assembleCommand, commandReadFailure, getMdlCommand, lensHasRecords } =
+  await import("./command.functions");
 import { classifyDocketText, orderLedger, countKinds, type ClassifiedEntry } from "./orders";
 import type { MdlLens } from "@/lib/external/mdlLens.functions";
 import type { KeyOrdersPayload, MatterOverviewPayload } from "./types";
@@ -162,5 +163,56 @@ describe("assembleCommand", () => {
     expect(out.whatChanged.jpml.latest?.added).toBe(626);
     expect(out.datesSummary).toMatchObject({ total: 0, collectedThrough: "2026-10-03" });
     expect(out.errors).toEqual(["dates"]);
+  });
+});
+
+describe("read failures", () => {
+  const base = { mdl: "3047", asOf: "2026-10-27", orders: null, dates: null, jpml: null };
+
+  it("never asserts not-found or recorded mode from failed reads", () => {
+    const allFailed = assembleCommand({
+      ...base,
+      overview: null,
+      lens: null,
+      errors: ["overview", "lens", "jpml"],
+    });
+    expect(commandReadFailure(allFailed)).toBe(COMMAND_READ_FAILED);
+    const overviewFailed = assembleCommand({
+      ...base,
+      overview: null,
+      lens: {
+        ...emptyLens(),
+        recordedTitle: { title: "In re: Social Media", source: "jpml" },
+      } as MdlLens,
+      errors: ["overview"],
+    });
+    expect(overviewFailed.mode).toBe("recorded");
+    expect(commandReadFailure(overviewFailed)).toBe(COMMAND_READ_FAILED);
+  });
+
+  it("shows a page when only a section failed, and not-found only when every read succeeded", () => {
+    const sectionFailed = assembleCommand({
+      ...base,
+      overview: { overview: {} } as unknown as MatterOverviewPayload,
+      lens: null,
+      errors: ["dates"],
+    });
+    expect(commandReadFailure(sectionFailed)).toBeNull();
+    const notFound = assembleCommand({ ...base, overview: null, lens: emptyLens(), errors: [] });
+    expect(notFound.found).toBe(false);
+    expect(commandReadFailure(notFound)).toBeNull();
+  });
+
+  it("makes the server function throw instead of returning a not-found answer", async () => {
+    const { overviewFor } = await import("./source.server");
+    const { loadMdlLens } = await import("@/lib/external/mdlLens.functions");
+    const { readMdlSeries } = await import("@/components/mdl/jpml-series/jpmlSeries.server");
+    vi.mocked(overviewFor).mockRejectedValue(new Error("REST down"));
+    vi.mocked(loadMdlLens).mockRejectedValue(new Error("REST down"));
+    vi.mocked(readMdlSeries).mockRejectedValue(new Error("REST down"));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const handler = getMdlCommand as unknown as (a: { data: { id: string } }) => Promise<unknown>;
+    await expect(handler({ data: { id: "3047" } })).rejects.toThrow(COMMAND_READ_FAILED);
+    spy.mockRestore();
   });
 });

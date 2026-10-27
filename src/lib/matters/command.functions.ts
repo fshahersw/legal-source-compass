@@ -102,6 +102,19 @@ export function assembleCommand(parts: {
   };
 }
 
+export const COMMAND_READ_FAILED = "The MDL record could not be read just now. Try again shortly.";
+
+/**
+ * A payload that would state something the failed reads cannot support: the matter overview failed (so "recorded
+ * mode" would wrongly say no registry record exists), or nothing was found while some read failed (so "not found"
+ * would be asserted from missing data). Returns the message to throw, or null when the payload can be shown.
+ */
+export function commandReadFailure(p: Pick<MdlCommandPayload, "found" | "errors">): string | null {
+  if (p.errors.includes("overview")) return COMMAND_READ_FAILED;
+  if (!p.found && p.errors.length > 0) return COMMAND_READ_FAILED;
+  return null;
+}
+
 /** Read one section; a failure is logged, recorded by name and returns null so the rest of the page still loads. */
 async function section<T>(
   name: string,
@@ -129,7 +142,7 @@ export const getMdlCommand = createServerFn({ method: "GET" })
       section("dates", errors, () => loadDocketDates(mdl)),
       section("jpml", errors, () => readMdlSeries(Number(mdl))),
     ]);
-    return assembleCommand({
+    const payload = assembleCommand({
       mdl,
       asOf: todayIso(),
       overview,
@@ -148,6 +161,11 @@ export const getMdlCommand = createServerFn({ method: "GET" })
         : null,
       errors,
     });
+    // Thrown, not returned: the route shows its error state and the query does not keep a "not found" or
+    // "recorded" answer that came only from failed reads.
+    const failure = commandReadFailure(payload);
+    if (failure) throw new Error(failure);
+    return payload;
   });
 
 export const getMdlRegulatoryLinks = createServerFn({ method: "GET" })
