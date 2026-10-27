@@ -8,7 +8,7 @@ import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServic
 import { JudgeServicePanel } from "@/components/judges/clb/JudgeServicePanel";
 import { JudgeDisclosureContentsPanel } from "@/components/judges/clb/JudgeDisclosureContentsPanel";
 import { JudgeGlance } from "@/components/judges/JudgeGlance";
-import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
+import { JudgeHeadshot, recordedPhotoCredit } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
 import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
@@ -65,7 +65,14 @@ function Page() {
       dataset="judges"
       id={id}
       crumbs={crumbs}
-      lead={(_, v) => <JudgeHeadshot judgeId={id} name={v.title} recorded={v.photo} />}
+      lead={(_, v) => (
+        <JudgeHeadshot
+          judgeId={id}
+          name={v.title}
+          recorded={v.photo}
+          recordedCredit={recordedPhotoCredit(raw)}
+        />
+      )}
       extra={() => (
         <>
           {states.length ? (
