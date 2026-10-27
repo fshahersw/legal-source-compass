@@ -206,6 +206,8 @@ class NdcTests(unittest.TestCase):
             {"generic_name": "tirzepatide ", "application_number": "NDA217806", "openfda": {}},
             {"generic_name": "Tirzepatide Injection", "application_number": "NDA999999"},
             {"generic_name": "Copper", "application_number": "NDA018680"},
+            {"generic_name": "Pantoprazole", "application_number": "ANDA077619",
+             "pharm_class": ["Proton Pump Inhibitor [EPC]", "Proton Pump Inhibitors [MoA]"]},
             {"generic_name": "", "application_number": "X"},
         ]
         keys = b.ndc_keys(recs)
@@ -222,6 +224,7 @@ class NdcTests(unittest.TestCase):
         self.assertEqual(t["search"], {"faers": 'patient.drug.openfda.generic_name.exact:"TIRZEPATIDE"'})
         self.assertEqual((t["rank"], t["reports_total"], t["as_of"], t["label"]), (72, 160663, "2026-10-23", "TIRZEPATIDE"))
         self.assertNotIn("pharm_class_epc", rows[1]["keys"])
+        self.assertEqual(keys["PANTOPRAZOLE"]["pharm_class_epc"], {"Proton Pump Inhibitor [EPC]"})
 
 
 class KeylessTests(unittest.TestCase):

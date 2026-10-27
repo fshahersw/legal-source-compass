@@ -558,7 +558,7 @@ def write_chunks(outdir, stream, groups_by_target, source, inputs, notes, chunk_
             p.unlink()
     outputs = []
     for target, rows in groups_by_target.items():
-        w = c.ChunkWriter(out / "chunks", f"{target}-{stream}", max_rows=chunk_rows, source=source)
+        w = c.ChunkWriter(out / "chunks", f"{target}-{stream.replace('/', '-')}", max_rows=chunk_rows, source=source)
         for r in rows:
             w.add(r)
         res = w.close()
@@ -751,7 +751,8 @@ def reduce_maude(args):
 # ------------------------------------------------------------------------------------------------ NDC keys
 def ndc_keys(records):
     """{GENERIC NAME (upper case, trimmed): {pharm_class_epc: set, application_numbers: set, products: n}} from the NDC
-    directory. pharm_class_epc is the openfda.pharm_class_epc vocabulary (the field FAERS searches use); application
+    directory. pharm_class_epc holds the FDA Established Pharmacologic Class terms ("... [EPC]") the directory lists for
+    the product, in openfda.pharm_class_epc (the field FAERS searches use) or in its own pharm_class list; application
     numbers are published as the directory prints them (NDA/ANDA/BLA numbers, OTC monograph ids)."""
     out = {}
     for r in records:
@@ -762,6 +763,9 @@ def ndc_keys(records):
         e["products"] += 1
         for x in ((r.get("openfda") or {}).get("pharm_class_epc") or []):
             if isinstance(x, str) and x.strip():
+                e["pharm_class_epc"].add(x.strip())
+        for x in r.get("pharm_class") or []:  # the directory's own class list: its "[EPC]" entries are the same vocabulary
+            if isinstance(x, str) and x.strip().endswith("[EPC]"):
                 e["pharm_class_epc"].add(x.strip())
         a = r.get("application_number")
         if isinstance(a, str) and a.strip():
