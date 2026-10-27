@@ -1,5 +1,5 @@
 {
- "schema_version": "de-dockets-before-counts/1",
+ "schema_version": "de-dockets-before-counts/2",
  "read_at": "2026-10-27T14:45:00Z",
  "source": "Read-only SELECTs on corpus_records (project corpussite). dataset: per-MDL aggregates of sw_docket_entries_v1 (rows, latest date_filed, withheld rows by item.cells.description_withheld). matter_cells: sw_matters_v1 item.cells as stored.",
  "dataset": {
@@ -8,266 +8,372 @@
    "max_date": null,
    "w_text": 0,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {}
   },
   "2545": {
    "rows": 0,
    "max_date": null,
    "w_text": 0,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {}
   },
   "2592": {
    "rows": 3920,
    "max_date": "2026-02-12",
    "w_text": 750,
    "w_doc": 0,
-   "w_contact": 22
+   "w_contact": 22,
+   "provider_rows": {
+    "courtlistener": 3920
+   }
   },
   "2606": {
    "rows": 1337,
    "max_date": "2020-07-28",
    "w_text": 70,
    "w_doc": 0,
-   "w_contact": 1
+   "w_contact": 1,
+   "provider_rows": {
+    "courtlistener": 1337
+   }
   },
   "2672": {
    "rows": 0,
    "max_date": null,
    "w_text": 0,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {}
   },
   "2738": {
    "rows": 81,
    "max_date": "2026-07-22",
    "w_text": 1,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {
+    "courtlistener": 60,
+    "govinfo": 13,
+    "official-court": 8
+   }
   },
   "2741": {
    "rows": 1060,
    "max_date": "2026-10-02",
    "w_text": 60,
    "w_doc": 0,
-   "w_contact": 9
+   "w_contact": 9,
+   "provider_rows": {
+    "courtlistener": 1060
+   }
   },
   "2782": {
    "rows": 928,
    "max_date": "2025-09-11",
    "w_text": 51,
    "w_doc": 0,
-   "w_contact": 5
+   "w_contact": 5,
+   "provider_rows": {
+    "courtlistener": 928
+   }
   },
   "2789": {
    "rows": 1264,
    "max_date": "2026-10-02",
    "w_text": 156,
    "w_doc": 0,
-   "w_contact": 1
+   "w_contact": 1,
+   "provider_rows": {
+    "courtlistener": 1264
+   }
   },
   "2800": {
    "rows": 1001,
    "max_date": "2026-10-02",
    "w_text": 23,
    "w_doc": 0,
-   "w_contact": 2
+   "w_contact": 2,
+   "provider_rows": {
+    "docketbird": 1000,
+    "govinfo": 1
+   }
   },
   "2804": {
    "rows": 7605,
    "max_date": "2026-10-01",
    "w_text": 959,
    "w_doc": 0,
-   "w_contact": 24
+   "w_contact": 24,
+   "provider_rows": {
+    "courtlistener": 7605
+   }
   },
   "2843": {
    "rows": 0,
    "max_date": null,
    "w_text": 0,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {}
   },
   "2846": {
    "rows": 994,
    "max_date": "2026-08-26",
    "w_text": 87,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {
+    "courtlistener": 994
+   }
   },
   "2873": {
    "rows": 6775,
    "max_date": "2026-10-02",
    "w_text": 63,
    "w_doc": 14,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {
+    "courtlistener": 6775
+   }
   },
   "2885": {
    "rows": 60,
    "max_date": "2026-07-03",
    "w_text": 4,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {
+    "govinfo": 60
+   }
   },
   "2921": {
    "rows": 1006,
    "max_date": "2026-08-28",
    "w_text": 35,
    "w_doc": 0,
-   "w_contact": 1
+   "w_contact": 1,
+   "provider_rows": {
+    "docketbird": 1000,
+    "govinfo": 6
+   }
   },
   "2924": {
    "rows": 0,
    "max_date": null,
    "w_text": 0,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {}
   },
   "2973": {
    "rows": 419,
    "max_date": "2026-09-04",
    "w_text": 24,
    "w_doc": 0,
-   "w_contact": 26
+   "w_contact": 26,
+   "provider_rows": {
+    "courtlistener": 419
+   }
   },
   "3014": {
    "rows": 4794,
    "max_date": "2026-10-01",
    "w_text": 274,
    "w_doc": 41,
-   "w_contact": 1
+   "w_contact": 1,
+   "provider_rows": {
+    "courtlistener": 4794
+   }
   },
   "3026": {
    "rows": 986,
    "max_date": "2026-10-02",
    "w_text": 144,
    "w_doc": 0,
-   "w_contact": 3
+   "w_contact": 3,
+   "provider_rows": {
+    "courtlistener": 986
+   }
   },
   "3031": {
    "rows": 0,
    "max_date": null,
    "w_text": 0,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {}
   },
   "3043": {
    "rows": 2160,
    "max_date": "2026-09-14",
    "w_text": 107,
    "w_doc": 0,
-   "w_contact": 23
+   "w_contact": 23,
+   "provider_rows": {
+    "courtlistener": 2160
+   }
   },
   "3047": {
    "rows": 4035,
    "max_date": "2026-10-03",
    "w_text": 652,
    "w_doc": 47,
-   "w_contact": 27
+   "w_contact": 27,
+   "provider_rows": {
+    "courtlistener": 4035
+   }
   },
   "3060": {
    "rows": 2060,
    "max_date": "2026-10-01",
    "w_text": 208,
    "w_doc": 0,
-   "w_contact": 72
+   "w_contact": 72,
+   "provider_rows": {
+    "courtlistener": 2060
+   }
   },
   "3080": {
    "rows": 1391,
    "max_date": "2026-10-01",
    "w_text": 76,
    "w_doc": 35,
-   "w_contact": 41
+   "w_contact": 41,
+   "provider_rows": {
+    "courtlistener": 1391
+   }
   },
   "3081": {
    "rows": 16807,
    "max_date": "2026-10-02",
    "w_text": 599,
    "w_doc": 0,
-   "w_contact": 4
+   "w_contact": 4,
+   "provider_rows": {
+    "courtlistener": 16807
+   }
   },
   "3094": {
    "rows": 1036,
    "max_date": "2026-10-02",
    "w_text": 161,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {
+    "courtlistener": 1036
+   }
   },
   "3108": {
    "rows": 778,
    "max_date": "2026-10-02",
    "w_text": 26,
    "w_doc": 0,
-   "w_contact": 4
+   "w_contact": 4,
+   "provider_rows": {
+    "courtlistener": 778
+   }
   },
   "3113": {
    "rows": 496,
    "max_date": "2026-10-02",
    "w_text": 60,
    "w_doc": 0,
-   "w_contact": 9
+   "w_contact": 9,
+   "provider_rows": {
+    "courtlistener": 496
+   }
   },
   "3114": {
    "rows": 85,
    "max_date": "2026-10-02",
    "w_text": 6,
    "w_doc": 0,
-   "w_contact": 23
+   "w_contact": 23,
+   "provider_rows": {
+    "courtlistener": 85
+   }
   },
   "3125": {
    "rows": 1079,
    "max_date": "2026-09-30",
    "w_text": 15,
    "w_doc": 0,
-   "w_contact": 2
+   "w_contact": 2,
+   "provider_rows": {
+    "courtlistener": 1079
+   }
   },
   "3140": {
    "rows": 1057,
    "max_date": "2026-09-25",
    "w_text": 85,
    "w_doc": 0,
-   "w_contact": 10
+   "w_contact": 10,
+   "provider_rows": {
+    "courtlistener": 1057
+   }
   },
   "3144": {
    "rows": 465,
    "max_date": "2026-09-30",
    "w_text": 142,
    "w_doc": 2,
-   "w_contact": 44
+   "w_contact": 44,
+   "provider_rows": {
+    "courtlistener": 465
+   }
   },
   "3149": {
    "rows": 643,
    "max_date": "2026-09-30",
    "w_text": 16,
    "w_doc": 0,
-   "w_contact": 3
+   "w_contact": 3,
+   "provider_rows": {
+    "courtlistener": 643
+   }
   },
   "3163": {
    "rows": 168,
    "max_date": "2026-09-30",
    "w_text": 21,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {
+    "courtlistener": 168
+   }
   },
   "3166": {
    "rows": 532,
    "max_date": "2026-10-02",
    "w_text": 41,
    "w_doc": 30,
-   "w_contact": 6
+   "w_contact": 6,
+   "provider_rows": {
+    "courtlistener": 532
+   }
   },
   "3180": {
    "rows": 43,
    "max_date": "2026-10-02",
    "w_text": 0,
    "w_doc": 0,
-   "w_contact": 0
+   "w_contact": 0,
+   "provider_rows": {
+    "courtlistener": 43
+   }
   },
   "3185": {
    "rows": 70,
    "max_date": "2026-09-29",
    "w_text": 1,
    "w_doc": 0,
-   "w_contact": 3
+   "w_contact": 3,
+   "provider_rows": {
+    "courtlistener": 70
+   }
   }
  },
  "matter_cells": {
@@ -425,8 +531,17 @@
   }
  },
  "existing_courtlistener_ids_since_max_date": {
+  "2592": [
+   "453655595"
+  ],
+  "2606": [
+   "136090455"
+  ],
   "2741": [
    "480373218"
+  ],
+  "2782": [
+   "465126366"
   ],
   "2789": [
    "480319509"
@@ -434,86 +549,151 @@
   "2804": [
    "480126917"
   ],
+  "2846": [
+   "475887106"
+  ],
   "2873": [
-   "480343575",
    "480269549",
    "480277023",
    "480294995",
    "480308223",
+   "480331068",
    "480331123",
    "480343410",
-   "480366748",
+   "480343575",
    "480366700",
-   "480374152",
-   "480374147",
+   "480366748",
    "480374136",
-   "480379524",
+   "480374147",
+   "480374152",
    "480379513",
-   "480331068"
+   "480379524"
+  ],
+  "2973": [
+   "477007767"
+  ],
+  "3014": [
+   "480128684"
+  ],
+  "3026": [
+   "480370919"
+  ],
+  "3043": [
+   "477870315"
+  ],
+  "3047": [
+   "480412172"
+  ],
+  "3060": [
+   "480224670"
+  ],
+  "3080": [
+   "480246502"
   ],
   "3081": [
    "480280851",
-   "480280859",
    "480280857",
-   "480289445",
-   "480289444",
-   "480289443",
-   "480289442",
-   "480289437",
-   "480289436",
-   "480289426",
-   "480289410",
-   "480289402",
-   "480289397",
-   "480289394",
-   "480289385",
-   "480289364",
+   "480280859",
    "480289348",
-   "480300337",
-   "480300312",
-   "480300258",
-   "480300247",
-   "480300209",
-   "480300181",
+   "480289364",
+   "480289385",
+   "480289394",
+   "480289397",
+   "480289402",
+   "480289410",
+   "480289426",
+   "480289436",
+   "480289437",
+   "480289442",
+   "480289443",
+   "480289444",
+   "480289445",
    "480300104",
-   "480313314",
-   "480313265",
-   "480313241",
-   "480313221",
-   "480313196",
-   "480313157",
-   "480313097",
-   "480313021",
+   "480300181",
+   "480300209",
+   "480300247",
+   "480300258",
+   "480300312",
+   "480300337",
    "480312943",
-   "480324759",
+   "480313021",
+   "480313097",
+   "480313157",
+   "480313196",
+   "480313221",
+   "480313241",
+   "480313265",
+   "480313314",
    "480324710",
-   "480370507",
-   "480370482",
-   "480370436",
-   "480370421",
-   "480370407",
-   "480370393",
-   "480370388",
-   "480370371",
-   "480370354",
+   "480324759",
    "480370338",
-   "480377073",
-   "480377067",
-   "480377054",
-   "480377040",
-   "480377023",
-   "480376999",
-   "480376987",
-   "480376976",
-   "480376965",
-   "480376959",
-   "480376933",
-   "480376926",
-   "480376912",
-   "480376884",
+   "480370354",
+   "480370371",
+   "480370388",
+   "480370393",
+   "480370407",
+   "480370421",
+   "480370436",
+   "480370482",
+   "480370507",
    "480376865",
+   "480376884",
+   "480376912",
+   "480376926",
+   "480376933",
+   "480376959",
+   "480376965",
+   "480376976",
+   "480376987",
+   "480376999",
+   "480377023",
+   "480377040",
+   "480377054",
+   "480377067",
+   "480377073",
    "480381922",
    "480386269"
+  ],
+  "3094": [
+   "480306923",
+   "480365836"
+  ],
+  "3108": [
+   "480325120"
+  ],
+  "3113": [
+   "480342731"
+  ],
+  "3114": [
+   "480361429",
+   "480361431"
+  ],
+  "3125": [
+   "479970032",
+   "480067554"
+  ],
+  "3140": [
+   "479408184"
+  ],
+  "3144": [
+   "479944250",
+   "480080245"
+  ],
+  "3149": [
+   "480012949"
+  ],
+  "3163": [
+   "479981635"
+  ],
+  "3166": [
+   "480319201"
+  ],
+  "3180": [
+   "480276942",
+   "480294637"
+  ],
+  "3185": [
+   "479861228"
   ]
  },
  "withheld_text_release_estimate": {
@@ -701,5 +881,671 @@
    "would_stay_withheld_as_contact"
   ]
  },
- "existing_courtlistener_ids_note": "Ids of rows already published on or after the MDL's latest date (3081: on or after 2026-10-02, 62 rows)."
+ "existing_courtlistener_ids_note": "Ids of CourtListener rows already published on or after the MDL's latest date_filed (snapshot-before.sql, 2026-10-27T17:55:10Z).",
+ "read_at_registry": "2026-10-27T17:55:10Z",
+ "registry_source": "scripts/ingest/de-dockets/snapshot-before.sql, read 2026-10-27T17:55:10Z: dataset and matter_cells unchanged from read_at; adds dataset[mdl].provider_rows, matter_registry (detail.registry.entries captures and the 'Docket entries captured' facts as stored) and existing_courtlistener_ids_since_max_date for every MDL.",
+ "matter_registry": {
+  "2323": {
+   "captures": [],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2545": {
+   "captures": [],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2592": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "laed:2:2014-md-02592",
+     "captured": 3920,
+     "provider_total": 18589,
+     "complete": false,
+     "observed_at": "2026-10-02T08:42:45.202Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "3920 / 18589 (partial)"
+    ]
+   ]
+  },
+  "2606": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "njd:1:2015-md-02606",
+     "captured": 1337,
+     "provider_total": 1337,
+     "complete": true,
+     "observed_at": "2026-10-02T08:42:47.175Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "1337 / 1337 (complete at capture)"
+    ]
+   ]
+  },
+  "2672": {
+   "captures": [],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2738": {
+   "captures": [
+    {
+     "provider": "govinfo",
+     "docket_key": "njd:3:2016-md-02738",
+     "captured": 13,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-04T16:46:54.040Z"
+    },
+    {
+     "provider": "official-court",
+     "docket_key": "njd:3:2016-md-02738",
+     "captured": 8,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-04T16:46:54.040Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2741": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "cand:3:2016-md-02741",
+     "captured": 480,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:54:29.687+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "480 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "2782": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "gand:1:2017-md-02782",
+     "captured": 928,
+     "provider_total": null,
+     "complete": true,
+     "observed_at": null
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "928 / Not recorded (complete at capture)"
+    ]
+   ]
+  },
+  "2789": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "njd:2:2017-md-02789",
+     "captured": 1264,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:55:07.911+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "1264 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "2800": {
+   "captures": [
+    {
+     "provider": "docketbird",
+     "docket_key": "gand:1:2017-md-02800",
+     "captured": 1000,
+     "provider_total": 2000,
+     "complete": false,
+     "observed_at": "2026-10-04T16:46:54.040Z"
+    },
+    {
+     "provider": "govinfo",
+     "docket_key": "gand:1:2017-md-02800",
+     "captured": 1,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-04T16:46:54.040Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2804": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "ohnd:1:2017-md-02804",
+     "captured": 7605,
+     "provider_total": 7605,
+     "complete": true,
+     "observed_at": "2026-10-03T11:28:00.016Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "7605 / 7605 (complete at capture)"
+    ]
+   ]
+  },
+  "2843": {
+   "captures": [],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2846": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "ohsd:2:2018-md-02846",
+     "captured": 994,
+     "provider_total": 994,
+     "complete": true,
+     "observed_at": "2026-10-02T08:42:47.418Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "994 / 994 (complete at capture)"
+    ]
+   ]
+  },
+  "2873": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "scd:2:2018-mn-02873",
+     "captured": 6755,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:53:18.609+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "6755 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "2885": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "flnd:3:2019-md-02885",
+     "captured": 40,
+     "provider_total": 5836,
+     "complete": false,
+     "observed_at": "2026-10-02T08:42:48.204Z"
+    },
+    {
+     "provider": "govinfo",
+     "docket_key": "flnd:3:2019-md-02885",
+     "captured": 60,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-04T16:46:54.040Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "40 / 5836 (partial)"
+    ]
+   ]
+  },
+  "2921": {
+   "captures": [
+    {
+     "provider": "docketbird",
+     "docket_key": "njd:2:2019-md-02921",
+     "captured": 1000,
+     "provider_total": 1782,
+     "complete": false,
+     "observed_at": "2026-10-04T16:46:54.040Z"
+    },
+    {
+     "provider": "govinfo",
+     "docket_key": "njd:2:2019-md-02921",
+     "captured": 6,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-04T16:46:54.040Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2924": {
+   "captures": [],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "2973": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "njd:2:2020-md-02973",
+     "captured": 419,
+     "provider_total": 419,
+     "complete": true,
+     "observed_at": "2026-10-02T08:42:48.465Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "419 / 419 (complete at capture)"
+    ]
+   ]
+  },
+  "3014": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "pawd:2:2021-mc-01230",
+     "captured": 4794,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:54:49.998+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "4794 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3026": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "ilnd:1:2022-cv-00071",
+     "captured": 986,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:54:58.997+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "986 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3031": {
+   "captures": [],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "Not recorded"
+    ]
+   ]
+  },
+  "3043": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "nysd:1:2022-md-03043",
+     "captured": 2160,
+     "provider_total": 2160,
+     "complete": true,
+     "observed_at": "2026-10-03T11:25:04.356Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "2160 / 2160 (complete at capture)"
+    ]
+   ]
+  },
+  "3047": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "cand:4:2022-md-03047",
+     "captured": 4035,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:55:17.334+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "4035 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3060": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "ilnd:1:2023-cv-00818",
+     "captured": 2060,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:55:26.049+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "2060 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3080": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "njd:2:2023-md-03080",
+     "captured": 1391,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:55:35.059+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "1391 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3081": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "azd:2:2023-md-03081",
+     "captured": 16807,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:55:44.251+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "16807 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3094": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "paed:2:2024-md-03094",
+     "captured": 1036,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:55:53.386+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "1036 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3108": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "mnd:0:2024-md-03108",
+     "captured": 778,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:56:02.224+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "778 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3113": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "njd:2:2024-md-03113",
+     "captured": 496,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:56:11.222+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "496 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3114": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "txnd:3:2024-md-03114",
+     "captured": 85,
+     "provider_total": 85,
+     "complete": true,
+     "observed_at": "2026-10-05T07:31:31.038Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "85 / 85 (complete at capture)"
+    ]
+   ]
+  },
+  "3125": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "casd:3:2024-md-03125",
+     "captured": 1079,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:56:20.464+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "1079 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3140": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "flnd:3:2025-md-03140",
+     "captured": 1057,
+     "provider_total": 1057,
+     "complete": true,
+     "observed_at": "2026-10-03T10:54:07.461Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "1057 / 1057 (complete at capture)"
+    ]
+   ]
+  },
+  "3144": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "cacd:2:2025-ml-03144",
+     "captured": 465,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:56:26.383+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "465 registered; 305 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3149": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "casd:3:2025-md-03149",
+     "captured": 643,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:56:32.59+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "643 registered; 320 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3163": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "paed:2:2025-md-03163",
+     "captured": 168,
+     "provider_total": 168,
+     "complete": true,
+     "observed_at": "2026-10-03T11:24:57.168Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "168 / 168 (complete at capture)"
+    ]
+   ]
+  },
+  "3166": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "cand:3:2025-md-03166",
+     "captured": 532,
+     "provider_total": null,
+     "complete": false,
+     "observed_at": "2026-10-05T12:53:26.933+00:00"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "532 registered; 340 observed in this frozen partial pass; provider total not checked"
+    ]
+   ]
+  },
+  "3180": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "njd:3:2026-md-03180",
+     "captured": 43,
+     "provider_total": 43,
+     "complete": true,
+     "observed_at": "2026-10-03T11:24:58.126Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "43 / 43 (complete at capture)"
+    ]
+   ]
+  },
+  "3185": {
+   "captures": [
+    {
+     "provider": "courtlistener",
+     "docket_key": "moed:4:2026-md-03185",
+     "captured": 70,
+     "provider_total": 70,
+     "complete": true,
+     "observed_at": "2026-10-03T11:24:47.458Z"
+    }
+   ],
+   "entry_facts": [
+    [
+     "Docket entries captured / provider total (CourtListener)",
+     "70 / 70 (complete at capture)"
+    ]
+   ]
+  }
+ }
 }
