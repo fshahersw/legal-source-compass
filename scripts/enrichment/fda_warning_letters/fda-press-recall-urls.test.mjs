@@ -29,7 +29,8 @@ sys.path.insert(0, "scripts/enrichment/fda_warning_letters")
 import press_recalls as pr
 rows = [{"path": pr.PAGE_PREFIX + s, "url": pr.wp.FDA + pr.PAGE_PREFIX + s, "date": d, "company_name": c, "brand_names": b,
          "product_description": p} for s, d, c, b, p in json.loads(sys.stdin.buffer.read().decode("utf-8"))]
-sys.stdout.buffer.write(pr.update_sql(pr.unique_table_rows(rows)).encode("utf-8"))
+scope = {"complete": False, "rows_read": len(rows), "totals_reported": [len(rows), len(rows) + 2], "read_on": "2026-10-27"}
+sys.stdout.buffer.write(pr.update_sql(pr.unique_table_rows(rows), pr.rule_for(scope)).encode("utf-8"))
 `;
 
 function generate() {
@@ -82,5 +83,7 @@ test("press-recall packet: exact unique keys only, idempotent", async () => {
     "fda-press:f": "",
   });
   const rule = (await db.query("select metadata->>'source_url_rule' as r from public.corpus_datasets")).rows[0].r;
-  assert.match(rule, /unique in this dataset and in FDA's table/);
+  // the read reported two totals, so the rule claims uniqueness only among the rows read, never in FDA's whole table
+  assert.match(rule, /unique in this dataset and among the \d+ FDA table rows read on 2026-10-27/);
+  assert.doesNotMatch(rule, /in FDA's table \(all/);
 });

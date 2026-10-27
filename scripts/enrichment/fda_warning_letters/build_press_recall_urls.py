@@ -40,12 +40,14 @@ def main():
     manifest, rows = load(args.acq)
     paths = {r["path"] for r in rows}
     unique = pr.unique_table_rows(rows)
-    sql = pr.update_sql(unique)
+    scope = pr.read_scope(manifest, rows)
+    rule = pr.rule_for(scope)
+    sql = pr.update_sql(unique, rule)
     out = Path(args.acq) / "packets" / "agency_safety_fda_press_recalls_source_url"
     out.mkdir(parents=True, exist_ok=True)
     (out / "update.sql").write_text(sql, encoding="utf-8")
     summary = {"dataset": pr.DATASET, "table_pages": len(paths), "table_rows_with_unique_key": len(unique),
-               "totals_reported": manifest.get("totals_reported"), "rule": pr.RULE,
+               "totals_reported": manifest.get("totals_reported"), "read_scope": scope, "rule": rule,
                "update_sql_sha256": hashlib.sha256(sql.encode("utf-8")).hexdigest()}
     (out / "summary.json").write_text(json.dumps(summary, indent=1) + "\n", encoding="utf-8")
     print(json.dumps(summary))

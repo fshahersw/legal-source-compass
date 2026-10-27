@@ -104,6 +104,13 @@ class Rows(unittest.TestCase):
         self.assertEqual(facts["Closeout letter"], "Not recorded")
 
 
+class Label(unittest.TestCase):
+    def test_label_states_the_period_and_never_claims_completeness(self):
+        self.assertNotIn("complete", wl_rows.LABEL.lower())
+        self.assertIn("2021", wl_rows.LABEL)
+        self.assertIn("older letters", wl_rows.QUALIFICATION)
+
+
 class Build(unittest.TestCase):
     def _acq(self, pages, total, tamper=False):
         tmp = tempfile.mkdtemp()
@@ -157,6 +164,25 @@ class PressRecalls(unittest.TestCase):
         b = pr.parse_row(self.cells(slug="b"))
         c = pr.parse_row(self.cells(slug="c", company="Other Co"))
         self.assertEqual([r["path"] for r in pr.unique_table_rows([a, b, c, c])], [c["path"]])
+
+    def test_rule_claims_the_whole_table_only_after_a_consistent_complete_read(self):
+        import press_recalls as pr
+        rows = [pr.parse_row(self.cells(slug=s)) for s in ("a", "b", "c")]
+        files = [{"file": "page_a1_desc_00000.json", "retrieved_at": "2026-10-27T15:00:00Z"}]
+        full = pr.read_scope({"consistent_snapshot": True, "totals_reported": [3], "files": files}, rows)
+        self.assertTrue(full["complete"])
+        self.assertIn("in FDA's table (all 3 rows it listed, read on 2026-10-27)", pr.rule_for(full))
+        # totals changed during the read: uniqueness is claimed only among the rows read
+        moving = pr.read_scope({"consistent_snapshot": False, "totals_reported": [3, 5], "files": files}, rows)
+        self.assertFalse(moving["complete"])
+        text = pr.rule_for(moving)
+        self.assertIn("among the 3 FDA table rows read on 2026-10-27", text)
+        self.assertIn("reported 3 and 5 rows", text)
+        self.assertNotIn("in FDA's table (all", text)
+        # a consistent total that the parsed rows do not reach is not complete either
+        short = pr.read_scope({"consistent_snapshot": True, "totals_reported": [4], "files": files}, rows)
+        self.assertFalse(short["complete"])
+        self.assertIn(pr.rule_for(moving), pr.update_sql(rows[:1], pr.rule_for(moving)))
 
     def test_packet_refuses_foreign_urls(self):
         import press_recalls as pr
