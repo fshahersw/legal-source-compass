@@ -1,7 +1,14 @@
 -- documents/2 entry flag — the documents layer withholds a filing's text only on an explicit flag from the docket source
--- itself (owner decision 2026-10-27: "dont withhold any data. If its accurate and valuable, USE IT"). Apply after
--- documents-v1.sql and after any other documents-v2-*.sql that redefines public.documents_refresh_v1
--- (documents-v2-scope.sql copies the old rule verbatim); this file patches whichever definition is live.
+-- itself (owner decision 2026-10-27: "dont withhold any data. If its accurate and valuable, USE IT").
+-- Apply order: documents-v1.sql, documents-v2-scope.sql, documents-v2-sources.sql, then this file LAST. Each of those
+-- three redefines public.documents_refresh_v1 with the old inline rule (and so do their rollbacks); this file patches
+-- whichever definition is live. Re-apply this file after any of them, or any of their rollbacks, runs, and check V1 of
+-- documents-v2-entry-flag.verify.sql after every documents-v2-* apply: otherwise the next refresh (including the nightly
+-- job) re-withholds the 62 filings.
+-- Today the explicit source holds are enforced upstream as well: the sw_* projections leave out DocketBird documents that
+-- are restricted and give CourtListener entries with a sealed document no document ids, and _doc_out excludes bytes with
+-- a provider seal / restriction / policy flag or a local seal. documents.source_entry_flag is the guard for the case
+-- where a projection carries such a row.
 --
 -- Before: documents_refresh_v1 set entry_flag = 'entry_withheld' (text_status 'withheld_policy') whenever the published
 -- docket row had description_withheld set, whatever its value, or cells.held = true. Our own projections
