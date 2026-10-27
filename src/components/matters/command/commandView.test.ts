@@ -14,6 +14,7 @@ import {
   orderSwimlanes,
   ordersPerYear,
   sortedPoints,
+  typedShare,
 } from "./commandView";
 
 /** A classified entry built from real docket text, as the loader returns it. */
@@ -218,5 +219,13 @@ describe("order swimlanes", () => {
     expect(s.domain).toEqual(["2022-12-08", "2026-03-17"]);
     expect(s.lanes[0]!.events![0]!.label).toMatch(/^CMO No\. 2: /);
     expect(orderSwimlanes([])).toBeNull();
+  });
+});
+
+describe("typed share", () => {
+  it("states how few linked events carry a type (MDL 3047: 676 of 2,251, read-only 2026-10-27)", () => {
+    expect(typedShare(676, 2251)).toBe("676 of 2,251 linked events carry a type (30%)");
+    expect(typedShare(1, 500)).toBe("1 of 500 linked events carry a type (under 1%)");
+    expect(typedShare(5, null)).toBeNull();
   });
 });

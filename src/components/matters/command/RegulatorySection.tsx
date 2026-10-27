@@ -28,6 +28,7 @@ import type {
   MdlCommandPayload,
   RegulatoryLink,
   SecDefendant,
+  SecOtherGroup,
   SecFinancialSeries,
 } from "@/lib/matters/types";
 import { mdlRegulatoryLinksQuery, mdlSecDefendantsQuery } from "./commandQueries";
@@ -130,6 +131,45 @@ function latestPoint(s: SecFinancialSeries | null) {
   return [...s.points].sort((a, b) => b.end.localeCompare(a.end))[0]!;
 }
 
+const pointText = (s: SecFinancialSeries | null) => {
+  const p = latestPoint(s);
+  return p ? `${money(p.value, p.unit)} · FY${p.fy}${p.end ? ` (to ${day(p.end)})` : ""}` : null;
+};
+
+/** Why a tier A/B registrant is not listed among the defendants. */
+const OTHER_GROUP_LABEL: Record<SecOtherGroup, string> = {
+  dismissed: "Dismissal reported in the filing excerpt",
+  plaintiff: "Filing excerpt describes the company as a claimant",
+  not_named: "Filing excerpt says the company is not named",
+  unclear: "Role not stated in the filing excerpt",
+};
+
+type SecListRow = SecDefendant & { listed: string };
+
+const secColumns: DataColumn<SecListRow>[] = [
+  { key: "name", label: "Registrant", value: (r) => r.name },
+  { key: "cik", label: "CIK", value: (r) => r.cik },
+  { key: "listed", label: "Listed as", value: (r) => r.listed },
+  { key: "tier", label: "Link tier", value: (r) => r.link.tierLabel },
+  { key: "role", label: "Role as recorded", value: (r) => r.link.roleLabel },
+  {
+    key: "dismissed",
+    label: "Dismissal",
+    value: (r) => (r.link.dismissed ? "Reported in excerpt" : ""),
+  },
+  {
+    key: "accrual",
+    label: "Litigation accrual (company-wide)",
+    value: (r) => pointText(r.accrual),
+  },
+  { key: "pay", label: "Legal payments (company-wide)", value: (r) => pointText(r.legalPayments) },
+  {
+    key: "loss",
+    label: "Reasonably possible loss (company-wide)",
+    value: (r) => pointText(r.possibleLoss),
+  },
+];
+
 function SecRow({ c }: { c: SecDefendant }) {
   const cells = [
     { label: "Litigation accrual", s: c.accrual },
@@ -145,6 +185,10 @@ function SecRow({ c }: { c: SecDefendant }) {
       >
         {c.name}
       </Link>
+      <span className="ml-2 text-meta text-muted-foreground">
+        {c.link.roleLabel}
+        {c.link.dismissed ? " · dismissal reported" : ""}
+      </span>
       <dl className="mt-1 grid grid-cols-1 gap-x-4 gap-y-0.5 text-meta sm:grid-cols-3">
         {cells.map(({ label, s }) => {
           const p = latestPoint(s);
@@ -169,14 +213,46 @@ function SecDefendantsCard({ mdl }: { mdl: string }) {
   if (q.isPending) return null;
   if (q.isError) return <Unavailable what="The SEC registrants" />;
   const d = q.data;
-  if (!d.named.length && !d.review.length) return null;
+  const other = d.other ?? [];
+  if (!d.named.length && !d.review.length && !other.length) return null;
+  const all: SecListRow[] = [
+    ...d.named.map((c) => ({ ...c, listed: "Defendant (filing excerpt)" })),
+    ...other.map((c) => ({ ...c, listed: OTHER_GROUP_LABEL[c.group] })),
+    ...d.review.map((c) => ({ ...c, listed: "Requires review (weaker link)" })),
+  ];
+  const groups = (Object.keys(OTHER_GROUP_LABEL) as SecOtherGroup[]).flatMap((g) => {
+    const rows = other.filter((c) => c.group === g);
+    return rows.length ? [{ g, rows }] : [];
+  });
   return (
     <Card>
       <CardBody className="pt-4">
-        <h3 className="text-label text-foreground">
-          SEC registrants whose filings name this MDL{" "}
-          <span className="tabular-nums text-muted-foreground">· {fmt(d.named.length)}</span>
-        </h3>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-label text-foreground">
+            SEC registrants whose filings name this MDL as a defendant{" "}
+            <span className="tabular-nums text-muted-foreground">· {fmt(d.named.length)}</span>
+          </h3>
+          <DataDrawer
+            title={`MDL ${mdl}: SEC registrants whose filings name the MDL`}
+            rows={all}
+            rowKey={(r) => r.cik}
+            columns={secColumns}
+            searchable
+            source={{
+              source: {
+                label: "SEC EDGAR filings and XBRL company facts",
+                href: "https://www.sec.gov/edgar/search/",
+              },
+              about: (
+                <>
+                  {d.caveats.map((c) => (
+                    <p key={c}>{c}</p>
+                  ))}
+                </>
+              ),
+            }}
+          />
+        </div>
         {d.named.length ? (
           <ul className="mt-1">
             {d.named.slice(0, 6).map((c) => (
@@ -184,8 +260,23 @@ function SecDefendantsCard({ mdl }: { mdl: string }) {
             ))}
           </ul>
         ) : (
-          <p className="mt-2 text-body text-muted-foreground">No filing names this MDL directly.</p>
+          <p className="mt-2 text-body text-muted-foreground">
+            No filing reads the registrant as a defendant in this MDL.
+          </p>
         )}
+        {d.named.length > 6 ? (
+          <Note>{fmt(d.named.length - 6)} more defendants under View data.</Note>
+        ) : null}
+        {groups.map(({ g, rows }) => (
+          <Note key={g}>
+            {OTHER_GROUP_LABEL[g]}:{" "}
+            {rows
+              .slice(0, 5)
+              .map((c) => c.name)
+              .join(", ")}
+            {rows.length > 5 ? ` and ${rows.length - 5} more` : ""}.
+          </Note>
+        ))}
         {d.review.length ? (
           <Note>
             Requires review (weaker link):{" "}

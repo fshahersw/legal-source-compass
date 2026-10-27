@@ -5,6 +5,7 @@
  * bankruptcy-stay ledgers. Long lists sit behind "View data".
  */
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { ChartCard, RankBars } from "@/components/charts/recharts";
 import { Card, CardBody, DataDrawer, KpiStrip, type DataColumn } from "@/components/kit";
@@ -33,9 +34,41 @@ const kindColumns: DataColumn<KindRow>[] = [
   },
 ];
 
-function documentsFor(docs: OrderDocumentsPayload | undefined, entry: number | null) {
-  if (!docs?.connected || entry === null) return [];
+/** Files of one entry, only when the entry is on the exact master docket the documents were joined on. */
+function documentsFor(
+  docs: OrderDocumentsPayload | undefined,
+  entry: number | null,
+  docketKey: string | null,
+) {
+  if (!docs?.connected || entry === null || docketKey !== docs.master.docketKey) return [];
   return docs.byEntry[String(entry)] ?? [];
+}
+
+/** The file link: the source PDF when recorded, else this page's own document list for the entry. */
+function DocumentCell({
+  mdl,
+  row,
+  docs,
+}: {
+  mdl: string;
+  row: LedgerTableRow;
+  docs: OrderDocumentsPayload | undefined;
+}) {
+  const d = documentsFor(docs, row.entryNumber, row.docketKey)[0];
+  if (!d) return null;
+  const pages = d.pageCount ? `${d.pageCount} pp.` : "PDF";
+  if (d.sourceUrl) return <Out href={d.sourceUrl}>{pages}</Out>;
+  return (
+    <Link
+      to="/matters/$id"
+      params={{ id: mdl }}
+      search={{ tab: "documents", entry: d.entryNumber }}
+      className="text-primary underline-offset-2 hover:underline"
+      title="The source link is not recorded; open the entry's documents on this page"
+    >
+      {pages}, in Documents
+    </Link>
+  );
 }
 
 function Ledger({
@@ -76,11 +109,11 @@ function Ledger({
     {
       key: "pdf",
       label: "Document",
-      value: (r) => documentsFor(docs, r.entryNumber)[0]?.sourceUrl ?? null,
-      render: (r) => {
-        const d = documentsFor(docs, r.entryNumber)[0];
-        return d ? <Out href={d.sourceUrl}>{d.pageCount ? `${d.pageCount} pp.` : "PDF"}</Out> : "";
+      value: (r) => {
+        const d = documentsFor(docs, r.entryNumber, r.docketKey)[0];
+        return d ? (d.sourceUrl ?? "Document recorded, source link not recorded") : null;
       },
+      render: (r) => <DocumentCell mdl={cmd.mdl} row={r} docs={docs} />,
     },
   ];
   const latest = seq.latest;
@@ -300,7 +333,10 @@ export function KeyOrdersSection({ cmd }: { cmd: MdlCommandPayload }) {
           <p>
             Classified only from text that begins with the order's own wording; motions and notices
             keep their own kinds and are never counted as orders. An entry can carry more than one
-            kind. {fmt(o.coverage.withheldTotal)} withheld entries are not classified.
+            kind.{" "}
+            {o.coverage.withheldTotal != null
+              ? `${fmt(o.coverage.withheldTotal)} withheld entries are not classified.`
+              : "Withheld entries are never classified; their number could not be read just now."}
           </p>
         }
       >

@@ -196,6 +196,8 @@ export type LedgerTableRow = {
   entryNumber: number | null;
   sourceUrl: string | null;
   entryId: string | null;
+  /** Docket the entry is on (joins the order documents only on the exact master docket). */
+  docketKey: string | null;
   /** No collected entry starts with this number. */
   missing: boolean;
 };
@@ -218,6 +220,7 @@ export function ledgerRows(seq: LedgerSequence): LedgerTableRow[] {
         entryNumber: null,
         sourceUrl: null,
         entryId: null,
+        docketKey: null,
         missing: true,
       });
       continue;
@@ -232,6 +235,7 @@ export function ledgerRows(seq: LedgerSequence): LedgerTableRow[] {
         entryNumber: r.entry.entryNumber,
         sourceUrl: r.entry.sourceUrl,
         entryId: r.entry.id,
+        docketKey: r.entry.docketKey,
         missing: false,
       });
   }
@@ -366,6 +370,14 @@ export function ctoPerMonth(entries: readonly ClassifiedEntry[], collectedThroug
   for (let m = months[0]!; m <= months.at(-1)!; m = monthsBefore(m, -1))
     out.push({ month: m, count: by.get(m) ?? 0, partial: m === cut });
   return out;
+}
+
+/** "676 of 2,251 linked events carry a type (30%)"; null when the total of linked events is not recorded. */
+export function typedShare(typedCount: number, linkedTotal: number | null): string | null {
+  if (linkedTotal === null || linkedTotal <= 0) return null;
+  const pct = Math.round((typedCount / linkedTotal) * 100);
+  const n = (v: number) => v.toLocaleString("en-US");
+  return `${n(typedCount)} of ${n(linkedTotal)} linked events carry a type (${pct < 1 && typedCount > 0 ? "under 1" : pct}%)`;
 }
 
 /* ------------------------------------------------------------------ swimlanes */

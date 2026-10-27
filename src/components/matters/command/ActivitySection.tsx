@@ -12,11 +12,11 @@ import { ProfileTrend } from "@/components/trends/ProfileTrend";
 import { ORDERS_RULE_VERSION } from "@/lib/matters/orders";
 import type { MdlCommandPayload, TypedEvent } from "@/lib/matters/types";
 import { mdlTypedEventsQuery } from "./commandQueries";
-import { YEAR_GROUPS, ordersPerYear } from "./commandView";
+import { YEAR_GROUPS, ordersPerYear, typedShare } from "./commandView";
 import { Disclosure, Out, collectedNote, day, docketSource, fmt } from "./shared";
 
 const TYPED_SOURCE = {
-  label: "Docket links (mdl_docket_activity, mdl_docket_documents)",
+  label: "Linked docket events (CourtListener RECAP)",
   url: "https://www.courtlistener.com/recap/",
 };
 
@@ -43,14 +43,16 @@ function TypedEvents({ cmd }: { cmd: MdlCommandPayload }) {
   const d = q.data;
   const typed = d ? d.byType.filter((t) => t.type && t.type !== "Other") : [];
   const top = typed[0];
+  const typedCount = typed.reduce((a, t) => a + t.count, 0);
+  const share = d ? typedShare(typedCount, d.linkedTotal ?? null) : null;
   return (
     <ChartCard
       title={
         top
-          ? `${top.type} is the most frequent typed docket event (${fmt(top.count)})`
+          ? `${top.type} leads the typed docket events (${fmt(top.count)} of ${fmt(typedCount)} typed)`
           : "Typed docket events"
       }
-      subtitle={`Docket events by the source's own type${d?.window.first ? ` · ${day(d.window.first)} to ${day(d.window.last)}` : ""}`}
+      subtitle={`${share ?? "Share of linked events that carry a type: not recorded"} · the source's own type${d?.window.first ? ` · ${day(d.window.first)} to ${day(d.window.last)}` : ""}`}
       status={
         q.isPending
           ? { kind: "loading" }
@@ -92,8 +94,9 @@ function TypedEvents({ cmd }: { cmd: MdlCommandPayload }) {
       }
       about={
         <p>
-          The type is the dataset's own topic tag, not this page's classifier; a tag can name a
-          letter or stipulation about the topic.
+          The type is the source's own topic tag, not this page's classifier; a tag can name a
+          letter or stipulation about the topic. Untyped events and the source's &ldquo;Other&rdquo;
+          tag are left out of the bars{share ? `: ${share}` : ""}.
           {d?.blankMdlAttributed
             ? ` ${fmt(d.blankMdlAttributed)} events with no MDL number are attributed by this MDL's exact master docket.`
             : ""}

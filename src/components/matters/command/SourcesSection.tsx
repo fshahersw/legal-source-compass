@@ -34,7 +34,10 @@ function Coverage({ cmd }: { cmd: MdlCommandPayload }) {
     ["Collected through", c?.collectedThrough ? day(c.collectedThrough) : "Not recorded"],
     ["Entries read by the order classifier", c ? fmt(c.candidatesRead) : "Not recorded"],
     ["Entries with no text", c?.noText != null ? fmt(c.noText) : "Not recorded"],
-    ["Entries withheld (never classified)", c ? fmt(c.withheldTotal) : "Not recorded"],
+    [
+      "Entries withheld (never classified)",
+      c?.withheldTotal != null ? fmt(c.withheldTotal) : "Not recorded",
+    ],
     ...(c?.withheld ?? []).map(
       (w) => [`  · ${REASON_LABEL[w.reason] ?? w.reason}`, fmt(w.count)] as [string, string],
     ),

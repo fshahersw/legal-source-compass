@@ -13,6 +13,7 @@ vi.mock("./source.server", () => ({ loadRegistryMatter: vi.fn(async () => null) 
 const {
   buildDefendantRoster,
   buildSecDefendants,
+  zeroFillMonths,
   buildTypedEvents,
   classifyRows,
   loadKeyOrders,
@@ -181,6 +182,26 @@ describe("loadKeyOrders", () => {
     expect(k.ledger.cmo.highest).toBe(1);
     expect(k.rule).toBe("orders/2");
     await expect(loadKeyOrders("0")).rejects.toThrow("Invalid MDL number.");
+  });
+
+  it("keeps the classified orders when the coverage reads fail", async () => {
+    readAllRows.mockImplementation(async (p: string) => {
+      if (p.includes("description_withheld%22%3A%22true")) throw new Error("timeout");
+      if (p.includes("CASE%20MANAGEMENT"))
+        return [row("a", 75, "2022-11-10", "CASE MANAGEMENT ORDER NO. 1. Signed by Judge Y.")];
+      return [];
+    });
+    countRows.mockRejectedValue(new Error("timeout"));
+    restGet.mockRejectedValue(new Error("timeout"));
+    const k = await loadKeyOrders("3048");
+    expect(k.ledger.cmo.highest).toBe(1);
+    expect(k.coverage).toMatchObject({
+      total: null,
+      withheld: [],
+      withheldTotal: null,
+      noText: null,
+      collectedThrough: null,
+    });
   });
 });
 
@@ -361,9 +382,27 @@ describe("defendant roster", () => {
       { firm: "DECHERT LLP - NEW YORK NY", parties: 1 },
     ]);
     expect(r.terminatedByMonth).toEqual([{ month: "2025-07", count: 1 }]);
+    // The note's count matches the "Defendant" KPI (2); mixed-type rows are named apart.
     expect(r.captureNote).toBe(
-      "3 defendant parties among 100 parties published; the party capture is incomplete, so the docket may list more.",
+      "2 defendant parties (plus 1 listed with more than one party type, such as Plaintiff / Defendant) among 100 parties published; the party capture is incomplete, so the docket may list more.",
     );
+  });
+
+  it("zero-fills the months between the first and last termination", () => {
+    expect(
+      zeroFillMonths(
+        new Map([
+          ["2025-11", 2],
+          ["2026-02", 1],
+        ]),
+      ),
+    ).toEqual([
+      { month: "2025-11", count: 2 },
+      { month: "2025-12", count: 0 },
+      { month: "2026-01", count: 0 },
+      { month: "2026-02", count: 1 },
+    ]);
+    expect(zeroFillMonths(new Map())).toEqual([]);
   });
 });
 
@@ -411,6 +450,8 @@ describe("typed events", () => {
       },
     ]);
     expect(buildTypedEvents("2545", [], [link({ mdl: "" })], null).events).toEqual([]);
+    expect(out.linkedTotal).toBeNull();
+    expect(buildTypedEvents("2545", [], [], null, 2251).linkedTotal).toBe(2251);
   });
 
   it("uses blank-MDL rows only when the master docket belongs to this MDL alone", async () => {
@@ -515,6 +556,36 @@ describe("SEC registrants", () => {
     expect(out.named[0]!.legalPayments).toBeNull();
     expect(out.review[1]!.accrual).toBeNull();
     expect(out.caveats.join(" ")).toMatch(/not attributable to this MDL/);
+    expect(out.other).toEqual([]);
+  });
+
+  it("lists only defendant, undismissed links as defendants and groups the other roles apart", () => {
+    // Patterns seen in company_sec_mdl_links (read-only, 2026-10-27): role=plaintiff tier A (MDL 2873),
+    // role=not_named tier A (MDL 3043), dismissed=true tier A (MDL 2243), role=unclear tier A.
+    const row = (cik: string, over: Record<string, unknown>) => ({
+      link: { ...linkRow(cik, "A").link, ...over },
+    });
+    const out = buildSecDefendants(
+      "2846",
+      [
+        row("0000000010", {}),
+        row("0000000011", { role: "plaintiff", role_label: "Claimant as recorded" }),
+        row("0000000012", { role: "not_named" }),
+        row("0000000013", { dismissed: true }),
+        row("0000000014", { role: "unclear" }),
+        row("0000000015", { tier: "C", dismissed: true }),
+      ],
+      [],
+    );
+    expect(out.named.map((n) => n.cik)).toEqual(["0000000010"]);
+    expect(out.other.map((n) => [n.cik, n.group])).toEqual([
+      ["0000000013", "dismissed"],
+      ["0000000011", "plaintiff"],
+      ["0000000012", "not_named"],
+      ["0000000014", "unclear"],
+    ]);
+    expect(out.other[1]!.link.roleLabel).toBe("Claimant as recorded");
+    expect(out.review.map((n) => n.cik)).toEqual(["0000000015"]);
   });
 });
 

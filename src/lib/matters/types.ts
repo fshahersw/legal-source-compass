@@ -265,7 +265,8 @@ export type EntryCoverage = {
   total: number | null;
   /** Entries published without their text, by the projection's own reason; never classified. */
   withheld: { reason: string; count: number }[];
-  withheldTotal: number;
+  /** null when the withheld entries could not be read (shown "Not recorded"). */
+  withheldTotal: number | null;
   /** Entries published with no text at all (not withheld); null when not counted. */
   noText: number | null;
   /** Latest filing date in the collected entries; later docket activity is not collected. */
@@ -408,6 +409,8 @@ export type TypedEventsPayload = {
   /** The master docket used for blank-MDL rows; null when none was used. */
   masterDocket: { courtId: string; docketNumber: string } | null;
   blankMdlAttributed: number;
+  /** Every linked event on the same attribution, typed or not; null when it could not be counted. */
+  linkedTotal: number | null;
 };
 
 export type SecFinancialSeries = { label: string; points: FinPoint[] };
@@ -424,12 +427,22 @@ export type SecDefendant = {
   financialsRetrieved: string | null;
 };
 
+/** Why a tier A/B registrant is not among the defendants: a dismissal, or the role its filing excerpt states. */
+export type SecOtherGroup = "dismissed" | "plaintiff" | "not_named" | "unclear";
+
+export type SecOtherRegistrant = SecDefendant & { group: SecOtherGroup };
+
 export type SecDefendantsPayload = {
   mdl: string;
-  /** Tier A/B links (the filing cites the MDL number or caption) not flagged for review. */
+  /**
+   * Tier A/B links (the filing cites the MDL number or caption), not flagged for review, whose excerpt reads the
+   * company as a defendant and reports no dismissal.
+   */
   named: SecDefendant[];
   /** Tier C links and links flagged for review: kept apart, labelled "requires review". */
   review: SecDefendant[];
+  /** Tier A/B links that are not defendant links (dismissed, claimant, not named, role not stated), each grouped. */
+  other: SecOtherRegistrant[];
   caveats: string[];
 };
 

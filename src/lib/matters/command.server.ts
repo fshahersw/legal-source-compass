@@ -45,6 +45,8 @@ import type {
   Rule702Summary,
   SecDefendant,
   SecDefendantsPayload,
+  SecOtherGroup,
+  SecOtherRegistrant,
   TypedEvent,
   TypedEventsPayload,
 } from "./types";
@@ -195,19 +197,20 @@ async function readCoverage(mdl: string, candidatesRead: number): Promise<EntryC
   const base = `corpus_records?dataset=eq.${ENTRIES}&filters=cs.${enc(JSON.stringify({ mdl }))}`;
   const [total, withheldRows, noText, latest] = await Promise.all([
     countRows(base).catch(() => null),
+    // A failed coverage read leaves that figure "Not recorded"; it never removes the classified orders or dates.
     readAllRows<{ w: unknown; h: unknown }>(
       `corpus_records?select=w:item->cells->>description_withheld,h:item->cells->held&dataset=eq.${ENTRIES}&filters=cs.${enc(JSON.stringify({ mdl, description_withheld: "true" }))}&order=ordinal.asc,id.asc`,
       { max: CANDIDATE_MAX },
-    ),
+    ).catch(() => null),
     countRows(
       `corpus_records?dataset=eq.${ENTRIES}&filters=cs.${enc(JSON.stringify({ mdl, description_withheld: "false" }))}&item->cells->>description=is.null`,
     ).catch(() => null),
     restGet<{ f: unknown }[]>(
       `corpus_records?select=f:item->cells->>date_filed&dataset=eq.${ENTRIES}&filters=cs.${enc(JSON.stringify({ mdl }))}&item->cells->>date_filed=not.is.null&order=item->cells->>date_filed.desc&limit=1`,
-    ),
+    ).catch(() => null),
   ]);
   const reasons = new Map<string, number>();
-  for (const r of withheldRows) {
+  for (const r of withheldRows ?? []) {
     const reason = s(r.w) ?? (r.h === true ? "sealed_or_restricted_text" : "not_stated");
     reasons.set(reason, (reasons.get(reason) ?? 0) + 1);
   }
@@ -216,9 +219,9 @@ async function readCoverage(mdl: string, candidatesRead: number): Promise<EntryC
     withheld: [...reasons.entries()]
       .map(([reason, count]) => ({ reason, count }))
       .sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason)),
-    withheldTotal: withheldRows.length,
+    withheldTotal: withheldRows ? withheldRows.length : null,
     noText,
-    collectedThrough: isoOrNull(latest.rows[0]?.f),
+    collectedThrough: latest ? isoOrNull(latest.rows[0]?.f) : null,
     candidatesRead,
   };
 }
@@ -459,6 +462,29 @@ export function loadRegulatoryLinks(mdl: string): Promise<RegulatoryLinksPayload
 
 /* ------------------------------------------------------------------ defendant roster */
 
+/** Monthly counts from the first to the last month present, months with none counted 0 (yyyy-mm keys). */
+export function zeroFillMonths(
+  by: ReadonlyMap<string, number>,
+): { month: string; count: number }[] {
+  const keys = [...by.keys()].filter((k) => /^\d{4}-\d{2}$/.test(k)).sort();
+  if (!keys.length) return [];
+  const out: { month: string; count: number }[] = [];
+  let y = Number(keys[0]!.slice(0, 4));
+  let m = Number(keys[0]!.slice(5, 7));
+  const last = keys.at(-1)!;
+  for (;;) {
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    out.push({ month: key, count: by.get(key) ?? 0 });
+    if (key >= last) break;
+    m++;
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
+  }
+  return out;
+}
+
 export function buildDefendantRoster(
   mdl: string,
   rows: readonly { id: unknown; cells: unknown; counsel: unknown }[],
@@ -495,11 +521,14 @@ export function buildDefendantRoster(
     if (d.dateTerminated)
       months.set(d.dateTerminated.slice(0, 7), (months.get(d.dateTerminated.slice(0, 7)) ?? 0) + 1);
   const published = capture.published;
-  const n = defendants.length + mixed.length;
+  const n = defendants.length;
+  const plusMixed = mixed.length
+    ? ` (plus ${mixed.length.toLocaleString("en-US")} listed with more than one party type, such as Plaintiff / Defendant)`
+    : "";
   const captureNote =
     published === null
-      ? `${n.toLocaleString("en-US")} defendant parties listed; the number of parties published is not recorded.`
-      : `${n.toLocaleString("en-US")} defendant parties among ${published.toLocaleString("en-US")} parties published` +
+      ? `${n.toLocaleString("en-US")} defendant parties listed${plusMixed}; the number of parties published is not recorded.`
+      : `${n.toLocaleString("en-US")} defendant parties${plusMixed} among ${published.toLocaleString("en-US")} parties published` +
         (capture.complete === false
           ? "; the party capture is incomplete, so the docket may list more."
           : capture.complete === true
@@ -512,9 +541,7 @@ export function buildDefendantRoster(
     firms: [...firmCounts.entries()]
       .map(([firm, parties]) => ({ firm, parties }))
       .sort((a, b) => b.parties - a.parties || a.firm.localeCompare(b.firm)),
-    terminatedByMonth: [...months.entries()]
-      .map(([month, count]) => ({ month, count }))
-      .sort((a, b) => a.month.localeCompare(b.month)),
+    terminatedByMonth: zeroFillMonths(months),
     capture,
     captureNote,
   };
@@ -570,6 +597,7 @@ export function buildTypedEvents(
   own: readonly LinkRow[],
   blank: readonly LinkRow[],
   master: { courtId: string; docketNumber: string } | null,
+  linkedTotal: number | null = null,
 ): TypedEventsPayload {
   const toEvent = (r: LinkRow, attribution: TypedEvent["attribution"]): TypedEvent | null => {
     const documentType = s(r.document_type);
@@ -644,6 +672,7 @@ export function buildTypedEvents(
     },
     masterDocket: master,
     blankMdlAttributed,
+    linkedTotal,
   };
 }
 
@@ -678,7 +707,22 @@ export function loadTypedEvents(mdl: string): Promise<TypedEventsPayload> {
         );
       }
     }
-    return buildTypedEvents(mdl, own, blank, exactMaster);
+    // Every linked event (typed or not) on the same attribution, so the page can say how few carry a type.
+    const count = (filter: string) =>
+      restGet<unknown[]>(`corpus_workspace_docket_links?select=source_record_id&${filter}`, {
+        count: true,
+        range: [0, 0],
+      }).then((x) => x.total);
+    const [ownTotal, blankTotal] = await Promise.all([
+      count(`mdl=eq.${enc(mdl)}`).catch(() => null),
+      exactMaster
+        ? count(
+            `mdl=eq.&court_id=eq.${enc(exactMaster.courtId)}&docket_number=eq.${enc(exactMaster.docketNumber)}`,
+          ).catch(() => null)
+        : Promise.resolve(0),
+    ]);
+    const linkedTotal = ownTotal === null || blankTotal === null ? null : ownTotal + blankTotal;
+    return buildTypedEvents(mdl, own, blank, exactMaster, linkedTotal);
   });
 }
 
@@ -688,12 +732,39 @@ export const SEC_CAVEATS = [
   "Accruals, legal payments and possible-loss estimates are company-wide figures from the registrant's own XBRL facts; they are not attributable to this MDL.",
   "MDL-wide pending actions are never assigned to a company.",
   "Tier C links describe the MDL by its subject and require review; they are listed apart.",
+  "A registrant is listed as a defendant only when its own filing excerpt reads it as one and reports no dismissal; claimants, registrants the excerpt says are not named, unclear roles and dismissals are listed apart, with the role as recorded.",
 ];
 
 const SERIES: { metric: Metric; key: "accrual" | "legalPayments" | "possibleLoss" }[] = [
   { metric: "litigation_accrual", key: "accrual" },
   { metric: "legal_payments", key: "legalPayments" },
   { metric: "possible_loss", key: "possibleLoss" },
+];
+
+/**
+ * Where a registrant's link goes: tier C or review-flagged links are "review"; a tier A/B link counts as a defendant
+ * only when the filing's excerpt reads the company as a defendant and does not report a dismissal. Everything else
+ * (claimant, not named, role not stated, dismissed) is listed in its own labelled group, never among the defendants.
+ */
+export function secGroup(link: {
+  tier: string;
+  review: boolean;
+  role: string;
+  dismissed: boolean;
+}): "review" | "defendant" | SecOtherGroup {
+  if (link.tier === "C" || link.review) return "review";
+  if (link.dismissed) return "dismissed";
+  if (link.role === "defendant") return "defendant";
+  if (link.role === "plaintiff") return "plaintiff";
+  if (link.role === "not_named") return "not_named";
+  return "unclear";
+}
+
+export const SEC_OTHER_GROUPS: readonly SecOtherGroup[] = [
+  "dismissed",
+  "plaintiff",
+  "not_named",
+  "unclear",
 ];
 
 export function buildSecDefendants(
@@ -715,6 +786,7 @@ export function buildSecDefendants(
   }
   const named: SecDefendant[] = [];
   const review: SecDefendant[] = [];
+  const other: SecOtherRegistrant[] = [];
   const seen = new Set<string>();
   for (const r of linkRows) {
     const raw = obj(r.link);
@@ -743,8 +815,10 @@ export function buildSecDefendants(
       financialsRetrieved: parsed?.retrieved ?? null,
     };
     for (const { metric, key } of SERIES) row[key] = series(metric);
-    if (link.tier === "C" || link.review) review.push(row);
-    else named.push(row);
+    const group = secGroup(link);
+    if (group === "review") review.push(row);
+    else if (group === "defendant") named.push(row);
+    else other.push({ ...row, group });
   }
   const order = (a: SecDefendant, b: SecDefendant) =>
     a.link.tier.localeCompare(b.link.tier) ||
@@ -752,7 +826,10 @@ export function buildSecDefendants(
     a.name.localeCompare(b.name);
   named.sort(order);
   review.sort(order);
-  return { mdl, named, review, caveats: SEC_CAVEATS };
+  other.sort(
+    (a, b) => SEC_OTHER_GROUPS.indexOf(a.group) - SEC_OTHER_GROUPS.indexOf(b.group) || order(a, b),
+  );
+  return { mdl, named, review, other, caveats: SEC_CAVEATS };
 }
 
 const secMemo = memo<SecDefendantsPayload>();
