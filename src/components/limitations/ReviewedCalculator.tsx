@@ -47,6 +47,14 @@ import {
   versionWindowLabel,
 } from "./calculatorGuidance";
 import { ReviewChecklist } from "./ReviewChecklist";
+import { DateSources, PublicDatePicker, pickerApplies } from "./PublicDatePicker";
+import {
+  acceptCandidate,
+  currentAccepted,
+  type AcceptedPublicDates,
+  type PublicDateCandidate,
+  type SuggestibleField,
+} from "@/lib/limitations/publicDates";
 import { ScenarioIntake } from "./ScenarioIntake";
 import { CalculatorCoverage } from "./CalculatorCoverage";
 import { ruleAuthorityFacts } from "./ruleAuthority";
@@ -125,6 +133,8 @@ export function ReviewedCalculator({
   } | null>(null);
   const [showEvidence, setShowEvidence] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  // Provenance of accepted public dates: in memory only, dropped when the field no longer holds the date.
+  const [acceptedDates, setAcceptedDates] = useState<AcceptedPublicDates>({});
   const resultRef = useRef<HTMLDivElement>(null);
   const rule = useMemo(
     () => (state && claim ? baselineRule(snapshot.rules, state, claim, input.subtype) : null),
@@ -170,6 +180,7 @@ export function ReviewedCalculator({
     setReview(null);
     setResultRecord(null);
     setSubmitted(false);
+    setAcceptedDates({});
     if (evidenceRefreshed) setStep(rule ? 1 : 0);
   }
   const currentReview =
@@ -229,11 +240,19 @@ export function ReviewedCalculator({
     setResultRecord(null);
     setSubmitted(false);
   };
+  const accepted = currentAccepted(acceptedDates, input);
+  // Accepting goes through edit(): it resets the accrual, applicability and repose confirmations.
+  const acceptPublicDate = (field: SuggestibleField, candidate: PublicDateCandidate) => {
+    edit({ [field]: candidate.date });
+    setAcceptedDates((old) => ({ ...old, [field]: acceptCandidate(field, candidate) }));
+  };
+  const fieldLabels = Object.fromEntries(dates.map((d) => [d.key, d.label]));
   const applyIntake = (accepted: ConfirmedIntake) => {
     const nextState = accepted.facts.jurisdiction ?? state;
     const nextClaim = accepted.facts.claimType ?? claim;
     setIntakeSelection({ state: nextState, claim: nextClaim });
     setInput(intakeCaseFacts(accepted, state, claim));
+    setAcceptedDates({});
     setIntakeTopics(accepted.reviewTopics);
     setIntakeApplied(true);
     setSourceChanged(false);
@@ -533,6 +552,16 @@ export function ReviewedCalculator({
                   </label>
                 ))}
               </div>
+              {pickerApplies(claim) && (
+                <PublicDatePicker
+                  rule={rule}
+                  dateFields={dates}
+                  cutoff={sourceCutoff}
+                  values={input}
+                  accepted={acceptedDates}
+                  onAccept={acceptPublicDate}
+                />
+              )}
               {rule.calculation?.deathCapYears && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-sm font-medium">
@@ -668,6 +697,8 @@ export function ReviewedCalculator({
               <ReviewChecklist
                 key={contextKey}
                 state={state}
+                snapshot={snapshot}
+                rule={rule}
                 factors={factors}
                 decisions={decisions}
                 onChange={setDecisions}
@@ -710,6 +741,7 @@ export function ReviewedCalculator({
                 aria-label="Reset dates and review"
                 onClick={() => {
                   setInput(unconfirmedClaimInput(state, claim ?? ""));
+                  setAcceptedDates({});
                   setReview(null);
                   setResultRecord(null);
                   setStep(0);
@@ -856,6 +888,7 @@ export function ReviewedCalculator({
                   <p key={index}>{reason}</p>
                 ))}
               </div>
+              <DateSources list={accepted} labels={fieldLabels} />
               {!result.date && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button

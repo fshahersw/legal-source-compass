@@ -21,6 +21,8 @@ import {
   validateInstruction,
   type ReviewedInstruction,
 } from "@/lib/limitations/reviewedArithmetic";
+import type { LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
+import { TollingReviewNotes, type TollingNoteCategory } from "./TollingReviewNotes";
 
 const control =
   "mt-1 block min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal";
@@ -344,14 +346,25 @@ function InstructionEditor({
   );
 }
 
+/** Screening rows that get the recorded tolling review notes beside them (notes only, nothing computed). */
+const SCREEN_NOTES: Record<string, TollingNoteCategory> = {
+  "screen:disability": "incapacity",
+  "screen:tolling": "concealment",
+  "screen:prior_filing": "class_action",
+};
+
 export function ReviewChecklist({
   state,
+  snapshot,
+  rule,
   factors,
   decisions,
   onChange,
   onInspectEvidence,
 }: {
   state: string;
+  snapshot?: LimitationsSnapshot | undefined;
+  rule?: LimitationRule | null | undefined;
   factors: ReviewFactor[];
   decisions: ReviewDecisions;
   onChange: (next: ReviewDecisions) => void;
@@ -578,6 +591,13 @@ export function ReviewChecklist({
                               <p className="mt-1 text-xs text-muted-foreground">
                                 Shown once; retained in {factor.origins.length} source locations.
                               </p>
+                            )}
+                            {snapshot && rule && SCREEN_NOTES[factor.id] && (
+                              <TollingReviewNotes
+                                snapshot={snapshot}
+                                rule={rule}
+                                category={SCREEN_NOTES[factor.id]!}
+                              />
                             )}
                           </div>
                           <select
