@@ -11,6 +11,15 @@ live run is therefore refused (Blocked). The project's retained originals (96 ob
 89 title RTFs) can be re-parsed with `--option source=retained`; NOTE that capture was itself taken while robots.txt
 disallowed all agents, so loading an edition built from it waits for an owner/lead decision (see the handoff).
 
+Still held on 2026-10-27 (release state-codes-official-unprojected), on the publisher's own explicit restriction:
+robots.txt re-read 2026-10-27 (2,215 bytes, sha256 a676c21fd1960ed2b3b586d43e258958c02b1173e13d5f24968aa9d65554884a):
+after `User-agent: *` and a blank line come `Disallow: /cgi-bin/`, `/WebApplication2/`, `/WebApplication21/` and then
+`Disallow: /`; the file also disallows `/*.pdf$` and `/cf_pdf/`, and has explicit `User-agent: ClaudeBot` /
+`Disallow: /` and `User-agent: GPTBot` / `Disallow: /` groups. RFC 9309 allows empty lines inside a group, so
+`Disallow: /` is a rule for every crawler not named (Googlebot, Bingbot, DuckDuckBot); the named ClaudeBot group is
+a second, explicit refusal. Python's robotparser ends the `*` group at the blank line, which is why a naive check passes. Releasing it needs an
+owner decision on that capture or the Legislative Service Bureau's permission; nothing here bypasses it.
+
 Parsing (`ok-title-rtf/1`): RTF -> text (`_statb.rtf_to_text`, the same rendering the exact-text check uses); a
 section starts at a paragraph `§12-2001.  Title.` (number `12:2001` — section numbers are unique only inside a title,
 cited `Okla. Stat. tit. 12, § 2001`); following paragraphs are text; the publisher's trailing `NOTE:` paragraphs

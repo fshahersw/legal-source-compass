@@ -748,7 +748,7 @@ export function CourtPageCard({
   return (
     <Card
       title="Transferee court MDL page"
-      subtitle={`Quoted verbatim from the court's own pages${retrieved ? `, retrieved ${retrieved}` : ""}; counsel contact details removed.`}
+      subtitle={`Quoted verbatim from the court's own pages${retrieved ? `, retrieved ${retrieved}` : ""}${page.quotes.some((q) => q.contactRemoved) || page.leadership.some((s) => s.contactLinesRemoved) ? "; some contact details were removed when the page was read." : "."}`}
       className={cn("lg:col-span-2", className)}
     >
       <div className="grid gap-4 lg:grid-cols-2">
@@ -797,7 +797,10 @@ export function CourtPageCard({
             <div>
               <p className="text-[11px] font-medium">Leadership as listed</p>
               <p className="text-[10.5px] text-muted-foreground">
-                Names, firms and roles as printed on the court page; contact details are not shown.
+                Names, firms and roles as printed on the court page
+                {page.leadership.some((s) => s.contactLinesRemoved)
+                  ? "; contact lines were removed when the page was read."
+                  : ", contact details included."}
               </p>
               <LeadershipList
                 sections={page.leadership}

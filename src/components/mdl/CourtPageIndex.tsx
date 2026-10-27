@@ -428,7 +428,10 @@ function CourtDetail({ c }: { c: CourtMdl }) {
               Leadership as listed on the page
             </h4>
             <p className="text-[10.5px] text-muted-foreground" title={c.contactMethod ?? undefined}>
-              Names, firms and roles as printed; counsel contact details are not shown.
+              Names, firms and roles as printed
+              {c.leadership.some((s) => s.contactLinesRemoved)
+                ? "; contact lines were removed when this page was read."
+                : ", contact details included."}
             </p>
             <LeadershipList
               sections={c.leadership}

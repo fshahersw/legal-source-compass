@@ -57,7 +57,7 @@ def chapter_url(ref: dict) -> str:
 
 def section_record(ctx: lib.RunContext, part: dict, chapter: dict, ref: dict) -> None:
     url = ref.get("Details") or f"{API}/Chapters/{api_code(chapter['Code'])}/Sections/{api_code(ref['Code'])}"
-    fetched = ctx.fetch(url, method="publisher_api", headers={"Accept": "application/json"})
+    fetched = ctx.get(url, fallback_fresh=True, method="publisher_api", headers={"Accept": "application/json"})
     data = _json(fetched)
     raw = (data.get("Text") or "").replace("\r\n", "\n").replace("\r", "\n")
     match = PREFIX_RE.match(raw)
@@ -86,26 +86,26 @@ SAMPLE = {"III": {"260"}, "I": {"93A"}}
 
 
 def acquire(ctx: lib.RunContext) -> None:
-    index = ctx.fetch(INDEX)
+    index = ctx.get(INDEX, fallback_fresh=True)
     flat = lib.html_text(index.body)
     notice = re.search(r"NOTICE: This is NOT the official version[^\n]*", flat)
     through = re.search(r"This site includes all amendments to the General Laws passed before[^\n]*", flat)
     ctx.edition(edition_label=None,
                 currency_statement="\n".join(m.group(0) for m in (through, notice) if m) or None,
                 currency_source_url=INDEX)
-    parts = _json(ctx.fetch(f"{API}/Parts", method="publisher_api", headers={"Accept": "application/json"}))
+    parts = _json(ctx.get(f"{API}/Parts", fallback_fresh=True, method="publisher_api", headers={"Accept": "application/json"}))
     for part_ref in parts:
         if ctx.sample is not None and part_ref["Code"] not in SAMPLE:
             continue
         if not ctx.want_more():
             break
-        part = _json(ctx.fetch(f"{API}/Parts/{part_ref['Code']}", method="publisher_api", headers={"Accept": "application/json"}))
+        part = _json(ctx.get(f"{API}/Parts/{part_ref['Code']}", fallback_fresh=True, method="publisher_api", headers={"Accept": "application/json"}))
         for chapter_ref in part.get("Chapters", []):
             if ctx.sample is not None and chapter_ref["Code"] not in SAMPLE[part_ref["Code"]]:
                 continue
             if not ctx.want_more():
                 break
-            chapter = _json(ctx.fetch(chapter_url(chapter_ref), method="publisher_api",
+            chapter = _json(ctx.get(chapter_url(chapter_ref), fallback_fresh=True, method="publisher_api",
                                       headers={"Accept": "application/json"}))
             for section in chapter.get("Sections", []):
                 if not ctx.want_more():
