@@ -19,6 +19,24 @@ def day(value):
     return dt.datetime.strptime(value, '%Y%m%d').date().isoformat()
 
 
+RECORD_PAYLOAD_LIMIT = 170000  # under the collector's 180000-byte record cap (core.mjs record())
+
+
+def payload_bytes(record):
+    return len(json.dumps(record, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+
+
+def factor_shared_cells(fields, names):
+    """Lossless: cells identical in every association row move to publisher_shared_cells, rows keep the rest."""
+    rows = fields['publisher_rows']
+    shared = [i for i in range(len(names)) if all(r[i] == rows[0][i] for r in rows)]
+    kept = [i for i in range(len(names)) if i not in shared]
+    fields['publisher_shared_cells'] = {names[i]: rows[0][i] for i in shared}
+    fields['publisher_row_field_names'] = [names[i] for i in kept]
+    fields['publisher_rows'] = [[r[i] for i in kept] for r in rows]
+    fields['row_layout'] = 'Cells identical in every association row appear once in publisher_shared_cells; no value is dropped.'
+
+
 def parse_bulk(filename, source, start, through, maximum=1500):
     dt.date.fromisoformat(start)
     dt.date.fromisoformat(through)
@@ -105,6 +123,9 @@ def parse_bulk(filename, source, start, through, maximum=1500):
         }
         if len(json.dumps(record, ensure_ascii=False).encode('utf-8')) > 1000000:
             raise ValueError('NHTSA_NATIVE_GROUP_TOO_LARGE')
+        # Only oversized groups change layout, so already-landed records keep their exact payloads.
+        if payload_bytes(record) > RECORD_PAYLOAD_LIMIT:
+            factor_shared_cells(fields, names)
         results.append(record)
     return {'records': results, 'total_source_rows': total_rows, 'total_source_native_groups': len(groups), 'selected_native_groups': len(results), 'member': member, 'uncompressed_bytes': entries[0].file_size}
 

@@ -61,6 +61,16 @@ test('FDA enforcement dates and lifecycle qualification remain distinct', () => 
   const d = normalizeEnforcement({ recall_number: 'D-TEST', event_id: '10', recalling_firm: 'Synthetic', product_description: 'Synthetic product', reason_for_recall: 'Synthetic reason', report_date: '20261009', recall_initiation_date: '20260801', status: 'Ongoing', openfda: { arbitrary: 'not copied' } }, 'drug');
   assert.equal(d.published_on, '2026-10-09'); assert.equal(d.fields.recall_initiation_date, '2026-08-01'); assert.match(d.fields.qualification, /not for current public alerts/); assert.equal(d.fields.publisher_record.openfda, undefined);
 });
+test('oversized device lot lists are shortened with a recorded cut; ordinary records are untouched', () => {
+  const base = { recall_number: 'Z-TEST', event_id: '11', recalling_firm: 'Synthetic', product_description: 'Synthetic device', reason_for_recall: 'Synthetic reason', report_date: '20261009', code_info: 'LOT-1, LOT-2' };
+  const small = normalizeEnforcement({ ...base, more_code_info: 'LOT-3' }, 'device');
+  assert.equal(small.fields.shortened_publisher_fields, undefined); assert.equal(small.fields.publisher_record.more_code_info, 'LOT-3');
+  const lots = Array.from({ length: 60000 }, (_, i) => `SN${i}`).join(', ');
+  const big = normalizeEnforcement({ ...base, more_code_info: lots }, 'device');
+  assert.deepEqual(big.fields.shortened_publisher_fields, [{ field: 'more_code_info', kept_chars: 20000, published_chars: lots.length }]);
+  assert.equal(big.fields.publisher_record.more_code_info, lots.slice(0, 20000)); assert.equal(big.fields.publisher_record.code_info, 'LOT-1, LOT-2');
+  assert.doesNotThrow(() => record(big, captured({}), 'results/0'));
+});
 test('only exact repeated openFDA no-match JSON can establish an empty window', async () => {
   const empty = captured({ error: { code: 'NOT_FOUND', message: 'No matches found!' } }); empty.receipt.http_status = 404;
   assert.equal((await collectOpenFda(sequence([empty, empty]), 'openfda_enforcement_drug', options)).expected, 0);

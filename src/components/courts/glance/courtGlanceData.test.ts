@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latestWithYear } from "./courtGlance";
+import { latestWithYear } from "./courtGlanceData";
 
 describe("latestWithYear", () => {
   it("returns the latest recorded value with its own year", () => {

@@ -30,7 +30,8 @@ jobs:
           bun-version: 1.4.0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          # 3.13 matches src/lib/semantic/fixtures/chunk-golden.json, whose Unicode tables come from the generating Python
+          python-version: "3.13"
           cache: pip
           cache-dependency-path: scripts/test/requirements.txt
       # The lockfile resolves some packages through Lovable's npm mirror, which answers HTTP 429 when it is busy;

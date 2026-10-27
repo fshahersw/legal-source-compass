@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { courtsQuery, coverageQuery } from "./caseQueries";
 import { fmtInt, NOT_RECORDED, stateLabel } from "./caseFormat";
 import { Problem, Skeleton } from "./CaseSearchPage";
-import { tierTotals, type DirectoryState } from "./courtCaseLaw";
+import { tierTotals, type DirectoryState } from "./courtCaseLawData";
 
 function Chip({
   active,

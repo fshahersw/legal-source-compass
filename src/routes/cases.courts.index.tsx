@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { CourtDirectory } from "@/components/caselaw/CourtDirectory";
-import { normalizeDirectory } from "@/components/caselaw/courtCaseLaw";
+import { normalizeDirectory } from "@/components/caselaw/courtCaseLawData";
 import { courtsQuery } from "@/components/caselaw/caseQueries";
 import { pageHead } from "@/lib/corpus/head";
 
