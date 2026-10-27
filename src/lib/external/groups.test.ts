@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import {
   datasetLabel,
+  datasetSuccessor,
   duplicateLookingIds,
   normalizeItem,
   pageRoutePatterns,
@@ -66,6 +67,20 @@ describe("permanent record destinations", () => {
       dataset: "citation_index",
       id: "1956",
     });
+  });
+});
+
+describe("datasetSuccessor", () => {
+  it("sends the retired staged regulatory-links id to the published collection", () => {
+    expect(datasetSuccessor("sw_matter_regulatory_links_v1_staged")).toBe(
+      "sw_matter_regulatory_links_v1",
+    );
+  });
+  it("leaves live and unknown ids alone, including inherited object keys", () => {
+    expect(datasetSuccessor("sw_matter_regulatory_links_v1")).toBeNull();
+    expect(datasetSuccessor("sw_matter_dockets_v1_superseded")).toBeNull();
+    expect(datasetSuccessor("constructor")).toBeNull();
+    expect(datasetSuccessor("")).toBeNull();
   });
 });
 

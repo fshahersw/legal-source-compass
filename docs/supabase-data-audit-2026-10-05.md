@@ -198,7 +198,7 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | State codes | state_codes | Law | 2 | 5.89 KB | Available |
 | Library files | library_assets | Sources and captured pages | 1 | 336 B | Held |
 | Judge portraits | judge_portraits | Judges and people | 0 | 0 B | Held |
-| Seeger Weiss matter registry — regulatory evidence links, staged extension (not published) | sw_matter_regulatory_links_v1_staged | Matters and dockets | 0 | 0 B | Held |
+| Seeger Weiss matter registry — regulatory evidence links, staged extension (not published) | sw_matter_regulatory_links_v1_staged | Matters and dockets | 0 | 0 B | Retired 2026-10-27 (empty; its 38 links are in sw_matter_regulatory_links_v1; ledger issue release20261027_retire_empty_staged_catalog) |
 | Verdict reports | verdict_reports | Matters and dockets | 0 | 0 B | Held |
 
 Two available version families retain earlier rows: people (prior to cl_people), and the earlier FDA device-classification snapshot (prior to the 20261002 dataset). The normal section/search family view favors the current dataset; prior versions remain selectable through inventory/detail access. They are not proven redundant byte copies.
