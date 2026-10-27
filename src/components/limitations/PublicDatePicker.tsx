@@ -12,7 +12,6 @@ import {
   EVENT_LABELS,
   IDENTIFIER_HINTS,
   KIND_LABELS,
-  PICKER_CLAIMS,
   exactIdentifier,
   isAfterReviewCutoff,
   suggestibleFields,
@@ -24,7 +23,7 @@ import {
   type SuggestibleField,
 } from "@/lib/limitations/publicDates";
 import { getPublicDates, searchPublicDateSources } from "@/lib/limitations/publicDates.functions";
-import type { ClaimType, LimitationRule } from "@/lib/limitations/types";
+import type { LimitationRule } from "@/lib/limitations/types";
 
 type Tab = "mdl" | "application" | "pma" | "recall";
 const TABS: { id: Tab; label: string }[] = [
@@ -33,15 +32,15 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "pma", label: "PMA" },
   { id: "recall", label: "Recall" },
 ];
-const RECALL_KINDS = ["fda_drug_recall", "fda_device_recall", "cpsc_recall", "nhtsa_recall"] as const;
+const RECALL_KINDS = [
+  "fda_drug_recall",
+  "fda_device_recall",
+  "cpsc_recall",
+  "nhtsa_recall",
+] as const;
 const control =
   "block min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const staleTime = 10 * 60 * 1000;
-
-/** The picker is offered only for injury, product and warranty claims. */
-export function pickerApplies(claim: ClaimType | undefined): boolean {
-  return !!claim && (PICKER_CLAIMS as readonly string[]).includes(claim);
-}
 
 function kindFor(tab: Tab, recallKind: (typeof RECALL_KINDS)[number], q: string): PublicDateKind {
   if (tab === "mdl") return "mdl";
@@ -213,7 +212,11 @@ function PickerBody({ rule, dateFields, cutoff, values, accepted, onAccept }: Pi
           {hits.isError && (
             <p role="alert">
               The search could not be run.{" "}
-              <button type="button" className="text-primary underline" onClick={() => void hits.refetch()}>
+              <button
+                type="button"
+                className="text-primary underline"
+                onClick={() => void hits.refetch()}
+              >
                 Retry
               </button>
             </p>
@@ -249,12 +252,20 @@ function PickerBody({ rule, dateFields, cutoff, values, accepted, onAccept }: Pi
       )}
 
       {selected && (
-        <div className="mt-3 space-y-3 text-sm" aria-live="polite" data-testid="public-date-results">
+        <div
+          className="mt-3 space-y-3 text-sm"
+          aria-live="polite"
+          data-testid="public-date-results"
+        >
           {dates.isPending && <p className="text-muted-foreground">Reading the record…</p>}
           {dates.isError && (
             <p role="alert">
               The record could not be read.{" "}
-              <button type="button" className="text-primary underline" onClick={() => void dates.refetch()}>
+              <button
+                type="button"
+                className="text-primary underline"
+                onClick={() => void dates.refetch()}
+              >
                 Retry
               </button>
             </p>
@@ -266,7 +277,9 @@ function PickerBody({ rule, dateFields, cutoff, values, accepted, onAccept }: Pi
                   {KIND_LABELS[dates.data.kind]} {dates.data.identifier}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {dates.data.found ? (dates.data.title ?? "Title not recorded") : "Not found in the corpus."}
+                  {dates.data.found
+                    ? (dates.data.title ?? "Title not recorded")
+                    : "Not found in the corpus."}
                 </p>
               </div>
               {dates.data.notes.map((n) => (
@@ -373,7 +386,12 @@ function CandidateChip({
               <span className="text-muted-foreground">Link: Not recorded</span>
             )}
             {c.pdfUrl && (
-              <a href={c.pdfUrl} target="_blank" rel="noreferrer" className="text-primary underline">
+              <a
+                href={c.pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline"
+              >
                 PDF
               </a>
             )}
@@ -393,7 +411,8 @@ function CandidateChip({
       </div>
       {late ? (
         <p className="mt-2 text-xs text-muted-foreground">
-          Later than this rule&apos;s review date ({cutoff}); the calculator would withhold a result.
+          Later than this rule&apos;s review date ({cutoff}); the calculator would withhold a
+          result.
         </p>
       ) : (
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -432,7 +451,10 @@ export function DateSources({
 }) {
   if (!list.length) return null;
   return (
-    <div className="mt-3 rounded-md border border-border p-3 text-xs leading-relaxed" data-testid="date-sources">
+    <div
+      className="mt-3 rounded-md border border-border p-3 text-xs leading-relaxed"
+      data-testid="date-sources"
+    >
       <p className="font-semibold">Date sources</p>
       <ul className="mt-1 space-y-1.5">
         {list.map((a) => (
@@ -440,7 +462,12 @@ export function DateSources({
             <span className="font-medium">{labels[a.field] ?? a.field}</span>: {a.date} — {a.event},{" "}
             {a.identifier}, {a.publisher}.{" "}
             {a.officialUrl ? (
-              <a href={a.officialUrl} target="_blank" rel="noreferrer" className="text-primary underline">
+              <a
+                href={a.officialUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline"
+              >
                 {a.urlKind === "source_file" ? "Source file" : "Record"}
               </a>
             ) : (

@@ -47,9 +47,10 @@ import {
   versionWindowLabel,
 } from "./calculatorGuidance";
 import { ReviewChecklist } from "./ReviewChecklist";
-import { DateSources, PublicDatePicker, pickerApplies } from "./PublicDatePicker";
+import { DateSources, PublicDatePicker } from "./PublicDatePicker";
 import {
   acceptCandidate,
+  pickerApplies,
   currentAccepted,
   type AcceptedPublicDates,
   type PublicDateCandidate,

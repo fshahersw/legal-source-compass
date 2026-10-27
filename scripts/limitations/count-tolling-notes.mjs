@@ -21,7 +21,10 @@ export const SCREENING_TERMS = [
   ["military", /military|servicemember|service member|war(?:time)?\b|SCRA/i],
   ["confinement", /imprison|incarcer|confess|criminal|convict|detention|crime/i],
   ["concealment", /conceal|estoppel|duress|fraud|equitable/i],
-  ["discovery", /discover|latent|toxic|foreign object|continu(?:ing|ous)|representation|treatment/i],
+  [
+    "discovery",
+    /discover|latent|toxic|foreign object|continu(?:ing|ous)|representation|treatment/i,
+  ],
   ["absence", /absen|out.of.state|nonresident|false name|return to/i],
   ["prior_action", /refil|prior|previous|dismiss|nonsuit|savings?|terminat|appeal|relation.back/i],
   ["class_action", /class.action|MDL|multidistrict|registry|master complaint/i],
@@ -99,7 +102,9 @@ export function countTollingNotes(rules) {
 function main() {
   const dir = process.env.LIM_BUNDLE_DIR;
   if (!dir) {
-    console.error("LIM_BUNDLE_DIR is not set; point it at a Time Limits bundle directory (read-only).");
+    console.error(
+      "LIM_BUNDLE_DIR is not set; point it at a Time Limits bundle directory (read-only).",
+    );
     process.exit(2);
   }
   const file = path.join(dir, "rules.json");
@@ -120,7 +125,9 @@ function main() {
     return;
   }
   const t = out.total;
-  console.log(`Limitations rules: ${t.rules}; with tolling notes: ${t.rulesWithTollingNotes}; notes: ${t.tollingNotes}`);
+  console.log(
+    `Limitations rules: ${t.rules}; with tolling notes: ${t.rulesWithTollingNotes}; notes: ${t.tollingNotes}`,
+  );
   for (const c of FOCUS)
     console.log(`  ${c}: ${t.byCategory[c]} notes on ${t.rulesWithFocusNotes[c]} rules`);
   console.log(`Rules the reviewed-instruction gate admits: ${t.instructionEligibleRules}`);

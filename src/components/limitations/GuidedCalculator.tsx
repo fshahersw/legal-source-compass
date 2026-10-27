@@ -36,10 +36,12 @@ import {
   switchedVersionInput,
   versionWindowLabel,
 } from "./calculatorGuidance";
-import { DateSources, PublicDatePicker, pickerApplies } from "./PublicDatePicker";
-import { TollingReviewNotes, type TollingNoteCategory } from "./TollingReviewNotes";
+import { DateSources, PublicDatePicker } from "./PublicDatePicker";
+import { TollingReviewNotes } from "./TollingReviewNotes";
+import type { TollingNoteCategory } from "./tollingNotes";
 import {
   acceptCandidate,
+  pickerApplies,
   currentAccepted,
   type AcceptedPublicDates,
   type PublicDateCandidate,

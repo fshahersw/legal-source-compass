@@ -22,7 +22,8 @@ import {
   type ReviewedInstruction,
 } from "@/lib/limitations/reviewedArithmetic";
 import type { LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
-import { TollingReviewNotes, type TollingNoteCategory } from "./TollingReviewNotes";
+import { TollingReviewNotes } from "./TollingReviewNotes";
+import type { TollingNoteCategory } from "./tollingNotes";
 
 const control =
   "mt-1 block min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal";

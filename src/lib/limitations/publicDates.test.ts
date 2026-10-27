@@ -80,7 +80,8 @@ const philips = {
   },
   detail: {
     original_file: {
-      final_url: "https://download.open.fda.gov/device/enforcement/device-enforcement-0001-of-0001.json.zip",
+      final_url:
+        "https://download.open.fda.gov/device/enforcement/device-enforcement-0001-of-0001.json.zip",
     },
   },
 };
@@ -116,7 +117,8 @@ const elmironNda = {
 };
 const cpsc = {
   id: "cpsc-api:73039",
-  source_url: "https://www.cpsc.gov/Recalls/1973/CPSC-Warns-Of-Fire-Hazard-In-Decorative-Fireplace-Units",
+  source_url:
+    "https://www.cpsc.gov/Recalls/1973/CPSC-Warns-Of-Fire-Hazard-In-Decorative-Fireplace-Units",
   item: {
     title: "CPSC Warns Of Fire Hazard In Decorative Fireplace Units",
     cells: { date: "1973-11-10", recall_number: "73039" },
@@ -154,7 +156,9 @@ describe("MDL centralization dates", () => {
     const r = mdlPublicDates("2973", [elmironOrder], elmironMdl);
     expect(r.candidates).toHaveLength(1);
     expect(r.candidates[0]!.date).toBe("2020-12-15");
-    expect(r.candidates[0]!.officialUrl).toContain("govinfo.gov/app/details/USCOURTS-jpml-1_20-F-02973");
+    expect(r.candidates[0]!.officialUrl).toContain(
+      "govinfo.gov/app/details/USCOURTS-jpml-1_20-F-02973",
+    );
     expect(r.candidates[0]!.pdfUrl).toContain(".pdf");
     expect(r.candidates[0]!.caveat).toMatch(/not a limitations trigger/);
     expect(r.notes).toEqual([]);
@@ -185,8 +189,16 @@ describe("MDL centralization dates", () => {
   it("lists title-named products once", () => {
     expect(
       parseMdlProducts([
-        { label: "Elmiron (pentosan polysulfate sodium)", kind: "drug", basis: "title_names_product" },
-        { label: "elmiron (pentosan polysulfate sodium)", kind: "drug", basis: "title_names_product" },
+        {
+          label: "Elmiron (pentosan polysulfate sodium)",
+          kind: "drug",
+          basis: "title_names_product",
+        },
+        {
+          label: "elmiron (pentosan polysulfate sodium)",
+          kind: "drug",
+          basis: "title_names_product",
+        },
       ]),
     ).toHaveLength(1);
   });
@@ -205,7 +217,11 @@ describe("recall and labeling dates", () => {
   });
   it("flags date-ordering anomalies without correcting them", () => {
     expect(
-      enforcementAnomalies({ initiation: "1930-12-11", classification: "1930-12-01", report: "1930-12-01" }),
+      enforcementAnomalies({
+        initiation: "1930-12-11",
+        classification: "1930-12-01",
+        report: "1930-12-01",
+      }),
     ).toHaveLength(3);
     const odd = structuredClone(philips);
     odd.item.dates.center_classification_date = "2021-06-01";
@@ -216,7 +232,9 @@ describe("recall and labeling dates", () => {
   it("keeps only approved LABELING supplements and says what changed is not recorded", () => {
     const r = parseDrugsFdaLabeling(elmironNda);
     expect(r.candidates).toHaveLength(1);
-    expect(r.candidates[0]!.label).toBe("S-014 approved 2020-06-16 — what changed is not recorded here");
+    expect(r.candidates[0]!.label).toBe(
+      "S-014 approved 2020-06-16 — what changed is not recorded here",
+    );
     expect(r.candidates[0]!.identifier).toBe("NDA020193 S-014");
   });
   it("keeps only PMA supplements whose reason is a labeling change, for that PMA only", () => {
@@ -232,11 +250,19 @@ describe("recall and labeling dates", () => {
       },
       {
         id: "openfda:device/pma:P100047:S216",
-        item: { native_id: "P100047:S216", snippet: "Process Change - Manufacturer", dates: { decision_date: "2024-05-01" } },
+        item: {
+          native_id: "P100047:S216",
+          snippet: "Process Change - Manufacturer",
+          dates: { decision_date: "2024-05-01" },
+        },
       },
       {
         id: "openfda:device/pma:P1000470:S001",
-        item: { native_id: "P1000470:S001", snippet: "Labeling Change - PAS", dates: { decision_date: "2024-05-02" } },
+        item: {
+          native_id: "P1000470:S001",
+          snippet: "Labeling Change - PAS",
+          dates: { decision_date: "2024-05-02" },
+        },
       },
     ];
     const r = parsePmaLabeling("P100047", rows);
@@ -254,13 +280,13 @@ describe("recall and labeling dates", () => {
   });
   it("offers a search hit only when its identifier has the exact shape", () => {
     expect(parseHit("mdl", elmironOrder)?.identifier).toBe("2973");
-    expect(parseHit("fda_device_recall", { item: { native_id: "Z-1974-2021", title: "x" } })?.identifier).toBe(
-      "Z-1974-2021",
-    );
+    expect(
+      parseHit("fda_device_recall", { item: { native_id: "Z-1974-2021", title: "x" } })?.identifier,
+    ).toBe("Z-1974-2021");
     expect(parseHit("fda_device_recall", { item: { native_id: "1974", title: "x" } })).toBeNull();
-    expect(parseHit("device_pma", { item: { native_id: "P100047:S215", title: "x" } })?.identifier).toBe(
-      "P100047",
-    );
+    expect(
+      parseHit("device_pma", { item: { native_id: "P100047:S215", title: "x" } })?.identifier,
+    ).toBe("P100047");
   });
 });
 
@@ -274,11 +300,14 @@ describe("calculator binding", () => {
     { key: "firstProductDeliveryDate", label: "Delivery" },
   ];
   it("allows only SUGGESTIBLE_FIELDS, never personal or product-event fields", () => {
-    expect(SUGGESTIBLE_FIELDS).toEqual(["constructiveDiscoveryDate", "accrualDate", "causeDiscoveryDate"]);
-    expect(suggestibleFields({ accrualBasis: "confirmed_accrual" }, fields).map((f) => f.key)).toEqual([
-      "accrualDate",
+    expect(SUGGESTIBLE_FIELDS).toEqual([
       "constructiveDiscoveryDate",
+      "accrualDate",
+      "causeDiscoveryDate",
     ]);
+    expect(
+      suggestibleFields({ accrualBasis: "confirmed_accrual" }, fields).map((f) => f.key),
+    ).toEqual(["accrualDate", "constructiveDiscoveryDate"]);
   });
   it("excludes an accrual field measured from death", () => {
     expect(suggestibleFields({ accrualBasis: "death" }, fields).map((f) => f.key)).toEqual([
@@ -296,7 +325,9 @@ describe("calculator binding", () => {
     const accepted = { accrualDate: acceptCandidate("accrualDate", c) };
     expect(currentAccepted(accepted, { accrualDate: "2020-12-15" })).toHaveLength(1);
     expect(currentAccepted(accepted, { accrualDate: "2020-12-16" })).toHaveLength(0);
-    expect(exportAccepted(currentAccepted(accepted, { accrualDate: "2020-12-15" }))[0]).toMatchObject({
+    expect(
+      exportAccepted(currentAccepted(accepted, { accrualDate: "2020-12-15" }))[0],
+    ).toMatchObject({
       acceptedField: "accrualDate",
       dataset: "mdl_intel_hearing_orders",
       recordId: "order:USCOURTS-jpml-1_20-F-02973-0",
@@ -366,13 +397,18 @@ describe("exports carry accepted provenance", () => {
       { acceptedPublicDates: accepted },
     );
     expect(stale.publicDateSuggestionsAccepted).toEqual([]);
-    expect(createAssessmentExport(snapshot, input, null, "x").publicDateSuggestionsAccepted).toEqual([]);
+    expect(
+      createAssessmentExport(snapshot, input, null, "x").publicDateSuggestionsAccepted,
+    ).toEqual([]);
   });
   it("guided export lists the accepted suggestion", () => {
     const result = { status: "needs_review" as const, date: null, rule, reasons: [], steps: [] };
     const review = { answers: {}, contextKey: "", recordedQualificationsReviewed: false };
     const out = assessmentExport(snapshot, input, review, result, accepted);
-    expect(out.publicDateSuggestionsAccepted[0]).toMatchObject({ acceptedField: "accrualDate", identifier: "MDL 2973" });
+    expect(out.publicDateSuggestionsAccepted[0]).toMatchObject({
+      acceptedField: "accrualDate",
+      identifier: "MDL 2973",
+    });
   });
 });
 
@@ -384,8 +420,18 @@ describe("server reads", () => {
       rows: path.includes("dataset=eq.mdl_intel_hearing_orders") ? [elmironOrder] : [elmironMdl],
       total: null,
     }));
-    rpcPostOptional.mockResolvedValue([{ label: "Elmiron (pentosan polysulfate sodium)", kind: "drug", basis: "title_names_product" }]);
-    const r = await (getPublicDates as unknown as (a: { data: unknown }) => Promise<{ candidates: { date: string }[]; products: unknown[] }>)({
+    rpcPostOptional.mockResolvedValue([
+      {
+        label: "Elmiron (pentosan polysulfate sodium)",
+        kind: "drug",
+        basis: "title_names_product",
+      },
+    ]);
+    const r = await (
+      getPublicDates as unknown as (a: {
+        data: unknown;
+      }) => Promise<{ candidates: { date: string }[]; products: unknown[] }>
+    )({
       data: { kind: "mdl", id: "2973" },
     });
     expect(r.candidates[0]!.date).toBe("2020-12-15");
@@ -396,13 +442,19 @@ describe("server reads", () => {
   });
   it("rejects a non-identifier for a dated lookup", () => {
     expect(() =>
-      (getPublicDates as unknown as (a: { data: unknown }) => unknown)({ data: { kind: "mdl", id: "Elmiron" } }),
+      (getPublicDates as unknown as (a: { data: unknown }) => unknown)({
+        data: { kind: "mdl", id: "Elmiron" },
+      }),
     ).toThrow();
   });
   it("runs a limited full-text search for words and returns pickable hits only", async () => {
     restGet.mockReset();
     restGet.mockResolvedValue({ rows: [philips], total: null });
-    const r = await (searchPublicDateSources as unknown as (a: { data: unknown }) => Promise<{ mode: string; hits: { identifier: string }[] }>)({
+    const r = await (
+      searchPublicDateSources as unknown as (a: {
+        data: unknown;
+      }) => Promise<{ mode: string; hits: { identifier: string }[] }>
+    )({
       data: { kind: "fda_device_recall", q: "DreamStation" },
     });
     expect(r.mode).toBe("words");

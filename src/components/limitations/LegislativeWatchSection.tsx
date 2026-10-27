@@ -26,16 +26,13 @@ import {
   summarizeWatch,
   type WatchBill,
 } from "@/lib/limitations/legislativeWatch";
-import { getLimitationsLegislativeWatch } from "@/lib/limitations/legislativeWatch.functions";
-
-export const legislativeWatchQuery = {
-  queryKey: ["limitations-legislative-watch-1"],
-  queryFn: () => getLimitationsLegislativeWatch(),
-  staleTime: 10 * 60 * 1000,
-} as const;
+import { legislativeWatchQuery } from "./legislativeWatchQueries";
 
 // The dataset's own page in the site describes the Open States bulk dump it was loaded from.
-const SOURCE = { label: "Open States bulk data (public domain), state_bills", href: "/law/legislation" };
+const SOURCE = {
+  label: "Open States bulk data (public domain), state_bills",
+  href: "/law/legislation",
+};
 const fmt = (v: number) => v.toLocaleString("en-US");
 const stateName = (usps: string) => STATES.find((s) => s.usps === usps)?.name ?? usps;
 const SECTION_ID = "legislative-watch";
@@ -48,7 +45,11 @@ const columns: DataColumn<WatchBill>[] = [
     label: "Bill",
     value: (b) => b.identifier,
     render: (b) => (
-      <Link to="/law/legislation/state/$id" params={{ id: b.id }} className="text-primary underline">
+      <Link
+        to="/law/legislation/state/$id"
+        params={{ id: b.id }}
+        className="text-primary underline"
+      >
         {b.identifier}
       </Link>
     ),
@@ -78,7 +79,13 @@ export function LegislativeWatchSection() {
   const q = useQuery(legislativeWatchQuery);
   const data = q.data;
   const s = data ? summarizeWatch(data.bills, data.dumpDate) : null;
-  const state = q.isPending ? "loading" : q.isError ? "error" : s && s.bills > 0 ? "ready" : "empty";
+  const state = q.isPending
+    ? "loading"
+    : q.isError
+      ? "error"
+      : s && s.bills > 0
+        ? "ready"
+        : "empty";
   const asOf = data?.dumpDate ?? undefined;
   const truncated = !!data && data.returned >= data.limit;
   const period = "Current legislative sessions";
@@ -121,7 +128,9 @@ export function LegislativeWatchSection() {
           as="li"
           label="Bills matched"
           value={s ? fmt(s.bills) : null}
-          meta={truncated ? "First 500 shown; more may match" : "Title, summary or subject mentions"}
+          meta={
+            truncated ? "First 500 shown; more may match" : "Title, summary or subject mentions"
+          }
           partial="Sessions are in progress; counts grow as bills move."
           state={state === "error" ? "error" : state === "loading" ? "loading" : "ready"}
           onRetry={() => void q.refetch()}
@@ -168,8 +177,18 @@ export function LegislativeWatchSection() {
                   title: "Matched bills by state",
                   columns: [
                     { key: "state", label: "State", value: (r: StateRow) => stateName(r.state) },
-                    { key: "total", label: "Matched bills", align: "right", value: (r: StateRow) => r.total },
-                    { key: "enacted", label: "Enacted", align: "right", value: (r: StateRow) => r.enacted },
+                    {
+                      key: "total",
+                      label: "Matched bills",
+                      align: "right",
+                      value: (r: StateRow) => r.total,
+                    },
+                    {
+                      key: "enacted",
+                      label: "Enacted",
+                      align: "right",
+                      value: (r: StateRow) => r.enacted,
+                    },
                   ],
                   rows: s.byState,
                   rowKey: (r: StateRow) => r.state,
@@ -244,7 +263,12 @@ export function LegislativeWatchSection() {
                     { key: "other", label: "No final outcome or vetoed" },
                   ],
                   fmt,
-                  { caption: "Matched bills by month of latest action", xLabel: "Month", partialKey: "partial", total: true },
+                  {
+                    caption: "Matched bills by month of latest action",
+                    xLabel: "Month",
+                    partialKey: "partial",
+                    total: true,
+                  },
                 )
               : undefined
           }
@@ -288,7 +312,11 @@ export function LegislativeWatchSection() {
               <li key={b.id} className="py-2">
                 <p className="font-medium">
                   {stateName(b.state)} ·{" "}
-                  <Link to="/law/legislation/state/$id" params={{ id: b.id }} className="text-primary underline">
+                  <Link
+                    to="/law/legislation/state/$id"
+                    params={{ id: b.id }}
+                    className="text-primary underline"
+                  >
                     {b.identifier}
                   </Link>{" "}
                   <span className="font-normal text-muted-foreground">

@@ -6,8 +6,12 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SCREENING_QUESTIONS, exceptionInventory } from "./exceptionReview";
 import type { LimitationRule, LimitationsSnapshot } from "./types";
-// @ts-expect-error -- plain ESM script without type declarations
-import { SCREENING_TERMS, countTollingNotes, noteCategories } from "../../../scripts/limitations/count-tolling-notes.mjs";
+import {
+  SCREENING_TERMS,
+  countTollingNotes,
+  noteCategories,
+  // @ts-expect-error -- plain ESM script without type declarations
+} from "../../../scripts/limitations/count-tolling-notes.mjs";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const script = join(repoRoot, "scripts", "limitations", "count-tolling-notes.mjs");
@@ -36,7 +40,10 @@ const rules = [
       flags: [],
       repose: [],
       tolling: [
-        { text: "Person under a legal disability: 2 years after removal.", citation: "735 ILCS 5/13-211(a)" },
+        {
+          text: "Person under a legal disability: 2 years after removal.",
+          citation: "735 ILCS 5/13-211(a)",
+        },
         { text: "Fraudulent concealment: 5 years after discovery.", citation: "735 ILCS 5/13-215" },
       ],
     },
@@ -64,8 +71,12 @@ describe("count-tolling-notes.mjs", () => {
   });
   it("routes each note as exceptionInventory does", () => {
     for (const r of rules)
-      for (const item of exceptionInventory({} as LimitationsSnapshot, r).filter((i) => i.kind === "tolling"))
-        expect(noteCategories({ text: item.text, citation: item.citation })).toEqual(item.categories);
+      for (const item of exceptionInventory({} as LimitationsSnapshot, r).filter(
+        (i) => i.kind === "tolling",
+      ))
+        expect(noteCategories({ text: item.text, citation: item.citation })).toEqual(
+          item.categories,
+        );
   });
   it("counts notes by focus category and applies the instruction gate", () => {
     const out = countTollingNotes(rules);

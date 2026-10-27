@@ -56,9 +56,9 @@ const first = (v: unknown): string | null => (Array.isArray(v) ? str(v[0], 40) :
 
 /** PostgREST path: current-session bills matching any watch phrase (phrase full-text search, GIN-indexed). */
 export function watchPath(limit = 500): string {
-  const or = WATCH_PHRASES.map(
-    (p) => `search_vector.phfts(simple).${encodeURIComponent(p)}`,
-  ).join(",");
+  const or = WATCH_PHRASES.map((p) => `search_vector.phfts(simple).${encodeURIComponent(p)}`).join(
+    ",",
+  );
   const current = encodeURIComponent(JSON.stringify({ session_role: ["current"] }));
   return `corpus_records?select=id,source_url,c:item->cells,f:filters&dataset=eq.${WATCH_DATASET}&filters=cs.${current}&or=(${or})&order=ordinal.asc&limit=${limit}`;
 }
@@ -72,7 +72,8 @@ export function parseWatchRow(row: unknown): WatchBill | null {
   const identifier = str(c?.["identifier"], 60);
   if (!id || !c || !state || !/^[A-Z]{2}$/.test(state) || !identifier) return null;
   const outcomeRaw = first(f?.["outcome"]);
-  const outcome = outcomeRaw === "enacted" ? "enacted" : outcomeRaw === "vetoed" ? "vetoed" : "pending";
+  const outcome =
+    outcomeRaw === "enacted" ? "enacted" : outcomeRaw === "vetoed" ? "vetoed" : "pending";
   const title = str(c["title"], 1200) ?? "Title not recorded";
   const subjects = Array.isArray(f?.["subject"]) ? (f!["subject"] as unknown[]).join(" ") : "";
   const printed = `${title} ${subjects}`.toLowerCase();
@@ -137,7 +138,10 @@ export function summarizeWatch(bills: readonly WatchBill[], asOf: string | null)
     if (b.outcome === "enacted") s.enacted += 1;
     states.set(b.state, s);
   }
-  const dates = bills.map((b) => b.latestActionDate).filter((d): d is string => !!d).sort();
+  const dates = bills
+    .map((b) => b.latestActionDate)
+    .filter((d): d is string => !!d)
+    .sort();
   const firstMonth = dates[0]?.slice(0, 7);
   const lastMonth = dates.at(-1)?.slice(0, 7);
   const asOfMonth = asOf?.slice(0, 7) ?? null;

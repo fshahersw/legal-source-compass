@@ -283,7 +283,9 @@ export function parseTransferOrders(mdl: string, rows: readonly Row[]): PublicDa
         urlKind: details ? "record" : null,
         pdfUrl: httpUrl(order["pdf"]),
         publisher: "Judicial Panel on Multidistrict Litigation (GovInfo)",
-        basis: signed ? "Signed date printed on the order" : "GovInfo issued date (no signed date recorded)",
+        basis: signed
+          ? "Signed date printed on the order"
+          : "GovInfo issued date (no signed date recorded)",
         anomaly: null,
       }),
     );
@@ -665,6 +667,11 @@ export const PICKER_CLAIMS = [
   "wrongful_death",
   "breach_of_warranty",
 ] as const;
+
+/** The picker is offered only for injury, product and warranty claims. */
+export function pickerApplies(claim: string | undefined): boolean {
+  return !!claim && (PICKER_CLAIMS as readonly string[]).includes(claim);
+}
 
 /**
  * The rule's own date fields that may receive a suggestion. An accrual field measured from death is a personal fact

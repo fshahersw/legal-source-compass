@@ -27,8 +27,10 @@ vi.mock("@/lib/limitations/publicDates.functions", () => ({
 }));
 
 import type { LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
-import { TollingReviewNotes, tollingNotesFor, CLASS_TOLLING_CASES } from "./TollingReviewNotes";
-import { DateSources, PublicDatePicker, pickerApplies } from "./PublicDatePicker";
+import { TollingReviewNotes } from "./TollingReviewNotes";
+import { CLASS_TOLLING_CASES, tollingNotesFor } from "./tollingNotes";
+import { DateSources, PublicDatePicker } from "./PublicDatePicker";
+import { pickerApplies } from "@/lib/limitations/publicDates";
 
 const rule = {
   id: "il-pi",
@@ -80,7 +82,12 @@ const rule = {
     },
   ],
 } as unknown as LimitationRule;
-const snapshot = { rules: [rule], sources: [], coverage: [], cases: [] } as unknown as LimitationsSnapshot;
+const snapshot = {
+  rules: [rule],
+  sources: [],
+  coverage: [],
+  cases: [],
+} as unknown as LimitationsSnapshot;
 
 describe("tolling review notes", () => {
   it("routes the rule's own notes by category and links the cited section exactly", () => {
@@ -161,7 +168,8 @@ describe("public date picker", () => {
             sourceDataset: "mdl_intel_hearing_orders",
             recordId: "order:USCOURTS-jpml-1_20-F-02973-0",
             publisher: "Judicial Panel on Multidistrict Litigation (GovInfo)",
-            officialUrl: "https://www.govinfo.gov/app/details/USCOURTS-jpml-1_20-F-02973/USCOURTS-jpml-1_20-F-02973-0",
+            officialUrl:
+              "https://www.govinfo.gov/app/details/USCOURTS-jpml-1_20-F-02973/USCOURTS-jpml-1_20-F-02973-0",
             urlKind: "record",
             acceptedBy: "user",
           },

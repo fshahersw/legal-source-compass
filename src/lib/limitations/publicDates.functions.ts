@@ -45,7 +45,9 @@ const cs = (v: Record<string, string[]>) => enc(JSON.stringify(v));
 
 /** Words for the simple full-text configuration: letters and digits only, at most 6 terms. */
 export function ftsWords(q: string): string | null {
-  const words = (q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).slice(0, 6).map((w) => w.slice(0, 40));
+  const words = (q.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
+    .slice(0, 6)
+    .map((w) => w.slice(0, 40));
   return words.length ? words.join(" ") : null;
 }
 
@@ -58,7 +60,8 @@ export type PublicDateSearch = { mode: "identifier" | "words"; hits: PublicDateH
 
 async function searchKind(kind: PublicDateKind, q: string): Promise<PublicDateSearch> {
   const exact = exactIdentifier(kind, q);
-  if (exact) return { mode: "identifier", hits: [{ kind, identifier: exact, label: exact, date: null }] };
+  if (exact)
+    return { mode: "identifier", hits: [{ kind, identifier: exact, label: exact, date: null }] };
   const words = ftsWords(q);
   if (!words) return { mode: "words", hits: [] };
   const fts = `search_vector=plfts(simple).${enc(words)}`;
@@ -71,7 +74,10 @@ async function searchKind(kind: PublicDateKind, q: string): Promise<PublicDateSe
         ]
       : [`corpus_records?${select}&dataset=eq.${PUBLIC_DATE_DATASETS[kind]}&${fts}&limit=20`];
   const results = await Promise.all(paths.map((p) => restGet<unknown[]>(p)));
-  const hits = dedupeHits(results.flatMap((r) => r.rows.map((row) => parseHit(kind, row)))).slice(0, 20);
+  const hits = dedupeHits(results.flatMap((r) => r.rows.map((row) => parseHit(kind, row)))).slice(
+    0,
+    20,
+  );
   return { mode: "words", hits };
 }
 
@@ -107,13 +113,19 @@ async function readDates(kind: PublicDateKind, id: string): Promise<PublicDatesR
         restGet<Row[]>(
           `corpus_records?select=id,source_url,item&dataset=eq.${PUBLIC_DATE_DATASETS.mdl}&filters=cs.${cs({ order_kind: ["transfer_order"] })}&item->order->>mdl=eq.${id}&limit=20`,
         ),
-        restGet<Row[]>(`corpus_records?select=id,item&dataset=eq.${MDLS_DATASET}&id=eq.${id}&limit=2`),
+        restGet<Row[]>(
+          `corpus_records?select=id,item&dataset=eq.${MDLS_DATASET}&id=eq.${id}&limit=2`,
+        ),
         rpcPostOptional<unknown>("safety_mdl_products_v1", { p_mdl: id }).catch((e: unknown) => {
           console.error("public dates products", e);
           return null;
         }),
       ]);
-      const r = mdlPublicDates(id, orders.rows, pending.rows.length === 1 ? pending.rows[0] : undefined);
+      const r = mdlPublicDates(
+        id,
+        orders.rows,
+        pending.rows.length === 1 ? pending.rows[0] : undefined,
+      );
       return {
         ...base,
         title: r.title,
@@ -150,7 +162,11 @@ async function readDates(kind: PublicDateKind, id: string): Promise<PublicDatesR
       );
       const r = parsePmaLabeling(
         id,
-        rows.rows.map((x) => ({ id: x.id, item: x.item, detail: { original_file: x["original_file"] } })),
+        rows.rows.map((x) => ({
+          id: x.id,
+          item: x.item,
+          detail: { original_file: x["original_file"] },
+        })),
       );
       return { ...base, ...r, found: rows.rows.length > 0 };
     }
@@ -164,7 +180,12 @@ async function readDates(kind: PublicDateKind, id: string): Promise<PublicDatesR
       const r = parseEnforcement(
         kind,
         row
-          ? { id: row.id, source_url: row.source_url, item: row.item, detail: { original_file: row["original_file"] } }
+          ? {
+              id: row.id,
+              source_url: row.source_url,
+              item: row.item,
+              detail: { original_file: row["original_file"] },
+            }
           : undefined,
       );
       return { ...base, ...r, found: !!row };

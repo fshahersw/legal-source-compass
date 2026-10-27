@@ -17,7 +17,12 @@ const tn = {
     latest_action: "Pub. Ch. 684",
     latest_action_date: "2026-04-24",
   },
-  f: { outcome: ["enacted"], state: ["TN"], session_role: ["current"], subject: ["Statutes of Limitations and Repose"] },
+  f: {
+    outcome: ["enacted"],
+    state: ["TN"],
+    session_role: ["current"],
+    subject: ["Statutes of Limitations and Repose"],
+  },
 };
 const ut = {
   id: "ut-2026-hb139",
@@ -58,7 +63,12 @@ describe("legislative change watch", () => {
   });
   it("keeps the outcome and links as printed and says what the text mentions", () => {
     const b = parseWatchRow(tn)!;
-    expect(b).toMatchObject({ outcome: "enacted", identifier: "SB 866", mentions: "repose", latestActionDate: "2026-04-24" });
+    expect(b).toMatchObject({
+      outcome: "enacted",
+      identifier: "SB 866",
+      mentions: "repose",
+      latestActionDate: "2026-04-24",
+    });
     expect(b.sourceUrl).toContain("capitol.tn.gov");
     expect(parseWatchRow(ut)!.mentions).toBe("limitations");
     expect(parseWatchRow(pending)!.outcome).toBe("pending");
