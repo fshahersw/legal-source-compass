@@ -4,8 +4,9 @@ export const ID_PATTERNS: Record<string, string> = {
   mdl: "^MDL-[1-9][0-9]*$",
   agency: "^[a-z0-9]+(-[a-z0-9]+)*$",
   // Earlier FR issues retain two-digit years and E/F-series numbers. Corrections
-  // retain their C1-/C2- prefix; publication date is independent of this number.
-  fr_document: "^(C[0-9]+-)?([0-9]{2}|[0-9]{4}|[A-Z][0-9]{1,2})-[0-9]{1,6}$",
+  // retain their C1-/C2- prefix and republications their R1-/R2- prefix (e.g. R1-2026-05038);
+  // publication date is independent of this number.
+  fr_document: "^([CR][0-9]+-)?([0-9]{2}|[0-9]{4}|[A-Z][0-9]{1,2})-[0-9]{1,6}$",
   cfr_section: "^[0-9]+ CFR [0-9]+(\\.[0-9]+)?[a-zA-Z]?(\\([a-zA-Z0-9]+\\))*$",
   usc_section: "^[0-9]+ USC [0-9]+[a-zA-Z]?([–-][0-9]+[a-zA-Z]?)?(\\([a-zA-Z0-9]+\\))*$",
   rule_proceeding: "^[0-9]{4}-[A-Z0-9]{4}$",
