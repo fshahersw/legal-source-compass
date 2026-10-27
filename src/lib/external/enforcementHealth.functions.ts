@@ -1,7 +1,8 @@
 /**
  * DOJ health-care enforcement dashboard: releases per year tagged False Claims Act, Healthcare Fraud, Opioids and
  * Prescription Drugs (indexed `filters.topic` counts per yearly partition), FCA releases by the size of their own
- * headline figure, and the largest health-care resolutions ranked by headline figure (rankLargestResolutions).
+ * headline figure, and the largest health-care resolutions ranked by the figure their title states
+ * (rankLargestResolutions).
  * Read-only; memoized for 10 minutes; failures are not cached.
  */
 import { createServerFn } from "@tanstack/react-start";
@@ -29,6 +30,8 @@ export type DojHealthPayload = HealthDashboard & {
   top: LargestEntry[];
   topCandidates: number;
   topHeld: number;
+  /** Releases whose $100M+ figure is read only from the text (not ranked). */
+  topTextOnly: number;
   coverage: { year: string; before: number; after: number } | null;
 };
 
@@ -105,6 +108,7 @@ const read = memoAsync(READ_TTL_MS, async (): Promise<DojHealthPayload | null> =
     top: ranked.entries.slice(0, 25),
     topCandidates: ranked.candidates,
     topHeld: ranked.held.length,
+    topTextOnly: ranked.textOnly.length,
     coverage: coverageBreak(overview.partitions.filter((p) => /_\d{4}$/.test(p.dataset))),
   };
 });

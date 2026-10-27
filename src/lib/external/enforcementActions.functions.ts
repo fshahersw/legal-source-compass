@@ -384,15 +384,16 @@ export const getDojReleases = createServerFn({ method: "GET" })
   });
 
 /**
- * Largest resolutions across every yearly partition: releases whose headline figure is $1 billion or more, ranked by
- * that figure with non-resolutions held back and repeats collapsed (rankLargestResolutions). The candidate read uses
+ * Largest resolutions across every yearly partition: releases whose title states a resolution figure of $1 billion or
+ * more, ranked by that figure, with figures read only from the text listed apart, non-resolutions held back and exact
+ * repeats collapsed (rankLargestResolutions). The candidate read uses
  * the indexed "$1B or more" bucket of the largest stated figure, which contains every release whose headline figure
  * reaches $1B (a headline figure never exceeds the largest figure).
  */
 export const getDojLargest = createServerFn({ method: "GET" }).handler(
   async (): Promise<LargestResult> => {
     const overview = await readDojOverview();
-    if (!overview) return { entries: [], held: [], candidates: 0 };
+    if (!overview) return { entries: [], textOnly: [], held: [], candidates: 0 };
     const list = overview.partitions.map((p) => p.dataset).join(",");
     const rows = await readAll<{
       dataset: unknown;

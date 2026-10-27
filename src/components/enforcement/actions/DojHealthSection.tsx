@@ -28,7 +28,7 @@ import { fmtInt, fmtUsd, headlineText } from "./format";
 import { SourceLink } from "../parts";
 
 export const dojHealthQuery = {
-  queryKey: ["enforcement-actions", "doj-health"],
+  queryKey: ["enforcement-actions", "doj-health", "v2"],
   queryFn: () => getDojHealthDashboard(),
   staleTime: 10 * 60 * 1000,
 };
@@ -258,7 +258,7 @@ export function DojHealthSection() {
       <div className="mt-4">
         <ChartCard
           title="Largest health-care resolutions"
-          subtitle={`Ranked by each release's own headline figure · USD · ${period}`}
+          subtitle={`Ranked by the amount each release title states · USD · ${period}`}
           status={
             status.kind === "ready" && !(d?.top.length ?? 0)
               ? { kind: "empty", reason: "No health-care release states $100 million or more." }
@@ -269,10 +269,11 @@ export function DojHealthSection() {
           about={
             <p>
               Releases tagged False Claims Act, health-care fraud, opioids or prescription drugs
-              whose headline figure is $100 million or more. Speeches, annual totals, distributions,
-              filings and figures the title contradicts are left out
-              {d ? ` (${fmtInt(d.topHeld)} of ${fmtInt(d.topCandidates)})` : ""}; releases stating
-              the same resolution are listed once. Never summed.
+              whose title states $100 million or more. Figures found only in the release text are
+              not ranked{d ? ` (${fmtInt(d.topTextOnly)})` : ""}. Speeches, totals, takedowns and
+              other charges, distributions and filings are held back
+              {d ? ` (${fmtInt(d.topHeld)} of ${fmtInt(d.topCandidates)})` : ""}. Only exact repeats
+              of one release are merged. Never summed.
             </p>
           }
           actions={

@@ -403,6 +403,9 @@ function ReleaseDetail({ release: r }: { release: DojRelease }) {
 
 const HELD_ORDER: HeldReason[] = [
   "title_contradicts",
+  "other_party",
+  "not_outcome",
+  "maximum",
   "title_no_resolution",
   "distribution",
   "statistics",
@@ -413,13 +416,14 @@ const HELD_ORDER: HeldReason[] = [
 ];
 
 /**
- * Largest resolutions, all years: ranked by each release's own headline figure (never the largest figure its text
- * mentions), with speeches, ceremonies, annual totals, victim distributions, filings and implausible figures held back
- * (listed with the reason in "View held-back releases") and repeats of one resolution collapsed into one entry.
+ * Largest resolutions, all years: ranked by the figure each release's own title states (never the largest figure its
+ * text mentions). Figures read only from the text are listed apart and unranked ("View figures read from the text");
+ * speeches, ceremonies, totals, victim distributions, filings, charges and implausible figures are held back (listed
+ * with the reason in "View held-back releases"); exact repeats of one release are collapsed into one entry.
  */
 function Largest() {
   const q = useQuery({
-    queryKey: ["enforcement-actions", "doj-largest", "v2"],
+    queryKey: ["enforcement-actions", "doj-largest", "v3"],
     queryFn: () => getDojLargest(),
     staleTime: 10 * 60 * 1000,
   });
@@ -439,16 +443,15 @@ function Largest() {
   return (
     <Panel
       title="Largest resolutions, all years"
-      subtitle="Releases whose own headline figure is $1 billion or more, one entry per resolution"
+      subtitle="Releases whose title states a resolution of $1 billion or more"
       footnote={
         <>
-          Ranked by the release&rsquo;s headline figure: the title&rsquo;s amount, else the first
-          resolution sentence. A figure the text mentions about another matter is never used.
-          Speeches, ceremonies, annual totals, victim distributions, filings and charges are left
-          out, and so is a text figure the title contradicts. Releases stating the same resolution
-          are collapsed. Figures are as stated, not verified payments, and are never summed.
+          Ranked only by the amount the release title states. Figures found only in the release
+          text are listed apart, unranked. Speeches, totals, victim payouts, filings, charges and
+          statutory maximums are held back. Only exact repeats of one release are merged. Figures
+          are as stated, not verified payments, and are never summed.
           {q.data
-            ? ` ${fmtInt(q.data.candidates)} releases reached $1 billion; ${fmtInt(held.length)} held back; ${fmtInt(entries.length)} resolutions listed.`
+            ? ` ${fmtInt(q.data.candidates)} releases reached $1 billion: ${fmtInt(entries.length)} ranked, ${fmtInt(q.data.textOnly.length)} text-only, ${fmtInt(held.length)} held back.`
             : ""}
         </>
       }
@@ -531,6 +534,51 @@ function Largest() {
                   ? "Show fewer"
                   : `Show ${fmtInt(Math.min(entries.length, 100) - 12)} more`}
               </button>
+            ) : null}
+            {q.data?.textOnly.length ? (
+              <DataDrawer
+                title="Figures read only from the release text"
+                description="The title states no amount, so these are not ranked. Each figure comes from the sentence shown; check the release before relying on it."
+                rows={q.data.textOnly}
+                rowKey={(e) => e.release.id}
+                triggerLabel={`View ${fmtInt(q.data.textOnly.length)} figures read from the text`}
+                searchable
+                columns={[
+                  {
+                    key: "figure",
+                    label: "Figure (USD)",
+                    align: "right",
+                    value: (e) => e.valueUsd,
+                    render: (e) =>
+                      e.release.headline ? headlineText(e.release.headline) : fmtUsd(e.valueUsd),
+                  },
+                  { key: "kind", label: "Kind", value: (e) => e.release.headline?.keyword ?? null },
+                  { key: "date", label: "Date", value: (e) => e.release.date },
+                  {
+                    key: "title",
+                    label: "Release",
+                    value: (e) => e.release.title,
+                    render: (e) =>
+                      e.release.url ? (
+                        <SourceLink href={e.release.url}>{e.release.title}</SourceLink>
+                      ) : (
+                        e.release.title
+                      ),
+                  },
+                  {
+                    key: "sentence",
+                    label: "Sentence",
+                    value: (e) => e.release.headline?.sentence ?? null,
+                  },
+                  { key: "related", label: "Same release elsewhere", value: (e) => e.related.length },
+                ]}
+                source={{
+                  source: {
+                    label: "DOJ News API (justice.gov)",
+                    href: "https://www.justice.gov/news",
+                  },
+                }}
+              />
             ) : null}
             {held.length ? (
               <DataDrawer
