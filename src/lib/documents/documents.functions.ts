@@ -132,7 +132,7 @@ export async function runDocumentSearch(
     ]),
     namesOf("mdls", [
       ...res.facets.mdl.map((f) => f.key),
-      ...res.rows.map((r) => r.mdl),
+      ...res.rows.flatMap((r) => (r.mdl ? [r.mdl] : [])),
       ...(d.mdl ? [d.mdl] : []),
     ]),
   ]);
@@ -171,13 +171,13 @@ export const getDocument = createServerFn({ method: "GET" })
       if (!doc) return { available: true, document: null, courtName: null, mdlName: null };
       const [courts, mdls] = await Promise.all([
         doc.courtId ? namesOf("court_spine", [doc.courtId]) : Promise.resolve({} as Names),
-        namesOf("mdls", [doc.mdl]),
+        doc.mdl ? namesOf("mdls", [doc.mdl]) : Promise.resolve({} as Names),
       ]);
       return {
         available: true,
         document: doc,
         courtName: doc.courtId ? (courts[doc.courtId] ?? null) : null,
-        mdlName: mdls[doc.mdl] ?? null,
+        mdlName: doc.mdl ? (mdls[doc.mdl] ?? null) : null,
       };
     },
   );
@@ -235,7 +235,7 @@ export const documentsForEntity = createServerFn({ method: "GET" })
       ),
       namesOf(
         "mdls",
-        docs.recent.map((r) => r.mdl),
+        docs.recent.flatMap((r) => (r.mdl ? [r.mdl] : [])),
       ),
     ]);
     return {

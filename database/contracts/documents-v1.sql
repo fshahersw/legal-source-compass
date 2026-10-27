@@ -1,5 +1,10 @@
 -- documents/1 — searchable, linked document layer over the stored court-filing PDFs that the published matter pages list.
 --
+-- Superseded in part (owner decision 2026-10-27): database/contracts/documents-v2-docket-scope.sql widens scope rule 2 to
+-- every open filing with a recorded case id (listed_by 'native_case_id', no MDL) and replaces documents_refresh_v1,
+-- documents_search_v1, documents_for_entity_v1 and documents_links_v1. Re-applying this file restores the v1 scope;
+-- apply documents-v2-docket-scope.sql again afterwards.
+--
 -- Scope (owner decisions 2026-10-03 and 2026-10-23 evening; AGENTS.md): a document enters this layer only when ALL hold
 --   1. one of its registry associations is 'open' under the live rule public.corpus_pdf_availability_v1 (DocketBird
 --      restricted=false and downloaded; CourtListener is_available and is_sealed=false; official court / GovInfo

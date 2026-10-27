@@ -52,6 +52,11 @@ describe("document rows", () => {
     expect(parseDocSummary({ ...ROW, source_system: "courtlistener-public-locator" })).toBeNull();
     expect(parseDocSummary({ ...ROW, text_status: "open" })).toBeNull();
     expect(parseDocSummary({ ...ROW, mdl: "0" })).toBeNull();
+    expect(parseDocSummary({ ...ROW, mdl: null })).toBeNull();
+    // a filing listed only by its own docket carries no MDL, and never one
+    const docket = { ...ROW, listed_by: "native_case_id", mdl: null };
+    expect(parseDocSummary(docket)).toMatchObject({ mdl: null, listedBy: "native_case_id" });
+    expect(parseDocSummary({ ...docket, mdl: "2738" })).toBeNull();
     // unknown values become "not recorded", never a guess
     const odd = parseDocSummary({
       ...ROW,

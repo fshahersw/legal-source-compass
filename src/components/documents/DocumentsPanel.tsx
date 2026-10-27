@@ -147,14 +147,24 @@ export function DocumentsPanel({
                           <p className="text-[11px] leading-4 text-muted-foreground">
                             {typeLabel(r.docType)} ·{" "}
                             {r.filedDate ? fmtDay(r.filedDate) : "Date not recorded"}
-                            {court ? ` · ${court}` : ""} ·{" "}
-                            <Link
-                              to="/matters/$id"
-                              params={{ id: r.mdl }}
-                              className="underline-offset-2 hover:underline"
-                            >
-                              MDL {r.mdl}
-                            </Link>
+                            {court ? ` · ${court}` : ""}
+                            {r.mdl ? (
+                              <>
+                                {" · "}
+                                <Link
+                                  to="/matters/$id"
+                                  params={{ id: r.mdl }}
+                                  className="underline-offset-2 hover:underline"
+                                >
+                                  MDL {r.mdl}
+                                </Link>
+                              </>
+                            ) : r.docketNumber ? (
+                              <>
+                                {" · "}
+                                <span className="font-mono">{r.docketNumber}</span>
+                              </>
+                            ) : null}
                             {r.mentions
                               ? ` · cited ${r.mentions}× from page ${r.firstPage ?? "?"}`
                               : ""}

@@ -71,9 +71,13 @@ function Details({ doc }: { doc: DocSummary }) {
       <dt className="text-muted-foreground">Listed</dt>
       <dd>
         {LISTED_BY_LABEL[d.listedBy]} ·{" "}
-        <TargetLink link={{ toType: "mdl", toId: d.mdl }}>
-          {q.data.mdlName ?? `MDL No. ${d.mdl}`}
-        </TargetLink>
+        {d.mdl ? (
+          <TargetLink link={{ toType: "mdl", toId: d.mdl }}>
+            {q.data.mdlName ?? `MDL No. ${d.mdl}`}
+          </TargetLink>
+        ) : (
+          <span className="font-mono">{d.nativeCaseId}</span>
+        )}
       </dd>
       <dt className="text-muted-foreground">Court</dt>
       <dd>

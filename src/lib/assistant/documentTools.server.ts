@@ -89,7 +89,7 @@ async function searchDocumentsTool(input: Record<string, unknown>): Promise<Tool
     type: typeLabel(r.docType),
     court: r.courtId ? (res.courtNames[r.courtId] ?? r.courtId) : null,
     mdl: r.mdl,
-    mdl_name: res.mdlNames[r.mdl] ?? null,
+    mdl_name: r.mdl ? (res.mdlNames[r.mdl] ?? null) : null,
     docket_number: r.docketNumber,
     entry_number: r.entryNumber,
     filed: r.filedDate,

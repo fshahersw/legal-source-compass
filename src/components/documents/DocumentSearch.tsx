@@ -94,13 +94,17 @@ function Hit({
       <p className="text-[11px] leading-4 text-muted-foreground">
         {typeLabel(r.docType)} · {r.filedDate ? fmtDay(r.filedDate) : "Date not recorded"} ·{" "}
         {courtName ?? r.courtId ?? "Court not recorded"} ·{" "}
-        <Link
-          to="/matters/$id"
-          params={{ id: r.mdl }}
-          className="underline-offset-2 hover:underline"
-        >
-          {mdlName ? `MDL ${r.mdl}: ${mdlName}` : `MDL No. ${r.mdl}`}
-        </Link>
+        {r.mdl ? (
+          <Link
+            to="/matters/$id"
+            params={{ id: r.mdl }}
+            className="underline-offset-2 hover:underline"
+          >
+            {mdlName ? `MDL ${r.mdl}: ${mdlName}` : `MDL No. ${r.mdl}`}
+          </Link>
+        ) : (
+          "No MDL listing"
+        )}
         {r.docketNumber ? (
           <>
             {" "}
@@ -187,7 +191,7 @@ function Results({
               r={r}
               page={d}
               courtName={r.courtId ? (d.courtNames[r.courtId] ?? null) : null}
-              mdlName={d.mdlNames[r.mdl] ?? null}
+              mdlName={r.mdl ? (d.mdlNames[r.mdl] ?? null) : null}
               open={open}
             />
           ))}

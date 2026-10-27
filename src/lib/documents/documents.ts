@@ -1,7 +1,9 @@
 /**
  * documents/1 client-safe shapes, parsers and labels (no I/O). The rows come from the documents_* RPCs
- * (database/contracts/documents-v1.sql): the court filings the published matter pages list, open under the live
- * availability rule, with page-numbered snippets cut from the stored text and exact links only.
+ * (database/contracts/documents-v1.sql, scope widened by documents-v2-docket-scope.sql): the court filings the published
+ * matter and MDL pages list (with their MDL) and the open filings of every other docket (listed by their own case id,
+ * with no MDL), open under the live availability rule, with page-numbered snippets cut from the stored text and exact
+ * links only.
  */
 import { assembleBlock, yearPoints, type TrendBlockData } from "@/lib/analytics/trend";
 
@@ -27,6 +29,7 @@ export const LISTED_BY = [
   "registry_pdf_case_id",
   "court_mdl_label",
   "derived_master_docket",
+  "native_case_id",
 ] as const;
 export type ListedBy = (typeof LISTED_BY)[number];
 
@@ -118,6 +121,7 @@ export const LISTED_BY_LABEL: Record<ListedBy, string> = {
   registry_pdf_case_id: "Listed on the matter page",
   court_mdl_label: "Listed on the court's MDL page",
   derived_master_docket: "Filed on the MDL's master docket",
+  native_case_id: "Filed on its own docket (no MDL listing)",
 };
 
 export type DocSummary = {
@@ -126,7 +130,8 @@ export type DocSummary = {
   sourceSystem: DocSource;
   nativeDocumentId: string;
   nativeCaseId: string;
-  mdl: string;
+  /** The MDL a published page lists the filing for; null for a filing listed only by its own docket. */
+  mdl: string | null;
   listedBy: ListedBy;
   courtId: string | null;
   docketNumber: string | null;
@@ -258,10 +263,12 @@ export function parseDocSummary(v: unknown): DocSummary | null {
     !sourceSystem ||
     !nativeDocumentId ||
     !nativeCaseId ||
-    !mdl ||
     !listedBy ||
     !textStatus
   )
+    return null;
+  // a docket-only filing never carries an MDL; a listed filing always does
+  if (listedBy === "native_case_id" ? v["mdl"] !== null && v["mdl"] !== undefined : !mdl)
     return null;
   const court = str(v["court_id"], 40);
   return {
