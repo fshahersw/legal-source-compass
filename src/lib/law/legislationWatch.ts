@@ -40,32 +40,59 @@ export const STATE_TOPICS: readonly WatchTopic[] = [
 export const FEDERAL_FUNDING_QUERY =
   '"litigation funding" OR "litigation financing" OR "litigation finance" OR "third party litigation" OR "litigation transparency"';
 
-/** Bills whose title mentions a watched phrase but which are plainly about something else (reviewed 2026-10-27). */
+/**
+ * The one rule the exclusions below follow. A matching bill is kept when its subject is a civil-justice rule: damages
+ * in civil actions (generally, or for a class of claims such as personal injury, wrongful death, malpractice, motor
+ * vehicle, wildfire or sexual-abuse claims, or a class of defendants), product liability, asbestos trust claims or
+ * litigation funding. It is excluded when the phrase appears only because the bill (a) is about another subject
+ * (taxes, searches, squatters, a state's own litigation spending), or (b) sets the remedies of one named statutory or
+ * constitutional right (a human rights or civil rights act, discrimination or harassment claims, voice and likeness,
+ * libel per se, content harmful to minors, the right to bear arms).
+ */
+export const EXCLUSION_RULE =
+  "Bills are left out when the phrase appears only because the bill is about another subject (taxes, searches, squatters, a state's own litigation spending) or sets the remedies of one named statutory or constitutional right (a human or civil rights act, discrimination or harassment claims, voice and likeness, libel, content harmful to minors, the right to bear arms).";
+
+/** Bills left out under EXCLUSION_RULE, with the reason (reviewed 2026-10-27 against every damages-topic match). */
 export const EXCLUDED_STATE_BILLS: Readonly<Record<string, string>> = {
+  // (a) another subject
   "wy-2025-hb233": "State funding of natural-resource litigation, not third-party funding",
   "ks-2025-2026-hb2378": "Squatter removal act",
-  "ks-2023-2024-hb2301": "Age verification for online material",
-  "ks-2023-2024-sb160": "Age verification for online material",
-  "id-2026-h851": "Libel and slander",
-  "mn-2023-2024-hf4021": "Human rights act changes",
   "nj-221-s1128": "Corporate tax deduction for punitive damages",
   "nj-222-s2295": "Corporate tax deduction for punitive damages",
   "ok-2025-sb624": "Searches and seizures",
   "ok-2026-sb624": "Searches and seizures",
   "ok-2026-sb1321": "Searches and seizures",
   "ok-2026-hb3130": "Health services for minors",
-  "tn-114-hb221": "Obscenity",
-  "tn-114-sb467": "Obscenity",
+  // (b) remedies of one named right
+  "ks-2023-2024-hb2301": "Remedies for online material harmful to minors (age verification)",
+  "ks-2023-2024-sb160": "Remedies for online material harmful to minors (age verification)",
+  "tn-114-hb221": "Remedies under obscenity law",
+  "tn-114-sb467": "Remedies under obscenity law",
+  "tn-114-hb222": "Remedies for website content harmful to minors",
+  "tn-114-sb466": "Remedies for website content harmful to minors",
+  "id-2026-h851": "Punitive damages for libel per se and slander per se",
+  "mn-2023-2024-hf4021": "Minnesota Human Rights Act remedies",
+  "me-131-ld1423": "Damages limits under the Maine Human Rights Act",
+  "mn-2025-2026-hf2956": "Damages in public-accommodation discrimination actions",
+  "mn-2025-2026-sf2891": "Damages in public-accommodation discrimination actions",
+  "nj-222-a5120": "New Jersey Civil Rights Act remedies",
+  "nj-222-s4207": "New Jersey Civil Rights Act remedies",
+  "ny-2023-2024-a1788": "Punitive damages for sexual harassment claims",
+  "ny-2025-2026-a1695": "Punitive damages for sexual harassment claims",
+  "tn-113-hb2689": "Civil action for infringing the right to bear arms",
+  "tn-113-sb2516": "Civil action for infringing the right to bear arms",
+  "tn-114-hb554": "Civil action for infringing the right to bear arms",
+  "tn-114-sb819": "Civil action for infringing the right to bear arms",
   "va-2025-sb1421": "Use of a person's voice or likeness",
   "va-2026-hb581": "Use of a person's voice or likeness",
   "va-2026-sb753": "Use of a person's voice or likeness",
 };
 
-export type BillStage = "enacted" | "vetoed" | "pending" | "not_passed";
+export type BillStage = "enacted" | "vetoed" | "no_final_action" | "not_passed";
 export const STAGE_LABEL: Record<BillStage, string> = {
   enacted: "Enacted",
   vetoed: "Vetoed",
-  pending: "Pending",
+  no_final_action: "No final action recorded",
   not_passed: "Not passed (session ended)",
 };
 
@@ -113,7 +140,7 @@ export function toWatchBill(raw: unknown, topic: string, today: string): WatchBi
       : outcome === "vetoed"
         ? "vetoed"
         : current
-          ? "pending"
+          ? "no_final_action"
           : "not_passed";
   const latest = day(c["latest_action_date"]);
   return {
@@ -179,7 +206,7 @@ export function sortByLatestAction<
 }
 
 export type StageCounts = Record<BillStage, number>;
-const zero = (): StageCounts => ({ enacted: 0, vetoed: 0, pending: 0, not_passed: 0 });
+const zero = (): StageCounts => ({ enacted: 0, vetoed: 0, no_final_action: 0, not_passed: 0 });
 
 export function stageCounts(rows: readonly WatchBill[]): StageCounts {
   const out = zero();
@@ -333,9 +360,47 @@ export function attentionMatrix(
   };
 }
 
+/** When each source dataset was last refreshed (the sections' as-of dates); null when not recorded. */
+export type LegislationDataAsOf = {
+  stateBills: string | null;
+  congressBills: string | null;
+  hearings: string | null;
+};
+
+/** The legislation figures the /law landing shows, from a slimmer read than the full watch (same rules). */
+export type LegislationLanding = {
+  today: string;
+  congress: number;
+  dataAsOf: LegislationDataAsOf;
+  /** State bills enacted (current and preceding sessions), after exclusions and carried-over de-duplication. */
+  stateEnacted: number;
+  /** Of those, bills on litigation funding. */
+  fundingEnacted: number;
+  /** Federal litigation-funding bills in the current Congress that have not become law. */
+  federalNotLaw: number;
+  readAt: string;
+};
+
+/** The phrases of every state topic as one websearch query (a bill matches when any topic matches). */
+export const ALL_STATE_TOPICS_QUERY = STATE_TOPICS.map((t) => t.query).join(" OR ");
+
+/** Landing figures from the merged state bills (any topic, plus the funding topic) and the federal bills. */
+export function landingFigures(
+  stateBills: readonly WatchBill[],
+  federal: readonly FederalWatchBill[],
+): Pick<LegislationLanding, "stateEnacted" | "fundingEnacted" | "federalNotLaw"> {
+  const enacted = stateBills.filter((b) => b.stage === "enacted");
+  return {
+    stateEnacted: enacted.length,
+    fundingEnacted: enacted.filter((b) => b.topics.includes("funding")).length,
+    federalNotLaw: federal.filter((b) => !b.becameLaw).length,
+  };
+}
+
 export type LegislationWatch = {
   today: string;
   congress: number;
+  dataAsOf: LegislationDataAsOf;
   stateBills: WatchBill[];
   federal: FederalWatchBill[];
   attention: AttentionTopic[];

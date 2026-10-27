@@ -1,16 +1,16 @@
 /**
  * Law & government landing: answer KPIs for mass-tort work instead of collection sizes. What is open for comment at
  * the product-safety agencies, which mass-tort regulations changed in the last year, how many civil-justice bills
- * became law, and what federal litigation-funding bills are pending, each from its own section's read with source
- * and date, and an AI summary grounded in exactly these figures.
+ * became law, and what federal litigation-funding bills are pending, each with source and the data's refresh date, and
+ * an AI summary grounded in exactly these figures. The legislation figures come from a slim landing read that applies
+ * the watch's rules (three full-text reads, not the watch's fifteen).
  */
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AiSummary, AskAiButton, KpiCard, KpiGrid, buildSectionContext } from "@/components/kit";
 import { cfrRadarQuery } from "./lawQueries";
 import { rulemakingTrackerQuery } from "@/components/rulemaking/rulemakingQueries";
-import { legislationWatchQuery } from "@/components/legislation/legislationWatchQuery";
-import { stageCounts } from "@/lib/law/legislationWatch";
+import { legislationLandingQuery } from "@/components/legislation/legislationWatchQuery";
 import { ordinal } from "@/lib/analytics/trend";
 
 const fmt = (v: number) => v.toLocaleString("en-US");
@@ -41,7 +41,7 @@ const stateOf = (q: { isPending: boolean; isError: boolean }) =>
 export function LawAnswerKpis() {
   const rm = useQuery(rulemakingTrackerQuery);
   const cfr = useQuery(cfrRadarQuery);
-  const leg = useQuery(legislationWatchQuery);
+  const leg = useQuery(legislationLandingQuery);
   const dated = rm.data ? rm.data.deadlines.filter((d) => d.window !== "open_ended") : [];
   const within30 = dated.filter((d) => d.window === "30").length;
   const partialYear = rm.data?.fr[0]?.years.find((y) => y.partial)?.year ?? null;
@@ -53,21 +53,27 @@ export function LawAnswerKpis() {
           return a == null || v == null ? null : a + v;
         }, 0)
       : null;
-  const counts = leg.data ? stageCounts(leg.data.stateBills) : null;
-  const fundingEnacted = leg.data
-    ? leg.data.stateBills.filter((b) => b.stage === "enacted" && b.topics.includes("funding"))
-        .length
-    : null;
-  const federalPending = leg.data ? leg.data.federal.filter((b) => !b.becameLaw).length : null;
+  const counts = leg.data ? { enacted: leg.data.stateEnacted } : null;
+  const fundingEnacted = leg.data ? leg.data.fundingEnacted : null;
+  const federalPending = leg.data ? leg.data.federalNotLaw : null;
 
   const ready = rm.data || cfr.data || leg.data;
+  const period = [
+    rm.data ? `comment periods open on ${rm.data.today}` : null,
+    cfr.data ? `CFR history refreshed ${cfr.data.dataAsOf ?? "on a date not recorded"}` : null,
+    leg.data
+      ? `bills refreshed ${leg.data.dataAsOf.stateBills ?? "on a date not recorded"} (state), ${leg.data.dataAsOf.congressBills ?? "date not recorded"} (federal)`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("; ");
   const context = ready
     ? buildSectionContext({
         id: ID,
         title: "What changed in law for mass torts",
         scope:
           "FDA, NHTSA, CPSC, EPA and FTC rulemaking; watched drug, device, vehicle and consumer-product CFR parts; state and federal civil-justice bills",
-        period: [rm.data?.today, cfr.data?.today, leg.data?.today].find(Boolean) ?? null,
+        period: period || null,
         source: [REGS.label, FR.label, ECFR.label, OPEN_STATES.label, CONGRESS.label].join("; "),
         figures: [
           {
@@ -135,7 +141,7 @@ export function LawAnswerKpis() {
             cfr.data ? `Last 12 months · ${fmt(cfr.data.parts.length)} watched parts` : undefined
           }
           action={open("/law/cfr", "Radar")}
-          source={{ source: ECFR, asOf: cfr.data?.today }}
+          source={{ source: ECFR, asOf: cfr.data?.dataAsOf ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -151,7 +157,7 @@ export function LawAnswerKpis() {
           source={{
             source: OPEN_STATES,
             period: "Current and preceding sessions",
-            asOf: leg.data?.today,
+            asOf: leg.data?.dataAsOf.stateBills ?? undefined,
           }}
         />
         <KpiCard
@@ -160,7 +166,7 @@ export function LawAnswerKpis() {
           state={stateOf(leg)}
           value={federalPending == null ? null : fmt(federalPending)}
           meta={leg.data ? `${ordinal(leg.data.congress)} Congress` : undefined}
-          source={{ source: CONGRESS, asOf: leg.data?.today }}
+          source={{ source: CONGRESS, asOf: leg.data?.dataAsOf.congressBills ?? undefined }}
         />
       </KpiGrid>
       <AiSummary

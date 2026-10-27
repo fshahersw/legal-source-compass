@@ -18,6 +18,7 @@ import {
 } from "@/components/kit";
 import {
   EXCLUDED_STATE_BILLS,
+  EXCLUSION_RULE,
   STAGE_LABEL,
   STATE_TOPICS,
   byState,
@@ -40,7 +41,7 @@ const CONGRESS = {
 const fmt = (v: number) => v.toLocaleString("en-US");
 const ID = "civil-justice-watch";
 const TITLE = "Civil-justice and litigation-funding watch";
-const STAGES = ["enacted", "pending", "not_passed", "vetoed"] as const;
+const STAGES = ["enacted", "no_final_action", "not_passed", "vetoed"] as const;
 const TOPIC_LABEL = Object.fromEntries(STATE_TOPICS.map((t) => [t.id, t.label]));
 
 export function CivilJusticeWatch() {
@@ -72,12 +73,16 @@ export function CivilJusticeWatch() {
         title: TITLE,
         scope:
           "State legislatures (current and preceding regular sessions) and the current Congress; bills whose title or summary mentions the topic",
-        period: `As of ${d.today}; current sessions in progress`,
+        period: `State bills refreshed ${d.dataAsOf.stateBills ?? "on a date not recorded"}, federal bills ${d.dataAsOf.congressBills ?? "on a date not recorded"}; current sessions in progress`,
         source: `${OPEN_STATES.label}; ${CONGRESS.label}`,
         figures: [
           { label: "Matching state bills", value: bills.length, unit: "bills" },
           { label: "Enacted", value: counts.enacted, unit: "bills" },
-          { label: "Pending in current sessions", value: counts.pending, unit: "bills" },
+          {
+            label: "Current-session bills with no final action recorded",
+            value: counts.no_final_action,
+            unit: "bills",
+          },
           { label: "States with an enactment", value: enactedStates.size, unit: "states" },
           ...topics.map((t) => ({
             label: `${t.topic.label}: bills (enacted)`,
@@ -123,9 +128,9 @@ export function CivilJusticeWatch() {
           label="Bills in current sessions"
           state={state}
           value={d ? fmt(current.length) : null}
-          meta={d ? `${fmt(counts.pending)} pending` : undefined}
+          meta={d ? `${fmt(counts.no_final_action)} with no final action recorded` : undefined}
           partial="Sessions in progress"
-          source={{ source: OPEN_STATES, asOf: d?.today }}
+          source={{ source: OPEN_STATES, asOf: d?.dataAsOf.stateBills ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -133,7 +138,7 @@ export function CivilJusticeWatch() {
           state={state}
           value={d ? fmt(counts.enacted) : null}
           meta="Current and preceding sessions"
-          source={{ source: OPEN_STATES, asOf: d?.today }}
+          source={{ source: OPEN_STATES, asOf: d?.dataAsOf.stateBills ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -141,7 +146,7 @@ export function CivilJusticeWatch() {
           state={state}
           value={d ? fmt(enactedStates.size) : null}
           meta={d ? [...enactedStates].sort().join(", ") : undefined}
-          source={{ source: OPEN_STATES, asOf: d?.today }}
+          source={{ source: OPEN_STATES, asOf: d?.dataAsOf.stateBills ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -149,7 +154,7 @@ export function CivilJusticeWatch() {
           state={state}
           value={funding ? fmt(funding.counts.enacted) : null}
           meta={funding ? `of ${fmt(funding.total)} funding bills` : undefined}
-          source={{ source: OPEN_STATES, asOf: d?.today }}
+          source={{ source: OPEN_STATES, asOf: d?.dataAsOf.stateBills ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -157,7 +162,7 @@ export function CivilJusticeWatch() {
           state={state}
           value={d ? fmt(federalPending.length) : null}
           meta={congress}
-          source={{ source: CONGRESS, asOf: d?.today }}
+          source={{ source: CONGRESS, asOf: d?.dataAsOf.congressBills ?? undefined }}
         />
       </KpiGrid>
 
@@ -172,7 +177,7 @@ export function CivilJusticeWatch() {
           subtitle="State bills whose title or summary mentions the topic, by outcome · a bill can mention several topics"
           status={status}
           sources={[OPEN_STATES]}
-          asOf={d?.today}
+          asOf={d?.dataAsOf.stateBills ?? undefined}
           about={<WatchAbout />}
           table={{
             caption: "State bills by topic and outcome",
@@ -186,7 +191,7 @@ export function CivilJusticeWatch() {
               cells: [t.topic.label, ...STAGES.map((s) => t.counts[s]), t.total],
             })),
           }}
-          actions={d ? <StateBillsDrawer bills={bills} today={d.today} /> : undefined}
+          actions={d ? <StateBillsDrawer bills={bills} asOf={d.dataAsOf.stateBills} /> : undefined}
         >
           {d ? (
             <StackedBarsOverTime
@@ -208,7 +213,7 @@ export function CivilJusticeWatch() {
           subtitle="Matching state bills by state and outcome, the 15 states with the most"
           status={status}
           sources={[OPEN_STATES]}
-          asOf={d?.today}
+          asOf={d?.dataAsOf.stateBills ?? undefined}
           about={<WatchAbout />}
           table={{
             caption: "Matching state bills by state",
@@ -235,7 +240,7 @@ export function CivilJusticeWatch() {
         </ChartCard>
       </div>
       {d && d.federal.length ? (
-        <FederalBills bills={d.federal} congress={congress} today={d.today} />
+        <FederalBills bills={d.federal} congress={congress} asOf={d.dataAsOf.congressBills} />
       ) : null}
       <AiSummary context={context} className="mt-4" />
     </Section>
@@ -251,19 +256,20 @@ function WatchAbout() {
         classification; read the bill before relying on it.
       </li>
       <li>
-        {Object.keys(EXCLUDED_STATE_BILLS).length} bills that mention a phrase but are plainly about
-        something else are left out (listed in the code with the reason).
+        {EXCLUSION_RULE} {Object.keys(EXCLUDED_STATE_BILLS).length} bills are left out under this
+        rule.
       </li>
       <li>
         A bill carried over between sessions under the same number, first action and title counts
-        once. Pending means no signature, enactment or veto is recorded yet; “not passed” bills died
-        with the preceding session.
+        once. “No final action recorded” means no signature, enactment or veto is recorded for a
+        current-session bill; the session may already have adjourned. “Not passed” bills died with
+        the preceding session.
       </li>
     </ul>
   );
 }
 
-function StateBillsDrawer({ bills, today }: { bills: WatchBill[]; today: string }) {
+function StateBillsDrawer({ bills, asOf }: { bills: WatchBill[]; asOf: string | null }) {
   return (
     <DataDrawer
       title="Matching state bills"
@@ -274,7 +280,7 @@ function StateBillsDrawer({ bills, today }: { bills: WatchBill[]; today: string 
       rowKey={(b) => b.id}
       searchable
       searchLabel="Filter by state, bill or title"
-      source={{ source: OPEN_STATES, asOf: today }}
+      source={{ source: OPEN_STATES, asOf: asOf ?? undefined }}
       columns={[
         { key: "state", label: "State", value: (b) => b.state },
         {
@@ -313,11 +319,11 @@ function StateBillsDrawer({ bills, today }: { bills: WatchBill[]; today: string 
 function FederalBills({
   bills,
   congress,
-  today,
+  asOf,
 }: {
   bills: FederalWatchBill[];
   congress: string;
-  today: string;
+  asOf: string | null;
 }) {
   const top = bills.slice(0, 5);
   return (
@@ -333,7 +339,7 @@ function FederalBills({
           filename="federal-litigation-funding-bills"
           rows={bills}
           rowKey={(b) => b.id}
-          source={{ source: CONGRESS, asOf: today }}
+          source={{ source: CONGRESS, asOf: asOf ?? undefined }}
           columns={[
             { key: "bill", label: "Bill", value: (b) => b.citation },
             { key: "title", label: "Title", value: (b) => b.title },

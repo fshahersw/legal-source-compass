@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALL_STATE_TOPICS_QUERY,
+  EXCLUDED_STATE_BILLS,
+  EXCLUSION_RULE,
   attentionMatrix,
+  landingFigures,
   byState,
   byTopic,
   congressOn,
@@ -51,7 +55,7 @@ describe("toWatchBill", () => {
     expect(
       toWatchBill(bill("ok-2026-hb2619", { outcome: "enacted" }), "funding", TODAY)?.stage,
     ).toBe("enacted");
-    expect(toWatchBill(bill("fl-2026-hb1"), "funding", TODAY)?.stage).toBe("pending");
+    expect(toWatchBill(bill("fl-2026-hb1"), "funding", TODAY)?.stage).toBe("no_final_action");
     expect(toWatchBill(bill("fl-2025-hb1", { role: "preceding" }), "funding", TODAY)?.stage).toBe(
       "not_passed",
     );
@@ -106,7 +110,7 @@ describe("mergeBills", () => {
     expect(byTopic(out).find((t) => t.topic.id === "funding")?.counts).toEqual({
       enacted: 1,
       vetoed: 0,
-      pending: 1,
+      no_final_action: 1,
       not_passed: 0,
     });
   });
@@ -179,5 +183,50 @@ describe("federal and Congress", () => {
     expect(m.bills).toBe(2);
     expect(m.billsBecameLaw).toBe(1);
     expect(m.hearings[0]!.id).toBe("CHRG-1");
+  });
+});
+
+describe("exclusion rule", () => {
+  it("applies the same rule to statutory-right remedies whatever the outcome", () => {
+    // Maine Human Rights Act damages caps (enacted) are excluded like the Minnesota Human Rights Act bill.
+    for (const id of ["me-131-ld1423", "mn-2023-2024-hf4021", "va-2026-hb581", "nj-222-a5120"])
+      expect(toWatchBill(bill(id, { outcome: "enacted" }), "damages", TODAY)).toBeNull();
+    // A damages rule for a class of personal-injury claims is kept.
+    expect(
+      toWatchBill(bill("va-2026-hb1479", { outcome: "enacted" }), "damages", TODAY),
+    ).not.toBeNull();
+    expect(EXCLUSION_RULE).toMatch(/named statutory or constitutional right/);
+    expect(Object.values(EXCLUDED_STATE_BILLS).every((r) => r.trim().length > 0)).toBe(true);
+  });
+});
+
+describe("landing figures", () => {
+  it("counts the same enacted bills as the watch from an any-topic read plus the funding read", () => {
+    const w = (id: string, topic: string, o: Parameters<typeof bill>[1] = {}) =>
+      toWatchBill(bill(id, o), topic, TODAY)!;
+    const hb2619 = { outcome: "enacted", ident: "HB 2619" };
+    const any = [
+      w("ut-2026-hb280", "any", { outcome: "enacted", ident: "HB 280" }),
+      w("ut-2026-sb227", "any", { outcome: "enacted", ident: "SB 227" }),
+      w("ok-2025-hb2619", "any", { ...hb2619, role: "preceding" }),
+      w("ok-2026-hb2619", "any", hb2619),
+      w("fl-2026-hb1", "any"),
+    ];
+    const funding = [
+      w("ut-2026-hb280", "funding", { outcome: "enacted", ident: "HB 280" }),
+      w("ok-2026-hb2619", "funding", hb2619),
+    ];
+    const federal = [
+      toFederalBill({ id: "119-hr-1", filters: { has_law: ["no"] }, cells: {} })!,
+      toFederalBill({ id: "119-hr-2", filters: { has_law: ["yes"] }, cells: {} })!,
+    ];
+    // The carried-over HB 2619 pair counts once.
+    expect(landingFigures(mergeBills([any, funding]), federal)).toEqual({
+      stateEnacted: 3,
+      fundingEnacted: 2,
+      federalNotLaw: 1,
+    });
+    expect(ALL_STATE_TOPICS_QUERY).toContain('"asbestos trust"');
+    expect(ALL_STATE_TOPICS_QUERY).toContain('"litigation funding"');
   });
 });

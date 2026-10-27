@@ -22,7 +22,11 @@ import { CfrChangeRadar } from "./CfrChangeRadar";
 import { cfrRadarQuery } from "./lawQueries";
 import { CivilJusticeWatch } from "@/components/legislation/CivilJusticeWatch";
 import { CongressAttention } from "@/components/legislation/CongressAttention";
-import { legislationWatchQuery } from "@/components/legislation/legislationWatchQuery";
+import {
+  legislationLandingQuery,
+  legislationWatchQuery,
+} from "@/components/legislation/legislationWatchQuery";
+import { LawAnswerKpis } from "./LawAnswerKpis";
 import { buildRadar } from "@/lib/law/cfrRadar";
 import {
   TRACKED_AGENCIES,
@@ -105,7 +109,7 @@ describe("law lead sections render", () => {
     expect(html).toContain("Mass-tort agency rulemaking");
     expect(html).toContain("1 of 1 open comment periods close within 30 days");
     expect(html).toContain("no fixed close date");
-    expect(html).toContain("October 2025");
+    expect(html).toContain("Fall 2025 (202510)");
     expect(html).not.toContain("2050-02-21 days");
   });
 
@@ -129,10 +133,27 @@ describe("law lead sections render", () => {
       TODAY,
     );
     const html = render(createElement(CfrChangeRadar), (qc) =>
-      qc.setQueryData(cfrRadarQuery.queryKey, radar),
+      qc.setQueryData(cfrRadarQuery.queryKey, { ...radar, dataAsOf: "2026-10-23" }),
     );
     expect(html).toContain("Changes to mass-tort regulations since 2017");
     expect(html).toContain("1 sections of these parts changed in the last 12 months");
+  });
+
+  it("law landing KPIs: legislation figures from the slim read, dated by the data refresh", () => {
+    const html = render(createElement(LawAnswerKpis), (qc) =>
+      qc.setQueryData(legislationLandingQuery.queryKey, {
+        today: TODAY,
+        congress: 119,
+        dataAsOf: { stateBills: "2026-10-23", congressBills: "2026-10-22", hearings: null },
+        stateEnacted: 21,
+        fundingEnacted: 14,
+        federalNotLaw: 3,
+        readAt: "2026-10-27T12:00:00Z",
+      }),
+    );
+    expect(html).toContain("Civil-justice bills enacted");
+    expect(html).toContain("14 on litigation funding");
+    expect(html).toContain("119th Congress");
   });
 
   it("legislation watch and congressional attention", () => {
@@ -155,6 +176,7 @@ describe("law lead sections render", () => {
     const watch = {
       today: TODAY,
       congress: 119,
+      dataAsOf: { stateBills: "2026-10-23", congressBills: "2026-10-23", hearings: "2026-10-27" },
       stateBills: mergeBills([[bill]]),
       federal: [
         toFederalBill({
@@ -191,5 +213,10 @@ describe("law lead sections render", () => {
     expect(html).toContain("119th Congress");
     expect(html).toContain("Rep. Hern, Kevin [R-OK-1]");
     expect(html).toContain("Congressional attention to mass torts");
+    // Every figure the AI context carries is on the page: became-law counts and the latest dated hearing.
+    expect(html).toContain("Bills that became law: PFAS 0.");
+    expect(html).toContain("Latest dated hearing: PFAS Not recorded.");
+    expect(html).not.toContain(">Pending<");
+    expect(html).toContain("No final action recorded");
   });
 });
