@@ -213,6 +213,47 @@ class ReduceTests(unittest.TestCase):
         self.assertEqual(b.compare_window(row, {"2024-01": [1]}, 0), [("2024-03", 2, 0)])
 
 
+class ReduceFaersEndToEndTests(unittest.TestCase):
+    def test_partition_aggregates_reduce_to_loader_chunks(self):
+        with tempfile.TemporaryDirectory() as d:
+            acq = Path(d)
+            (acq / "faers" / "parts").mkdir(parents=True)
+            (acq / "download.json").write_text(json.dumps({"results": {"drug": {"event": {"export_date": "2026-10-26",
+                                                                                          "partitions": []}}}}))
+            (acq / "targets.json").write_text(json.dumps({"faers": [
+                {"index": 0, "id": "faers:x", "rank": 500, "reports_total": 3, "generic_name": "X",
+                 "series": [n for n, _e, _u in ob.FAERS_SERIES], "bd_grain": "year"},
+                {"index": 1, "id": "faers:y", "rank": 2, "reports_total": 1, "generic_name": "Y"}]}))
+            parts = [
+                [faers("20240105", [["X"]], ["Nausea"], serious="1"), faers("20250630", [["X", "Y"]], ["NAUSEA", "Rash"])],
+                [faers("20250701", [["X"]], ["Rash"])],
+            ]
+            for k, recs in enumerate(parts):
+                agg = b.count_faers(recs, {"X": 0, "Y": 1}, {0: "year"})
+                bd = agg.pop("bd")
+                agg.update({"file": f"https://download.open.fda.gov/drug/event/p{k}.json.zip", "bytes": 1, "sha256": "0" * 64,
+                            "retrieved_at": "2026-10-27T00:00:00Z"})
+                for s in range(b.BD_SHARDS):
+                    b.write_json_gz(acq / "faers" / "parts" / f"p{k}.bd{s}.json.gz",
+                                    {i: v for i, v in bd.items() if int(i) % b.BD_SHARDS == s})
+                b.write_json_gz(acq / "faers" / "parts" / f"p{k}.json.gz", agg)
+            b.reduce_faers(argparse.Namespace(acq=str(acq), through=None, reaction_limit=25, alltime_limit=1000))
+            series = b.load_rows(acq, "faers", "series")
+            bds = {(r["subject_id"], r["period"]): r for r in b.load_rows(acq, "faers", "breakdowns")}
+            self.assertEqual({r["subject_id"] for r in series}, {"faers:x"})  # Y has no `series` request: already loaded
+            rep = next(r for r in series if r["series"] == "faers_reports")
+            self.assertEqual((rep["coverage_from"], rep["coverage_to"]), ("2024-01", "2025-06"))  # 2025-07 is incomplete
+            self.assertEqual((rep["vals"][0], rep["vals"][-1], sum(rep["vals"])), (1, 1, 2))
+            self.assertIn("bulk export", rep["method"])
+            self.assertNotIn("api_key", rep["query_url"])
+            self.assertEqual(bds[("faers:x", "all")]["terms"], ["NAUSEA", "RASH"])  # case variants merge, upper case
+            self.assertEqual(bds[("faers:x", "all")]["vals"], [2, 2])
+            self.assertEqual(bds[("faers:x", "all")]["serious"], [1, 0])
+            self.assertEqual(sorted(p for s, p in bds), ["2024", "all"])  # 2025 is not a complete year before 2025-06
+            uni = json.loads((acq / "faers" / "universe_bulk.json").read_text())
+            self.assertEqual(uni, [[1, 3, "X"], [2, 1, "Y"]])
+
+
 class NdcTests(unittest.TestCase):
     def test_keys_join_on_the_exact_name_and_keep_the_stored_fields(self):
         recs = [

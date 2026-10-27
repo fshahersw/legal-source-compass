@@ -23,7 +23,7 @@ with scripts/safety_v2/load.py.
     ndc       NDC directory (drug/ndc bulk file) → subjects rows carrying pharm_class_epc and application_numbers keys
               (--faers-universe [[rank, reports_total, name]] supplies the stored reports_total)
     validate  re-ask the count API for a sample of built rows (--validate-stream faers|maude --n-series --n-breakdowns
-              --max-requests); writes <acq>/<stream>/validation.json
+              --max-requests); writes <acq>/<stream>/validation-<time>.json
     --workers N (default 4)  --limit N (first N partitions only: a validation sample)  --keep-zips
 
 Accuracy rules (the same as openfda_build.py, which they mirror):
@@ -37,7 +37,9 @@ Accuracy rules (the same as openfda_build.py, which they mirror):
   tokenizer, lower case, phrases inside one value). Group results are used only where they equal the API's own series.
 - Breakdowns count each report once per distinct published term (the API's count=<field>.exact, which also counts the
   empty string a report publishes, e.g. a blank manufacturer name: stored as '' and shown as Not recorded), keep the
-  top N by count then term, and record `returned` as the API would (N when more terms exist). Serious counts are exact here.
+  top N by count then term (MedDRA terms upper-cased, as count=patient.reaction.reactionmeddrapt.exact returns
+  them), and record `returned` as the API would (N when more terms exist). Serious counts are exact here; the order
+  of terms tied on count at the top-N boundary can differ from the API's.
 - Raw zips are deleted after counting (--keep-zips keeps them); each one's URL, size, sha256 and record count stay in the
   partition aggregate and the manifest, so the input is verifiable against the export.
 """
@@ -618,7 +620,7 @@ def reduce_faers(args):
                 for p, terms in per.items():
                     cell = bd[int(i)][p]
                     for t, (n, s) in terms.items():
-                        v = cell[t]
+                        v = cell[t.upper()]  # the API's reactionmeddrapt.exact terms are upper case
                         v[0] += n
                         v[1] += s
         for i in sorted(j for j, q in prods.items() if q.get("bd_grain") and j % BD_SHARDS == shard):
@@ -1016,7 +1018,7 @@ def validate(args):
                                      "differing_terms": len(diffs), "diffs": diffs[:6]})
     run.close()
     report["requests"] = run.http.requests
-    out = acq / stream / "validation.json"
+    out = acq / stream / f"validation-{c.utc_now().replace(':', '')}.json"  # one file per run, never overwritten
     out.write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
     summary = {k: {"checked": len(v), "exact": sum(1 for x in v if not x.get("differing_months", x.get("differing_terms")))}
                for k, v in report.items() if isinstance(v, list)}
