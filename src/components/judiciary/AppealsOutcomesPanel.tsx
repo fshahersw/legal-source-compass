@@ -253,6 +253,11 @@ function Body({ p }: { p: AppealsProfile }) {
             limit={8}
             noun="natures of suit"
           />
+          <p className="mt-2 text-meta text-muted-foreground">
+            Only the most frequent natures of suit are kept for each court, so a nature of suit
+            missing here (for example product liability, 365 and 367) is not recorded, not zero.
+            Product-liability reversal rates are not compared across circuits.
+          </p>
         </CollapsibleSection>
       ) : null}
       <div className="px-3 pb-3 pt-2">
