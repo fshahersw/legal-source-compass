@@ -38,6 +38,8 @@ for (const suite of [
   { directory: "scripts/enrichment/enforcement", modules: ["test_parsing"] },
   { directory: "scripts/enrichment/judges_cross", modules: ["test_judges_cross"] },
   { directory: "scripts/enrichment/judge_xwalk", modules: ["test_judge_xwalk"] },
+  { directory: "scripts/enrichment/uscourts_cjra", modules: ["test_uscourts_cjra"] },
+  { directory: "scripts/enrichment/judge_rulings", modules: ["test_build_judge_expert_rulings"] },
   { directory: "scripts/enrichment/firm_intel", modules: ["test_firm_intel"] },
   { directory: "scripts/enrichment/scac", modules: ["test_scac"] },
   { directory: "scripts/enrichment/court_locations", modules: ["test_court_locations"] },

@@ -84,6 +84,15 @@ class Attribution(unittest.TestCase):
                          "report_and_recommendation")
         self.assertEqual(R.attribution("ORDER ... Signed by Judge Jane Doe.", None)[0], "mdl_judge_not_linked")
 
+    def test_same_surname_needs_a_compatible_first_given_name(self):
+        # another judge of the same surname signing on the MDL docket is never attributed to the linked judge
+        self.assertEqual(R.attribution("ORDER ... Signed by Judge Robert Rodgers on 3/4/2021.", "Margaret Catharine Rodgers"),
+                         ("signer_differs", "Robert Rodgers"))
+        self.assertEqual(R.attribution("ORDER ... Signed by Judge R. Campbell on 1/9/2026.", "David G. Campbell")[0], "signer_differs")
+        self.assertTrue(R.first_given_compatible("M CASEY RODGERS", "Margaret Catharine Rodgers"))
+        self.assertTrue(R.first_given_compatible("Dan Aaron Polster", "Dan A. Polster"))
+        self.assertFalse(R.first_given_compatible("Rodgers", "Margaret Catharine Rodgers"))  # no given name printed: cannot agree
+
 
 def cand(cid, source, mdl, date, text, url="https://www.govinfo.gov/x"):
     return {"id": cid, "source": source, "mdl": mdl, "court_id": "azd", "docket_number": "2:23-md-03081", "date": date, "text": text, "source_url": url}
@@ -104,7 +113,7 @@ class Builder(unittest.TestCase):
                        "d2": {"rulings": [{"outcome": "granted", "movant_side": "defendants"}]}}
 
     def test_same_ruling_printed_twice_is_one_record_attributed_once(self):
-        rows, rollups, tallies, _ = B.build(self.cands, self.mdls, self.packet, self.labels)
+        rows, rollups, tallies, _, _ = B.build(self.cands, self.mdls, self.packet, self.labels)
         self.assertEqual(len(rows), 2)
         bard = next(r for r in rows if r["filters"]["mdl"] == ["3081"])
         self.assertEqual(bard["filters"]["judge_profile"], ["camp"])
@@ -117,15 +126,26 @@ class Builder(unittest.TestCase):
         self.assertEqual((tallies["parsed"], tallies["agree"], tallies["labelled"]), (3, 3, 3))
 
     def test_summary_reports_precision_recall_and_coverage(self):
-        rows, rollups, tallies, _ = B.build(self.cands, self.mdls, self.packet, self.labels)
+        rows, rollups, tallies, _, _ = B.build(self.cands, self.mdls, self.packet, self.labels)
         s = B.summary(rows, rollups, tallies, {"x": "y"})
-        self.assertEqual(s["audit"]["precision_before_dedupe"], 1.0)
+        self.assertEqual(s["audit"]["parser_precision_before_dedupe"], 1.0)
         self.assertEqual(s["coverage"], {"judges_with_1": 1, "judges_with_5": 0, "judges_with_20": 0})
         self.assertIn("in-sample", s["audit"]["in_sample"])
 
+    def test_rulings_the_labels_contradict_are_held_out(self):
+        labels = dict(self.labels, d2={"rulings": [{"outcome": "denied", "movant_side": "defendants"}]})  # the label disagrees with the parse
+        rows, rollups, tallies, _, held = B.build(self.cands, self.mdls, self.packet, labels)
+        self.assertEqual(held, ["document:d2:1"])
+        self.assertEqual([r["filters"]["mdl"] for r in rows], [["3081"]])
+        s = B.summary(rows, rollups, tallies, {"x": "y"}, held)
+        self.assertEqual((s["audit"]["published_precision"], s["audit"]["held_out_disagreeing"]), (1.0, ["document:d2:1"]))
+        self.assertEqual(s["audit"]["parser_precision_before_dedupe"], round(2 / 3, 3))
+        self.assertFalse(s["audit"]["independent_review"])
+        self.assertIn("not an independent review", s["audit"]["method"])
+
     def test_name_variant_mdl_links_never_attribute(self):
         packet = {"decisions": [{"id": "3081", "outcome": "review", "profile": None}, {"id": "2846", "outcome": "review", "profile": None}]}
-        rows, rollups, _, _ = B.build(self.cands, self.mdls, packet, self.labels)
+        rows, rollups, _, _, _ = B.build(self.cands, self.mdls, packet, self.labels)
         self.assertTrue(all("judge_profile" not in r["filters"] for r in rows))
         self.assertEqual(rollups, [])
 

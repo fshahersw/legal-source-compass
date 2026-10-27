@@ -6,12 +6,13 @@ Inputs (read-only snapshots, private/acq/de-judges-data, sha256-checked):
                                 (scripts/enrichment/judge_rulings/snapshot_queries/candidates.sql)
   snapshots/mdls_judges         the MDL registry's transferee-judge fields
   mdl_links/packet.json         the exact MDL judge links of database/contracts/mdls-exact-judge-links-20261027-v1.sql
-  audit_labels_2026-10-27.json  the reviewer's reading of every candidate (this directory): the measured precision and recall
+  audit_labels_2026-10-27.json  the builder's own reading of every candidate (this directory; written by the automated agent that wrote the
+                                parser, not an independent review): the in-sample precision and recall; rulings it contradicts are held out
 
 Rules (rulings_parse.py): a record is one decided motion to exclude, strike, preclude or limit expert testimony, opinions or reports; the
 outcome is read from the decretal words of the same clause and the printed text is quoted with it. A ruling is attributed to a judge only
 when (1) its MDL is exactly linked to that judge (docket assignment, native bridge or unique exact name; never a name variant), (2) exactly
-one judge is printed as signing it and that judge's surname equals the linked judge's, (3) no magistrate judge is named and (4) it is not a
+one judge is printed as signing it and that judge's surname and first given name (or its initial) agree with the linked judge's, (3) no magistrate judge is named and (4) it is not a
 report and recommendation. Every other ruling is published unattributed (judge_profile empty) with the reason. Documents and docket
 entries that print the same ruling are counted once.
 
@@ -127,6 +128,10 @@ def build(cands, mdls, packet, labels):
         for k, r in enumerate(rulings, 1):
             items.append({"c": c, "r": r, "k": k})
     kept = dedupe(items)
+    # a ruling the audit labels contradict is never published (e.g. a motion in limine merged into an expert ruling); its id is recorded
+    held = [it for it in kept if it["r"].get("audit") == "disagrees"]
+    kept = [it for it in kept if it["r"].get("audit") != "disagrees"]
+    held_ids = sorted(f"{'entry' if it['c']['source'] == 'sw_docket_entries_v1' else 'document'}:{it['c']['id']}:{it['k']}" for it in held)
     rows, per_judge = [], defaultdict(list)
     for it in kept:
         c, r = it["c"], it["r"]
@@ -186,7 +191,7 @@ def build(cands, mdls, packet, labels):
             filters={"kind": ["judge"], "judge_profile": [prof]},
             extra={"kind": "judge", "rollup": {"n": len(lst), "period_start": dates[0] if dates else None, "period_end": dates[-1] if dates else None,
                                                "by_movant": {s: dict(v) for s, v in by.items()}, "mdls": sorted({m for *_, m, _ in lst})}}))
-    return rows, rollups, tallies, kept
+    return rows, rollups, tallies, kept, held_ids
 
 
 def verb_of(r):
@@ -194,7 +199,7 @@ def verb_of(r):
     return m.group(1).lower() if m else "exclude"
 
 
-def summary(rows, rollups, tallies, inputs):
+def summary(rows, rollups, tallies, inputs, held_ids=()):
     rulings = [x for x in rows]
     attributed = [x for x in rulings if x["filters"].get("judge_profile")]
     per = Counter(x["filters"]["judge_profile"][0] for x in attributed)
@@ -205,13 +210,18 @@ def summary(rows, rollups, tallies, inputs):
                   "(sw_docket_entries_v1); free public sources",
         "period": [dates[0], dates[-1]] if dates else None,
         "records": {"rulings": len(rulings), "judge_rollups": len(rollups), "attributed_rulings": len(attributed)},
-        "audit": {"method": "every candidate text was read by a reviewer and its rulings (outcome and movant side) written down before comparison; "
-                            f"labels in scripts/enrichment/judge_rulings/{LABELS.name}",
+        "audit": {"method": "every candidate text was read and its rulings (outcome and movant side) written down by the builder of this dataset "
+                            "(an automated agent) while it developed the parser; this is not an independent review. "
+                            f"Labels in scripts/enrichment/judge_rulings/{LABELS.name}",
+                  "labelled_by": "dataset builder (automated agent); not an independent reviewer",
+                  "independent_review": False,
                   "parsed_before_dedupe": tallies["parsed"], "agreeing_before_dedupe": tallies["agree"],
-                  "precision_before_dedupe": round(tallies["agree"] / tallies["parsed"], 3) if tallies["parsed"] else None,
+                  "parser_precision_before_dedupe": round(tallies["agree"] / tallies["parsed"], 3) if tallies["parsed"] else None,
                   "labelled_rulings": tallies["labelled"], "found": tallies["matched"],
                   "recall": round(tallies["matched"] / tallies["labelled"], 3) if tallies["labelled"] else None,
+                  "held_out_disagreeing": list(held_ids),
                   "published_rulings_agreeing": agree, "published_precision": round(agree / len(rulings), 3) if rulings else None,
+                  "published_precision_note": "rulings the labels contradict are held out, so the published rows agree with the labels by construction",
                   "sample": "all candidates (population below 200)",
                   "in_sample": "the parser's rules were written while reading these same candidates, so these figures are in-sample; a new snapshot "
                                "must be re-read and re-labelled before its precision is published"},
@@ -237,8 +247,8 @@ def main(argv):
         raise SystemExit("audit labels were written for another candidates snapshot; re-read the texts before building")
     inputs = {"rulings_candidates": man["rulings_candidates"]["sha256"], "mdls_judges": man["mdls_judges"]["sha256"],
               "mdl_links_packet": hashlib.sha256(packet_bytes).hexdigest(), "audit_labels": hashlib.sha256(LABELS.read_bytes()).hexdigest()}
-    rows, rollups, tallies, _ = build(cands, mdls, packet, labels["labels"])
-    summ = summary(rows, rollups, tallies, inputs)
+    rows, rollups, tallies, _, held_ids = build(cands, mdls, packet, labels["labels"])
+    summ = summary(rows, rollups, tallies, inputs, held_ids)
     listing = cw.listing([("date", "Date"), ("mdl", "MDL"), ("expert", "Expert as printed"), ("movant", "Movant"), ("outcome", "Outcome"),
                           ("decided_by", "Decided by"), ("attributed", "Judge attributed")],
                          [("outcome", "Outcome", OUTCOME_LABEL), ("movant", "Movant", SIDE_LABEL), ("attributed", "Judge attributed", {"yes": "Yes", "no": "No"})])

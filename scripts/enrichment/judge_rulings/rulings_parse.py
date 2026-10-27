@@ -233,6 +233,22 @@ def attribution(text, judge_name):
     if len(sig) > 1:
         return "several_signers", "; ".join(n for _, n in sig)
     _, name = sig[0]
-    if surname(name) and surname(name) == surname(judge_name):
+    if surname(name) and surname(name) == surname(judge_name) and first_given_compatible(name, judge_name):
         return "mdl_transferee_judge+printed_signer", name
     return "signer_differs", name
+
+
+def first_given(name):
+    words = [w for w in fold(name) if w not in {"jr", "sr", "ii", "iii", "iv"}]
+    return words[0] if len(words) >= 2 else None
+
+
+def first_given_compatible(signer, judge_name):
+    """The printed signer's first given name (or initial) agrees with the linked judge's: the same word, or a lone initial of the same
+    letter ('M CASEY RODGERS' and Margaret Catharine Rodgers). A signer printed with no given name, or with another one, never agrees."""
+    a, b = first_given(signer), first_given(judge_name)
+    if not a or not b:
+        return False
+    if len(a) == 1 or len(b) == 1:
+        return a[0] == b[0]
+    return a == b
