@@ -11,6 +11,9 @@
 --     its exact cite_keys path and reason for it. The older one-argument, set-returning form is still accepted.
 --   * public.citations_status_v2: reports the resolver present when either form is installed.
 -- Every other branch is unchanged. Idempotent; apply after citations-v2.sql (and caselaw-v2.sql where installed).
+-- ORDERING: citations-v2.sql redefines both functions with the old probe, so every later apply of citations-v2.sql
+-- silently reverts this fix. Re-apply this file after each apply of citations-v2.sql, until the probe and the
+-- normalisation are folded into citations-v2.sql itself (then this file is a no-op and can be retired).
 -- Rows already resolved are not changed by this file; re-resolving case authorities is a separate, deliberate step.
 
 create or replace function citations.call_resolver(p_fn text, p_a text, p_b text) returns jsonb
