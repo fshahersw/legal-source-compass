@@ -174,8 +174,10 @@ def main():
                      "verified": published, "has_amount": ["yes" if amounts else "no"]},
             links=link_list, extra={"settlement": settlement},
         ))
-    # amount roles, exact MDL docket links and deadline states (the same retype the published rows get)
-    rows = sorted((rt.retype_row(r, today) for r in rows), key=rt.sort_key)
+    # amount roles and registry-verified MDL links; the lead list's links, licence and stored deadline states are
+    # dropped (the same retype the published rows get)
+    registry = rt.load_registry()
+    rows = sorted((rt.retype_row(r, today, registry) for r in rows), key=rt.sort_key_for(today))
     seen, unique = set(), []
     for r in rows:
         if r["id"] in seen:
@@ -196,7 +198,7 @@ def main():
         "deadline_note": "Deadlines are dates the official page states; deadline_state is computed against the build date. Confirm on the official page before relying on a date.",
         "stats": dict(stats), "excluded": dict(reasons),
     }
-    summary["amount_rule"], summary["mdl_rule"] = rt.TYPE_RULE, rt.MDL_RULE
+    summary = rt.clean_summary(summary)
     bc.write_build("settlement_claims_official", "Settlement claims confirmed on official pages", unique, rt.listing_block(),
                    summary, bc.manifest_inputs(["private/acq/enforcement_actions/settlesignal/"]))
     print(json.dumps(dict(stats)))

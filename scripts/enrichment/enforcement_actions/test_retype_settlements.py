@@ -84,17 +84,33 @@ DOCKET = {
 CLAIMS = [{"id": "settle:hyundai-and-kia-airbag-control-unit-settlement",
            "item": {"settlement": {"case_numbers": [{"as_written": "2:19-ml-02905-JAK-JPR"}]}}},
           {"id": "settle:example-health-data-breach-settlement", "item": {"settlement": {"case_numbers": [{"as_written": "1:24-cv-00001"}]}}}]
+# the MDL registry (mdls dataset) entries these rows can match, as exported
+REGISTRY = rs.stypes.registry_index([
+    {"mdl_number": 2724, "master_docket": "2:16-md-2724", "cl_court_id": "paed"},
+    {"mdl_number": 2846, "master_docket": "2:18-md-2846", "cl_court_id": "ohsd"},
+    {"mdl_number": 2873, "master_docket": "2:18-mn-2873", "cl_court_id": "scd"},
+    {"mdl_number": 2905, "master_docket": "2:19-ml-2905", "cl_court_id": "cacd"},
+])
 
 
 class RetypeSettlementsTests(unittest.TestCase):
     def setUp(self):
-        self.rows, self.report = rs.retype_all([GENERIC, TOMS, ACU, BREACH, AFFF_PAGE, DOCKET], CLAIMS)
+        self.rows, self.report = rs.retype_all([GENERIC, TOMS, ACU, BREACH, AFFF_PAGE, DOCKET], CLAIMS, REGISTRY)
         self.by_id = {r["id"]: r for r in self.rows}
+
+    def test_list_rows_without_official_support_are_removed_and_ledgered(self):
+        # TOMS: a list row with no confirmed record, no saved page and no review is the list itself; it is not published
+        self.assertNotIn(TOMS["id"], self.by_id)
+        self.assertEqual([r["id"] for r in self.report["removed_rows"]], [TOMS["id"]])
+        self.assertEqual((self.report["rows_before"], self.report["rows"], self.report["rows_removed"]), (6, 5, 1))
+        # GENERIC (bounded review) and BREACH (confirmed record) stay, citing the official source, not the list
+        self.assertIn(GENERIC["id"], self.by_id)
+        facts = dict((k, v) for k, v in self.by_id[BREACH["id"]]["detail"]["facts"])
+        self.assertEqual(facts["Source"], "The official settlement page (the confirmed record is linked)")
 
     def test_no_keyword_mass_tort_family(self):
         fams = {r["id"]: r["filters"]["family"][0] for r in self.rows}
         self.assertNotIn("mdl_mass_tort", fams.values())
-        self.assertEqual(fams[TOMS["id"]], "reference")
         self.assertEqual(fams[BREACH["id"]], "reference")
         for r in self.rows:
             self.assertNotIn("mass_tort", r["filters"])
@@ -107,8 +123,13 @@ class RetypeSettlementsTests(unittest.TestCase):
         self.assertEqual(self.by_id[AFFF_PAGE["id"]]["filters"]["mdl"], ["2873"])
         self.assertEqual(self.by_id[DOCKET["id"]]["filters"]["family"], ["mdl_docket"])
         self.assertEqual(self.by_id[DOCKET["id"]]["filters"]["mdl"], ["2846"])
-        self.assertEqual(self.by_id[TOMS["id"]]["filters"]["mdl"], [])
         self.assertEqual(self.by_id[BREACH["id"]]["filters"]["mdl"], [])  # a -cv- case number never names an MDL
+
+    def test_docket_form_number_not_in_the_registry_never_links(self):
+        rows, _ = rs.retype_all([GENERIC, AFFF_PAGE], CLAIMS, rs.stypes.registry_index([
+            {"mdl_number": 2724, "master_docket": "2:17-md-2724", "cl_court_id": "paed"}]))  # another year's docket
+        self.assertEqual([r["filters"]["mdl"] for r in rows], [[], []])
+        self.assertEqual([r["filters"]["family"][0] for r in rows], ["reference", "official_page"])
 
     def test_aggregator_fields_are_removed(self):
         for r in self.rows:
@@ -122,16 +143,16 @@ class RetypeSettlementsTests(unittest.TestCase):
                 self.assertNotIn(k, r["filters"])
             self.assertEqual(r["state"], "")
             self.assertFalse([k for k, _ in r["detail"]["facts"] if "publisher" in k.lower()])
-        toms = self.by_id[TOMS["id"]]
-        self.assertEqual(toms["item"]["subtitle"], "Official site: www.example-settlement.com")
-        self.assertEqual(toms["item"]["cells"]["official_site"], "www.example-settlement.com")
+        generic = self.by_id[GENERIC["id"]]
+        self.assertEqual(generic["item"]["subtitle"], "Official site: www.example-settlement.com")
+        self.assertEqual(generic["item"]["cells"]["official_site"], "www.example-settlement.com")
 
     def test_confirmed_record_linked_by_exact_slug(self):
         acu = self.by_id[ACU["id"]]
         self.assertEqual(acu["filters"]["has_confirmed_record"], ["yes"])
         self.assertIn("/records/settlement_claims_official/settle%3Ahyundai-and-kia-airbag-control-unit-settlement",
                       [l["url"] for l in acu["item"]["links"]])
-        self.assertEqual(self.by_id[TOMS["id"]]["filters"]["has_confirmed_record"], ["no"])
+        self.assertEqual(self.by_id[GENERIC["id"]]["filters"]["has_confirmed_record"], ["no"])
         self.assertEqual(self.report["confirmed_records_linked"], 2)
 
     def test_review_and_docket_evidence_are_kept(self):
@@ -152,7 +173,10 @@ class RetypeSettlementsTests(unittest.TestCase):
         self.assertEqual(meta["listing_modes"]["default"]["columns"], meta["listing"]["columns"])
         fam = next(f for f in meta["listing"]["filters"] if f["name"] == "family")
         self.assertEqual(sum(o["count"] for o in fam["options"]), len(self.rows))
-        self.assertNotIn("settlesignal", json.dumps(meta).lower())
+        # the list is named once, in the licence ledger that records what was removed and why; nowhere else
+        self.assertNotIn("settlesignal", json.dumps({k: v for k, v in meta.items() if k != "licence_retype"}).lower())
+        self.assertIn("SettleSignal", meta["licence_retype"]["rule"])
+        self.assertNotIn("third-party list", json.dumps(meta["listing"]).lower())
 
 
 if __name__ == "__main__":

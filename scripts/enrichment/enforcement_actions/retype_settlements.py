@@ -6,14 +6,17 @@ qualification records that the aggregator's general terms restrict commercial us
 licence rule (2026-10-22: no non-commercial licences), this retype keeps only facts that do not depend on the
 aggregator's assertions:
 
-  kept      the settlement's name and official site link, saved official pages, the bounded manual review of official
-            sources, CourtListener docket-entry evidence, title-derived caption facts
-  removed   the aggregator's status, claim deadline, payout text, proof requirement, states, category, verification
-            status, check dates and its page link; the "MDL / mass tort (keyword)" family and the mass-tort keyword
-            facts, badges and filter; the deadline filters computed against 2026-09-19
-  family    mdl_docket (verified MDL master docket search), mdl_case_number (a case number in MDL docket form on the
-            official page, the saved page title or the bounded review), official_page (saved page without a catalog
-            record) or reference (name and official site only). Nothing is classified by keyword.
+  kept      rows an official source backs: a list row whose official page confirmed a fact (the confirmed record in
+            settlement_claims_official is linked) or that has a saved official page or a bounded manual review of
+            official sources; every saved official page and CourtListener docket-entry search; title-derived captions
+  removed   list rows with no official support of their own (the list itself, republished; ids in the build report,
+            reversible from the export); the aggregator's status, claim deadline, payout text, proof requirement,
+            states, category, verification status, check dates and its page link; the "MDL / mass tort (keyword)"
+            family and the mass-tort keyword facts, badges and filter; the deadline filters computed against 2026-09-19
+  family    mdl_docket (verified MDL master docket search), mdl_case_number (a case number that is the MDL's master
+            docket in the MDL registry, on the official page, the saved page title or the bounded review),
+            official_page (saved page without a catalog record) or reference (name and official site, backed by an
+            official source). Nothing is classified by keyword.
   linked    the confirmed record in settlement_claims_official when both rows come from the same source URL (exact
             slug), so a deadline or amount confirmed on the official page is one click away
 
@@ -21,8 +24,8 @@ aggregator's assertions:
   python3 -I -B scripts/enrichment/enforcement_actions/retype_settlements.py --build      # dry run, no network
   python3 -I -B scripts/enrichment/enforcement_actions/retype_settlements.py --publish    # lead only
 
---build reads private/acq/de-settlements-sec/settlements.export.json and settlement_claims_official.export.json (or the
-retyped claims packet) and writes private/build/de-settlements-sec/settlements.json plus settlements.report.json.
+--build reads private/acq/de-settlements-sec/settlements.export.json, mdls.registry.json and
+settlement_claims_official.export.json (or the retyped claims packet) and writes private/build/de-settlements-sec/settlements.json plus settlements.report.json.
 """
 import argparse
 import copy
@@ -38,6 +41,7 @@ from urllib.parse import quote, urlsplit
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
+import retype_claims as rt  # noqa: E402
 import settle_types as stypes  # noqa: E402
 
 DATASET = "settlements"
@@ -65,14 +69,13 @@ DROP_BADGES = {"Publisher reference (unverified)", "Mass-tort keyword"} | OLD_FA
 DROP_FACTS = {"States (as published)", "Mass-tort keyword"}
 AGGREGATOR_HOST = "settlesignal.com"
 QUALIFICATION = (
-    "Settlement references kept as facts only: each row's name and official site, saved official pages, a bounded manual "
-    "review of official sources where one was made, and CourtListener docket-entry searches of verified MDL master "
-    "dockets. Fields asserted by the third-party list the references came from (status, claim deadline, payout text, "
-    "states, category, verification) are not published, because its terms restrict commercial use and bulk "
-    "republication. Where the official page itself confirmed a deadline, amount, court or case number, the confirmed "
-    "record is linked. A family names the evidence behind the row; nothing is classified by keyword, and an MDL is "
-    "named only from a verified master docket or a case number in MDL docket form."
+    "Each row is backed by an official source: a settlement whose official page confirmed a deadline, amount, court or "
+    "case number (the confirmed record is linked), a saved official page, a bounded manual review of official sources, "
+    "or a CourtListener docket-entry search of a verified MDL master docket. A family names the evidence behind the "
+    "row; nothing is classified by keyword, and an MDL is named only from a verified master docket or a case number "
+    "that is that MDL's master docket in the MDL registry."
 )
+LIST_NAME = "SettleSignal settlement list (settlesignal.com)"
 NOT_THIS = {
     "reference": "Not a court record and not a verified settlement: only the settlement's name and its official site are kept here. Where the official page confirmed a deadline, amount, court or case number, the confirmed record is linked.",
     "official_page": "Not a court record and not a verified settlement. A saved page is a snapshot of an administrator or government site, not the settlement agreement or an order.",
@@ -95,14 +98,29 @@ def aggregator_slug(row):
     return None
 
 
-def claims_index(claim_rows):
-    """settle:<slug> -> {'id', 'mdls': [(case number, MDL)]} from settlement_claims_official rows (published or retyped)."""
+def claims_index(claim_rows, registry):
+    """settle:<slug> -> {'id', 'mdls': [(case number, MDL)]} from settlement_claims_official rows (published or retyped);
+    an MDL only when the case number is that MDL's master docket in the registry (and its court, when named)."""
     out = {}
     for r in claim_rows:
         s = (r.get("item") or {}).get("settlement") or {}
-        mdls = [(c.get("as_written"), stypes.mdl_from_case_number(c.get("as_written"))) for c in s.get("case_numbers") or []]
+        court_ids = [c.get("court_id") for c in s.get("courts") or [] if isinstance(c, dict)]
+        mdls = [(c.get("as_written"), stypes.verified_mdl(c.get("as_written"), registry, court_ids)) for c in s.get("case_numbers") or []]
         out[r["id"]] = {"id": r["id"], "mdls": [(c, n) for c, n in mdls if n is not None]}
     return out
+
+
+def official_evidence(row):
+    """True when the row carries evidence from an official source of its own: a saved official page or file, or the
+    bounded manual review of official sources."""
+    for s in row["detail"].get("sections") or []:
+        heading = (s.get("heading") or "").lower()
+        if heading.startswith("bounded manual review"):
+            return True
+        m = re.match(r"documents \((\d+) saved\)", heading)
+        if m and int(m.group(1)) > 0:
+            return True
+    return False
 
 
 def review_case_numbers(row):
@@ -112,7 +130,7 @@ def review_case_numbers(row):
                 yield str(cells[1])
 
 
-def family_of(row, confirmed):
+def family_of(row, confirmed, registry):
     """(family, [(case number, MDL, basis)])."""
     if row["id"].startswith("mdl-docket-"):
         n = int(row["id"].rsplit("-", 1)[-1])
@@ -122,8 +140,10 @@ def family_of(row, confirmed):
     if confirmed:
         found += [(c, n, "case number on the official page (confirmed record)") for c, n in confirmed["mdls"]]
     for text in review_case_numbers(row):
-        found += [(c, n, "case number in the bounded review of official sources") for c, n in stypes.mdl_docket_tokens(text)]
-    found += [(c, n, "case number in the saved official page title") for c, n in stypes.mdl_docket_tokens(row["title"])]
+        found += [(c, n, "case number in the bounded review of official sources") for c, n in stypes.mdl_docket_tokens(text)
+                  if stypes.verified_mdl(c, registry) == n]
+    found += [(c, n, "case number in the saved official page title") for c, n in stypes.mdl_docket_tokens(row["title"])
+              if stypes.verified_mdl(c, registry) == n]
     seen, mdls = set(), []
     for c, n, basis in found:
         if n not in seen:
@@ -134,14 +154,23 @@ def family_of(row, confirmed):
     return ("reference" if is_aggregator(row) else "official_page"), []
 
 
-def retype_row(row, claims):
+def keeps(row, claims):
+    """A row stays when an official source backs it: every non-list row, and a list row only with a confirmed
+    official-page record or official evidence of its own. A list row with neither is the list itself, republished."""
+    if not is_aggregator(row):
+        return True
+    slug = aggregator_slug(row)
+    return bool(slug and claims.get(f"settle:{slug}")) or official_evidence(row)
+
+
+def retype_row(row, claims, registry):
     out = copy.deepcopy(row)
     out.pop("ordinal", None)
     item, detail, filters = out["item"], out["detail"], out["filters"]
     aggregator = is_aggregator(row)
     slug = aggregator_slug(row) if aggregator else None
     confirmed = claims.get(f"settle:{slug}") if slug else None
-    family, mdls = family_of(row, confirmed)
+    family, mdls = family_of(row, confirmed, registry)
     label = FAMILY[family]
     host = urlsplit(row.get("source_url") or "").hostname or None
     if row["id"].startswith("mdl-docket-"):
@@ -156,7 +185,8 @@ def retype_row(row, claims):
         elif aggregator and k == "Record layer":
             v = "Settlement reference (name and official site only)"
         elif aggregator and k == "Source":
-            v = "Settlement reference list (third party); none of its fields are published here. The official site is the source."
+            v = ("The official settlement page (the confirmed record is linked)" if confirmed
+                 else "The official sources in the saved page or the bounded review below")
         elif aggregator and k == "Verification":
             v = ("The official page confirmed facts are in the linked confirmed record" if confirmed
                  else "Not verified here; check the official site")
@@ -250,8 +280,13 @@ def metadata_for(old, rows):
         meta["listing_modes"] = {**meta["listing_modes"], "default": copy.deepcopy(listing)}
     meta["licence_retype"] = {
         "version": VERSION, "applied_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "rule": "Owner decision 2026-10-22 (2): sources that require a paid or non-commercial licence are not used. The reference list's terms restrict commercial use and bulk republication, so its fields are removed and only facts are kept.",
-        "removed": ["aggregator status, claim deadline, payout text, proof requirement, states, category, verification status, check and feed dates, aggregator page links",
+        "rule": (f"Owner decision 2026-10-22 (2): sources that require a paid or non-commercial licence are not used. The "
+                 f"{LIST_NAME}'s general terms restrict commercial use and bulk republication, so nothing from it is "
+                 "published: its fields are removed, and a row it alone supported (no confirmed official-page record, no "
+                 "saved official page, no bounded review) is removed. The removed ids are in the build report; the export "
+                 "keeps every row, so the removal is reversible if the owner confirms the list may be used."),
+        "removed": [f"rows supported only by the {LIST_NAME}",
+                    "list-asserted status, claim deadline, payout text, proof requirement, states, category, verification status, check and feed dates, list page links",
                     "family 'MDL / mass tort (keyword)' and the mass-tort keyword facts, badges and filter",
                     "deadline filters computed against 2026-09-19 (deadline_state, dfrom, dto) and the state filter (states as listed by the aggregator)"],
     }
@@ -262,18 +297,23 @@ def metadata_for(old, rows):
     return meta
 
 
-def retype_all(rows, claim_rows):
-    claims = claims_index(claim_rows)
-    out = [retype_row(r, claims) for r in sorted(rows, key=lambda r: r.get("ordinal", 0))]
+def retype_all(rows, claim_rows, registry):
+    claims = claims_index(claim_rows, registry)
+    ordered = sorted(rows, key=lambda r: r.get("ordinal", 0))
+    kept = [r for r in ordered if keeps(r, claims)]
+    removed = [{"id": r["id"], "title": r["title"], "source_url": r.get("source_url"),
+                "family_before": (r["filters"].get("family") or ["?"])[0]} for r in ordered if not keeps(r, claims)]
+    out = [retype_row(r, claims, registry) for r in kept]
     before = Counter((r["filters"].get("family") or ["?"])[0] for r in rows)
     after = Counter(r["filters"]["family"][0] for r in out)
     moved = [{"id": o["id"], "title": o["title"], "was": (r["filters"].get("family") or ["?"])[0], "now": o["filters"]["family"][0],
-              "mdl": o["filters"]["mdl"]} for r, o in zip(sorted(rows, key=lambda r: r.get("ordinal", 0)), out)
+              "mdl": o["filters"]["mdl"]} for r, o in zip(kept, out)
              if (r["filters"].get("family") or ["?"])[0] in ("mdl_mass_tort", "mdl_court_docket") or o["filters"]["mdl"]]
-    leaks = [o["id"] for o in out if AGGREGATOR_HOST in json.dumps(o, ensure_ascii=False).lower()]
-    report = {"rows": len(out), "families_before": dict(before), "families_after": dict(after),
+    leaks = [o["id"] for o in out if AGGREGATOR_HOST.split(".")[0] in json.dumps(o, ensure_ascii=False).lower()]
+    report = {"rows_before": len(rows), "rows": len(out), "rows_removed": len(removed),
+              "families_before": dict(before), "families_after": dict(after),
               "confirmed_records_linked": sum(1 for o in out if o["filters"]["has_confirmed_record"] == ["yes"]),
-              "mdl_rows": moved, "aggregator_mentions_left": leaks}
+              "mdl_rows": moved, "aggregator_mentions_left": leaks, "removed_rows": removed}
     return out, report
 
 
@@ -299,12 +339,12 @@ def build():
     meta = blob.get("meta") or {}
     if meta.get("imported_records") is not None and meta["imported_records"] != len(blob["rows"]):
         raise SystemExit(f"export holds {len(blob['rows'])} rows but the dataset says {meta['imported_records']}; export again")
-    rows, report = retype_all(blob["rows"], load_claims())
+    rows, report = retype_all(blob["rows"], load_claims(), rt.load_registry())
     if report["aggregator_mentions_left"]:
         raise SystemExit(f"aggregator still named on {len(report['aggregator_mentions_left'])} rows")
     metadata = metadata_for(meta.get("metadata"), rows)
-    if AGGREGATOR_HOST.split(".")[0] in json.dumps(metadata).lower():
-        raise SystemExit("aggregator still named in the dataset metadata")
+    if AGGREGATOR_HOST.split(".")[0] in json.dumps({k: v for k, v in metadata.items() if k != "licence_retype"}).lower():
+        raise SystemExit("aggregator named in the dataset metadata outside the licence ledger")
     packet = {"dataset": DATASET, "label": meta.get("label") or "Settlements", "metadata": metadata,
               "rows": rows, "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
     os.makedirs(os.path.dirname(PACKET), exist_ok=True)
