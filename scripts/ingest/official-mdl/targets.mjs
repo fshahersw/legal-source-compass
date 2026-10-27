@@ -215,6 +215,13 @@ export const MATTERS = {
     pages: [{ id: 'ohsd-2846-orders-by-date', role: 'orders_table', family: 'njd-body', url: 'https://www.ohsd.uscourts.gov/select-orders-date-mdl-2846' }],
     index_pages: [],
   },
+  // D.S.C. MDL 2873 (Firecrawl map; direct PDFs on orders.asp).
+  '2873': {
+    name: 'In re Aqueous Film-Forming Foam Products Liability Litigation', court_id: 'scd', host: 'www.scd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 2873',
+    pages: [{ id: 'scd-2873-orders', role: 'orders_table', family: 'scd-mdl-orders', url: 'https://www.scd.uscourts.gov/mdl-2873/orders.asp' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
