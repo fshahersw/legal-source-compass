@@ -3,10 +3,10 @@
 // Needs `@electric-sql/pglite` (not a repo dependency): npm i --prefix /tmp/pgt @electric-sql/pglite; PGLITE_DIR=/tmp/pgt node test-contract.mjs
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 const dir = process.env.PGLITE_DIR ?? "/tmp/pgt";
 const { PGlite } = await import(pathToFileURL(`${dir}/node_modules/@electric-sql/pglite/dist/index.js`).href);
-const here = new URL("./", import.meta.url).pathname;
+const here = fileURLToPath(new URL("./", import.meta.url));
 const db = new PGlite();
 await db.exec(readFileSync(here + "fixtures/mock-schema.sql", "utf8"));
 await db.exec(readFileSync(here + "../../database/contracts/document-titles-v1.sql", "utf8"));

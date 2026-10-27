@@ -265,13 +265,10 @@ def _after_slip_opinion_caption(lines, first_line):
     return idx > 0 and bool(re.search(r"\bOpinion by\b|\b(?:September|January|April|term) Term,? \d{4}", lines[idx - 1]["t"], re.I))
 
 
-POLICY_WITHHELD_RE = re.compile(r"\b(?:sealed|under seal|restricted|in camera|ex parte|redact(?:ed|ion|ions))\b", re.I)
-
-
-def policy_withheld(lines, title=None):
-    """Sealed, restricted, in camera, ex parte or redacted wording in the title or on the first page withholds the title."""
-    text = " ".join([title or ""] + [l["t"] for l in lines[:60]])
-    return bool(POLICY_WITHHELD_RE.search(text))
+# Owner decision 2026-10-27 ("dont withhold any data. If its accurate and valuable, USE IT"): a title is no longer withheld because the
+# document's wording mentions sealed, restricted, in camera, ex parte or redacted material. These records are files the courts publish on
+# their own websites; a keyword in their text is not a seal. The former keyword rule (reason policy_withheld) is gone; a title is held back
+# only on explicit evidence from its source (a court- or provider-reported seal or restriction), which none of these records carries.
 
 
 def title_from_first_page(lines, page_h):
@@ -426,8 +423,6 @@ def title_from_ocr_first_page(lines, page_h):
     title, method, reason = title_from_first_page(q, page_h)
     if not title:
         return None, None, "ocr_" + (reason or "no_title_found")
-    if policy_withheld(lines, title):
-        return None, None, "ocr_policy_withheld"
     why = ocr_gate(title, lines)
     if why:
         return None, None, why
