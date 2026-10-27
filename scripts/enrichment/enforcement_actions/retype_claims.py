@@ -155,7 +155,7 @@ def retype_all(rows, as_of):
             report["mdl_links"].append({"id": r["id"], "mdl": m["mdl"], "case_number": m["case_number"]})
         old = before[r["id"]]["item"]["cells"].get("amount")
         new = r["item"]["cells"]["fund_total"]
-        if old != new:
+        if old != new and not (old == "Not confirmed on the official page" and new == NOT_RECORDED):
             report["headline_changes"].append({"id": r["id"], "settlement": r["title"], "was": old, "now": new,
                                                "per_claimant": r["item"]["cells"]["per_claimant"]})
     for k in ("deadline_state", "amount_roles", "other_details"):

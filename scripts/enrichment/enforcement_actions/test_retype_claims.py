@@ -100,7 +100,8 @@ class RetypeRowTests(unittest.TestCase):
         rows, report = rt.retype_all([MOVEIT_ROW, NO_FACTS_ROW, FUND_ROW, ACU_ROW], AS_OF)
         self.assertEqual([r["id"] for r in rows], [FUND_ROW["id"], ACU_ROW["id"], MOVEIT_ROW["id"], NO_FACTS_ROW["id"]])
         self.assertEqual(report["deadline_state"], {"upcoming": 2, "past": 1, "none": 1})
-        self.assertEqual({c["id"] for c in report["headline_changes"]}, {ACU_ROW["id"], MOVEIT_ROW["id"], NO_FACTS_ROW["id"]})
+        # "Not confirmed on the official page" -> "Not recorded" is wording, not a headline change
+        self.assertEqual({c["id"] for c in report["headline_changes"]}, {ACU_ROW["id"], MOVEIT_ROW["id"]})
         self.assertEqual([m["mdl"] for m in report["mdl_links"]], [3071, 2905, 3083])
 
     def test_listing_block_columns(self):

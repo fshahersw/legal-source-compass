@@ -47,7 +47,7 @@ _CUES = [
     ("per_claimant", None, 2, r"\s*(?:each\b|to each\b|for each\b|per (?:\w+[ -]){0,3}?(?:share|security|person|member|claimant|household|product|vehicle|day|hour|month|year|transaction|subscriber|unit|account|purchase|claim|policy|patient|employee|worker|class member)s?\b)", "after"),
     ("per_claimant", None, 2, r"\s*(?:cash )?(?:checks?|payments?|vouchers?)\b", "after"),
     ("per_claimant", None, 2, r"recovery per (?:\w+ ){0,3}?(?:share|security)\b|average (?:net |gross )?(?:recovery|distribution)\b", "near"),
-    ("per_claimant", None, 3, r"(?:alternat(?:e|ive) )?(?:flat )?cash payments?|payments? (?:is|are|will be) (?:expected|estimated|anticipated)|residual distribution payments?|settlement (?:check|award)|\bchecks? of\b|\bvouchers?\b|reimbursement|compensation for|pro rata share|\blosses\b|\bentitled to\b|eligible (?:to receive|for)|may (?:receive|claim|submit|be eligible)|\bwill receive\b|for (?:adults|minors)\b|a payment of|payments? of|\bpayments?\b", "near"),
+    ("per_claimant", None, 3, r"(?:alternat(?:e|ive) )?(?:flat )?cash payments?|payments? (?:is|are|will be) (?:expected|estimated|anticipated)|residual distribution payments?|settlement (?:check|award)|\bchecks? of\b|\bvouchers?\b|reimbursement|unreimbursed|out-of-pocket|\bdocumented (?:losses|costs|expenses)|compensation for|pro rata share|\blosses\b|\bentitled to\b|eligible (?:to receive|for)|may (?:receive|claim|submit|be eligible)|\bwill receive\b|for (?:adults|minors)\b|a payment of|payments? of|\bpayments?\b", "near"),
     # cap
     ("cap", None, 2, r"aggregate cap|capped at|(?:will |shall )?make available up to|for all approved claims", "near"),
     # fund total
