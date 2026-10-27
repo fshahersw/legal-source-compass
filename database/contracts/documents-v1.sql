@@ -13,9 +13,11 @@
 -- pointers; snippets are cut from the stored text at query time and only for documents this layer serves. Display rule
 -- (owner 2026-10-23 night: "dont withhold filings", superseding the 2026-10-03 keyword rule): every eligible filing's
 -- text is indexed, snippeted, exported and extracted, and its published description is shown as published, whatever words
--- it contains. Text is withheld only where the docket source itself flags the entry (CourtListener entry held, sealed
--- documents on the entry, or a withheld description; a DocketBird withheld description) — status 'withheld_policy',
--- reason 'entry_withheld' — and then for every listing of the same bytes ('same_bytes_withheld'). documents.withheld_text
+-- it contains. Text is withheld only where the docket source itself flags the entry (documents.source_entry_flag:
+-- CourtListener reports a sealed document on the entry, or DocketBird reports the document restricted; owner decision
+-- 2026-10-27, documents-v2-entry-flag.sql) — status 'withheld_policy', reason 'entry_withheld' — and then for every
+-- listing of the same bytes ('same_bytes_withheld'). A description our projection withheld for contact or hearing access
+-- data, or for sealing words, is not a source flag and withholds nothing here. documents.withheld_text
 -- and documents.withheld_label are kept for callers outside this layer; this layer no longer applies them.
 -- MDL: the listing rule above is the only MDL basis (registry relationship, the court's own MDL page, or the JPML master
 -- docket). A citation of "MDL No. 2738" inside a document's text is a mention, never membership.
@@ -163,6 +165,22 @@ $$;
 create or replace function documents.withheld_label(p text) returns boolean
 language sql immutable parallel safe set search_path = '' as $$
   select coalesce(p ~* '(seal|restricted|in[\s-]*camera|ex[\s-]*parte|redact)', false)
+$$;
+
+-- The only entry-level text hold: an explicit flag from the docket source itself (owner decision 2026-10-27).
+--   CourtListener entry (sw_docket_entries_v1 cells): documents_sealed > 0 — RECAP reports is_sealed=true for a document
+--     on the entry — or description_withheld = 'sealed_document', which the projection sets exactly then.
+--   DocketBird document (sw_docket_documents_v1 cells): restricted = true, the provider's own restriction flag.
+-- Not flags: description_withheld 'contact_or_access_data' (our projection removed a phone, email or dial-in from the
+-- description) and 'sealed_or_restricted_text' (the description merely contains a sealing word), and cells.held, which
+-- the projection derives from those labels. Same text in documents-v2-entry-flag.sql.
+create or replace function documents.source_entry_flag(p_cl jsonb, p_db jsonb) returns text
+language sql immutable parallel safe set search_path = '' as $$
+  select case
+    when p_cl is not null and (case when p_cl ->> 'documents_sealed' ~ '^[0-9]{1,9}$' then (p_cl ->> 'documents_sealed')::integer else 0 end > 0
+                               or p_cl ->> 'description_withheld' = 'sealed_document') then 'entry_withheld'
+    when p_db is not null and p_db ->> 'restricted' = 'true' then 'entry_withheld'
+  end
 $$;
 
 create or replace function documents.doc_id(p_source text, p_native text) returns text
@@ -399,10 +417,7 @@ begin
            when b.cl_cells is not null then 'sw_docket_entries_v1'
            when b.listing is not null then 'listing' end as meta_src,
       coalesce(b.db_cells ->> 'description', b.cl_cells ->> 'description', b.listing ->> 'printed_title') as raw_title,
-      case when b.cl_cells is not null and (coalesce((b.cl_cells ->> 'held')::boolean, false)
-                                            or coalesce((b.cl_cells ->> 'documents_sealed')::integer, 0) > 0
-                                            or b.cl_cells ->> 'description_withheld' is not null) then 'entry_withheld'
-           when b.db_cells is not null and b.db_cells ->> 'description_withheld' is not null then 'entry_withheld' end as entry_flag,
+      documents.source_entry_flag(b.cl_cells, b.db_cells) as entry_flag,
       coalesce(
         case when b.db_cells ->> 'date_filed' ~ '^\d{4}-\d{2}-\d{2}$' then b.db_cells ->> 'date_filed' end,
         case when b.cl_cells ->> 'date_filed' ~ '^\d{4}-\d{2}-\d{2}$' then b.cl_cells ->> 'date_filed' end,
@@ -521,8 +536,9 @@ begin
                                                       and d.text_status in ('text_layer', 'partial_text', 'pending_index'))
     returning 1)
   select count(*) into v_n from gone;
+  -- the index state goes with the pages: bytes whose text is released later are indexed afresh, never marked indexed
   with gone as (
-    delete from documents.page_sets s where not exists (select 1 from documents.documents d where d.sha256 = s.sha256) returning 1)
+    delete from documents.page_sets s where not exists (select 1 from documents.documents d where d.sha256 = s.sha256 and d.text_status in ('text_layer', 'partial_text', 'pending_index')) returning 1)
   select count(*) into v_n from gone;
   with gone as (
     delete from documents.extractions e where not exists (select 1 from documents.documents d where d.sha256 = e.sha256
@@ -964,7 +980,8 @@ begin
     'public.documents_search_v1(text,text,text,date,date,text,text,integer,integer)', 'public.documents_document_v1(text)',
     'public.documents_for_entity_v1(text,text,integer)', 'public.documents_links_v1(text,text,text,integer)',
     'public.documents_status_v1()',
-    'documents.withheld_text(text)', 'documents.withheld_label(text)', 'documents.doc_id(text,text)', 'documents.docket_key(text)',
+    'documents.withheld_text(text)', 'documents.withheld_label(text)', 'documents.source_entry_flag(jsonb,jsonb)',
+    'documents.doc_id(text,text)', 'documents.docket_key(text)',
     'documents.ecf_header(text,date)', 'documents.doc_type(text,text)', 'documents.text_query(text)',
     'documents.text_fingerprint(corpus_ingest.pdf_texts)', 'documents.is_open(text,text)', 'documents.summary(documents.documents)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);

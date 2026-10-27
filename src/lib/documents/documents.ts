@@ -98,7 +98,7 @@ export const TEXT_STATUS_NOTE: Record<TextStatus, string> = {
     "The PDF is a scanned image without a text layer; it is not searchable until text recognition runs.",
   not_extracted: "The PDF's text has not been extracted yet, so it is not searchable.",
   withheld_policy:
-    "The docket source marks this entry as held, sealed or with a withheld description, so its text is not shown or searched. The listing stays as published.",
+    "The court record marks a document on this docket entry as sealed, or the provider marks it restricted, so its text is not shown or searched. The listing stays as published.",
 };
 
 export const COLLECTION_LABEL: Record<DocCollection, string> = {

@@ -67,6 +67,11 @@ const S = {
   I: sha("bytes I: CMO on court page"),
   J: sha("bytes J: ambiguous case id"),
   K: sha("bytes K: not listed"),
+  L: sha("bytes L: hearing notice with dial-in"),
+  M: sha("bytes M: entry with a sealing word"),
+  N: sha("bytes N: docketbird contact row, no text"),
+  O: sha("bytes O: docketbird restricted row"),
+  P: sha("bytes P: entry with a sealed sibling"),
 };
 const PAGE_A1 =
   "Case 3:16-md-02738-MAS-RLS Document 101 Filed 10/05/16 Page 1 of 2 PageID: 55\nORDER\nPlaintiffs rely on 42 U.S.C. § 1983 and Obergefell v. Hodges, 576 U.S. 644 (2015). See also 21 C.F.R. § 314.50 and MDL No. 2738.";
@@ -136,11 +141,13 @@ async function seed(db) {
   await rec("sw_docket_entries_v1", "sw-entry:courtlistener:2", {
     item: {
       cells: {
+        // the court record itself reports a sealed document on this entry (RECAP is_sealed): an explicit source flag
         document_ids: ["900002"],
         date_filed: "2020-02-02",
         description: null,
-        description_withheld: "sealed_or_restricted_text",
-        held: false,
+        description_withheld: "sealed_document",
+        documents_sealed: 1,
+        held: true,
       },
     },
   });
@@ -343,7 +350,11 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
           "select status, policy_page from documents.page_sets where sha256 = $1",
           [S.B],
         );
-        assert.deepEqual(b, { status: "indexed", policy_page: null }, "no keyword withholding (owner 2026-10-23)");
+        assert.deepEqual(
+          b,
+          { status: "indexed", policy_page: null },
+          "no keyword withholding (owner 2026-10-23)",
+        );
         assert.equal(
           (await one("select count(*)::int n from documents.pages where sha256 = $1", [S.B])).n,
           2,
@@ -755,6 +766,185 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
           false,
         );
     });
+
+    await t.test(
+      "entry flag: only an explicit source flag withholds text (owner 2026-10-27); v2 patch and rollback",
+      async () => {
+        const flagFile = await fs.readFile(
+          "database/contracts/documents-v2-entry-flag.sql",
+          "utf8",
+        );
+        const rollbackFile = await fs.readFile(
+          "database/contracts/documents-v2-entry-flag.rollback.sql",
+          "utf8",
+        );
+        const def = async () =>
+          (
+            await one(
+              "select pg_get_functiondef('public.documents_refresh_v1(text)'::regprocedure) d",
+            )
+          ).d;
+        const usesHelper = async () =>
+          (await def()).includes("documents.source_entry_flag(b.cl_cells, b.db_cells)");
+        const status = async () =>
+          Object.fromEntries(
+            (
+              await db.query(
+                "select native_document_id, text_status, withheld_reason from documents.documents where native_document_id in ('900002','900003','900004','900005','njd-3:2016-md-02738-00007','njd-3:2016-md-02738-00008')",
+              )
+            ).rows.map((x) => [x.native_document_id, [x.text_status, x.withheld_reason]]),
+          );
+
+        // documents-v1.sql already carries the rule: the v2 patch is a no-op on it
+        const before = await def();
+        await db.exec(flagFile);
+        assert.equal(await def(), before, "v2 on a v1 that uses the helper changes nothing");
+
+        await db.query(
+          "update public.corpus_records set detail = jsonb_set(detail, '{registry,pdf_case_ids}', '[\"njd-3:2016-md-02738\", \"6245245\"]') where id = 'sw-matter:2738'",
+        );
+        const rec = (dataset, id, cells, filters = null) =>
+          db.query(
+            "insert into public.corpus_records(dataset,id,item,filters) values ($1,$2,$3,$4)",
+            [dataset, id, { cells }, filters],
+          );
+        // our projection withheld the description for a dial-in: not a source flag
+        await rec("sw_docket_entries_v1", "sw-entry:courtlistener:3", {
+          document_ids: ["900003"],
+          description: null,
+          description_withheld: "contact_or_access_data",
+          documents_sealed: 0,
+          held: false,
+        });
+        // a sealing word in the description (projection-derived held): not a source flag
+        await rec("sw_docket_entries_v1", "sw-entry:courtlistener:4", {
+          document_ids: ["900004"],
+          description: null,
+          description_withheld: "sealed_or_restricted_text",
+          documents_sealed: 0,
+          held: true,
+        });
+        // the court sealed another document on the same entry: a source flag
+        await rec("sw_docket_entries_v1", "sw-entry:courtlistener:5", {
+          document_ids: ["900005"],
+          description: "EXHIBITS to the motion",
+          description_withheld: null,
+          documents_sealed: "2",
+          held: false,
+        });
+        await rec(
+          "sw_docket_documents_v1",
+          "sw-doc:docketbird:njd-3:2016-md-02738-00007",
+          { description: null, description_withheld: "contact_or_access_data", restricted: false },
+          { native_id: "njd-3:2016-md-02738-00007" },
+        );
+        await rec(
+          "sw_docket_documents_v1",
+          "sw-doc:docketbird:njd-3:2016-md-02738-00008",
+          { description: "Document", description_withheld: null, restricted: true },
+          { native_id: "njd-3:2016-md-02738-00008" },
+        );
+        const asset = (source, doc, kase, s, flags) =>
+          db.query(
+            "insert into corpus_ingest.pdf_document_assets(source_system,native_document_id,native_case_id,sha256,provider_flags) values ($1,$2,$3,$4,$5)",
+            [source, doc, kase, s, flags],
+          );
+        const cl = { is_available: true, is_sealed: false };
+        const dk = { restricted: false, downloaded: 1 };
+        await asset("courtlistener", "900003", "6245245", S.L, cl);
+        await asset("courtlistener", "900004", "6245245", S.M, cl);
+        await asset("courtlistener", "900005", "6245245", S.P, cl);
+        await asset("docketbird", "njd-3:2016-md-02738-00007", "njd-3:2016-md-02738", S.N, dk);
+        await asset("docketbird", "njd-3:2016-md-02738-00008", "njd-3:2016-md-02738", S.O, dk);
+        const text = (s, t) =>
+          db
+            .query(
+              "insert into corpus_ingest.pdf_texts(sha256,status,page_count,pages_with_text,ocr_pending_pages,chars,engine,extractor_version,extracted_at) values ($1,'complete',1,1,0,$2,'pdf-text-layer','pdf-text/2','2026-10-01T00:00:00Z')",
+              [s, t.length],
+            )
+            .then(() =>
+              db.query(
+                "insert into corpus_ingest.pdf_text_pages(sha256,page,text,engine) values ($1,1,$2,'pdf-text-layer')",
+                [s, t],
+              ),
+            );
+        await text(S.L, "NOTICE of telephonic status conference; dial 555-0100, access code 1234");
+        await text(S.M, "ORDER granting leave to file the reply brief");
+        await text(S.O, "Restricted docketbird filing text");
+        await text(S.P, "Exhibit list for the hearing");
+
+        await rpc("documents_refresh_v1", ["b4"]);
+        assert.deepEqual(await status(), {
+          900002: ["withheld_policy", "entry_withheld"],
+          900003: ["pending_index", null],
+          900004: ["pending_index", null],
+          900005: ["withheld_policy", "entry_withheld"],
+          "njd-3:2016-md-02738-00007": ["not_extracted", null],
+          "njd-3:2016-md-02738-00008": ["withheld_policy", "entry_withheld"],
+        });
+        let r;
+        do r = await rpc("documents_build_pages_v1", ["b4", 50]);
+        while (r.remaining > 0);
+        const hits = await rpc("documents_search_v1", ["telephonic status conference"]);
+        assert.deepEqual(
+          hits.rows.map((x) => x.native_document_id),
+          ["900003"],
+          "a hearing notice whose description carried a dial-in is searchable",
+        );
+        assert.equal((await rpc("documents_search_v1", ["restricted docketbird"])).rows.length, 0);
+        assert.equal((await rpc("documents_search_v1", ["exhibit list"])).rows.length, 0);
+
+        // rollback restores the old rule exactly and drops the helper
+        await db.exec(rollbackFile);
+        assert.equal(await usesHelper(), false);
+        assert.equal(
+          (await one("select to_regprocedure('documents.source_entry_flag(jsonb,jsonb)') p")).p,
+          null,
+        );
+        await db.exec(rollbackFile); // idempotent
+        await rpc("documents_refresh_v1", ["b5"]);
+        const old = await status();
+        for (const id of ["900003", "900004", "njd-3:2016-md-02738-00007"])
+          assert.deepEqual(
+            old[id],
+            ["withheld_policy", "entry_withheld"],
+            `old rule withholds ${id}`,
+          );
+
+        // the v2 patch on the old definition (as live on 2026-10-27), twice
+        await db.exec(flagFile);
+        assert.equal(await usesHelper(), true);
+        const patched = await def();
+        await db.exec(flagFile);
+        assert.equal(await def(), patched, "a second run changes nothing");
+        const fn = await one(
+          "select p.prosecdef, p.proconfig from pg_proc p where p.oid = 'public.documents_refresh_v1(text)'::regprocedure",
+        );
+        assert.deepEqual([fn.prosecdef, fn.proconfig], [true, ['search_path=""']]);
+        for (const f of [
+          "public.documents_refresh_v1(text)",
+          "documents.source_entry_flag(jsonb,jsonb)",
+        ]) {
+          assert.equal(
+            (await one("select has_function_privilege('anon', $1, 'execute') r", [f])).r,
+            false,
+            f,
+          );
+          assert.equal(
+            (await one("select has_function_privilege('service_role', $1, 'execute') r", [f])).r,
+            true,
+            f,
+          );
+        }
+        await rpc("documents_refresh_v1", ["b6"]);
+        const now = await status();
+        assert.deepEqual(now["900003"], ["pending_index", null]);
+        assert.deepEqual(now["900004"], ["pending_index", null]);
+        assert.deepEqual(now["njd-3:2016-md-02738-00007"], ["not_extracted", null]);
+        assert.deepEqual(now["900005"], ["withheld_policy", "entry_withheld"]);
+        assert.deepEqual(now["njd-3:2016-md-02738-00008"], ["withheld_policy", "entry_withheld"]);
+      },
+    );
   } finally {
     await db.close();
   }
