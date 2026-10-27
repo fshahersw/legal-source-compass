@@ -26,7 +26,10 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
       <ChartCard
         title={`CDC published no county health estimates for ${stateName} in this release`}
         sources={[PLACES_SOURCE]}
-        status={{ kind: "empty", reason: "Not recorded for this state in the 2025 PLACES release." }}
+        status={{
+          kind: "empty",
+          reason: "Not recorded for this state in the 2025 PLACES release.",
+        }}
         about={<AboutList items={PLACES_ABOUT} />}
       />
     );
@@ -36,7 +39,9 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
     .filter((i): i is typeof i & { value: number } => i.value !== null)
     .sort((a, b) => b.value - a.value);
   const picks =
-    recorded.length <= SHOWN * 2 ? recorded : [...recorded.slice(0, SHOWN), ...recorded.slice(-SHOWN)];
+    recorded.length <= SHOWN * 2
+      ? recorded
+      : [...recorded.slice(0, SHOWN), ...recorded.slice(-SHOWN)];
   const national = part.national?.measures.find((m) => m.id === measure.id)?.crude.v ?? null;
   const adults = derivedAdults(part.counties, measure.id);
   const top = recorded[0];
@@ -55,7 +60,11 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
     figures: [
       { label: "Median county, crude prevalence", value: dist.median, unit: "%" },
       { label: "United States, crude prevalence", value: national, unit: "%" },
-      { label: "Adults with the condition, derived (prevalence × adults)", value: adults, unit: "adults" },
+      {
+        label: "Adults with the condition, derived (prevalence × adults)",
+        value: adults,
+        unit: "adults",
+      },
       { label: "Counties with an estimate", value: dist.recorded },
       ...picks.map((p) => ({ label: p.label, value: p.value, unit: "%" })),
     ],
@@ -69,17 +78,30 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
         title={title}
         subtitle={`Crude prevalence among adults · ${stateName} counties · ${measure.year}`}
         kpis={[
-          { label: "Typical county", value: orNR(dist.median, fmtPct), detail: `median of ${dist.recorded} counties` },
+          {
+            label: "Typical county",
+            value: orNR(dist.median, fmtPct),
+            detail: `median of ${dist.recorded} counties`,
+          },
           { label: "United States", value: orNR(national, fmtPct) },
-          { label: "Adults with the condition", value: orNR(adults, fmtInt), detail: "derived: prevalence × adults" },
+          {
+            label: "Adults with the condition",
+            value: orNR(adults, fmtInt),
+            detail: "derived: prevalence × adults",
+          },
         ]}
-        sources={[PLACES_SOURCE, ...measure.links.map((l) => ({ label: l.sourceLabel, url: l.sourceUrl }))]}
+        sources={[
+          PLACES_SOURCE,
+          ...measure.links.map((l) => ({ label: l.sourceLabel, url: l.sourceUrl })),
+        ]}
         period={measure.year}
         about={
           <AboutList
             items={[
               ...PLACES_ABOUT,
-              ...measure.links.map((l) => `MDL ${l.mdls.join(", ")}: ${l.relation}.${l.caveat ? ` ${l.caveat}` : ""}`),
+              ...measure.links.map(
+                (l) => `MDL ${l.mdls.join(", ")}: ${l.relation}.${l.caveat ? ` ${l.caveat}` : ""}`,
+              ),
               recorded.length > SHOWN * 2
                 ? `The chart shows the ${SHOWN} highest and ${SHOWN} lowest counties; View data lists all.`
                 : "The chart shows every county with an estimate.",

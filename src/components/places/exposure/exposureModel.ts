@@ -95,7 +95,11 @@ export type PlacesCounty = {
   measures: PlacesMeasure[];
 };
 
-export type UcmrPopulation = { sum: number | null; withPopulation: number; withoutPopulation: number };
+export type UcmrPopulation = {
+  sum: number | null;
+  withPopulation: number;
+  withoutPopulation: number;
+};
 export type UcmrState = {
   agency: string;
   agencyName: string;
@@ -189,13 +193,20 @@ export function parsePartd(v: unknown): PartdExposure | null {
       .sort((a, b) => a.year - b.year),
     latestRank:
       rankYear !== null && rankN !== null && rankOf !== null
-        ? { year: rankYear, rank: rankN, of: rankOf, shareOfNational: num(rank?.["share_of_national"]) }
+        ? {
+            year: rankYear,
+            rank: rankN,
+            of: rankOf,
+            shareOfNational: num(rank?.["share_of_national"]),
+          }
         : null,
   };
 }
 
 const interval = (v: unknown): Interval =>
-  isObj(v) ? { v: num(v["v"]), lo: num(v["lo"]), hi: num(v["hi"]) } : { v: null, lo: null, hi: null };
+  isObj(v)
+    ? { v: num(v["v"]), lo: num(v["lo"]), hi: num(v["hi"]) }
+    : { v: null, lo: null, hi: null };
 
 export function parsePlaces(v: unknown): PlacesCounty | null {
   if (!isObj(v) || v["kind"] !== "places_county") return null;
@@ -217,13 +228,15 @@ export function parsePlaces(v: unknown): PlacesCounty | null {
         year: str(m["year"]),
         crude: interval(m["crude"]),
         ageAdjusted: interval(m["age_adjusted"]),
-        links: (Array.isArray(linkMap[id]) ? (linkMap[id] as unknown[]) : []).filter(isObj).map((l) => ({
-          mdls: strs(l["mdls"]),
-          relation: str(l["relation"]),
-          sourceLabel: str(l["source_label"]),
-          sourceUrl: str(l["source_url"]),
-          caveat: str(l["caveat"]) || null,
-        })),
+        links: (Array.isArray(linkMap[id]) ? (linkMap[id] as unknown[]) : [])
+          .filter(isObj)
+          .map((l) => ({
+            mdls: strs(l["mdls"]),
+            relation: str(l["relation"]),
+            sourceLabel: str(l["source_label"]),
+            sourceUrl: str(l["source_url"]),
+            caveat: str(l["caveat"]) || null,
+          })),
       }))
       .sort((a, b) => a.id.localeCompare(b.id)),
   };

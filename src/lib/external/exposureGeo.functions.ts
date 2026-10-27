@@ -73,9 +73,9 @@ const SYSTEM_SELECT = [
 /** Which exposure datasets are published and ready. */
 const readReady = memoAsync(READ_TTL_MS, async (): Promise<Set<DatasetKey>> => {
   const ids = Object.values(EXPOSURE_DATASETS).join(",");
-  const { rows } = await restGet<{ id: string; ready: boolean | null; imported_records: number | null }[]>(
-    `corpus_datasets?select=id,ready,imported_records&id=in.(${ids})`,
-  );
+  const { rows } = await restGet<
+    { id: string; ready: boolean | null; imported_records: number | null }[]
+  >(`corpus_datasets?select=id,ready,imported_records&id=in.(${ids})`);
   const ready = new Set<DatasetKey>();
   for (const [key, id] of Object.entries(EXPOSURE_DATASETS) as [DatasetKey, string][]) {
     const row = rows.find((r) => r.id === id);
@@ -99,7 +99,8 @@ const exposureRows = (dataset: string, filter: string, limit: number) =>
     `corpus_records?select=id,e:item->exposure&dataset=eq.${dataset}&${filter}&order=ordinal.asc&limit=${limit}`,
   ).then((r) => r.rows);
 
-const cs = (obj: Record<string, string[]>) => `filters=cs.${encodeURIComponent(JSON.stringify(obj))}`;
+const cs = (obj: Record<string, string[]>) =>
+  `filters=cs.${encodeURIComponent(JSON.stringify(obj))}`;
 
 async function readPartdState(usps: string): Promise<PartdPart> {
   const ds = EXPOSURE_DATASETS.partd;
@@ -107,7 +108,8 @@ async function readPartdState(usps: string): Promise<PartdPart> {
     exposureRows(ds, cs({ state: [usps] }), 200),
     exposureRows(ds, cs({ state: ["US"] }), 200),
   ]);
-  const parse = (rows: Row[]) => rows.map((r) => parsePartd(r.e)).filter((e): e is PartdExposure => e !== null);
+  const parse = (rows: Row[]) =>
+    rows.map((r) => parsePartd(r.e)).filter((e): e is PartdExposure => e !== null);
   return { state: parse(state), national: parse(national) };
 }
 
@@ -153,7 +155,9 @@ function fail(scope: string) {
 }
 
 export const getStateExposure = createServerFn({ method: "GET" })
-  .inputValidator((d: { usps: string }) => z.object({ usps: z.string().regex(/^[A-Z]{2}$/) }).parse(d))
+  .inputValidator((d: { usps: string }) =>
+    z.object({ usps: z.string().regex(/^[A-Z]{2}$/) }).parse(d),
+  )
   .handler(async ({ data }): Promise<StateExposure> => {
     const { usps } = data;
     return keyed(`state:${usps}`, async () => {
@@ -196,7 +200,9 @@ export const getCountyExposure = createServerFn({ method: "GET" })
   });
 
 export const getMdlExposure = createServerFn({ method: "GET" })
-  .inputValidator((d: { mdl: string }) => z.object({ mdl: z.string().regex(/^[1-9]\d{0,5}$/) }).parse(d))
+  .inputValidator((d: { mdl: string }) =>
+    z.object({ mdl: z.string().regex(/^[1-9]\d{0,5}$/) }).parse(d),
+  )
   .handler(async ({ data }): Promise<MdlExposure | null> => {
     const { mdl } = data;
     return keyed(`mdl:${mdl}`, async () => {
@@ -207,8 +213,10 @@ export const getMdlExposure = createServerFn({ method: "GET" })
           ? exposureRows(EXPOSURE_DATASETS.pfasStates, "id=like.ucmr5:state:*", 200)
           : null,
       ]);
-      const partd = partdRows?.map((r) => parsePartd(r.e)).filter((e): e is PartdExposure => e !== null) ?? [];
-      const pfas = pfasRows?.map((r) => parseUcmrState(r.e)).filter((s): s is UcmrState => s !== null) ?? [];
+      const partd =
+        partdRows?.map((r) => parsePartd(r.e)).filter((e): e is PartdExposure => e !== null) ?? [];
+      const pfas =
+        pfasRows?.map((r) => parseUcmrState(r.e)).filter((s): s is UcmrState => s !== null) ?? [];
       if (!partd.length && !pfas.length) return null;
       return {
         mdl,

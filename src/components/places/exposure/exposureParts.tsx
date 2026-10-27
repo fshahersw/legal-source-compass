@@ -6,7 +6,8 @@ export const fmtInt = (v: number) => Math.round(v).toLocaleString("en-US");
 export const fmtPct = (v: number) => `${v.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 export const fmtShare = (v: number) =>
   `${(v * 100).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
-export const fmtNgl = (v: number) => `${v.toLocaleString("en-US", { maximumFractionDigits: 2 })} ng/L`;
+export const fmtNgl = (v: number) =>
+  `${v.toLocaleString("en-US", { maximumFractionDigits: 2 })} ng/L`;
 export const orNR = (v: number | null | undefined, f: (n: number) => string) =>
   typeof v === "number" && Number.isFinite(v) ? f(v) : NOT_RECORDED;
 
@@ -30,7 +31,12 @@ export function Picker({
   return (
     <label htmlFor={id} className="flex min-w-0 flex-col gap-0.5 text-[11px]">
       <span className="text-muted-foreground">{label}</span>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={selectClass}
+      >
         {options.map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}

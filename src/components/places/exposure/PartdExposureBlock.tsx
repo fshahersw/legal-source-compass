@@ -23,9 +23,11 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
     [part, year],
   );
   const [pick, setPick] = useState<string | null>(null);
-  const selected = part.state.find((e) => e.mdl === pick) ?? part.state.find((e) => e.mdl === rows[0]?.mdl);
+  const selected =
+    part.state.find((e) => e.mdl === pick) ?? part.state.find((e) => e.mdl === rows[0]?.mdl);
   const years = useMemo(
-    () => [...new Set(part.national.flatMap((e) => e.series.map((p) => p.year)))].sort((a, b) => a - b),
+    () =>
+      [...new Set(part.national.flatMap((e) => e.series.map((p) => p.year)))].sort((a, b) => a - b),
     [part.national],
   );
   const series = selected ? claimsSeries(selected, years) : [];
@@ -43,9 +45,20 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
     period: String(year),
     source: PARTD_SOURCE.label,
     figures: rows.slice(0, 10).flatMap((r) => [
-      { label: `${r.label} claims`, value: r.claims, unit: "claims", note: r.lowerBound ? "lower bound, not ranked" : undefined },
-      { label: `${r.label} share of national claims`, value: r.share === null ? null : fmtShare(r.share) },
-      { label: `${r.label} rank among states`, value: r.rank ? `${r.rank.rank} of ${r.rank.of}` : null },
+      {
+        label: `${r.label} claims`,
+        value: r.claims,
+        unit: "claims",
+        note: r.lowerBound ? "lower bound, not ranked" : undefined,
+      },
+      {
+        label: `${r.label} share of national claims`,
+        value: r.share === null ? null : fmtShare(r.share),
+      },
+      {
+        label: `${r.label} rank among states`,
+        value: r.rank ? `${r.rank.rank} of ${r.rank.of}` : null,
+      },
     ]),
     maxFigures: 30,
   });
@@ -109,7 +122,14 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
               ? "Years marked partial miss a product CMS hid (fewer than 11 claims); the bar is a lower bound."
               : undefined
           }
-          about={<AboutList items={[...PARTD_ABOUT, `Drugs counted: ${selected.brandNames.length ? selected.brandNames.join(", ") : selected.genericNames.join(", ")}.`]} />}
+          about={
+            <AboutList
+              items={[
+                ...PARTD_ABOUT,
+                `Drugs counted: ${selected.brandNames.length ? selected.brandNames.join(", ") : selected.genericNames.join(", ")}.`,
+              ]}
+            />
+          }
           actions={
             <Picker
               id="exposure-partd-mdl"

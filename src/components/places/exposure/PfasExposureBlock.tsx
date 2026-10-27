@@ -4,7 +4,13 @@
  */
 import { ChartCard } from "@/components/charts/ChartCard";
 import { RankBars } from "@/components/charts/recharts";
-import { AiSummary, AskAiButton, buildSectionContext, DataDrawer, type DataColumn } from "@/components/kit";
+import {
+  AiSummary,
+  AskAiButton,
+  buildSectionContext,
+  DataDrawer,
+  type DataColumn,
+} from "@/components/kit";
 import type { PfasPart } from "@/lib/external/exposureGeo.functions";
 import { SDWIS_SOURCE, UCMR_SOURCE, type UcmrSystem } from "./exposureModel";
 import { AboutList, fmtInt, fmtShare, orNR, PFAS_ABOUT } from "./exposureParts";
@@ -42,11 +48,23 @@ export function PfasExposureBlock({ part, stateName }: { part: PfasPart; stateNa
     figures: [
       { label: "Water systems tested", value: s.systemsSampled },
       { label: "Systems with any PFAS detected", value: s.systemsWithDetect },
-      { label: "Share of systems with PFAS detected", value: share === null ? null : fmtShare(share) },
+      {
+        label: "Share of systems with PFAS detected",
+        value: share === null ? null : fmtShare(share),
+      },
       { label: "Share nationally", value: nationalShare === null ? null : fmtShare(nationalShare) },
-      { label: "Systems with a PFOA or PFOS result at or above 4.0 ng/L", value: s.systemsAtOrAbove4 },
-      { label: "People served by systems with PFAS detected", value: s.populationWithDetect.sum, unit: "people" },
-      ...s.byAnalyte.slice(0, 8).map((a) => ({ label: `Systems detecting ${a.analyte}`, value: a.systems })),
+      {
+        label: "Systems with a PFOA or PFOS result at or above 4.0 ng/L",
+        value: s.systemsAtOrAbove4,
+      },
+      {
+        label: "People served by systems with PFAS detected",
+        value: s.populationWithDetect.sum,
+        unit: "people",
+      },
+      ...s.byAnalyte
+        .slice(0, 8)
+        .map((a) => ({ label: `Systems detecting ${a.analyte}`, value: a.systems })),
     ],
     maxFigures: 16,
   });
@@ -57,8 +75,16 @@ export function PfasExposureBlock({ part, stateName }: { part: PfasPart; stateNa
         title={title}
         subtitle={`Public water systems with each PFAS detected · ${stateName} · ${period}`}
         kpis={[
-          { label: "Systems with PFAS", value: `${fmtInt(s.systemsWithDetect)} of ${fmtInt(s.systemsSampled)}`, detail: nationalShare !== null ? `${fmtShare(nationalShare)} nationally` : undefined },
-          { label: "PFOA or PFOS at or above 4 ng/L", value: fmtInt(s.systemsAtOrAbove4), detail: "systems, single results" },
+          {
+            label: "Systems with PFAS",
+            value: `${fmtInt(s.systemsWithDetect)} of ${fmtInt(s.systemsSampled)}`,
+            detail: nationalShare !== null ? `${fmtShare(nationalShare)} nationally` : undefined,
+          },
+          {
+            label: "PFOA or PFOS at or above 4 ng/L",
+            value: fmtInt(s.systemsAtOrAbove4),
+            detail: "systems, single results",
+          },
           {
             label: "People served by systems with PFAS",
             value: orNR(s.populationWithDetect.sum, fmtInt),
@@ -88,7 +114,12 @@ export function PfasExposureBlock({ part, stateName }: { part: PfasPart; stateNa
               columns={SYSTEM_COLUMNS}
               rows={part.systems}
               rowKey={(r) => r.pwsid}
-              source={{ source: [{ label: UCMR_SOURCE.label, href: UCMR_SOURCE.url }, { label: SDWIS_SOURCE.label, href: SDWIS_SOURCE.url }] }}
+              source={{
+                source: [
+                  { label: UCMR_SOURCE.label, href: UCMR_SOURCE.url },
+                  { label: SDWIS_SOURCE.label, href: SDWIS_SOURCE.url },
+                ],
+              }}
               triggerLabel={`See ${part.systems.length} water systems`}
               searchable
             />

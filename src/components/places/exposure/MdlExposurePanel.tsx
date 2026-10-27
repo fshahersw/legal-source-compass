@@ -101,15 +101,29 @@ function PartdByState({ mdl, records }: { mdl: string; records: readonly PartdEx
     <div className="space-y-3" data-testid="mdl-exposure-partd">
       <ChartCard
         variant="editorial"
-        title={rankTakeaway(items, (v) => `${fmtInt(v)} claims`) ?? `Part D claims for ${label} by state, ${year}`}
+        title={
+          rankTakeaway(items, (v) => `${fmtInt(v)} claims`) ??
+          `Part D claims for ${label} by state, ${year}`
+        }
         subtitle={`Medicare Part D claims · ${label} · by prescriber state · ${year}`}
         kpis={[
           { label: "National claims", value: orNR(latest?.claims, fmtInt), detail: String(year) },
-          { label: "Median state", value: orNR(mid, fmtInt), detail: `${values.length} states with a complete figure` },
+          {
+            label: "Median state",
+            value: orNR(mid, fmtInt),
+            detail: `${values.length} states with a complete figure`,
+          },
         ]}
         sources={[PARTD_SOURCE]}
         period={String(year)}
-        about={<AboutList items={[...PARTD_ABOUT, `Drugs counted: ${nation.brandNames.length ? nation.brandNames.join(", ") : nation.genericNames.join(", ")}.`]} />}
+        about={
+          <AboutList
+            items={[
+              ...PARTD_ABOUT,
+              `Drugs counted: ${nation.brandNames.length ? nation.brandNames.join(", ") : nation.genericNames.join(", ")}.`,
+            ]}
+          />
+        }
         actions={<AskAiButton sectionId="mdl-exposure-partd" context={context} size="icon" />}
         table={{
           caption: `Part D claims for ${label} by state, ${year}`,
@@ -140,8 +154,11 @@ function PartdByState({ mdl, records }: { mdl: string; records: readonly PartdEx
       </ChartCard>
       <ChartCard
         title={
-          trendTakeaway(`${label} Part D claims`, series.map((s) => ({ label: s.year, value: s.claims })), fmtInt) ??
-          `${label} Part D claims per year`
+          trendTakeaway(
+            `${label} Part D claims`,
+            series.map((s) => ({ label: s.year, value: s.claims })),
+            fmtInt,
+          ) ?? `${label} Part D claims per year`
         }
         subtitle={`Claims per year · United States · ${years[0]}–${years.at(-1)}`}
         sources={[PARTD_SOURCE]}
@@ -176,13 +193,22 @@ function PfasByState({ states }: { states: readonly UcmrState[] }) {
       s,
     }));
   if (!nation) return null;
-  const nationalShare = nation.systemsSampled ? nation.systemsWithDetect / nation.systemsSampled : null;
+  const nationalShare = nation.systemsSampled
+    ? nation.systemsWithDetect / nation.systemsSampled
+    : null;
   // States, DC and territories are compared; tribal systems (EPA regions, Navajo Nation) stay in the table only.
   const compared = rows.filter((r) => /^[A-Z]{2}$/.test(r.id) && r.id !== "NN");
   const shares = compared.map((r) => r.share).filter((v): v is number => v !== null);
   const mid = median(shares);
-  const period = nation.firstSample && nation.lastSample ? `${nation.firstSample} to ${nation.lastSample}` : "UCMR 5";
-  const items = compared.map((r) => ({ id: r.id, label: r.label, value: r.share === null ? null : r.share * 100 }));
+  const period =
+    nation.firstSample && nation.lastSample
+      ? `${nation.firstSample} to ${nation.lastSample}`
+      : "UCMR 5";
+  const items = compared.map((r) => ({
+    id: r.id,
+    label: r.label,
+    value: r.share === null ? null : r.share * 100,
+  }));
   const pct = (v: number) => `${v.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
   const context = buildSectionContext({
     id: "mdl-exposure-pfas",
@@ -193,13 +219,23 @@ function PfasByState({ states }: { states: readonly UcmrState[] }) {
     figures: [
       { label: "Systems tested nationally", value: nation.systemsSampled },
       { label: "Systems with PFAS detected nationally", value: nation.systemsWithDetect },
-      { label: "People served by systems with PFAS", value: nation.populationWithDetect.sum, unit: "people" },
-      { label: "Median state share of systems with PFAS", value: mid === null ? null : fmtShare(mid) },
+      {
+        label: "People served by systems with PFAS",
+        value: nation.populationWithDetect.sum,
+        unit: "people",
+      },
+      {
+        label: "Median state share of systems with PFAS",
+        value: mid === null ? null : fmtShare(mid),
+      },
       ...[...rows]
         .filter((r) => r.share !== null)
         .sort((a, b) => b.share! - a.share!)
         .slice(0, 10)
-        .map((r) => ({ label: `${r.label}, share of systems with PFAS`, value: fmtShare(r.share!) })),
+        .map((r) => ({
+          label: `${r.label}, share of systems with PFAS`,
+          value: fmtShare(r.share!),
+        })),
     ],
     maxFigures: 20,
   });
@@ -210,13 +246,28 @@ function PfasByState({ states }: { states: readonly UcmrState[] }) {
         title={rankTakeaway(items, pct) ?? "Share of tested water systems with PFAS, by state"}
         subtitle={`Share of tested public water systems with any of 29 PFAS detected · by state · ${period}`}
         kpis={[
-          { label: "Systems with PFAS", value: `${fmtInt(nation.systemsWithDetect)} of ${fmtInt(nation.systemsSampled)}`, detail: nationalShare !== null ? fmtShare(nationalShare) : undefined },
-          { label: "PFOA or PFOS at or above 4 ng/L", value: fmtInt(nation.systemsAtOrAbove4), detail: "systems, single results" },
-          { label: "People served by systems with PFAS", value: orNR(nation.populationWithDetect.sum, fmtInt) },
+          {
+            label: "Systems with PFAS",
+            value: `${fmtInt(nation.systemsWithDetect)} of ${fmtInt(nation.systemsSampled)}`,
+            detail: nationalShare !== null ? fmtShare(nationalShare) : undefined,
+          },
+          {
+            label: "PFOA or PFOS at or above 4 ng/L",
+            value: fmtInt(nation.systemsAtOrAbove4),
+            detail: "systems, single results",
+          },
+          {
+            label: "People served by systems with PFAS",
+            value: orNR(nation.populationWithDetect.sum, fmtInt),
+          },
         ]}
         sources={[UCMR_SOURCE, SDWIS_SOURCE]}
         period={period}
-        about={<AboutList items={[...PFAS_ABOUT, "Tribal systems are grouped by EPA region, as EPA codes them."]} />}
+        about={
+          <AboutList
+            items={[...PFAS_ABOUT, "Tribal systems are grouped by EPA region, as EPA codes them."]}
+          />
+        }
         actions={<AskAiButton sectionId="mdl-exposure-pfas" context={context} size="icon" />}
         table={{
           caption: "PFAS in public drinking water by state",

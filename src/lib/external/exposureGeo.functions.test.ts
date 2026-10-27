@@ -51,7 +51,11 @@ const paths = (restGet: Mock) => restGet.mock.calls.map(([p]) => String(p));
 describe("exposure geography reads", () => {
   it("returns null parts and reads no records when the datasets are not published", async () => {
     const { restGet, state, county, mdl } = await load({ corpus_datasets: [] });
-    expect(await state({ data: { usps: "NJ" } })).toMatchObject({ partd: null, places: null, pfas: null });
+    expect(await state({ data: { usps: "NJ" } })).toMatchObject({
+      partd: null,
+      places: null,
+      pfas: null,
+    });
     expect(await county({ data: { fips: "34023" } })).toBeNull();
     expect(await mdl({ data: { mdl: "2973" } })).toBeNull();
     expect(paths(restGet).every((p) => p.startsWith("corpus_datasets"))).toBe(true);

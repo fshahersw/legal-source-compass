@@ -65,7 +65,9 @@ export function StateExposureView({ data, stateName }: { data: StateExposure; st
         </KpiGrid>
       ) : null}
       <div className="space-y-6">
-        {partd && partd.state.length ? <PartdExposureBlock part={partd} stateName={stateName} /> : null}
+        {partd && partd.state.length ? (
+          <PartdExposureBlock part={partd} stateName={stateName} />
+        ) : null}
         {places ? <PlacesExposureBlock part={places} stateName={stateName} /> : null}
         {pfas ? <PfasExposureBlock part={pfas} stateName={stateName} /> : null}
       </div>
@@ -87,7 +89,10 @@ export function stateKpis(data: StateExposure): Kpi[] {
   const { partd, places, pfas } = data;
   if (partd) {
     const year = latestYear(partd.national);
-    const top = year === null ? null : stateMdlRows(partd.state, partd.national, year).find((r) => r.claims !== null);
+    const top =
+      year === null
+        ? null
+        : stateMdlRows(partd.state, partd.national, year).find((r) => r.claims !== null);
     if (top && year !== null)
       out.push({
         label: "Most-prescribed MDL drug",
@@ -113,7 +118,10 @@ export function stateKpis(data: StateExposure): Kpi[] {
   }
   if (pfas?.state) {
     const s = pfas.state;
-    const period = s.firstSample && s.lastSample ? `${s.firstSample.slice(0, 4)}–${s.lastSample.slice(0, 4)}` : "UCMR 5";
+    const period =
+      s.firstSample && s.lastSample
+        ? `${s.firstSample.slice(0, 4)}–${s.lastSample.slice(0, 4)}`
+        : "UCMR 5";
     out.push({
       label: "Water systems with PFAS detected",
       value: `${fmtInt(s.systemsWithDetect)} of ${fmtInt(s.systemsSampled)}`,

@@ -51,7 +51,9 @@ export function CountyExposureView({ data }: { data: CountyExposure }) {
   const rows = countyRows(data);
   if (!county || !rows.length) return null;
   const name = `${county.county ?? county.fips}, ${county.stateName}`;
-  const above = rows.filter((r) => r.value !== null && r.median !== null && r.value > r.median).length;
+  const above = rows.filter(
+    (r) => r.value !== null && r.median !== null && r.value > r.median,
+  ).length;
   const compared = rows.filter((r) => r.value !== null && r.median !== null).length;
   const year = rows[0]?.year ?? "";
   const context = buildSectionContext({
