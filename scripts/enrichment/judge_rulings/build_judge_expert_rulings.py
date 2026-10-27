@@ -7,7 +7,9 @@ Inputs (read-only snapshots, private/acq/de-judges-data, sha256-checked):
   snapshots/mdls_judges         the MDL registry's transferee-judge fields
   mdl_links/packet.json         the exact MDL judge links of database/contracts/mdls-exact-judge-links-20261027-v1.sql
   audit_labels_2026-10-27.json  the builder's own reading of every candidate (this directory; written by the automated agent that wrote the
-                                parser, not an independent review): the in-sample precision and recall; rulings it contradicts are held out
+                                parser, not an independent review): rulings it contradicts are held out. Agreement with these labels is
+                                printed in the dry-run report only; the published summary carries no precision or recall figure, because
+                                labels written by the parser's own author are not evidence of accuracy (see published_summary)
 
 Rules (rulings_parse.py): a record is one decided motion to exclude, strike, preclude or limit expert testimony, opinions or reports; the
 outcome is read from the decretal words of the same clause and the printed text is quoted with it. A ruling is attributed to a judge only
@@ -52,6 +54,10 @@ BASIS_LABEL = {
 }
 CAVEAT = ("Rulings found in published opinions and MDL filings in this corpus; not every ruling; outcomes depend on the motion, the expert and the "
           "record. Outcomes are read from the printed order text only.")
+LABELLED_BY = "dataset builder (automated agent); not an independent review"
+# Figures computed against the builder's own labels: printed in the dry-run report, never published (no unverified accuracy claim).
+UNPUBLISHED_AUDIT_FIGURES = ("agreeing_before_dedupe", "parser_precision_before_dedupe", "labelled_rulings", "found", "recall",
+                             "published_rulings_agreeing", "published_precision", "published_precision_note", "in_sample")
 
 
 def judge_links(mdls, packet):
@@ -169,7 +175,7 @@ def build(cands, mdls, packet, labels):
                                                 "quote": r["quote"], "date": date, "mdl": mdl},
                    "attribution": {"basis": basis, "judge_profile": prof if attributed else None, "signer_as_printed": signer,
                                    "mdl_link_evidence": evidence if prof else None},
-                   "audit": {"labels_file": LABELS.name, "verdict": r["audit"]}, "extractor": R.VERSION,
+                   "audit": {"labels_file": LABELS.name, "verdict": r["audit"], "labelled_by": LABELLED_BY}, "extractor": R.VERSION,
                    "sources": [{"source": x["source"], "id": x["id"], "url": x["source_url"]} for x in [c] + it["also"]]})
         rows.append(rec)
         if attributed:
@@ -235,6 +241,19 @@ def summary(rows, rollups, tallies, inputs, held_ids=()):
     }
 
 
+def published_summary(summ):
+    """The summary as published: no precision, recall or label-agreement figure, and a plain statement of who wrote the labels.
+
+    The audit labels were written by the automated agent that wrote the parser, so agreement with them is not an independent
+    measure of accuracy and is not published as one. Held-out ruling ids and the parsed count stay (they are not accuracy claims).
+    """
+    audit = {k: v for k, v in summ["audit"].items() if k not in UNPUBLISHED_AUDIT_FIGURES}
+    audit["accuracy"] = ("Not measured. The audit labels were written by the automated agent that built this dataset and wrote its parser; "
+                         "they are not an independent review, so no precision or recall figure is published. Rulings those labels "
+                         "contradict are held out (held_out_disagreeing).")
+    return {**summ, "audit": audit}
+
+
 def main(argv):
     cands = SN.load("rulings_candidates")
     mdls = SN.load("mdls_judges")
@@ -249,18 +268,20 @@ def main(argv):
               "mdl_links_packet": hashlib.sha256(packet_bytes).hexdigest(), "audit_labels": hashlib.sha256(LABELS.read_bytes()).hexdigest()}
     rows, rollups, tallies, _, held_ids = build(cands, mdls, packet, labels["labels"])
     summ = summary(rows, rollups, tallies, inputs, held_ids)
+    pub = published_summary(summ)
     listing = cw.listing([("date", "Date"), ("mdl", "MDL"), ("expert", "Expert as printed"), ("movant", "Movant"), ("outcome", "Outcome"),
                           ("decided_by", "Decided by"), ("attributed", "Judge attributed")],
                          [("outcome", "Outcome", OUTCOME_LABEL), ("movant", "Movant", SIDE_LABEL), ("attributed", "Judge attributed", {"yes": "Yes", "no": "No"})])
     all_rows = rows + rollups
     OUT.mkdir(parents=True, exist_ok=True)
-    build_file = {"dataset": DATASET, "label": LABEL, "listing_block": listing, "summary": summ, "rows": all_rows}
+    build_file = {"dataset": DATASET, "label": LABEL, "listing_block": listing, "summary": pub, "rows": all_rows}
     data = json.dumps(build_file, ensure_ascii=False, sort_keys=True, indent=1).encode("utf-8")
     (OUT / f"{DATASET}.json").write_bytes(data)
-    print(json.dumps({"rows": len(all_rows), "summary": {k: summ[k] for k in ("records", "audit", "coverage", "attribution", "outcomes", "period")},
+    print(json.dumps({"rows": len(all_rows), "summary": {k: pub[k] for k in ("records", "audit", "coverage", "attribution", "outcomes", "period")},
+                      "not_published_builder_label_agreement": {k: summ["audit"][k] for k in UNPUBLISHED_AUDIT_FIGURES if k in summ["audit"]},
                       "file": str(OUT / f"{DATASET}.json"), "sha256": hashlib.sha256(data).hexdigest()}, indent=1))
     if "--publish" in argv:  # LEAD ONLY: needs EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY in the environment
-        cw.publish(DATASET, LABEL, all_rows, listing_block=listing, summary=summ)
+        cw.publish(DATASET, LABEL, all_rows, listing_block=listing, summary=pub)
 
 
 if __name__ == "__main__":
