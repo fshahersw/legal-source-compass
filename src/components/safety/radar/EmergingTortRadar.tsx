@@ -270,6 +270,7 @@ export function EmergingTortRadar({
             rows={top}
             onOpen={onUnit}
             ariaLabel="Radar points by family, top 15 units"
+            labelWidth={320}
           />
           <RadarScoreLegend className="mt-2" />
         </ChartCard>
