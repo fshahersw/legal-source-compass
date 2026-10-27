@@ -1121,9 +1121,12 @@ class LiveInputs:
                 end_f = self._faers_end().isoformat()
                 args = {"p_series": ["faers_reports", "faers_serious", "faers_death"], "p_end": end_f,
                         "p_recent_months": 12, "p_baseline_months": 36, "p_tail_months": 24}
-                self.faers_windows = self._rpc("safety_series_window_v1", {"p_prefix": "faers:", **args}) + \
-                    self._rpc("safety_series_window_v1", {"p_prefix": "national:", **args})
-                self.nhtsa_windows = self._rpc("safety_radar_nhtsa_windows_v1", {"p_end": end_n.isoformat(), "p_months": 12, "p_min_recent": MIN_REPORTS})
+                window_order = "subject_id.asc,series.asc"
+                self.faers_windows = self._table_rpc("safety_series_window_v1", {"p_prefix": "faers:", **args}, window_order) + \
+                    self._table_rpc("safety_series_window_v1", {"p_prefix": "national:", **args}, window_order)
+                self.nhtsa_windows = self._table_rpc(
+                    "safety_radar_nhtsa_windows_v1", {"p_end": end_n.isoformat(), "p_months": 12, "p_min_recent": MIN_REPORTS},
+                    "scope.asc,make.asc,model.asc,component.asc")
             except RuntimeError as e:
                 if "404" not in str(e) and "PGRST202" not in str(e):
                     raise
@@ -1136,6 +1139,19 @@ class LiveInputs:
 
     def _rpc(self, name, args):
         return self.cw._call("POST", f"rpc/{name}", args, prefer="return=representation")
+
+    TABLE_PAGE = 1000  # PostgREST max-rows on this project: one unpaged call silently stops at 1,000 rows
+
+    def _table_rpc(self, name, args, order):
+        """Every row of a table-returning RPC, paged in a stable order until a short page (no silent truncation)."""
+        out, offset = [], 0
+        while True:
+            page = self.cw._call("POST", f"rpc/{name}?order={order}&limit={self.TABLE_PAGE}&offset={offset}", args,
+                                 prefer="return=representation") or []
+            out += page
+            if len(page) < self.TABLE_PAGE:
+                return out
+            offset += self.TABLE_PAGE
 
     def _paged_rpc(self, name, args):
         out, offset = [], 0
