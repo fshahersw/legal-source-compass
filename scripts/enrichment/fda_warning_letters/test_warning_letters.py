@@ -135,5 +135,36 @@ class Build(unittest.TestCase):
             build.build(self._acq([("page_desc_00000.json", [cells()])], 1, tamper=True))
 
 
+class PressRecalls(unittest.TestCase):
+    def cells(self, slug="kiriko-llc-issues-voluntary-recall", company="Kiriko, LLC"):
+        page = "/safety/recalls-market-withdrawals-safety-alerts/" + slug
+        return [time_cell("10/19/2017"), f'<a href="{page}">A1</a>', "Dietary Supplement A1 Slim", "Drugs",
+                "Undeclared sibutramine", company, "", ""]
+
+    def test_parse_row(self):
+        import press_recalls as pr
+        row = pr.parse_row(self.cells())
+        self.assertEqual(row["url"], "https://www.fda.gov/safety/recalls-market-withdrawals-safety-alerts/kiriko-llc-issues-voluntary-recall")
+        self.assertEqual((row["date"], row["brand_names"], row["company_name"]), ("2017-10-19", "A1", "Kiriko, LLC"))
+        bad = self.cells()
+        bad[1] = "A1"
+        with self.assertRaises(ValueError):
+            pr.parse_row(bad)
+
+    def test_repeated_table_keys_are_dropped_not_chosen(self):
+        import press_recalls as pr
+        a = pr.parse_row(self.cells(slug="a"))
+        b = pr.parse_row(self.cells(slug="b"))
+        c = pr.parse_row(self.cells(slug="c", company="Other Co"))
+        self.assertEqual([r["path"] for r in pr.unique_table_rows([a, b, c, c])], [c["path"]])
+
+    def test_packet_refuses_foreign_urls(self):
+        import press_recalls as pr
+        row = pr.parse_row(self.cells())
+        row["url"] = "https://example.com/x"
+        with self.assertRaises(ValueError):
+            pr.update_sql([row])
+
+
 if __name__ == "__main__":
     unittest.main()
