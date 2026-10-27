@@ -92,6 +92,7 @@ describe("sectionOf", () => {
     expect(sectionOf("agency_safety_openfda_crl")).toBe("safety");
     expect(sectionOf("indiana_code")).toBe("law");
     expect(sectionOf("mass_tort_authority_evidence")).toBe("law");
+    expect(sectionOf("large_text_official")).toBe("sources");
     expect(sectionOf("something_new")).toBe("other");
   });
 });

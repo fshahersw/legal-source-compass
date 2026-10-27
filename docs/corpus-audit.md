@@ -42,6 +42,7 @@ These three buckets partition all 16,730 rows. They describe **what each ledger 
 | `court_documents` | `dq20261003r7_court_documents_titles_weak_first_page` | 59 | Must stay |
 | `public.corpus_datasets` | `release20261027_judge_portraits_retire_empty_catalog` | 1 | Must stay (the retired empty `judge_portraits` catalog row, run 7f3c2a91; `judge-portraits-release-20261027-rollback.sql` re-creates it) |
 | `court_documents` | `dq20261003r7_court_documents_titles_identical_file` | 28 | Exact-duplicate context |
+| `focused` / `seeger` | `release20261027_large_text_parent_originals` | 18 | Must stay (rollback source, run 5b8e0d47: detail before-images of the 18 parents that gained a link to their stored publisher original) |
 | `public.corpus_datasets` | `cleanup_20261006_counter` | 26 | Taxonomy / catalog noise |
 | `sw_matter_regulatory_links_v1` | `dq20261003r6_regulatory_links_restrict` | 4 | Must stay |
 | `sw_matter_regulatory_links_v1` | `dq20261003r5_regulatory_links_pilot` | 4 | Must stay |

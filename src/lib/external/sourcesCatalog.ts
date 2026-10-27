@@ -197,6 +197,7 @@ const EXPLICIT: Readonly<Record<string, CategoryId>> = {
   saved_pages: "sources",
   source_documents: "sources",
   large_text_assets: "sources",
+  large_text_official: "sources",
   focused: "sources",
   seeger: "sources",
 };

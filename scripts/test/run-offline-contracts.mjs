@@ -42,6 +42,7 @@ files.push(
   "scripts/admin/remove-openus-outline-20261005.test.mjs",
   "scripts/admin/remove-openus-bulk-storage-20261006.test.mjs",
   "scripts/admin/upload-court-reference-seals.test.mjs",
+  "scripts/admin/large-text-assets-release-packet.test.mjs",
 );
 const result = spawnSync(process.execPath, ["--test", ...files.sort()], {
   cwd: root,

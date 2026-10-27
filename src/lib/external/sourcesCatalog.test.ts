@@ -46,6 +46,7 @@ describe("sources catalog", () => {
     ["state_metrics_profiles", "states"],
     ["ecfr_section_text", "law"],
     ["saved_pages", "sources"],
+    ["large_text_official", "sources"],
     ["something_new", "other"],
   ])("puts %s in %s", (id, category) => {
     expect(categoryOf(id)).toBe(category);
