@@ -75,7 +75,12 @@ describe("buildVelocity", () => {
 
   it("keys a report dated after the 1st to its month", () => {
     const late = buildVelocity(
-      [mdl("1", [{ date: "2025-10-03", total: 1, pending: 1 }, { date: "2026-10-05", total: 4, pending: 2 }])],
+      [
+        mdl("1", [
+          { date: "2025-10-03", total: 1, pending: 1 },
+          { date: "2026-10-05", total: 4, pending: 2 },
+        ]),
+      ],
       { portfolio: new Set(), registry: null },
     );
     expect(late.latestReport).toBe("2026-10-05");
@@ -154,12 +159,14 @@ describe("buildVelocity", () => {
 
 describe("shortCaption", () => {
   it("drops the JPML boilerplate", () => {
-    expect(shortCaption("IN RE: Depo-Provera (Depot Medroxyprogesterone Acetate) Products Liability Litigation")).toBe(
-      "Depo-Provera (Depot Medroxyprogesterone Acetate)",
-    );
-    expect(shortCaption("IN RE: Uber Technologies, Inc., Passenger Sexual Assault Litigation")).toBe(
-      "Uber Technologies, Inc., Passenger Sexual Assault",
-    );
+    expect(
+      shortCaption(
+        "IN RE: Depo-Provera (Depot Medroxyprogesterone Acetate) Products Liability Litigation",
+      ),
+    ).toBe("Depo-Provera (Depot Medroxyprogesterone Acetate)");
+    expect(
+      shortCaption("IN RE: Uber Technologies, Inc., Passenger Sexual Assault Litigation"),
+    ).toBe("Uber Technologies, Inc., Passenger Sexual Assault");
     expect(shortCaption(null)).toBeNull();
   });
 });

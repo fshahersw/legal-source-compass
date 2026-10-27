@@ -45,9 +45,7 @@ export function portfolioKpis(rows: readonly HubRow[], model: VelocityModel | nu
     pendingMatters: rows.filter((r) => r.status === "pending").length,
     pendingActions,
     counted: counted.length,
-    otherDates: rows
-      .filter((r) => !counted.includes(r))
-      .map((r) => ({ mdl: r.mdl, asOf: r.asOf })),
+    otherDates: rows.filter((r) => !counted.includes(r)).map((r) => ({ mdl: r.mdl, asOf: r.asOf })),
     reportDate,
     national,
     nationalMdls: latest?.nationalMdls ?? null,
@@ -56,6 +54,23 @@ export function portfolioKpis(rows: readonly HubRow[], model: VelocityModel | nu
         ? (pendingActions / national) * 100
         : null,
   };
+}
+
+/**
+ * "Hub matters held 78% of the 204,977 actions pending in all MDLs in Oct 2026, against 71% in Oct 2024" from the
+ * series' first and last reports; null with fewer than two reports or no national total.
+ */
+export function portfolioShareTakeaway(
+  months: VelocityModel["months"],
+  label: (month: string) => string,
+): string | null {
+  const recorded = months.filter((m) => m.national > 0);
+  const first = recorded[0];
+  const last = recorded.at(-1);
+  if (!first || !last || first === last) return null;
+  const share = (m: (typeof recorded)[number]) => (m.portfolio / m.national) * 100;
+  const p = (v: number) => `${v >= 10 ? Math.round(v) : v.toFixed(1)}%`;
+  return `Hub matters held ${p(share(last))} of the ${last.national.toLocaleString("en-US")} actions pending in all MDLs in ${label(last.month)}, against ${p(share(first))} in ${label(first.month)}`;
 }
 
 export type PortfolioGrowth = {
@@ -143,7 +158,9 @@ export type PdfTotals = {
 };
 
 /** Sum of the per-matter PDF counts the hub chips show; null when nothing was counted. */
-export function pdfTotals(counts: Readonly<Record<string, HubRegistry>> | undefined): PdfTotals | null {
+export function pdfTotals(
+  counts: Readonly<Record<string, HubRegistry>> | undefined,
+): PdfTotals | null {
   if (!counts) return null;
   const out: PdfTotals = { total: 0, open: 0, held: 0, matters: 0, notConnected: 0 };
   let any = false;

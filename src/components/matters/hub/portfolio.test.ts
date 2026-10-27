@@ -6,6 +6,7 @@ import {
   pdfTotals,
   portfolioGrowth,
   portfolioKpis,
+  portfolioShareTakeaway,
 } from "./portfolio";
 import { buildVelocity, shiftMonth } from "./velocity";
 
@@ -38,10 +39,38 @@ const pts = (from: string, totals: number[], pending: number[]) =>
 // 13 reports, 2025-10 to 2026-10. 3140 and 2738 are hub matters; 3084 is not.
 const model = buildVelocity(
   [
-    { mdl: "3140", title: null, type: "Products Liability", points: pts("2025-10", Array.from({ length: 13 }, (_, i) => 1000 + i * 10), Array(13).fill(6412)) },
-    { mdl: "2738", title: null, type: "Products Liability", points: pts("2025-10", Array.from({ length: 13 }, (_, i) => 2000 + i), Array(13).fill(69340)) },
-    { mdl: "3084", title: null, type: "Products Liability", points: pts("2025-10", Array(13).fill(10), Array(13).fill(1000)) },
-    { mdl: "3199", title: null, type: "Products Liability", points: pts("2026-08", [5, 9, 12], [5, 9, 12]) },
+    {
+      mdl: "3140",
+      title: null,
+      type: "Products Liability",
+      points: pts(
+        "2025-10",
+        Array.from({ length: 13 }, (_, i) => 1000 + i * 10),
+        Array(13).fill(6412),
+      ),
+    },
+    {
+      mdl: "2738",
+      title: null,
+      type: "Products Liability",
+      points: pts(
+        "2025-10",
+        Array.from({ length: 13 }, (_, i) => 2000 + i),
+        Array(13).fill(69340),
+      ),
+    },
+    {
+      mdl: "3084",
+      title: null,
+      type: "Products Liability",
+      points: pts("2025-10", Array(13).fill(10), Array(13).fill(1000)),
+    },
+    {
+      mdl: "3199",
+      title: null,
+      type: "Products Liability",
+      points: pts("2026-08", [5, 9, 12], [5, 9, 12]),
+    },
   ],
   { portfolio: new Set(["3140", "2738", "3199"]), registry: new Set(["3140", "2738", "3199"]) },
 );
@@ -51,7 +80,13 @@ describe("portfolioKpis", () => {
     const rows = [
       hub({ mdl: "3140", pendingActions: 6412, totalActions: 6524 }),
       hub({ mdl: "2738", pendingActions: 69340, totalActions: 72024 }),
-      hub({ mdl: "2545", status: "terminated", pendingActions: null, totalActions: 8133, asOf: "2025-09-30" }),
+      hub({
+        mdl: "2545",
+        status: "terminated",
+        pendingActions: null,
+        totalActions: 8133,
+        asOf: "2025-09-30",
+      }),
       hub({ mdl: "2606", status: "terminated", pendingActions: 3, asOf: "2025-09-30" }),
     ];
     const k = portfolioKpis(rows, model);
@@ -72,6 +107,15 @@ describe("portfolioKpis", () => {
     const k = portfolioKpis([hub({ mdl: "3140", pendingActions: 1 })], null);
     expect(k.pendingActions).toBeNull();
     expect(k.sharePct).toBeNull();
+  });
+});
+
+describe("portfolioShareTakeaway", () => {
+  it("states the share in the first and last reports from the plotted series", () => {
+    expect(portfolioShareTakeaway(model.months, (m) => m)).toBe(
+      `Hub matters held ${Math.round(((6412 + 69340 + 12) / 76764) * 100)}% of the 76,764 actions pending in all MDLs in 2026-10, against ${Math.round(((6412 + 69340) / 76752) * 100)}% in 2025-10`,
+    );
+    expect(portfolioShareTakeaway(model.months.slice(0, 1), (m) => m)).toBeNull();
   });
 });
 

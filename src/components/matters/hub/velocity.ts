@@ -227,9 +227,7 @@ export function leaderboardKpis(rows: readonly VelocityRow[]): LeaderboardKpis {
     plAdded12mMdls: complete.length,
     plAdded12mExcluded: pl.length - complete.length,
     plOutside: registryKnown ? outside.length : null,
-    plOutsidePending: registryKnown
-      ? outside.reduce((a, r) => a + (r.pending ?? 0), 0)
-      : null,
+    plOutsidePending: registryKnown ? outside.reduce((a, r) => a + (r.pending ?? 0), 0) : null,
   };
 }
 
@@ -238,7 +236,10 @@ export function shortCaption(title: string | null): string | null {
   if (!title) return null;
   const t = title
     .replace(/^IN RE:?\s*/i, "")
-    .replace(/\s+(Products? Liability|Marketing, Sales Practices,? and Products Liability)\s+Litigation.*$/i, "")
+    .replace(
+      /\s+(Products? Liability|Marketing, Sales Practices,? and Products Liability)\s+Litigation.*$/i,
+      "",
+    )
     .replace(/\s+Litigation.*$/i, "")
     .trim();
   return t || null;
