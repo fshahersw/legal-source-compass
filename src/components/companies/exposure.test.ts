@@ -3,6 +3,7 @@ import type { CompanyMdl, CompanySummary, CoverageRow } from "./companyData";
 import {
   accrualDumbbell,
   applyUiExposure,
+  calendarQuarterEnd,
   countsInUi,
   coverageGroup,
   coverageMap,
@@ -227,9 +228,52 @@ describe("reserve vs docket", () => {
         ],
       ]),
     ).toEqual([
-      { date: "2024-10-01", pending: 5 },
-      { date: "2024-11-01", pending: 4 },
+      { date: "2024-10-01", pending: 5, mdls: 2 },
+      { date: "2024-11-01", pending: 4, mdls: 1 },
     ]);
+  });
+
+  it("drops a report date on which a counted MDL inside its span has no report", () => {
+    const a = [
+      { date: "2024-10-01", pending: 10 },
+      { date: "2024-12-02", pending: 12 },
+    ];
+    const b = [
+      { date: "2024-10-01", pending: 5 },
+      { date: "2024-11-01", pending: 6 },
+      { date: "2024-12-02", pending: 7 },
+    ];
+    // 2024-11-01: MDL a reported in October and December but not November, so the sum is left out
+    expect(sumSeries([a, b]).map((p) => p.date)).toEqual(["2024-10-01", "2024-12-02"]);
+    // an MDL that starts later is not a gap before its first report
+    const late = [{ date: "2024-12-02", pending: 100 }];
+    expect(sumSeries([b, late])).toEqual([
+      { date: "2024-10-01", pending: 5, mdls: 1 },
+      { date: "2024-11-01", pending: 6, mdls: 1 },
+      { date: "2024-12-02", pending: 107, mdls: 2 },
+    ]);
+  });
+
+  it("places a 52/53-week quarter's balance on the nearby calendar quarter end", () => {
+    expect(calendarQuarterEnd("2023-04-02")).toBe("2023-03-31");
+    expect(calendarQuarterEnd("2024-12-28")).toBe("2024-12-31");
+    expect(calendarQuarterEnd("2024-06-30")).toBe("2024-06-30");
+    expect(calendarQuarterEnd("2012-05-31")).toBeNull();
+    const out = reserveDocketSeries(
+      [
+        { end: "2024-09-28", value: 5, unit: "USD", concept: "X" },
+        { end: "2025-09-27", value: 6, unit: "USD", concept: "X" },
+      ],
+      [
+        { date: "2024-10-01", pending: 1 },
+        { date: "2025-10-01", pending: 2 },
+      ],
+    );
+    expect(out.series[0]!.points.filter((p) => p.value !== null).map((p) => p.date)).toEqual([
+      "2024-09-30",
+      "2025-09-30",
+    ]);
+    expect(out.balanceEnds).toEqual({ "2024-09-30": "2024-09-28", "2025-09-30": "2025-09-27" });
   });
 });
 

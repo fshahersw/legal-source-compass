@@ -39,6 +39,7 @@ import {
   TIER_LABEL,
   type CompaniesData,
   type CompanyFilter,
+  type CoverageRow,
   type CompanySummary,
   type FlagKey,
   type SortKey,
@@ -51,6 +52,7 @@ import {
   AiSummary,
   AskAiButton,
   buildSectionContext,
+  DataDrawer,
   KpiCard,
   KpiGrid,
   Section,
@@ -59,6 +61,8 @@ import { CoverageMapSection } from "./CoverageMapSection";
 import {
   accrualDumbbell,
   applyUiExposure,
+  COVERAGE_GROUP_LABEL,
+  coverageGroup,
   coverageMap,
   coverageTotals,
   dataFlags,
@@ -200,6 +204,7 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
       </KpiGrid>
 
       <CoverageMapSection data={raw} />
+      <AllPendingMdls coverage={o.coverage} asOf={o.jpmlAsOf ?? o.asOf} />
 
       <ReserveSection
         companies={companies}
@@ -330,7 +335,9 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
             Showing {Math.min(limit, rows.length)} of {rows.length}. Pending actions are the JPML
             count of each counted MDL, for the whole docket and shared with co-defendants: never add
             them across companies. Accrual is the company-wide XBRL loss-contingency figure, not an
-            MDL reserve. &ldquo;Not recorded&rdquo; = no such XBRL fact.
+            MDL reserve. &ldquo;Not recorded&rdquo; = no such XBRL fact. Co-registrant flags here
+            use the stored co-registrant list, which is incomplete (some appear only on the company
+            page).
           </span>
           {rows.length > limit ? (
             <button
@@ -354,6 +361,86 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
           ))}
         </ul>
       </details>
+    </div>
+  );
+}
+
+/**
+ * Every pending MDL of any litigation type (the coverage map above covers Products Liability only), with the SEC
+ * filers that name it. Restores the former all-types coverage table behind "View data". Pending actions are MDL-wide.
+ */
+function AllPendingMdls({ coverage, asOf }: { coverage: CoverageRow[]; asOf: string }) {
+  const rows = useMemo(() => {
+    const seen = new Set<number>();
+    return coverage
+      .filter((r) => r.status === "pending" && !seen.has(r.mdl) && seen.add(r.mdl))
+      .sort((a, b) => (b.pending ?? -1) - (a.pending ?? -1) || a.mdl - b.mdl);
+  }, [coverage]);
+  if (!rows.length) return null;
+  const counted = (r: CoverageRow) =>
+    r.companies.filter(
+      (c) => c.counted && c.tier !== "C" && c.role === "defendant" && !c.dismissed && !c.review,
+    );
+  return (
+    <div className="-mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <span>The map covers Products Liability MDLs only.</span>
+      <DataDrawer
+        title="Pending MDLs of every type and the SEC filers that name them"
+        description="Pending actions belong to the whole MDL (JPML). A filer counts only when its filing cites the MDL number or caption (tier A or B) and reads it as a defendant; tier C links require review and never count."
+        rows={rows}
+        rowKey={(r) => String(r.mdl)}
+        triggerLabel={`View all ${count(rows.length)} pending MDLs`}
+        searchable
+        columns={[
+          { key: "mdl", label: "MDL", value: (r) => r.mdl },
+          {
+            key: "title",
+            label: "Litigation",
+            value: (r) => r.title,
+            render: (r) => mdlTitle(r.title, r.titleTruncated, r.mdl),
+          },
+          { key: "type", label: "Type", value: (r) => r.type },
+          {
+            key: "pending",
+            label: "Pending actions (MDL-wide)",
+            align: "right",
+            value: (r) => r.pending,
+          },
+          {
+            key: "group",
+            label: "Evidence",
+            value: (r) => COVERAGE_GROUP_LABEL[coverageGroup(r.companies)],
+          },
+          {
+            key: "counted",
+            label: "Acknowledged defendants",
+            value: (r) =>
+              counted(r)
+                .map((c) => c.name)
+                .join("; ") || null,
+          },
+          {
+            key: "other",
+            label: "Other filers naming it (not counted)",
+            value: (r) => {
+              const keep = new Set(counted(r));
+              return (
+                r.companies
+                  .filter((c) => !keep.has(c))
+                  .map(
+                    (c) =>
+                      `${c.name} (${c.tier === "C" ? "tier C, requires review" : c.dismissed ? "dismissed" : c.review ? "review" : c.role})`,
+                  )
+                  .join("; ") || null
+              );
+            },
+          },
+        ]}
+        source={{
+          source: { label: "JPML pending MDL report; SEC EDGAR filings" },
+          asOf,
+        }}
+      />
     </div>
   );
 }
@@ -812,8 +899,10 @@ function ReserveSection({
   medianRatio: number | null;
   ratioCount: number;
 }) {
-  const rows = useMemo(() => accrualDumbbell(companies), [companies]);
-  const rising = rows.filter((r) => r.b > r.a).length;
+  // every qualifying company counts toward "rising"; the chart shows the 15 with the highest latest share
+  const all = useMemo(() => accrualDumbbell(companies, Infinity), [companies]);
+  const rows = useMemo(() => all.slice(0, 15), [all]);
+  const rising = all.filter((r) => r.b > r.a).length;
   const context = useMemo(
     () =>
       buildSectionContext({
@@ -828,6 +917,8 @@ function ReserveSection({
             decimals: 2,
           },
           { label: "Companies in the median", value: ratioCount },
+          { label: "Companies with two consecutive fiscal years", value: all.length },
+          { label: "Of those, accrual share rose in the latest year", value: rising },
           ...rows.flatMap((r) => [
             {
               label: `${r.label} accrual / revenue`,
@@ -846,7 +937,7 @@ function ReserveSection({
           ]),
         ],
       }),
-    [rows, medianRatio, ratioCount],
+    [rows, all.length, rising, medianRatio, ratioCount],
   );
   return (
     <Section
@@ -859,10 +950,10 @@ function ReserveSection({
         variant="editorial"
         title={
           rows.length
-            ? `${rising} of ${rows.length} companies raised their accrual's share of revenue in the latest year`
+            ? `${rising} of ${all.length} companies raised their accrual's share of revenue in the latest year`
             : "Litigation accruals as a share of revenue"
         }
-        subtitle={`Litigation / loss-contingency accrual ÷ same-year revenue · % · median ${medianRatio === null ? NOT_RECORDED : `${medianRatio.toFixed(2)}%`} across ${ratioCount} current filers`}
+        subtitle={`${all.length > rows.length ? `Showing the ${rows.length} with the highest latest share · ` : ""}Litigation / loss-contingency accrual ÷ same-year revenue · % · median ${medianRatio === null ? NOT_RECORDED : `${medianRatio.toFixed(2)}%`} across ${ratioCount} current filers`}
         sources={[XBRL_SOURCE]}
         status={
           rows.length
@@ -887,14 +978,15 @@ function ReserveSection({
           </>
         }
         table={{
-          caption: "Accrual as % of revenue, prior and latest fiscal year",
+          caption:
+            "Accrual as % of revenue, prior and latest fiscal year (every qualifying company)",
           columns: [
             { label: "Company" },
             { label: "Fiscal years" },
             { label: "Prior FY", align: "right" },
             { label: "Latest FY", align: "right" },
           ],
-          rows: rows.map((r) => ({
+          rows: all.map((r) => ({
             key: r.id,
             cells: [r.label, r.note, `${r.a.toFixed(2)}%`, `${r.b.toFixed(2)}%`],
           })),

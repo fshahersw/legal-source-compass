@@ -276,7 +276,13 @@ export function reserveDocketSeries(
   accrual: readonly { end: string; value: number; unit: string; concept: string }[],
   counted: readonly SeriesPoint[],
   tierC: readonly SeriesPoint[] = [],
-): { series: IndexSeries[]; concept: string | null; unit: string | null } {
+): {
+  series: IndexSeries[];
+  concept: string | null;
+  unit: string | null;
+  /** Quarter end → the balance's own end date, where the filer's quarter closes on another day. */
+  balanceEnds: Record<string, string>;
+} {
   const reports = (s: readonly SeriesPoint[]) => new Map(s.map((p) => [p.date, p.pending]));
   const all = [...counted, ...tierC].map((p) => p.date).sort();
   const first = all[0];
@@ -284,7 +290,12 @@ export function reserveDocketSeries(
   const usd = accrual.filter((p) => p.unit === "USD");
   const concepts = [...new Set(usd.map((p) => p.concept))];
   if (!first || !last || concepts.length !== 1)
-    return { series: [], concept: concepts.length === 1 ? concepts[0]! : null, unit: null };
+    return {
+      series: [],
+      concept: concepts.length === 1 ? concepts[0]! : null,
+      unit: null,
+      balanceEnds: {},
+    };
   // quarter ends from the month before the first report to the month before the last report
   const ends: string[] = [];
   const [fy, fm] = first.split("-").map(Number) as [number, number];
@@ -304,14 +315,21 @@ export function reserveDocketSeries(
       y += 1;
     }
   }
-  const byEnd = new Map(usd.map((p) => [p.end, p.value]));
+  // balances aligned to calendar quarter ends; an exact calendar quarter-end balance wins over a nearby one
+  const byEnd = new Map<string, { value: number; end: string }>();
+  for (const p of usd) {
+    const qe = calendarQuarterEnd(p.end);
+    if (!qe) continue;
+    const cur = byEnd.get(qe);
+    if (!cur || (p.end === qe && cur.end !== qe)) byEnd.set(qe, { value: p.value, end: p.end });
+  }
   const cr = reports(counted);
   const tr = reports(tierC);
   const series: IndexSeries[] = [
     {
       id: "accrual",
       label: "Litigation accrual (company-wide)",
-      points: ends.map((d) => ({ date: d, value: byEnd.get(d) ?? null })),
+      points: ends.map((d) => ({ date: d, value: byEnd.get(d)?.value ?? null })),
     },
   ];
   if (counted.length)
@@ -326,14 +344,52 @@ export function reserveDocketSeries(
       label: "Pending in tier C MDLs (requires review)",
       points: ends.map((d) => ({ date: d, value: reportAfterQuarter(d, tr) })),
     });
-  return { series, concept: concepts[0]!, unit: "USD" };
+  const balanceEnds: Record<string, string> = {};
+  for (const d of ends) {
+    const b = byEnd.get(d);
+    if (b && b.end !== d) balanceEnds[d] = b.end;
+  }
+  return { series, concept: concepts[0]!, unit: "USD", balanceEnds };
 }
 
 /** Sum of the monthly JPML series of the given links, by report date (an MDL created later counts from its first report). */
 export function sumSeries(series: readonly (readonly SeriesPoint[])[]): SeriesPoint[] {
-  const by = new Map<string, number>();
-  for (const s of series) for (const p of s) by.set(p.date, (by.get(p.date) ?? 0) + p.pending);
+  // a report date is dropped when an MDL inside its own reporting span has no point on it, so a missing month never
+  // reads as a fall in pending actions; `mdls` is the number of MDLs summed on each date
+  const spans = series
+    .filter((s) => s.length)
+    .map((s) => {
+      const dates = s.map((p) => p.date).sort();
+      return { first: dates[0]!, last: dates.at(-1)!, dates: new Set(dates) };
+    });
+  const by = new Map<string, { pending: number; mdls: number }>();
+  for (const s of series)
+    for (const p of s) {
+      const cur = by.get(p.date) ?? { pending: 0, mdls: 0 };
+      by.set(p.date, { pending: cur.pending + p.pending, mdls: cur.mdls + 1 });
+    }
   return [...by.entries()]
+    .filter(([date]) =>
+      spans.every((sp) => date < sp.first || date > sp.last || sp.dates.has(date)),
+    )
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, pending]) => ({ date, pending }));
+    .map(([date, v]) => ({ date, pending: v.pending, mdls: v.mdls }));
+}
+
+/**
+ * The calendar quarter end a balance belongs to: its own date when it is a calendar quarter end, else the calendar
+ * quarter end within 14 days of it (52/53-week filers close on dates such as 2023-04-02). Balances further from any
+ * calendar quarter end (fiscal quarters ending in May, August…) are not aligned.
+ */
+export function calendarQuarterEnd(end: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(end);
+  if (!m) return null;
+  const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const y = Number(m[1]);
+  for (const yy of [y - 1, y, y + 1])
+    for (const mo of [3, 6, 9, 12]) {
+      const qe = Date.UTC(yy, mo, 0);
+      if (Math.abs(qe - t) <= 14 * 86_400_000) return new Date(qe).toISOString().slice(0, 10);
+    }
+  return null;
 }

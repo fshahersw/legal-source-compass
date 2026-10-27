@@ -79,7 +79,7 @@ export function ReserveVsDocket({ d }: { d: CompanyDetail }) {
                     ? "The quarterly accrual uses more than one XBRL concept or unit, so it is not drawn as one series."
                     : !counted.length && !tierC.length
                       ? "No pending MDL with a monthly JPML series is linked to this company."
-                      : "Fewer than two quarter-end accrual balances fall in the JPML series window (from October 2024).",
+                      : "Fewer than two quarterly accrual balances align with a calendar quarter end in the JPML series window (from October 2024); balances from fiscal quarters ending in other months are not aligned.",
               }
         }
         actions={<AskAiButton sectionId="reserve-docket" context={context} size="icon" />}
@@ -96,6 +96,16 @@ export function ReserveVsDocket({ d }: { d: CompanyDetail }) {
               are the whole dockets, shared with every co-defendant. Tier C MDLs are a separate line
               and are never counted. A quarter with no balance filed is left as a gap.
             </p>
+            <p className="mt-2">
+              The set of MDLs is not fixed: an MDL created after the chosen quarter adds its whole
+              docket from its first report, and one that closes drops out, so a step in the docket
+              line can be a change in which MDLs are counted, not docket growth. A month in which a
+              counted MDL has no report is left out rather than summed short.
+            </p>
+            <p className="mt-2">
+              A balance dated within 14 days of a calendar quarter end (a 52/53-week quarter) is
+              placed on that quarter end; the table shows its own date.
+            </p>
           </>
         }
         table={{
@@ -107,7 +117,7 @@ export function ReserveVsDocket({ d }: { d: CompanyDetail }) {
           rows: dates.map((dt, i) => ({
             key: dt,
             cells: [
-              dt,
+              built.balanceEnds[dt] ? `${dt} (balance dated ${built.balanceEnds[dt]})` : dt,
               ...built.series.map((s) => {
                 const v = s.points[i]?.value ?? null;
                 return v === null

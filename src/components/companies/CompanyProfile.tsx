@@ -593,7 +593,7 @@ function PendingTrend({ d }: { d: CompanyDetail }) {
     <ChartCard
       title="Pending actions in the MDLs this company is named in (MDL-wide)"
       subtitle="Sum of JPML pending actions per monthly report for the counted MDLs: the whole dockets, shared with co-defendants"
-      footnote={`Counts only MDLs whose tier A or B evidence reads the company as a defendant (not dismissed, not flagged for review); tier C links require review and are not counted. An MDL created during the window counts from its first report.${leftOut ? ` ${leftOut}` : ""}`}
+      footnote={`Counts only MDLs whose tier A or B evidence reads the company as a defendant (not dismissed, not flagged for review); tier C links require review and are not counted. An MDL created during the window counts from its first report, so a step can be a new MDL rather than growth; a month in which a counted MDL has no report is left out rather than summed short.${leftOut ? ` ${leftOut}` : ""}`}
     >
       {view.kind === "chart" ? (
         <div className="h-56 px-2 py-2">

@@ -56,6 +56,9 @@ export function DisclosureRadarSection() {
     .map((t) => ({ id: t, n: newLatest.filter((f) => f.term === t).length }))
     .sort((a, b) => b.n - a.n);
   const period = d?.years.length ? `FY${d.years[0]}–FY${latest}` : undefined;
+  // the filers held differ by year (each company keeps its latest three 10-Ks), so each column shows its filings
+  const colLabel = (y: string) =>
+    d?.filingsByYear[y] != null ? `FY${y} · ${fmt(d.filingsByYear[y]!)} filings` : `FY${y}`;
   const status = q.isPending
     ? ({ kind: "loading" } as const)
     : q.isError
@@ -166,10 +169,12 @@ export function DisclosureRadarSection() {
                 disclosure, not MDL membership, and never counts toward exposure.
               </p>
               <p className="mt-2">
-                Fiscal years with fewer than 20 filings held are left out (the corpus holds few
-                10-Ks before FY2023). Terms match whole words; &ldquo;NEC&rdquo; counts only next to
-                formula, infant, preterm or premature. The tooltip shows how many companies named
-                the tort for the first time that year.
+                Each company holds only its latest three 10-Ks, so the filers differ from year to
+                year: compare counts against the filings held, shown in each column heading, not as
+                growth. Fiscal years with fewer than 20 filings held are left out (the corpus holds
+                few 10-Ks before FY2023). Terms match whole words; &ldquo;NEC&rdquo; counts only
+                next to formula, infant, preterm or premature. The tooltip shows how many companies
+                named the tort for the first time that year.
               </p>
             </>
           }
@@ -177,7 +182,7 @@ export function DisclosureRadarSection() {
             caption: "Companies naming each tort, by fiscal year",
             columns: [
               { label: "Tort" },
-              ...(d?.years ?? []).map((y) => ({ label: `FY${y}`, align: "right" as const })),
+              ...(d?.years ?? []).map((y) => ({ label: colLabel(y), align: "right" as const })),
             ],
             rows: termsShown.map((t) => ({
               key: t.id,
@@ -195,7 +200,7 @@ export function DisclosureRadarSection() {
         >
           <Heatmap
             rows={termsShown.map((t) => ({ id: t.id, label: t.label }))}
-            columns={(d?.years ?? []).map((y) => ({ id: y, label: `FY${y}` }))}
+            columns={(d?.years ?? []).map((y) => ({ id: y, label: colLabel(y) }))}
             value={(r, c) => cell(r, c)?.companies ?? null}
             formatter={metricFormatter("count")}
             cellLabels
