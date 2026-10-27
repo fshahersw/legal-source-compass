@@ -13,6 +13,7 @@ import { externalHref } from "@/lib/external/href";
 import { canonicalState, countyInState } from "@/lib/corpus/stateHub";
 import { CountyAnalysisPanel } from "@/components/places/CountyAnalysisPanel";
 import { CountyCensusPanel } from "@/components/places/census/CountyCensusPanel";
+import { CountyExposurePanel } from "@/components/places/exposure/CountyExposurePanel";
 import { GovCountyDomains } from "@/components/places/GovCountyDomains";
 
 export const Route = createFileRoute("/places/$state/$county")({
@@ -76,6 +77,7 @@ function CountyDetail() {
         />
       </div>
       <CountyAnalysisPanel fips={county} />
+      <CountyExposurePanel fips={county} />
       <CountyProfile
         fips={county}
         {...(c ? { county: `${c.name} County` } : {})}
