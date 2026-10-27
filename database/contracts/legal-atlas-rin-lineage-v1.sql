@@ -9,9 +9,16 @@
 -- Exact match only: no fuzzy RIN matching, no inference between documents. Only legal_atlas.visible_edges
 -- rows are returned, so the structural accuracy checks apply unchanged. Uses legal_records_type_id and
 -- legal_edges_to; pages of 100 because one RIN can carry tens of thousands of documents.
+--
+-- Review 2026-10-27: the edge type comes only from the FR document type (PRORULE -> proposes, RULE -> finalizes),
+-- and many RULE/PRORULE documents are corrections, withdrawals, delays, extensions or hearings. So this function
+-- never asserts that a document proposed or finalized the rule: each document's relation is its FR document type
+-- ('Proposed Rule document' / 'Rule document') with the publisher's verbatim action beside it, and the counts are
+-- prorule_documents / rule_documents. The UI must show the FR action, not 'Final'.
+-- SECURITY DEFINER with search_path '' per AGENTS.md (owner postgres); execute is service_role only.
 
 create or replace function public.corpus_legal_rin_v1(p_rin text, p_offset integer default 0)
-returns jsonb language sql stable security invoker set search_path = '' as $$
+returns jsonb language sql stable security definer set search_path = '' as $$
   with rin as (
     select upper(btrim(p_rin)) as id where upper(btrim(coalesce(p_rin, ''))) ~ '^[0-9]{4}-[A-Z0-9]{4}$'
   ), proceedings as (
@@ -31,12 +38,13 @@ returns jsonb language sql stable security invoker set search_path = '' as $$
               from proceedings p order by p.payload->>'date' desc, p.record_key::text limit 1),
     'proceeding', (select p.payload from proceedings p order by p.payload->>'date' desc, p.record_key::text limit 1),
     'counts', jsonb_build_object(
-      'proposes', (select count(*) from lineage where type = 'proposes'),
-      'finalizes', (select count(*) from lineage where type = 'finalizes'),
+      'prorule_documents', (select count(*) from lineage where type = 'proposes'),
+      'rule_documents', (select count(*) from lineage where type = 'finalizes'),
       'first_published', (select min(source_date) from lineage),
       'last_published', (select max(source_date) from lineage)),
     'documents', coalesce((select jsonb_agg(jsonb_build_object(
-        'relation', pg.type, 'edge_key', pg.edge_key, 'published', pg.source_date, 'source_url', pg.source_url,
+        'relation', case pg.type when 'proposes' then 'Proposed Rule document' else 'Rule document' end,
+        'edge_type', pg.type, 'edge_key', pg.edge_key, 'published', pg.source_date, 'source_url', pg.source_url,
         'evidence', pg.evidence,
         'document_number', d.payload->>'id', 'title', d.payload->>'title',
         'fr_document_type', d.payload->'attributes'->>'fr_document_type',

@@ -117,11 +117,14 @@ test("release approves accurate rows, keeps explicit holds, and serves only stru
   assert.equal(lineage.rin, "1234-AB12");
   assert.equal(lineage.total, 2);
   assert.deepEqual(lineage.documents.map((d) => [d.relation, d.document_number, d.fr_document_type]), [
-    ["proposes", "2023-00001", "PRORULE"],
-    ["finalizes", "2024-00002", "RULE"],
+    ["Proposed Rule document", "2023-00001", "PRORULE"],
+    ["Rule document", "2024-00002", "RULE"],
   ]);
   assert.equal(lineage.documents[0].citation, "88 FR 1");
-  assert.equal(lineage.counts.proposes, 1);
+  assert.equal(lineage.counts.prorule_documents, 1);
+  assert.equal(lineage.counts.rule_documents, 1);
+  assert.equal(lineage.counts.proposes, undefined, "never asserts that a document proposed or finalized the rule");
+  assert.deepEqual(lineage.documents.map((d) => d.edge_type), ["proposes", "finalizes"]);
   assert.equal((await db.query("select public.corpus_legal_rin_v1('not a rin') j")).rows[0].j, null);
   assert.equal((await db.query("select public.corpus_legal_rin_v1('9999-ZZ99') j")).rows[0].j.total, 0);
   await db.close();
@@ -136,7 +139,7 @@ test("rollback returns exactly the ledgered rows to pending and leaves earlier a
   const rows = (await db.query("select id, review_status::text s from legal_atlas.records where review_status='approved'")).rows;
   assert.deepEqual(rows, [{ id: "99", s: "approved" }]);
   assert.equal((await db.query("select count(*)::int n from legal_atlas.edges where review_status='approved'")).rows[0].n, 0);
-  const left = (await db.query("select count(*)::int n from pg_proc where proname like 'release_pending_%_v1'")).rows[0].n;
+  const left = (await db.query("select count(*)::int n from pg_proc where proname like 'release_pending_%_v1' or proname like 'release_rollback_%_v1'")).rows[0].n;
   assert.equal(left, 0);
   await db.close();
 });
@@ -145,9 +148,12 @@ test("functions reject unbounded calls and stay service-role only", async () => 
   const { db } = await setup();
   await assert.rejects(db.query("select legal_atlas.release_pending_records_v1('fr_document', 0)"), /Bounded limit/);
   await assert.rejects(db.query("select legal_atlas.release_pending_edges_v1(1000000)"), /Bounded limit/);
+  await assert.rejects(db.query("select legal_atlas.release_rollback_records_v1('fr_document', 0)"), /Bounded limit/);
+  const definer = (await db.query("select prosecdef from pg_proc where proname = 'corpus_legal_rin_v1'")).rows[0].prosecdef;
+  assert.equal(definer, true, "corpus_legal_rin_v1 is SECURITY DEFINER per AGENTS.md");
   const grants = (await db.query(`select p.proname, has_function_privilege('anon', p.oid, 'execute') anon,
       has_function_privilege('service_role', p.oid, 'execute') svc
-    from pg_proc p where p.proname in ('release_pending_records_v1','release_pending_edges_v1','corpus_legal_rin_v1') order by 1`)).rows;
+    from pg_proc p where p.proname in ('release_pending_records_v1','release_pending_edges_v1','release_rollback_records_v1','release_rollback_edges_v1','corpus_legal_rin_v1') order by 1`)).rows;
   for (const g of grants) {
     assert.equal(g.anon, false, `${g.proname} anon`);
     assert.equal(g.svc, true, `${g.proname} service_role`);

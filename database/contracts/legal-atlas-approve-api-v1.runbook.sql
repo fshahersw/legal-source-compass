@@ -37,3 +37,16 @@ select (public.corpus_legal_node_v3('["federal_register","rule_proceeding","1018
 select public.corpus_legal_quality_v3() -> 'review_pending';                                        -- 896
 
 -- 5. AFTER EACH FEDERAL REGISTER REFRESH: re-run steps 2 (rule_proceeding, fr_document, source_doc, agency) and 3.
+
+-- Applied 2026-10-27 by the lead (owner decision 2026-10-27), migrations legal_atlas_approve_api_v1 and
+-- legal_atlas_rin_lineage_v1. Before: visible_edges 2; records pending 944,353 (approved 8); edges pending 91,116.
+-- After: records released 943,457 (fr_document 810,586; rule_proceeding 100,242; judge 19,459; docket_entry 5,400;
+-- court 3,361; opinion 2,187; party 1,359; agency 473; source_doc 182; case 104; docket 104); edges released 91,116;
+-- visible_edges 91,118 = approved edges; pending left: attorney 887 (owner policy: counsel contact fields) and
+-- docket_entry 9 (CourtListener is_sealed=true on a document); corpus_legal_quality_v3()->'review_pending' = 896.
+-- corpus_legal_rin_v1('2120-AA64') total 19,909; anon execute false; SECURITY DEFINER.
+-- Review correction: 13,301 RINs have both a PRORULE-type and a RULE-type document edge; by a strict action test
+-- (plain 'Proposed rule.' and plain 'Final rule.'), 11,079 RINs have both. RULE/PRORULE documents include corrections,
+-- withdrawals, delays, extensions and hearings, so corpus_legal_rin_v1 labels each document by FR document type with
+-- its verbatim action ('Proposed Rule document' / 'Rule document'; counts prorule_documents / rule_documents).
+-- Rollback is bounded: legal_atlas.release_rollback_edges_v1 / release_rollback_records_v1, see the rollback file.

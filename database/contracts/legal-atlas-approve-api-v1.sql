@@ -121,6 +121,42 @@ begin
 end;
 $$;
 
+-- Bounded rollback (review 2026-10-27): the same shape as the release calls, so undoing ~810k fr_document rows
+-- never needs one long UPDATE. Each call returns ledgered rows to 'pending'; repeat until it returns 0.
+create or replace function legal_atlas.release_rollback_edges_v1(p_limit integer default 20000)
+returns jsonb language plpgsql security invoker set search_path = '' as $$
+declare n integer;
+begin
+  if p_limit is null or p_limit < 1 or p_limit > 200000 then raise exception 'Bounded limit required (1..200000)'; end if;
+  with picked as (
+    select e.edge_key from legal_atlas.edges e join legal_atlas.release_ledger_v1 l on l.kind = 'edge' and l.edge_key = e.edge_key
+    where e.review_status = 'approved' limit p_limit for update of e skip locked
+  ), upd as (
+    update legal_atlas.edges e set review_status = 'pending' from picked
+    where e.edge_key = picked.edge_key and e.review_status = 'approved' returning 1
+  ) select count(*) into n from upd;
+  return jsonb_build_object('kind', 'edge', 'returned_to_pending', n);
+end;
+$$;
+
+create or replace function legal_atlas.release_rollback_records_v1(p_type legal_atlas.entity_type, p_limit integer default 20000)
+returns jsonb language plpgsql security invoker set search_path = '' as $$
+declare n integer;
+begin
+  if p_type is null then raise exception 'Entity type required'; end if;
+  if p_limit is null or p_limit < 1 or p_limit > 200000 then raise exception 'Bounded limit required (1..200000)'; end if;
+  with picked as (
+    select r.record_key from legal_atlas.records r
+    join legal_atlas.release_ledger_v1 l on l.kind = 'record' and l.entity_type = p_type and l.record_key = r.record_key
+    where r.review_status = 'approved' limit p_limit for update of r skip locked
+  ), upd as (
+    update legal_atlas.records r set review_status = 'pending' from picked
+    where r.record_key = picked.record_key and r.review_status = 'approved' returning 1
+  ) select count(*) into n from upd;
+  return jsonb_build_object('kind', 'record', 'type', p_type, 'returned_to_pending', n);
+end;
+$$;
+
 -- What is still held and why: the lead's after-check and the audit report.
 create or replace view legal_atlas.release_holds_v1 with (security_invoker = true) as
   select r.type, legal_atlas.release_hold_reason_v1(r.type, r.payload) as reason, count(*) as records
@@ -136,3 +172,7 @@ grant execute on function legal_atlas.release_hold_reason_v1(legal_atlas.entity_
 grant execute on function legal_atlas.release_pending_records_v1(legal_atlas.entity_type, integer) to service_role;
 grant execute on function legal_atlas.release_pending_edges_v1(integer) to service_role;
 grant select on legal_atlas.release_holds_v1 to service_role;
+revoke all on function legal_atlas.release_rollback_edges_v1(integer) from public, anon, authenticated;
+revoke all on function legal_atlas.release_rollback_records_v1(legal_atlas.entity_type, integer) from public, anon, authenticated;
+grant execute on function legal_atlas.release_rollback_edges_v1(integer) to service_role;
+grant execute on function legal_atlas.release_rollback_records_v1(legal_atlas.entity_type, integer) to service_role;
