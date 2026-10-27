@@ -33,7 +33,7 @@ def sha(label: str) -> str:
 def row(label: str, rank: int, filed: str | None = None, **over) -> dict:
     s = sha(label)
     base = {"sha256": s, "bytes": 1000, "bucket": "corpus-originals", "storage_key": "seeger-weiss/pdf-sha256/" + s[:2] + "/" + s + ".pdf",
-            "rank": rank, "sources": [{1: "official-court", 2: "courtlistener", 3: "docketbird"}[rank]],
+            "rank": rank, "sources": [{1: "official-court", 2: "courtlistener"}.get(rank, "docketbird")],
             "collections": ["court_mdl_pages" if rank == 1 else "docket_filings"], "mdls": ["2738"], "documents": 1,
             "latest_filed": filed, "open": True}
     base.update(over)
@@ -71,6 +71,17 @@ class Ordering(unittest.TestCase):
         self.assertEqual(s["shas_by_source"], {"docketbird": 2, "official-court": 1})
         self.assertEqual(s["shas_by_collection"], {"court_mdl_pages": 1, "docket_filings": 2})
         self.assertEqual(s["mdls_listed"], 3)
+        self.assertEqual(s["held_shas"], 0)
+        self.assertEqual(s["md5_not_extracted_only"], s["md5_sorted_sha_list"])
+
+    def test_held_byte_sets_go_last_and_have_their_own_checksum(self):
+        rows = [row("held", 4, "2026-10-20", held=True, statuses=["withheld_policy"]), row("db", 3, "2001-01-01"), row("oc", 1)]
+        kept, _ = tb.order_rows(rows)
+        self.assertEqual([r["sha256"] for r in kept][-1], sha("held"))
+        s = tb.summarize(kept)
+        self.assertEqual(s["held_shas"], 1)
+        self.assertEqual(s["md5_not_extracted_only"], tb.checksum([sha("db"), sha("oc")]))
+        self.assertEqual(s["md5_sorted_sha_list"], tb.checksum([sha("db"), sha("oc"), sha("held")]))
 
 
 class Paging(unittest.TestCase):
@@ -148,11 +159,12 @@ class Contract(unittest.TestCase):
         for verb in ("insert ", "update ", "delete ", "truncate ", "alter ", "drop ", "create "):
             self.assertNotIn(verb, body, verb)
 
-    def test_scope_is_not_extracted_minus_source_withheld_bytes_and_paging_is_bounded(self):
+    def test_scope_is_every_listed_byte_set_without_stored_text_held_last_and_paging_is_bounded(self):
         body = self.sql.split("as $$", 1)[1]
-        self.assertIn("d.text_status = 'not_extracted'", body)
-        self.assertIn("w.text_status = 'withheld_policy'", body)
-        self.assertIn("not exists", body)
+        self.assertIn("d.text_status in ('not_extracted', 'withheld_policy')", body)
+        self.assertIn("not exists (select 1 from corpus_ingest.pdf_texts t where t.sha256 = d.sha256)", body)
+        self.assertIn("case when bool_or(d.text_status = 'withheld_policy') then 4", body)
+        self.assertIn("'held', b.held", body)
         self.assertIn("p_limit not between 1 and 5000", body)
         self.assertIn("public.corpus_pdf_availability_v1(a.source_system, a.provider_flags) = 'open'", body)
         self.assertEqual(len(re.findall(r'collate "C"', body)) >= 3, True)

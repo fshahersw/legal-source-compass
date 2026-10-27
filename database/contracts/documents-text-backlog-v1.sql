@@ -8,12 +8,18 @@
 -- association under public.corpus_pdf_availability_v1 (open under both the v1 and the v2 rule: nothing here was held
 -- by caution). 16,740 of them were registered after the 2026-10-03 text run; 790 were registered before it.
 --
+-- Scope: every byte set listed in documents.documents that has no corpus_ingest.pdf_texts row. That is the 17,530
+-- not_extracted byte sets plus 60 byte sets whose listing is 'withheld_policy' (entry_withheld: the published docket
+-- row carries description_withheld = 'contact_or_access_data', i.e. the description matched the email/phone pattern of
+-- scripts/ingest/members-publish-rules.mjs; that hold is decided by release/documents-contact-description-as-seal).
+-- Storing their text publishes nothing: documents_refresh_v1 ranks withheld_policy above every text status,
+-- documents_build_pages_v1 skips withheld byte sets, and citations/2 reads only text_layer / partial_text documents.
+-- They are listed last (rank 4, held = true) so the text is ready the moment that hold is decided, without a second run.
+--
 -- This function only READS. It lists those byte sets in pages so scripts/documents/text_backlog.py can write the
 -- extractor worklist; the text itself is stored by the existing writer public.corpus_admin_register_pdf_texts_v1
 -- (which refuses any sha256 without an open association) and folded in by documents_refresh_v1 /
 -- documents_build_pages_v1.
--- Excluded on purpose: a byte set any listing of which is 'withheld_policy' (the docket source flagged the entry, or
--- a same-bytes listing of such an entry). Those 62 documents are governed by the docket-entry release workstream.
 --
 -- SECURITY DEFINER, search_path = '', revoked from public/anon/authenticated, granted to service_role.
 -- Rollback: documents-text-backlog-v1.rollback.sql (drops this one function; nothing else is touched).
@@ -30,23 +36,28 @@ begin
   end if;
   with b as (
     select d.sha256,
-           -- extraction priority: the court's own MDL page orders (and GovInfo opinions) first, then CourtListener, then DocketBird
-           min(case d.source_system when 'official-court' then 1 when 'govinfo' then 1 when 'courtlistener' then 2 else 3 end) as rank,
+           bool_or(d.text_status = 'withheld_policy') as held,
+           -- extraction priority: the court's own MDL page orders (and GovInfo opinions) first, then CourtListener, then
+           -- DocketBird; byte sets with a withheld_policy listing last (their text stays unpublished until that hold is decided)
+           case when bool_or(d.text_status = 'withheld_policy') then 4
+                else min(case d.source_system when 'official-court' then 1 when 'govinfo' then 1 when 'courtlistener' then 2 else 3 end) end as rank,
+           array_agg(distinct d.text_status order by d.text_status) as statuses,
            array_agg(distinct d.source_system order by d.source_system) as sources,
            array_agg(distinct d.collection order by d.collection) as collections,
            (array_agg(distinct d.mdl order by d.mdl) filter (where d.mdl is not null))[1:8] as mdls,
            count(*) as documents,
            max(d.filed_date) as latest_filed
       from documents.documents d
-     where d.text_status = 'not_extracted'
+     where d.text_status in ('not_extracted', 'withheld_policy')
        and d.sha256 collate "C" > coalesce(p_after, '') collate "C"
-       and not exists (select 1 from documents.documents w where w.sha256 = d.sha256 and w.text_status = 'withheld_policy')
+       and not exists (select 1 from corpus_ingest.pdf_texts t where t.sha256 = d.sha256)
      group by d.sha256
      order by d.sha256 collate "C"
      limit p_limit)
   select jsonb_build_object(
            'rows', coalesce(jsonb_agg(jsonb_build_object(
                      'sha256', b.sha256, 'bytes', o.bytes, 'bucket', o.bucket, 'storage_key', o.storage_key, 'rank', b.rank,
+                     'held', b.held, 'statuses', to_jsonb(b.statuses),
                      'sources', to_jsonb(b.sources), 'collections', to_jsonb(b.collections), 'mdls', coalesce(to_jsonb(b.mdls), '[]'::jsonb),
                      'documents', b.documents, 'latest_filed', b.latest_filed,
                      'open', exists (select 1 from corpus_ingest.pdf_document_assets a where a.sha256 = b.sha256
@@ -62,6 +73,6 @@ revoke all on function public.documents_text_backlog_v1(text, integer) from publ
 grant execute on function public.documents_text_backlog_v1(text, integer) to service_role;
 
 comment on function public.documents_text_backlog_v1(text, integer) is
-  'Read-only extraction worklist: byte sets of documents.documents with text_status = not_extracted (no stored PDF text yet), excluding any byte set with a withheld_policy listing. Paged by sha256 (C collation).';
+  'Read-only extraction worklist: byte sets of documents.documents with no corpus_ingest.pdf_texts row (text_status not_extracted, plus withheld_policy byte sets listed last with held = true; storing their text does not publish it). Paged by sha256 (C collation).';
 
 commit;

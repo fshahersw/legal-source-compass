@@ -2,7 +2,9 @@
 
 documents_refresh_v1 marks a document 'not_extracted' when corpus_ingest.pdf_texts has no row for its sha256: the PDF is
 stored and open, but its text was never extracted, so it is listed and cannot be searched or quoted. This tool writes the
-extractor worklist for exactly those byte sets and checks a run against it. It never writes to the corpus itself.
+extractor worklist for exactly those byte sets (plus, last, the byte sets of withheld_policy listings that have no text yet:
+storing their text publishes nothing, see documents-text-backlog-v1.sql) and checks a run against it. It never writes to
+the corpus itself.
 
   worklist --out F [--page N]           documents_text_backlog_v1 (read-only RPC) -> F (JSONL, priority order) + F.summary.json
   summary  --worklist F                  counts, bytes and the checksum of F, offline
@@ -37,7 +39,8 @@ def is_sha(value) -> bool:
 
 
 def priority_key(row: dict) -> tuple:
-    """Court MDL-page orders first (rank 1), then CourtListener (2), then DocketBird (3); newest filing first; then sha256."""
+    """Court MDL-page orders first (rank 1), then CourtListener (2), then DocketBird (3), then byte sets with a withheld_policy
+    listing (4); newest filing first; then sha256."""
     latest = row.get("latest_filed") or ""
     # descending date without parsing: invert each digit of YYYY-MM-DD; a missing date sorts after every dated row
     inverted = "".join(chr(ord("9") - ord(c) + ord("0")) if c.isdigit() else c for c in latest) if latest else "~"
@@ -98,7 +101,10 @@ def summarize(rows: list[dict]) -> dict:
         "shas_by_source": dict(sorted(by_source.items())),
         "shas_by_collection": dict(sorted(by_collection.items())),
         "mdls_listed": len(mdls),
+        # held = a withheld_policy listing of the same bytes (rank 4): text is stored, not published, until that hold is decided
+        "held_shas": sum(1 for r in rows if r.get("held")),
         "md5_sorted_sha_list": checksum(r["sha256"] for r in rows),
+        "md5_not_extracted_only": checksum(r["sha256"] for r in rows if not r.get("held")),
     }
 
 
