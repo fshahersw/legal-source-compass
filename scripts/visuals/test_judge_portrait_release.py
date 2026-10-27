@@ -19,12 +19,13 @@ INDEX = [
 ]
 J1, J2 = "f0097aac0d7ac2f2a0b554349755b7c6", "ac559d72dd70225915e4518026aa2d6f"
 CANDIDATES = {"release": [
-    {"judge_id": J1, "name": "Mark A. Kearney", "person": 1719, "path": "kearney-mark-1963", "basis": "fjc_id",
-     "evidence": "FJC id 3572 on both sides", "pre_item_md5": "1" * 32, "pre_detail_md5": "2" * 32},
-    {"judge_id": J2, "name": "Roy S. Moore", "person": 3649, "path": "moore-roy-1947",
+    {"judge_id": J1, "name": "Mark A. Kearney", "cl_name": "Mark A. Kearney", "person": 1719, "path": "kearney-mark-1963",
+     "basis": "fjc_id", "evidence": "FJC id 3572 on both sides", "pre_item_md5": "1" * 32, "pre_detail_md5": "2" * 32},
+    {"judge_id": J2, "name": "Roy S. Moore", "cl_name": "Roy S. Moore", "person": 3649, "path": "moore-roy-1947",
      "basis": "crosswalk:exact_name_same_state", "evidence": "only record with this name", "pre_item_md5": "3" * 32,
      "pre_detail_md5": "4" * 32},
 ]}
+J3 = "36cdb425dee2ad624717dcd266370d76"
 
 
 class RouteTests(unittest.TestCase):
@@ -89,6 +90,49 @@ class PlanTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             jpr.plan(INDEX, bad)
 
+    def test_index_slug_that_names_someone_else_is_refused(self):
+        # judge-pics carries person 153 (John Harris Baker, 1832-1915) on the Tennessee portrait "baker-josh".
+        index = INDEX + [{"path": "baker-josh", "person": 153, "license": "Work of State Government", "hash": "d" * 64,
+                          "source": "Provided by the Judiciary of Tennessee"}]
+        bad = {"release": [{"judge_id": "a541216ed0772341c8fc96bdbf85e527", "name": "John Harris Baker",
+                            "cl_name": "John Harris Baker", "person": 153, "path": "baker-josh", "basis": "fjc_id",
+                            "evidence": "x"}]}
+        with self.assertRaises(ValueError):
+            jpr.plan(index, bad)
+
+    def test_missing_cl_name_is_refused(self):
+        bad = copy.deepcopy(CANDIDATES)
+        del bad["release"][0]["cl_name"]
+        with self.assertRaises(ValueError):
+            jpr.plan(INDEX, bad)
+
+
+class NameConsistencyTests(unittest.TestCase):
+    def test_consistent_slugs(self):
+        for path, name in [
+            ("owen-priscilla-1954-10-04", "Priscilla Richman Owen"),
+            ("kellum-elizabeth", "J Elizabeth Kellum"),
+            ("agee-g-1952-11-12", "George Steven Agee"),
+            ("conner-tim", "Timothy W. Conner"),
+            ("wyatt-tom", "Thomas  Wyatt"),
+            ("kollar-kotelly-colleen-1943", "Colleen Kollar-Kotelly"),
+            ("van-tatenhove-gregory-1960", "Gregory Frederick Van Tatenhove"),
+            ("oscannlain-diarmuid-1937", "Diarmuid Fionntain O'Scannlain"),
+            ("gelpi-gustavo-1965", "Gustavo Antonio Gelpí"),
+            ("breyer-stephen-2", "Stephen Gerald Breyer"),
+        ]:
+            self.assertTrue(jpr.index_name_consistent(path, name), (path, name))
+
+    def test_contradicting_slugs(self):
+        for path, name in [
+            ("baker-josh", "John Harris Baker"),
+            ("adams-elmer-1842-10-27", "Thomas  Jefferson"),
+            ("thurston-buckner", "Jennifer L. Thurston"),
+            ("moore-roy-1947", ""),
+            ("moore", "Roy S. Moore"),
+        ]:
+            self.assertFalse(jpr.index_name_consistent(path, name), (path, name))
+
 
 class SqlTests(unittest.TestCase):
     def manifest(self):
@@ -115,6 +159,22 @@ class SqlTests(unittest.TestCase):
         self.assertIn("delete from public.corpus_artifacts", rollback)
         self.assertIn("jsonb_populate_record(null::public.corpus_datasets", rollback)
         self.assertIn("'" + "1" * 32 + "'", rollback)
+
+    def test_directory_duplicates_share_one_artifact(self):
+        dup = copy.deepcopy(CANDIDATES)
+        dup["release"].append({"judge_id": J3, "name": "Roy S. Moore", "cl_name": "Roy S. Moore", "person": 3649,
+                               "path": "moore-roy-1947", "basis": "crosswalk:exact_name_same_state", "evidence": "dup",
+                               "pre_item_md5": "5" * 32, "pre_detail_md5": "6" * 32})
+        rows = jpr.plan(INDEX, dup)
+        for r in rows:
+            r["fetched_sha256"] = "f" * 64
+            r["derived_sha256"] = jpr.STORED.get(r["path"], {}).get("sha256", "e" * 64)
+            r["derived_bytes"] = 1234
+        apply, rollback = jpr.render_sql({"rows": rows, "sha256": "0" * 64, "legacy_catalog_row": "{}"})
+        self.assertEqual(apply.count("'moore-roy-1947.jpeg'"), 1)  # one artifact row for two judge pages
+        self.assertEqual(apply.count("coalesce(item->>'photo_url', '') = ''"), 3)
+        self.assertIn("expect bound = 3, artifacts = 1", apply)
+        self.assertEqual(rollback.count(jpr.route_for("moore-roy-1947")), 3)  # rollback list, artifact delete, verify
 
     def test_quotes_are_escaped(self):
         self.assertEqual(jpr.sql_text("O'Neill"), "'O''Neill'")
