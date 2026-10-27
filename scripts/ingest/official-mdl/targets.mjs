@@ -306,6 +306,13 @@ export const MATTERS = {
     pages: [{ id: 'kywd-2016-orders', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.kywd.uscourts.gov/multidistrict-litigation/mdl-2016/orders' }],
     index_pages: [],
   },
+  // M.D. Pa. MDL 2816 (Sorin 3T; dedicated content page, direct PDFs under /sites/pamd/files/).
+  '2816': {
+    name: 'In re Sorin 3T Heater-Cooler System Products Liability Litigation', court_id: 'pamd', host: 'www.pamd.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL 2816', page_id: 'pamd-2816-mdl', note: 'printed on the court MDL content page' },
+    pages: [{ id: 'pamd-2816-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.pamd.uscourts.gov/content/118-md-02816-sorin' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
