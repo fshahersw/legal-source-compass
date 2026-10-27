@@ -115,7 +115,6 @@ const EXPECTED: Record<string, NavigationSection | null> = {
   "/registry/$id": "litigation",
   "/sources/analysis": "litigation",
   "/sources/docket-documents": "litigation",
-  "/prototypes/mdl/$id": "litigation",
   "/law": "law",
   "/law/calculators": "law",
   "/law/legislation/amendments": "law",
@@ -248,6 +247,7 @@ describe("every route file has a place", () => {
       "/overview",
       "/prototypes/authorities",
       "/prototypes/legislation/$state",
+      "/prototypes/mdl/$id",
       "/source-families",
     ]);
   });
