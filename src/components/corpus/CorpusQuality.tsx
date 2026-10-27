@@ -145,7 +145,7 @@ export function DatabaseQuality() {
           note={`${totals.readyRecords.toLocaleString()} records marked ready`}
         />
         <Stat
-          label="Collections held from publication"
+          label="Collections not marked ready"
           value={totals.heldDatasets}
           note={`${totals.heldRecords.toLocaleString()} imported records`}
         />
@@ -158,7 +158,7 @@ export function DatabaseQuality() {
         <div
           className="flex h-5 overflow-hidden rounded bg-muted"
           role="img"
-          aria-label={`${totals.readyRecords.toLocaleString()} ready; ${totals.heldRecords.toLocaleString()} held records`}
+          aria-label={`${totals.readyRecords.toLocaleString()} ready; ${totals.heldRecords.toLocaleString()} not marked ready`}
         >
           <div className="bg-primary" style={{ width: `${percent}%` }} />
           <div className="bg-amber-500/60" style={{ width: `${100 - percent}%` }} />
@@ -185,7 +185,7 @@ export function DatabaseQuality() {
         >
           <option value="all">All collections</option>
           <option value="ready">Ready</option>
-          <option value="held">Held</option>
+          <option value="held">Not marked ready</option>
         </select>
       </div>
       <div className="max-h-[28rem] overflow-auto rounded-xl border border-border bg-card shadow-xs shadow-card">
@@ -214,7 +214,7 @@ export function DatabaseQuality() {
                   {d.records == null ? "Not recorded" : d.records.toLocaleString()}
                 </td>
                 <td className="p-2">
-                  {d.ready === true ? "Ready" : d.ready === false ? "Held" : "Not recorded"}
+                  {d.ready === true ? "Ready" : d.ready === false ? "Not marked ready" : "Not recorded"}
                 </td>
               </tr>
             ))}

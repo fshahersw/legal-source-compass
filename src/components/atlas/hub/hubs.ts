@@ -195,7 +195,7 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
         to: "/litigation/documents",
         label: "Court filings",
         description:
-          "Full-text search of the MDL filings the matter pages list: open filings only, with sealed or redacted material left out.",
+          "Full-text search of the MDL filings the matter pages list. Text is left out only where the docket source flags the entry as sealed or withheld.",
       },
       {
         to: "/courts/securities",
