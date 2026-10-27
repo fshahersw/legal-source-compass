@@ -52,6 +52,10 @@ export type Crosswalk = {
 };
 export type YearCount = { yr: number; n: number };
 export type CourtCount = { courtId: string; name: string; n: number; link: string | null };
+/** One nature-of-suit group as the source groups it (the source publishes at most the ten largest groups). */
+export type NosGroup = { key: string; label: string; n: number };
+/** The source's group key for product liability and health-care / pharmaceutical personal injury. */
+export const PRODUCT_GROUP = "product";
 export type JudgeActivity = {
   dockets: {
     assigned: number;
@@ -64,6 +68,16 @@ export type JudgeActivity = {
     medianDaysN: number | null;
     courts: CourtCount[];
     byYear: YearCount[];
+    /** Dockets with a recorded nature of suit: the base of the group counts and of productShare. */
+    nosRecorded: number | null;
+    /** Groups as published (largest first, at most ten); empty when they do not reconcile with nosRecorded. */
+    nosGroups: NosGroup[];
+    /** Recorded dockets in groups the source does not publish (it keeps only the largest); null when unknown. */
+    nosOther: number | null;
+    /** Product group count; 0 only when every group is published and none is product, else null. */
+    productCount: number | null;
+    /** productCount as a % of nosRecorded (one decimal); null when not recorded. */
+    productShare: number | null;
   } | null;
   referred: number | null;
   opinions: {
@@ -72,6 +86,11 @@ export type JudgeActivity = {
     leadOrCombined: number | null;
     firstFiled: string | null;
     lastFiled: string | null;
+    /**
+     * Last year with an opinion the source attributes to this person (the year of last_filed, else the last year of
+     * the series). The source stopped attributing most district opinions around 2010-2012, so later years are not drawn.
+     */
+    lastAttributedYear: number | null;
     courts: CourtCount[];
     byYear: YearCount[];
     timesCitedTotal: number | null;
@@ -179,6 +198,55 @@ function courtCounts(raw: unknown, key: string, whole: number): CourtCount[] {
   return sum <= whole ? out : [];
 }
 
+/**
+ * Nature-of-suit groups and the product share. The source publishes at most the ten largest groups, each with a count
+ * whose base is nos_recorded. Groups that do not reconcile (a count above the base, a sum above it, duplicate keys) are
+ * all dropped. The product count is 0 only when the published groups cover every recorded docket; a product group
+ * missing from a truncated list stays null (not recorded), never 0.
+ */
+export function parseNosGroups(
+  raw: unknown,
+  recordedRaw: unknown,
+): Pick<
+  NonNullable<JudgeActivity["dockets"]>,
+  "nosRecorded" | "nosGroups" | "nosOther" | "productCount" | "productShare"
+> {
+  const nosRecorded = count(recordedRaw);
+  const none = {
+    nosRecorded,
+    nosGroups: [],
+    nosOther: null,
+    productCount: null,
+    productShare: null,
+  };
+  if (!nosRecorded) return none;
+  const groups: NosGroup[] = [];
+  const seen = new Set<string>();
+  for (const r of Array.isArray(raw) ? raw : []) {
+    const o = obj(r);
+    const key = str(o?.["value"]);
+    const label = str(o?.["label"]);
+    const n = count(o?.["count"]);
+    if (!key || !label || n === null) continue;
+    if (seen.has(key) || n > nosRecorded) return none;
+    seen.add(key);
+    groups.push({ key, label, n });
+  }
+  const sum = groups.reduce((a, g) => a + g.n, 0);
+  if (!groups.length || sum > nosRecorded) return none;
+  groups.sort((a, b) => b.n - a.n || a.label.localeCompare(b.label));
+  const product = groups.find((g) => g.key === PRODUCT_GROUP);
+  const productCount = product ? product.n : sum === nosRecorded ? 0 : null;
+  return {
+    nosRecorded,
+    nosGroups: groups,
+    nosOther: nosRecorded - sum,
+    productCount,
+    productShare:
+      productCount === null ? null : Math.round((productCount / nosRecorded) * 1000) / 10,
+  };
+}
+
 /** Compact activity from one clb_judge_dockets profile; sections that fail validation become null. */
 export function parseJudgeActivity(raw: unknown, personId: number): JudgeActivity | null {
   const p = obj(raw);
@@ -199,20 +267,29 @@ export function parseJudgeActivity(raw: unknown, personId: number): JudgeActivit
       medianDaysN: count(dur?.["n"]),
       courts: courtCounts(d["courts"], "dockets", assigned),
       byYear: years(d["by_year"], "dockets"),
+      ...parseNosGroups(d["nos_groups"], d["nos_recorded"]),
     };
   }
   const o = obj(p["opinions"]);
   let opinions: JudgeActivity["opinions"] = null;
   const authored = count(o?.["authored"]);
   if (o && authored !== null && authored > 0) {
+    const lastFiled = date(o["last_filed"]);
+    const series = years(o["by_year"], "opinions");
+    const lastAttributedYear = lastFiled
+      ? Number(lastFiled.slice(0, 4))
+      : (series.at(-1)?.yr ?? null);
     opinions = {
       authored,
       perCuriam: count(o["per_curiam"]),
       leadOrCombined: count(o["lead_or_combined"]),
       firstFiled: date(o["first_filed"]),
-      lastFiled: date(o["last_filed"]),
+      lastFiled,
+      lastAttributedYear,
       courts: courtCounts(o["courts"], "opinions", authored),
-      byYear: years(o["by_year"], "opinions"),
+      // never draw a year after the last attributed opinion
+      byYear:
+        lastAttributedYear === null ? series : series.filter((y) => y.yr <= lastAttributedYear),
       timesCitedTotal: count(o["times_cited_total"]),
       timesCitedMedian: num(o["times_cited_median"]),
       clustersWithLeadOpinion: count(o["clusters_with_lead_opinion"]),

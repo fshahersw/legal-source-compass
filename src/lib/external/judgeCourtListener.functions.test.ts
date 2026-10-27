@@ -14,6 +14,7 @@ import {
   JUDGE_ID,
   parseCrosswalk,
   parseJudgeActivity,
+  parseNosGroups,
 } from "./judgeCourtListener.functions";
 
 // Shapes copied from published judge_cl_crosswalk and clb_judge_dockets rows.
@@ -197,6 +198,116 @@ describe("parseJudgeActivity", () => {
     expect(
       parseJudgeActivity({ person_id: 134, dockets: null, opinions: null, referred: null }, 134),
     ).toBeNull();
+  });
+
+  it("keeps the last attributed opinion year and never draws a later year", () => {
+    const a = parseJudgeActivity(
+      {
+        ...ACTIVITY,
+        opinions: {
+          ...ACTIVITY.opinions,
+          last_filed: "2011-08-03",
+          by_year: [
+            { yr: 2010, opinions: 20 },
+            { yr: 2011, opinions: 8 },
+            { yr: 2019, opinions: 2 },
+          ],
+        },
+      },
+      134,
+    )!;
+    expect(a.opinions?.lastAttributedYear).toBe(2011);
+    expect(a.opinions?.byYear.map((y) => y.yr)).toEqual([2010, 2011]);
+    const b = parseJudgeActivity(
+      { ...ACTIVITY, opinions: { ...ACTIVITY.opinions, last_filed: null } },
+      134,
+    )!;
+    expect(b.opinions?.lastAttributedYear).toBe(1981);
+  });
+});
+
+// Groups copied from clb_judge_dockets person 48 (ten largest groups of 5,461 dockets with a recorded nature of suit).
+const GROUPS_48 = [
+  {
+    count: 1499,
+    label: "Prisoner petitions and civil detainees",
+    value: "prisoner",
+    share_pct: 27.4,
+  },
+  { count: 1257, label: "Civil rights", value: "civil_rights", share_pct: 23 },
+  { count: 864, label: "Contract", value: "contract", share_pct: 15.8 },
+  { count: 345, label: "Personal injury (not product liability)", value: "injury", share_pct: 6.3 },
+  { count: 307, label: "Labor and employment statutes", value: "labor", share_pct: 5.6 },
+  { count: 296, label: "Social Security", value: "social_security", share_pct: 5.4 },
+  {
+    count: 230,
+    label: "Product liability and health-care / pharma injury",
+    value: "product",
+    share_pct: 4.2,
+  },
+  { count: 181, label: "Other statutory actions", value: "other_statutes", share_pct: 3.3 },
+  {
+    count: 137,
+    label: "Fraud, truth in lending and property damage",
+    value: "fraud_property",
+    share_pct: 2.5,
+  },
+  { count: 68, label: "Bankruptcy appeals and withdrawals", value: "bankruptcy", share_pct: 1.2 },
+];
+
+describe("parseNosGroups", () => {
+  it("computes the product share on the recorded base and the unpublished remainder", () => {
+    const g = parseNosGroups(GROUPS_48, 5461);
+    expect(g.nosRecorded).toBe(5461);
+    expect(g.nosGroups).toHaveLength(10);
+    expect(g.productCount).toBe(230);
+    expect(g.productShare).toBe(4.2);
+    expect(g.nosOther).toBe(5461 - 5184);
+  });
+
+  it("leaves a product group missing from a truncated list as not recorded, never 0", () => {
+    const g = parseNosGroups(
+      GROUPS_48.filter((x) => x.value !== "product"),
+      5461,
+    );
+    expect(g.productCount).toBeNull();
+    expect(g.productShare).toBeNull();
+  });
+
+  it("reads 0 only when the published groups cover every recorded docket", () => {
+    const g = parseNosGroups(
+      [
+        { count: 6, label: "Contract", value: "contract" },
+        { count: 4, label: "Civil rights", value: "civil_rights" },
+      ],
+      10,
+    );
+    expect(g.productCount).toBe(0);
+    expect(g.productShare).toBe(0);
+    expect(g.nosOther).toBe(0);
+  });
+
+  it("drops groups that do not reconcile with the base", () => {
+    expect(parseNosGroups(GROUPS_48, 100).nosGroups).toEqual([]);
+    expect(parseNosGroups(GROUPS_48, null).productShare).toBeNull();
+    expect(
+      parseNosGroups(
+        [
+          { count: 1, label: "A", value: "a" },
+          { count: 1, label: "A again", value: "a" },
+        ],
+        5,
+      ).nosGroups,
+    ).toEqual([]);
+  });
+
+  it("is read through parseJudgeActivity", () => {
+    const a = parseJudgeActivity(
+      { ...ACTIVITY, dockets: { ...ACTIVITY.dockets, nos_recorded: 5461, nos_groups: GROUPS_48 } },
+      134,
+    )!;
+    expect(a.dockets?.productShare).toBe(4.2);
+    expect(parseJudgeActivity(ACTIVITY, 134)?.dockets?.productShare).toBeNull();
   });
 });
 
