@@ -257,11 +257,38 @@ def attribution(person_last: str | None, parsed: list[dict | None]) -> dict:
             "mismatch": checks.count("mismatch"), "unchecked": checks.count("unchecked")}
 
 
+def resolve_conflict(parsed: list[dict | None], checks: list[str], court_id: str | None) -> dict:
+    """Per-report resolution for a person whose matching reports carry two numbered circuits (attribution() status 'conflict').
+
+    Exact code comparison only, never similarity:
+      * 'same_district': every matching AO-coded report that carries a circuit also carries a district code, and all of them carry
+        the same one. Only the circuit digit differs inside one district court, which is no evidence of another filer: nothing is held.
+      * 'recorded_court': the matching reports carry more than one district code; exactly one district code is carried by the most
+        matching reports, and the person's recorded court (CourtListener position court id, e.g. 'wawd', 'txnb') is that district's
+        court (the court id starts with the whole district code: WAW -> wawd, TXN -> txnb/txnd, DE -> ded). Reports carrying that district are listed;
+        every other report (another district, no readable district, unreadable or other-surname file names) is held.
+      * 'unresolved': anything else (tie, no recorded court, recorded court in another state): every report is held, as before.
+    Returns {"resolution": ..., "district": str | None, "held": sorted report indexes}."""
+    from collections import Counter
+
+    match_ao = [i for i, (p, c) in enumerate(zip(parsed, checks)) if p and c == "match" and p.get("kind") == "ao"]
+    with_circuit = [i for i in match_ao if parsed[i].get("circuit")]
+    districts = Counter(parsed[i]["district"] for i in match_ao if parsed[i].get("district"))
+    if with_circuit and all(parsed[i].get("district") for i in with_circuit) and len({parsed[i]["district"] for i in with_circuit}) == 1             and len(districts) == 1:
+        return {"resolution": "same_district", "district": next(iter(districts)), "held": []}
+    top = districts.most_common()
+    if len(top) >= 2 and top[0][1] > top[1][1] and court_id and court_id.lower().startswith(top[0][0].lower()):
+        d = top[0][0]
+        held = [i for i in range(len(parsed)) if not (parsed[i] and checks[i] == "match" and parsed[i].get("district") == d)]
+        return {"resolution": "recorded_court", "district": d, "held": held}
+    return {"resolution": "unresolved", "district": None, "held": list(range(len(parsed)))}
+
+
 # Which disclosure reports' gifts, reimbursements and agreements are listed (owner decision 2026-10-27, "dont withhold any data"):
 # a report whose file name carries the person's surname ('match') and a report whose file name could not be read ('unchecked',
 # listed with an 'attribution not checked' label) are listed; a report whose file name carries another surname ('mismatch':
-# evidence from the source file itself that CourtListener may have joined another person's report) and every report of a person
-# whose matching reports carry two numbered circuits ('conflict') are not.
+# evidence from the source file itself that CourtListener may have joined another person's report) is not; for a person whose matching
+# reports carry two numbered circuits ('conflict') the reports resolve_conflict() holds are not listed (reason 'attribution_conflict').
 LISTED_CHECKS = ("match", "unchecked")
 DISCLOSURE_ITEM_KINDS = ("gifts", "reimbursements", "agreements")
 
@@ -311,19 +338,21 @@ def agreement_item(year, report_id, date_raw, terms, redacted) -> dict:
     return {"year": year, "report_id": _report_id(report_id), "redacted": redacted == "t", "date_as_filed": clip_text(date_raw), "parties_and_terms": clip_text(terms)}
 
 
-def split_disclosure_items(items: dict, checks: dict, conflict: bool) -> tuple[dict, dict]:
+def split_disclosure_items(items: dict, checks: dict, conflict: bool, conflict_held: set | None = None) -> tuple[dict, dict]:
     """Split one person's gifts, reimbursements and agreements into listed items and withheld counts by reason.
 
     `items` maps each kind to item dicts carrying `report_id`; `checks` maps report id -> 'match' / 'mismatch' / 'unchecked'
     (a report id missing from `checks` is treated as 'mismatch': no file evidence ties it to this person, so it is not listed).
     Listed items get `attribution`: 'checked' (file name carries the surname) or 'not_checked' (file name unreadable).
+    With `conflict` true, `conflict_held` names the report ids held for the conflict (resolve_conflict); None holds every report.
     Returns (listed by kind, {reason: {kind: n}}) with every kind and both reasons present."""
     listed = {k: [] for k in DISCLOSURE_ITEM_KINDS}
     withheld = {r: {k: 0 for k in DISCLOSURE_ITEM_KINDS} for r in ("other_surname", "attribution_conflict")}
     for k in DISCLOSURE_ITEM_KINDS:
         for it in items.get(k, []):
             chk = checks.get(it.get("report_id"), "mismatch")
-            reason = withheld_reason(chk, conflict)
+            rid = it.get("report_id")
+            reason = withheld_reason(chk, conflict and (conflict_held is None or rid in conflict_held))
             if reason:
                 withheld[reason][k] += 1
             else:

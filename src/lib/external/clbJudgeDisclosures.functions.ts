@@ -89,6 +89,10 @@ export type ReportRow = {
   filerCode: string | null;
   /** CourtListener's copy of the report, only when its path names exactly this person id. */
   pdf: string | null;
+  /** For a person marked as an attribution conflict: true when this report is held, false when its items are listed
+   * (it carries the district of the person's recorded court). Null for everyone else and for records built before the
+   * per-report rule. */
+  conflictHold: boolean | null;
 };
 export type JudgeDisclosures = {
   personId: number;
@@ -159,6 +163,8 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
         pages: count(o?.["pages"]),
         fileCheck: fc,
         filerCode: str(o?.["filer_code"], 24),
+        conflictHold:
+          typeof o?.["conflict_hold"] === "boolean" ? (o["conflict_hold"] as boolean) : null,
         pdf:
           pdf && pdf.startsWith(pdfPrefix) && pdf.endsWith(".pdf") && !pdf.includes("..")
             ? pdf
@@ -172,18 +178,19 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
   if (status !== "consistent" && status !== "conflict" && status !== "unchecked") return null;
   const conflict = status === "conflict";
   // Items are shown from reports whose file name carries the surname ('checked') and from reports whose file name could not be
-  // read ('not_checked', labelled); never from a report whose file name carries another surname, and never for a conflict.
+  // read ('not_checked', labelled); never from a report whose file name carries another surname. For a conflict, only from
+  // reports the build explicitly marks as not held (conflict_hold === false); a record without that mark shows nothing.
   // The label comes from the report list, not from the stored item.
   const shownCheck = new Map<number, ItemAttribution>(
-    conflict
-      ? []
-      : reportList.flatMap((r): [number, ItemAttribution][] =>
-          r.fileCheck === "match"
-            ? [[r.id, "checked"]]
-            : r.fileCheck === "unchecked"
-              ? [[r.id, "not_checked"]]
-              : [],
-        ),
+    reportList.flatMap((r): [number, ItemAttribution][] =>
+      conflict && r.conflictHold !== false
+        ? []
+        : r.fileCheck === "match"
+          ? [[r.id, "checked"]]
+          : r.fileCheck === "unchecked" && !conflict
+            ? [[r.id, "not_checked"]]
+            : [],
+    ),
   );
   const shown = new Set(shownCheck.keys());
   // A redacted line keeps the text CourtListener published around the filer's redaction (marked by `redacted`).

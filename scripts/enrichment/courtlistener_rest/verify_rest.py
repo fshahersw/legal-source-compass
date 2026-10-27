@@ -2,8 +2,8 @@
 
 Second path: plain row fetches from the slim tables (not the rest_work aggregates) and Python arithmetic (statistics.median, Counter),
 compared with what each build file displays. Also integrity checks over every row: link shapes, ids, and the disclosure attribution
-rule (no listed item may come from a report whose file name carries another surname or from a person marked as a conflict; items of
-reports whose file name could not be read are listed with attribution 'not_checked').
+rule (no listed item may come from a report whose file name carries another surname or from a report held for an attribution conflict;
+items of reports whose file name could not be read are listed with attribution 'not_checked').
 
     python3 -I -B verify_rest.py            -> private/build/courtlistener_rest/verify_rest.json, exit 1 on any mismatch
 """
@@ -175,10 +175,11 @@ def disclosures(db):
         p = r["item"]["profile"]
         checks = {x["id"]: x["file_check"] for x in p["report_list"]}
         conflict = p["attribution"]["status"] == "conflict"
+        listed_in_conflict = {x["id"] for x in p["report_list"] if x.get("conflict_hold") is False}
         for k in ("gifts", "agreements", "reimbursements"):
             for it in p[k]:
                 chk = checks.get(it["report_id"])
-                if conflict or chk not in ("match", "unchecked") or it.get("attribution") != ("checked" if chk == "match" else "not_checked"):
+                if (conflict and it["report_id"] not in listed_in_conflict) or chk not in ("match", "unchecked") or it.get("attribution") != ("checked" if chk == "match" else "not_checked"):
                     viol += 1
             if len(p[k]) + p["items_withheld"][k] != p["items_total"][k]:
                 viol += 1

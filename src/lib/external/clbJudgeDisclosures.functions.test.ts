@@ -184,6 +184,30 @@ describe("parseJudgeDisclosures", () => {
     ]);
   });
 
+  it("for a conflict, lists only the reports the build marks as not held", () => {
+    const d = parseJudgeDisclosures(
+      {
+        ...PROFILE,
+        attribution: { ...PROFILE.attribution, status: "conflict", circuits: { "01": 1, "05": 1 } },
+        report_list: PROFILE.report_list.map((r) => ({ ...r, conflict_hold: r.id !== 10 })),
+      },
+      77,
+    )!;
+    expect(d.reimbursements.map((r) => r.reportId)).toEqual([10, 10]);
+    expect(d.reimbursements.every((r) => r.attribution === "checked")).toBe(true);
+    expect(d.reportList.map((r) => r.conflictHold)).toEqual([false, true, true]);
+    // a report marked held, or a record with no marks at all, shows nothing
+    const none = parseJudgeDisclosures(
+      {
+        ...PROFILE,
+        attribution: { ...PROFILE.attribution, status: "conflict" },
+        report_list: PROFILE.report_list.map((r) => ({ ...r, conflict_hold: true })),
+      },
+      77,
+    )!;
+    expect([...none.gifts, ...none.reimbursements]).toEqual([]);
+  });
+
   it("rejects another person, a report list that does not match the count, or an unknown status", () => {
     expect(parseJudgeDisclosures(PROFILE, 78)).toBeNull();
     expect(parseJudgeDisclosures({ ...PROFILE, reports: 4 }, 77)).toBeNull();

@@ -130,6 +130,27 @@ class DisclosureItemTests(unittest.TestCase):
         listed, _ = rc.split_disclosure_items(items, {1: "match"}, conflict=False)
         self.assertEqual(len(listed["reimbursements"]), 400)
 
+    def test_resolve_conflict(self):
+        f = rc.parse_filer_file
+        same = [f(AO + "Jones-RA.%20J3.%2009.%20WAW_R_17.tiff"), f(AO + "Jones-RA.%20J3.%2003.%20WAW_R_18.tiff")]
+        self.assertEqual(rc.resolve_conflict(same, ["match", "match"], "wawd"), {"resolution": "same_district", "district": "WAW", "held": []})
+        self.assertEqual(rc.resolve_conflict(same, ["match", "match"], None)["resolution"], "same_district")
+        two = [f(AO + "King-RB.%20J3.%2004.%20VAE_R_17.tiff"), f(AO + "King-RB.%20J3.%2004.%20VAE_R_18.tiff"),
+               f(AO + "King-RB.%20B.%2005.%20TXW_R_19.tiff"), None]
+        checks = ["match", "match", "match", "unchecked"]
+        self.assertEqual(rc.resolve_conflict(two, checks, "vaed"), {"resolution": "recorded_court", "district": "VAE", "held": [2, 3]})
+        # the recorded court is not the district most reports carry, or there is none: everything stays held
+        self.assertEqual(rc.resolve_conflict(two, checks, "ca4")["held"], [0, 1, 2, 3])
+        self.assertEqual(rc.resolve_conflict(two, checks, "txwb")["resolution"], "unresolved")
+        tie = [two[0], two[2]]
+        self.assertEqual(rc.resolve_conflict(tie, ["match", "match"], "vaed")["resolution"], "unresolved")
+
+    def test_split_holds_only_the_conflict_reports(self):
+        items = {"gifts": [{"report_id": 1}, {"report_id": 2}], "reimbursements": [], "agreements": []}
+        listed, withheld = rc.split_disclosure_items(items, {1: "match", 2: "match"}, True, {2})
+        self.assertEqual([x["report_id"] for x in listed["gifts"]], [1])
+        self.assertEqual(withheld["attribution_conflict"]["gifts"], 1)
+
     def test_withheld_reason(self):
         self.assertIsNone(rc.withheld_reason("match", False))
         self.assertIsNone(rc.withheld_reason("unchecked", False))

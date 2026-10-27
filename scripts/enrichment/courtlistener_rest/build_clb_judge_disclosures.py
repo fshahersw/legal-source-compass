@@ -8,7 +8,7 @@ agreements are listed item by item exactly as CourtListener extracted them from 
 CourtListener marks redacted keeps the text CourtListener published for it (what remained readable around the filer's redaction) and is
 marked 'Redacted in the report'. Items are listed from reports whose file name carries the person's surname and from reports whose
 file name could not be read (labelled 'attribution not checked'); items of reports whose file name carries another surname, and every
-item of a person whose reports carry two numbered circuits, are counted but not listed (rest_common.split_disclosure_items). Every
+item of a conflict report (rest_common.resolve_conflict), are counted but not listed (rest_common.split_disclosure_items). Every
 listed reimbursement is kept (no display cap). Investment, debt, income and position sections are counted only. No value is inferred,
 summed or converted.
 """
@@ -66,10 +66,12 @@ def build() -> dict:
     files = {int(r[0]): (r[1], r[2]) for r in fcon.execute("SELECT id, filepath, download_filepath FROM fd_file").fetchall()}
     last_names = {int(r[0]): r[1] for r in sm.execute("SELECT id, name_last FROM person").fetchall()}
     attr = {}
+    parsed_by_person = {}
     for p, reps_p in reports.items():
         parsed = [rc.parse_filer_file(files.get(r["id"], (None, None))[1]) for r in reps_p]
         a = rc.attribution(last_names.get(p), parsed)
         attr[p] = a
+        parsed_by_person[p] = parsed
         for r, prs, chk in zip(reps_p, parsed, a["checks"]):
             fp = files.get(r["id"], (None, None))[0]
             # CourtListener's own copy of the report: storage path us/federal/judicial/financial-disclosures/<person id>/<file>.pdf
@@ -123,22 +125,30 @@ def build() -> dict:
                             "items": {k: c.get(k, 0) for _, k in SECTIONS}})
         it = items.get(pid, {"gifts": [], "reimbursements": [], "agreements": []})
         a = attr[pid]
-        conflict = a["status"] == "conflict"
+        cid = recent_court.get(pid)
+        # a conflict is resolved per report (rest_common.resolve_conflict): a circuit digit that differs inside one district court is not
+        # evidence of another filer (status becomes 'consistent'); otherwise only the reports of the recorded court's district are listed
+        resolution = rc.resolve_conflict(parsed_by_person[pid], a["checks"], cid) if a["status"] == "conflict" else None
+        status = "consistent" if resolution and resolution["resolution"] == "same_district" else a["status"]
+        conflict = status == "conflict"
+        held_ids = {reps[i]["id"] for i in resolution["held"]} if conflict else set()
+        for r in reps:
+            r["conflict_hold"] = (r["id"] in held_ids) if conflict else None
         # listed: items of reports whose file name carries this person's surname, and of reports whose file name could not be read
         # (labelled 'not_checked'). Not listed, on evidence from the report files themselves: items of reports whose file name carries
         # another surname, and every item of a person whose matching reports carry more than one numbered circuit (CourtListener may
         # have joined two judges' reports).
-        it, withheld_by_reason = rc.split_disclosure_items(it, {r["id"]: r["file_check"] for r in reps}, conflict)
+        it, withheld_by_reason = rc.split_disclosure_items(it, {r["id"]: r["file_check"] for r in reps}, conflict, held_ids)
         withheld = {k: sum(withheld_by_reason[reason][k] for reason in withheld_by_reason) for k in KINDS}
         listed_unchecked = {k: sum(1 for r in it[k] if r["attribution"] == "not_checked") for k in KINDS}
-        cid = recent_court.get(pid)
-        report_list = [{k: r[k] for k in ("id", "year", "amended", "pages", "report_type_code", "file_check", "filer_code", "pdf")} for r in sorted(reps, key=lambda r: (-(r["year"] or 0), -(r["id"] or 0)))]
+        report_list = [{k: r[k] for k in ("id", "year", "amended", "pages", "report_type_code", "file_check", "filer_code", "pdf", "conflict_hold")} for r in sorted(reps, key=lambda r: (-(r["year"] or 0), -(r["id"] or 0)))]
         profile = {"person_id": pid, "name": name, "reports": len(reps), "amended": sum(1 for r in reps if r["amended"]), "first_year": yrs[0] if yrs else None, "last_year": yrs[-1] if yrs else None,
                    "years": by_year, "items_total": {k: tot.get(k, 0) for _, k in SECTIONS}, "items_redacted": {k: tot_red.get(k, 0) for _, k in SECTIONS},
                    "gifts": sorted(it["gifts"], key=by_recency), "agreements": sorted(it["agreements"], key=by_recency),
                    "reimbursements": sorted(it["reimbursements"], key=by_recency), "reimbursements_listed": len(it["reimbursements"]),
                    "items_withheld": withheld, "items_withheld_by_reason": withheld_by_reason, "items_listed_attribution_not_checked": listed_unchecked,
-                   "attribution": {"status": a["status"], "circuits": a["circuits"], "reports_matching_surname": a["match"], "reports_other_surname": a["mismatch"], "reports_unchecked": a["unchecked"]},
+                   "attribution": {"status": status, "conflict_resolution": resolution["resolution"] if resolution else None,
+                                   "conflict_district": resolution["district"] if resolution else None, "circuits": a["circuits"], "reports_matching_surname": a["match"], "reports_other_surname": a["mismatch"], "reports_unchecked": a["unchecked"]},
                    "court_id": cid, "court": courts.get(cid) if cid else None, "court_link": rc.court_link(cid, spine), "stats_record": rc.judge_record_link(pid, judge_ids), "report_list": report_list}
         span = f"{yrs[0]}–{yrs[-1]}" if yrs else "years not recorded"
         links = [{"label": "CourtListener person page", "url": f"https://www.courtlistener.com/person/{pid}/"}, {"label": "CourtListener financial disclosures", "url": "https://www.courtlistener.com/financial-disclosures/"}]
@@ -149,12 +159,16 @@ def build() -> dict:
             subtitle=f"{len(reps):,} report{'s' if len(reps) != 1 else ''} · {span} · {tot.get('gifts', 0):,} gifts · {tot.get('reimbursements', 0):,} reimbursements · {tot.get('investments', 0):,} investments",
             cells={"judge": name, "court": courts.get(cid) if cid else None, "reports": len(reps), "first_year": profile["first_year"], "last_year": profile["last_year"],
                    "investments": tot.get("investments", 0), "gifts": tot.get("gifts", 0), "reimbursements": tot.get("reimbursements", 0), "agreements": tot.get("agreements", 0)},
-            badges=["CourtListener bulk data", "As filed, not verified"] + (["Attribution conflict: items withheld"] if conflict else [])
+            badges=["CourtListener bulk data", "As filed, not verified"] + (["Attribution conflict: some items withheld" if len(held_ids) < len(reps) else "Attribution conflict: items withheld"] if conflict else [])
                    + (["Some items: attribution not checked"] if any(listed_unchecked.values()) else []),
             facts=rc.facts([("Judge (CourtListener person id)", f"{name} ({pid})"), ("Reports on file", f"{len(reps):,} ({profile['amended']} amended)"), ("Report years", span),
                             *[(f"{SECTION_LABEL[k]} listed (all reports)", f"{tot.get(k, 0):,}" + (f" ({tot_red.get(k, 0):,} redacted by the filer)" if tot_red.get(k) else "")) for _, k in SECTIONS],
-                            ("Attribution check (report file names)", (f"conflict: the reports carry more than one circuit code ({', '.join(f'{c}: {n}' for c, n in a['circuits'].items())}); they may belong to more than one judge, so no items are listed"
-                                                                         if conflict else f"{a['match']} of {len(reps)} report file names carry this surname; {a['mismatch']} carry another name; {a['unchecked']} could not be read")),
+                            ("Attribution check (report file names)", (
+                                (f"conflict: the reports carry more than one circuit code ({', '.join(f'{c}: {n}' for c, n in a['circuits'].items())}) and more than one district code; "
+                                 + (f"items are listed only from the {len(reps) - len(held_ids)} reports coded for district {resolution['district']}, the district of the recorded court"
+                                    if resolution["resolution"] == "recorded_court" else "they may belong to more than one judge, so no items are listed"))
+                                if conflict else f"{a['match']} of {len(reps)} report file names carry this surname; {a['mismatch']} carry another name; {a['unchecked']} could not be read"
+                                + (f"; the circuit code differs between reports ({', '.join(f'{c}: {n}' for c, n in a['circuits'].items())}) but every one names the same district ({resolution['district']})" if resolution else ""))),
                             ("Items listed with attribution not checked (report file name unreadable)", "; ".join(f"{k} {v:,}" for k, v in listed_unchecked.items() if v) or "none"),
                             ("Items not listed", "; ".join(
                                 f"{k} {v:,} ({'attribution conflict' if withheld_by_reason['attribution_conflict'][k] else 'report file name carries another surname'})"
@@ -164,7 +178,8 @@ def build() -> dict:
     rows.sort(key=lambda r: (-r["item"]["cells"]["reports"], r["id"]))
     summary = {
         "source": "CourtListener bulk data: financial-disclosures and its line-item files, people and positions (Free Law Project)", "snapshot": cc.SNAPSHOT, "terms": rc.TERMS,
-        "totals": {"people": len(rows), "reports": sum(r["item"]["cells"]["reports"] for r in rows), "people_with_attribution_conflict": sum(1 for v in attr.values() if v["status"] == "conflict"),
+        "totals": {"people": len(rows), "reports": sum(r["item"]["cells"]["reports"] for r in rows), "people_with_attribution_conflict": sum(1 for r in rows if r["item"]["profile"]["attribution"]["status"] == "conflict"),
+                   "people_with_circuit_code_variance_only": sum(1 for r in rows if r["item"]["profile"]["attribution"]["conflict_resolution"] == "same_district"),
                    "reports_other_surname": sum(v["mismatch"] for v in attr.values()), "reports_unchecked": sum(v["unchecked"] for v in attr.values()),
                    "items_withheld": {k: sum(r["item"]["profile"]["items_withheld"][k] for r in rows) for k in KINDS},
                    "items_withheld_by_reason": {reason: {k: sum(r["item"]["profile"]["items_withheld_by_reason"][reason][k] for r in rows) for k in KINDS}
@@ -176,7 +191,7 @@ def build() -> dict:
                         "attribution not checked": "the report's original file name has no readable name pattern, so the surname check could not be made; the item is listed on CourtListener's own link of the report to the person",
                         "report type code": "the stored code; the published schema does not describe it, so it is not decoded",
                         "court": "court of the person's latest-starting judicial position on record (display and filter only; reports follow the person)",
-                        "attribution check": "CourtListener links each report to a person. This project reads the original file name of every report (Administrative Office names such as King-RB. J3. 04, Judicial Watch and nomination names) and checks, without similarity scoring, that it carries the person's surname. Items are listed from reports that pass and, labelled 'attribution not checked', from reports whose file name cannot be read; items of reports whose file name carries another surname are not listed; a person whose passing reports carry two different numbered circuits (01-11) is marked as a conflict and no items are listed for them",
+                        "attribution check": "CourtListener links each report to a person. This project reads the original file name of every report (Administrative Office names such as King-RB. J3. 04, Judicial Watch and nomination names) and checks, without similarity scoring, that it carries the person's surname. Items are listed from reports that pass and, labelled 'attribution not checked', from reports whose file name cannot be read; items of reports whose file name carries another surname are not listed. When a person's passing reports carry two different numbered circuits (01-11), the district codes decide: if every one names the same district, only the circuit digit differs and all items are listed; if they name more than one district, items are listed only from the reports coded for the district of the person's recorded court (when that district is carried by most of the reports), and otherwise no items are listed (attribution conflict)",
                         "report pdf": "CourtListener's copy of the report at storage.courtlistener.com, linked when its stored path names this person id"},
         "caveats": ["Reports cover what CourtListener collected (report years 1987-2022 in this snapshot), not every report a judge filed.",
                     "Extraction from scanned forms can misread text; check the report itself before relying on an item.",

@@ -46,13 +46,14 @@ def tally(rows) -> dict:
         p = r["item"]["profile"]
         checks = {x["id"]: x["file_check"] for x in p["report_list"]}
         conflict = p["attribution"]["status"] == "conflict"
+        listed_in_conflict = {x["id"] for x in p["report_list"] if x.get("conflict_hold") is False}
         for k in KINDS:
             out["withheld"][k] += p["items_withheld"][k]
             out["listed"][k] += len(p[k])
             for it in p[k]:
                 out["listed_redacted"] += bool(it.get("redacted"))
                 out["listed_not_checked"] += it.get("attribution") == "not_checked"
-                if conflict or checks.get(it["report_id"]) not in ("match", "unchecked"):
+                if (conflict and it["report_id"] not in listed_in_conflict) or checks.get(it["report_id"]) not in ("match", "unchecked"):
                     out["listed_from_mismatch_or_conflict"] += 1
         by = p.get("items_withheld_by_reason")
         if by:
