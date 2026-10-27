@@ -42,14 +42,15 @@ export const Route = createFileRoute("/safety_/signals")({
 });
 
 const TITLE: Record<SignalsView, string> = {
-  emerging: "Emerging torts (no MDL linked)",
+  emerging: "Emerging torts (no open MDL linked)",
   mdl: "Products in an MDL",
   reports: "Consumer-report growth signals",
   neiss: "NEISS product signals",
 };
 
 const DESCRIPTION: Record<SignalsView, string> = {
-  emerging: "Rising safety reports, regulator actions and JPML motions where no MDL is linked yet.",
+  emerging:
+    "Rising safety reports, regulator actions and JPML motions where no open MDL is linked; a closed MDL is marked.",
   mdl: "Litigation volume next to adverse-event reporting and recalls for the same products.",
   reports:
     "Growth in unverified SaferProducts.gov reports by product, with the measured precision of the hazard-term rules.",
@@ -86,7 +87,11 @@ function Page() {
           ) : view === "mdl" ? (
             <MassTortSignals />
           ) : (
-            <EmergingTortRadar unit={search.unit ?? null} onUnit={openUnit} />
+            <EmergingTortRadar
+              unit={search.unit ?? null}
+              onUnit={openUnit}
+              onShowMdl={() => selectView("mdl")}
+            />
           )}
         </SafetyTabPanel>
       </div>

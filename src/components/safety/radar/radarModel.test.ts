@@ -6,7 +6,9 @@ import { RadarScoreStack } from "./RadarScoreStack";
 import {
   STATUS_LABEL,
   candidateContext,
+  closedMdlNote,
   emerging,
+  kindBreakdown,
   indexSeries,
   laneInputs,
   median,
@@ -211,11 +213,95 @@ describe("parseRecords and KPIs", () => {
   it("builds AI context from the shown figures only, with the 'No MDL linked' wording", () => {
     const ctx = overviewContext(radarKpis(rows, parsed.summary), emerging(rows), parsed.summary);
     const text = JSON.stringify(ctx);
-    expect(text).toContain("no MDL linked");
+    expect(text).toContain("no open MDL linked");
     expect(text.toLowerCase()).not.toContain("no mdl exists");
     const c = JSON.stringify(candidateContext(parsed.units[0] as RadarUnit));
     expect(c).toContain("9,726");
     expect(c).toContain(STATUS_LABEL.none_linked);
+  });
+});
+
+describe("vehicle KPIs and closed MDLs", () => {
+  const veh = (id: string, inv: string[], over: Partial<Record<string, unknown>> = {}) =>
+    unit({
+      unit_id: id,
+      kind: "vehicle",
+      label: id,
+      components: [
+        comp("A", "NHTSA complaints", 2, {
+          observed: 847,
+          expected: 394.8,
+          ratio: 2.145,
+          ci_low: 2.003,
+        }),
+        comp("C", "NHTSA investigations and recalls", 1),
+      ],
+      points: 3,
+      families_present: 2,
+      families: ["A", "C"],
+      evidence: inv.map((x) => ({
+        dataset: "agency_safety_nhtsa_investigations",
+        id: x,
+        label: x,
+        points: 1,
+      })),
+      rank: 1,
+      ...over,
+    });
+
+  it("counts one investigation that touches two units once", () => {
+    const rows = [
+      veh("vehicle:jeep-wrangler-electrical-system", ["PE25014"]),
+      veh("vehicle:jeep-wrangler-4xe-electrical-system", ["PE25014"]),
+      veh("vehicle:ram-1500-engine", ["RQ24012", "PE25014"]),
+    ]
+      .map((u) => parseUnit(u)!)
+      .map(toRow);
+    const k = radarKpis(rows, null);
+    expect(k.openInvestigations).toBe(2);
+    expect(k.investigatedUnits).toBe(3);
+    expect(k.risingByKind).toEqual({ vehicle: 3 });
+    expect(kindBreakdown({ vehicle: 80, drug: 3 })).toBe("80 vehicle units · 3 drugs");
+    expect(kindBreakdown({ drug: 1 })).toBe("1 drug");
+  });
+
+  it("marks a unit linked only to a closed MDL wherever it is listed", () => {
+    const fin = toRow(
+      parseUnit(
+        unit({
+          unit_id: "drug:faers:finasteride",
+          label: "FINASTERIDE",
+          mdl_status: {
+            status: "terminated_mdl",
+            links: [
+              { mdl: 2331, basis: "safety_mdl_subjects", status: "terminated" },
+              { mdl: 2331, basis: "title_names_ingredient", status: "terminated" },
+            ],
+          },
+        }),
+      )!,
+    );
+    expect(closedMdlNote(fin)).toBe("Earlier MDL closed: 2331");
+    expect(closedMdlNote(toRow(parseUnit(unit())!))).toBeUndefined();
+    expect(radarKpis([fin], null).closedMdlRanked).toBe(1);
+    const html = renderToStaticMarkup(
+      createElement(RadarScoreStack, {
+        rows: [{ ...fin, note: closedMdlNote(fin) }],
+        ariaLabel: "Scores",
+      }),
+    );
+    expect(html).toContain("Earlier MDL closed: 2331");
+  });
+
+  it("keeps terms with an unknown prior apart from measured risers", () => {
+    const u = parseUnit(
+      unit({
+        top_rising_terms: [{ term: "PRODUCT ADHESION ISSUE", recent: 1163, prior: 737 }],
+        entered_terms: [{ term: "DEVICE ADHESION ISSUE", recent: 900, prior: null }],
+      }),
+    )!;
+    expect(u.top_rising_terms?.[0]?.prior).toBe(737);
+    expect(u.entered_terms?.[0]?.prior).toBeNull();
   });
 });
 

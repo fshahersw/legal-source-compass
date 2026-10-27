@@ -2,7 +2,8 @@
  * Emerging-tort radar reads (dataset agency_safety_tort_radar, built by scripts/enrichment/build_emerging_tort_radar.py).
  * The list returns slim rows (components, flags, status) plus the overview; one unit's chart series, terms and
  * evidence come from getRadarCandidate when a row is opened. Rows whose stored total does not reconcile with their
- * components are dropped (radarModel.parseUnit). Read-only; 10-minute cache; failures are not cached.
+ * components are dropped (radarModel.parseUnit). Read-only; the published rows are cached for 10 minutes; failures
+ * and "not published" (absent, empty or not ready) are not cached.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -30,20 +31,20 @@ export type RadarPayload = {
   readAt: string;
 };
 
-const read = memoAsync(READ_TTL_MS, async (): Promise<RadarPayload> => {
+/** Thrown inside the memoized read so that "not published" is never cached (memoAsync does not cache failures). */
+class NotPublished extends Error {}
+
+/**
+ * The published rows, cached for READ_TTL_MS. A dataset that is absent, empty or not marked ready (a publish still
+ * running) is "not published": that answer is re-checked on every call, so the page shows the radar as soon as the
+ * publish completes.
+ */
+const readPublished = memoAsync(READ_TTL_MS, async (): Promise<RadarPayload> => {
   const meta = await restGet<{ ready: boolean | null; imported_records: number | null }[]>(
     `corpus_datasets?select=ready,imported_records&id=eq.${RADAR_DATASET}&limit=1`,
   );
   const ds = meta.rows[0];
-  if (!ds || !ds.imported_records) {
-    return {
-      published: false,
-      summary: null,
-      rows: [],
-      dropped: 0,
-      readAt: new Date().toISOString(),
-    };
-  }
+  if (!ds || ds.ready !== true || !ds.imported_records) throw new NotPublished();
   const raw = await readAllRows<{ id: string; item: unknown }>(
     `corpus_records?select=id,item&dataset=eq.${RADAR_DATASET}&order=ordinal.asc`,
     { max: 5_000 },
@@ -57,6 +58,19 @@ const read = memoAsync(READ_TTL_MS, async (): Promise<RadarPayload> => {
     readAt: new Date().toISOString(),
   };
 });
+
+const read = (): Promise<RadarPayload> =>
+  readPublished().catch((e: unknown) => {
+    if (e instanceof NotPublished)
+      return {
+        published: false,
+        summary: null,
+        rows: [],
+        dropped: 0,
+        readAt: new Date().toISOString(),
+      };
+    throw e;
+  });
 
 export const getEmergingTortRadar = createServerFn({ method: "GET" }).handler(
   async (): Promise<RadarPayload> =>

@@ -5,6 +5,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -38,11 +39,15 @@ const compact = (v: number) =>
 const axis = { fontSize: 11, fill: "var(--muted-foreground)" };
 const FIRST_YEAR = 2010;
 
-function yearly(s: MassTortSignal) {
-  const last = new Date().getUTCFullYear();
-  const out: { year: string; reports: number }[] = [];
+/**
+ * Reports per year since 2010. The current year is still being reported, so it is flagged `partial` (drawn lighter,
+ * labelled year to date) and never read as a full year.
+ */
+export function yearly(s: Pick<MassTortSignal, "eventsByYear">, now = new Date()) {
+  const last = now.getUTCFullYear();
+  const out: { year: string; reports: number; partial: boolean }[] = [];
   for (let y = FIRST_YEAR; y <= last; y++)
-    out.push({ year: String(y), reports: s.eventsByYear[String(y)] ?? 0 });
+    out.push({ year: String(y), reports: s.eventsByYear[String(y)] ?? 0, partial: y === last });
   return out;
 }
 
@@ -235,7 +240,7 @@ function Bars({ s }: { s: MassTortSignal }) {
       {data.map((d) => (
         <span
           key={d.year}
-          className="w-[3px] rounded-sm bg-primary/60"
+          className={`w-[3px] rounded-sm ${d.partial ? "bg-primary/25" : "bg-primary/60"}`}
           style={{ height: `${Math.max(4, (100 * d.reports) / max)}%` }}
         />
       ))}
@@ -324,15 +329,26 @@ function Detail({ s }: { s: MassTortSignal }) {
         </dl>
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
-        <ChartCard title="Reports received per year" subtitle={s.source}>
+        <ChartCard
+          title="Reports received per year"
+          subtitle={`${s.source} · ${data.at(-1)?.year ?? ""} is year to date (partial), drawn lighter`}
+        >
           <div className="h-52 px-2 py-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="year" tick={axis} interval={2} />
                 <YAxis tick={axis} tickFormatter={compact} width={44} />
-                <Tooltip formatter={(v: number) => v.toLocaleString("en-US")} />
-                <Bar dataKey="reports" fill={FDA_COLORS[1]} isAnimationActive={false} />
+                <Tooltip
+                  formatter={(v: number, _name, item) =>
+                    `${v.toLocaleString("en-US")}${(item?.payload as { partial?: boolean } | undefined)?.partial ? " (year to date, partial)" : ""}`
+                  }
+                />
+                <Bar dataKey="reports" fill={FDA_COLORS[1]} isAnimationActive={false}>
+                  {data.map((d) => (
+                    <Cell key={d.year} fillOpacity={d.partial ? 0.4 : 1} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

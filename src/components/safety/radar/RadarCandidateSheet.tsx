@@ -1,6 +1,7 @@
 /**
  * One radar unit opened from the list: the index chart of its monthly counts against the national total, the score
- * components, the rising MedDRA terms (a term outside the stored top N is "Not recorded", never 0), the evidence
+ * components, the MedDRA terms whose rise is measured and, apart, those that entered the stored top N (prior "Not
+ * recorded", never 0), the evidence
  * with links, the MDL-link basis, an "About this score" popover and the AI summary grounded in this unit's figures.
  */
 import { useMemo } from "react";
@@ -27,6 +28,7 @@ import {
   fmtRatio,
   indexSeries,
   type RadarSummary,
+  type RadarTerm,
   type RadarUnit,
 } from "./radarModel";
 
@@ -129,50 +131,71 @@ function Components({ u }: { u: RadarUnit }) {
   );
 }
 
+function TermList({ terms, topN }: { terms: readonly RadarTerm[]; topN: string }) {
+  return (
+    <ul className="divide-y divide-border/60 text-meta">
+      {terms.map((t) => (
+        <li key={t.term} className="flex items-baseline justify-between gap-3 py-1">
+          <span className="min-w-0 truncate" title={t.term}>
+            {t.term}
+            {t.quality ? (
+              <span className="ml-1 text-muted-foreground">(product or use problem)</span>
+            ) : null}
+          </span>
+          <span className="shrink-0 tabular-nums">
+            {fmtCount(t.recent)} <span className="text-muted-foreground">vs</span>{" "}
+            {t.prior == null ? (
+              <span className="text-muted-foreground">Not recorded (outside top {topN})</span>
+            ) : (
+              fmtCount(t.prior)
+            )}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Two lists, never mixed: terms whose rise is measured (prior count known, recent above it) and terms that entered the
+ * stored top N (prior count not recorded, so their rise is not measured).
+ */
 function Terms({ u }: { u: RadarUnit }) {
-  const terms = u.top_rising_terms ?? [];
   if (u.kind !== "drug") return null;
+  const rising = (u.top_rising_terms ?? []).filter(
+    (t) => t.prior != null && t.recent != null && t.recent > t.prior,
+  );
+  const entered = u.entered_terms ?? [];
   const tw = u.terms_window;
+  const topN = tw?.top_n != null ? String(tw.top_n) : "N";
   return (
     <section aria-labelledby="radar-terms" className="space-y-1.5">
       <h3 id="radar-terms" className="text-label font-semibold">
         Rising MedDRA terms
       </h3>
-      {terms.length ? (
-        <>
-          <ul className="divide-y divide-border/60 text-meta">
-            {terms.map((t) => (
-              <li key={t.term} className="flex items-baseline justify-between gap-3 py-1">
-                <span className="min-w-0 truncate" title={t.term}>
-                  {t.term}
-                  {t.quality ? (
-                    <span className="ml-1 text-muted-foreground">(product or use problem)</span>
-                  ) : null}
-                </span>
-                <span className="shrink-0 tabular-nums">
-                  {fmtCount(t.recent)} <span className="text-muted-foreground">vs</span>{" "}
-                  {t.prior == null ? (
-                    <span className="text-muted-foreground">
-                      Not recorded (outside top {tw?.top_n ?? "N"})
-                    </span>
-                  ) : (
-                    fmtCount(t.prior)
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-meta text-muted-foreground">
-            Reports naming each term, {tw?.recent ?? "recent quarters"} vs{" "}
-            {tw?.prior ?? "the prior quarters"}, from the stored top {tw?.top_n ?? "N"} terms of
-            each quarter.
-          </p>
-        </>
+      {rising.length ? (
+        <TermList terms={rising} topN={topN} />
       ) : (
         <p className="text-meta text-muted-foreground">
-          Not recorded: no quarterly term counts are stored for this product.
+          {u.top_rising_terms || entered.length
+            ? "No stored term rose with both windows recorded."
+            : "Not recorded: no quarterly term counts are stored for this product."}
         </p>
       )}
+      {entered.length ? (
+        <>
+          <h4 className="pt-1 text-meta font-semibold">
+            Entered the top {topN} (prior count not recorded)
+          </h4>
+          <TermList terms={entered} topN={topN} />
+        </>
+      ) : null}
+      {rising.length || entered.length ? (
+        <p className="text-meta text-muted-foreground">
+          Reports naming each term, {tw?.recent ?? "recent quarters"} vs{" "}
+          {tw?.prior ?? "the prior quarters"}, from the stored top {topN} terms of each quarter.
+        </p>
+      ) : null}
     </section>
   );
 }

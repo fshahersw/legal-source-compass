@@ -129,7 +129,10 @@ export const unitSchema = z.object({
   caveat: text,
   as_of: text,
   rank: z.number().int().positive().nullable().optional(),
+  /** Terms with a measured prior count that rose (recent > prior), by the rise. */
   top_rising_terms: z.array(termSchema).optional(),
+  /** Terms in every recent quarter's stored top N whose prior count is not recorded (their rise is not measured). */
+  entered_terms: z.array(termSchema).optional(),
   terms_window: z.object({ recent: text, prior: text, top_n: num }).partial().nullable().optional(),
   jpml_status: text,
 });
@@ -258,13 +261,22 @@ export type RadarRow = Pick<
 > & {
   status: RadarStatus;
   mdls: { mdl: number; status: string; basis: string }[];
+  /** Open NHTSA investigations that scored on this unit (one investigation can score on several units). */
   openInvestigations: number;
+  openInvestigationIds: string[];
   recalls: number;
   secMentions: number;
 };
 
 export function toRow(u: RadarUnit): RadarRow {
   const ev = u.evidence;
+  const invIds = [
+    ...new Set(
+      ev
+        .filter((e) => e.dataset === "agency_safety_nhtsa_investigations" && (e.points ?? 0) > 0)
+        .map((e) => e.id),
+    ),
+  ];
   return {
     unit_id: u.unit_id,
     kind: u.kind,
@@ -280,9 +292,8 @@ export function toRow(u: RadarUnit): RadarRow {
     jpml_status: u.jpml_status ?? null,
     status: u.mdl_status.status,
     mdls: u.mdl_status.links.map((l) => ({ mdl: l.mdl, status: l.status, basis: l.basis })),
-    openInvestigations: ev.filter(
-      (e) => e.dataset === "agency_safety_nhtsa_investigations" && (e.points ?? 0) > 0,
-    ).length,
+    openInvestigations: invIds.length,
+    openInvestigationIds: invIds,
     recalls: ev.filter((e) => /recall|enforcement/.test(e.dataset)).length,
     secMentions: ev.filter((e) => e.dataset === "company_sec_legal_proceedings").length,
   };
@@ -292,19 +303,59 @@ export function toRow(u: RadarUnit): RadarRow {
 export const reportsOf = (r: Pick<RadarRow, "components">) =>
   r.components.find((c) => c.family === "A") ?? null;
 
-/** Units shown in the emerging list: no MDL linked, or linked only to closed MDLs; ranked. */
+/**
+ * Units shown in the emerging list: no OPEN MDL linked, that is none linked, or linked only to MDLs the JPML lists as
+ * closed (those carry `closedMdlNote` wherever they are listed); ranked.
+ */
 export function emerging(rows: readonly RadarRow[]): RadarRow[] {
   return rows
     .filter((r) => r.status !== "pending_mdl" && r.rank != null)
     .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0));
 }
 
+/** "Earlier MDL closed: 2331" for a unit linked only to closed MDLs; undefined otherwise. */
+export function closedMdlNote(r: Pick<RadarRow, "status" | "mdls">): string | undefined {
+  if (r.status !== "terminated_mdl") return undefined;
+  const ids = [...new Set(r.mdls.map((m) => m.mdl))];
+  return `${STATUS_LABEL.terminated_mdl}: ${ids.join(", ") || "Not recorded"}`;
+}
+
+/** Counts per kind of unit (drug / vehicle / JPML matter), kinds with none left out. */
+export type KindCounts = Partial<Record<RadarKind, number>>;
+
+const countByKind = (rows: readonly Pick<RadarRow, "kind">[]): KindCounts => {
+  const out: KindCounts = {};
+  for (const r of rows) out[r.kind] = (out[r.kind] ?? 0) + 1;
+  return out;
+};
+
+/** "80 vehicle units · 3 drugs" (kinds in a fixed order; "none" when empty). */
+export function kindBreakdown(c: KindCounts): string {
+  const names: Record<RadarKind, [string, string]> = {
+    vehicle: ["vehicle unit", "vehicle units"],
+    drug: ["drug", "drugs"],
+    jpml: ["JPML matter", "JPML matters"],
+    device: ["device", "devices"],
+  };
+  const parts = (["vehicle", "drug", "jpml", "device"] as const)
+    .filter((k) => (c[k] ?? 0) > 0)
+    .map((k) => `${(c[k] ?? 0).toLocaleString("en-US")} ${names[k][c[k] === 1 ? 0 : 1]}`);
+  return parts.join(" · ") || "none";
+}
+
 export type RadarKpis = {
   threePlusFamilies: number;
+  threePlusByKind: KindCounts;
   pendingMotions: number;
   denied36: number;
   risingNoMdl: number;
+  risingByKind: KindCounts;
+  /** Distinct open NHTSA investigations that scored on the ranked vehicle units. */
   openInvestigations: number;
+  /** Ranked vehicle units with at least one of them. */
+  investigatedUnits: number;
+  /** Ranked units linked only to closed MDLs (marked wherever listed). */
+  closedMdlRanked: number;
   excluded: number;
 };
 
@@ -318,12 +369,20 @@ export function radarKpis(rows: readonly RadarRow[], summary: RadarSummary | nul
   const el = emerging(rows);
   const lanes = summary?.jpml_lanes ?? [];
   const cutoff = summary ? monthsBefore(summary.as_of, 36) : "";
+  const three = el.filter((r) => r.families_present >= 3);
+  const rising = el.filter((r) => r.kind !== "jpml" && (reportsOf(r)?.ci_low ?? 0) > 1.5);
+  // One investigation can name several makes, models or components: count each id once.
+  const invIds = new Set(el.flatMap((r) => r.openInvestigationIds ?? []));
   return {
-    threePlusFamilies: el.filter((r) => r.families_present >= 3).length,
+    threePlusFamilies: three.length,
+    threePlusByKind: countByKind(three),
     pendingMotions: lanes.filter((l) => l.status === "pending").length,
     denied36: lanes.filter((l) => l.status === "denied" && l.session >= cutoff).length,
-    risingNoMdl: el.filter((r) => r.kind !== "jpml" && (reportsOf(r)?.ci_low ?? 0) > 1.5).length,
-    openInvestigations: el.reduce((s, r) => s + r.openInvestigations, 0),
+    risingNoMdl: rising.length,
+    risingByKind: countByKind(rising),
+    openInvestigations: invIds.size,
+    investigatedUnits: el.filter((r) => (r.openInvestigationIds ?? []).length > 0).length,
+    closedMdlRanked: el.filter((r) => r.status === "terminated_mdl").length,
     excluded: rows.filter((r) => r.status === "pending_mdl").length,
   };
 }
@@ -416,7 +475,7 @@ export function overviewContext(
 ): SectionContext {
   const figures: FigureInput[] = [
     {
-      label: "Candidates with points in 3 or more families",
+      label: `Candidates with points in 3 or more families, no open MDL linked (${kindBreakdown(kpis.threePlusByKind)})`,
       value: kpis.threePlusFamilies,
       unit: "units",
     },
@@ -431,20 +490,26 @@ export function overviewContext(
       unit: "motions",
     },
     {
-      label: "Products or vehicles rising (95% lower bound above 1.5) with no MDL linked",
+      label: `Units rising (95% lower bound above 1.5), no open MDL linked (${kindBreakdown(kpis.risingByKind)})`,
       value: kpis.risingNoMdl,
       unit: "units",
     },
     {
-      label: "Open NHTSA investigations on these vehicle units",
+      label: `Distinct open NHTSA investigations scoring on these vehicle units (on ${kpis.investigatedUnits} units)`,
       value: kpis.openInvestigations,
       unit: "investigations",
     },
+    {
+      label: "Ranked units linked only to closed MDLs (marked 'Earlier MDL closed')",
+      value: kpis.closedMdlRanked,
+      unit: "units",
+    },
     ...top.slice(0, 6).flatMap((r) => {
       const a = reportsOf(r);
+      const closed = closedMdlNote(r);
       return [
         {
-          label: `${r.label}: points (of families ${r.families.join("") || "none"})`,
+          label: `${r.label}${closed ? ` (${closed})` : ""}: points (of families ${r.families.join("") || "none"})`,
           value: r.points,
         },
         ...(a?.ratio != null
@@ -454,7 +519,7 @@ export function overviewContext(
     }),
   ];
   return buildSectionContext({
-    title: "Emerging torts: rising safety reports with no MDL linked",
+    title: "Emerging torts: rising safety reports with no open MDL linked",
     period: summary
       ? `FAERS ${summary.windows["faers"] ?? ""}; NHTSA ${summary.windows["nhtsa"] ?? ""}`
       : null,

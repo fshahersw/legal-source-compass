@@ -103,6 +103,32 @@ describe("getRadarCandidate", () => {
   });
 });
 
+describe("not-published answers are not cached", () => {
+  it("treats a dataset that is not ready as unpublished, then reads it once it is ready", async () => {
+    vi.resetModules();
+    const rest = await import("./rest.server");
+    const tally = await import("@/lib/analytics/tally.server");
+    vi.mocked(rest.restGet)
+      .mockReset()
+      .mockResolvedValueOnce({ rows: [{ ready: false, imported_records: 850 }], total: null })
+      .mockResolvedValueOnce({ rows: [{ ready: true, imported_records: 2 }], total: null });
+    vi.mocked(tally.readAllRows)
+      .mockReset()
+      .mockResolvedValueOnce([
+        { id: "summary:overview", item: { kind: "radar_summary", summary: { as_of: "2026-10-27" } } },
+        { id: "a", item: { kind: "radar", radar: radar("vehicle:a", 5) } },
+      ]);
+    const mod = await import("./emergingTortRadar.functions");
+    const call = mod.getEmergingTortRadar as unknown as Fn<{ published: boolean; rows: unknown[] }>;
+    const first = await call();
+    expect(first.published).toBe(false); // a publish still running (ready=false) is not read as complete
+    expect(tally.readAllRows).not.toHaveBeenCalled();
+    const second = await call(); // not cached: the next call sees the finished publish
+    expect(second.published).toBe(true);
+    expect(second.rows).toHaveLength(1);
+  });
+});
+
 describe("published read", () => {
   it("drops rows that do not reconcile and keeps the overview", async () => {
     vi.resetModules();

@@ -31,7 +31,9 @@ import {
   KIND_LABEL,
   RADAR_SOURCES,
   STATUS_LABEL,
+  closedMdlNote,
   emerging,
+  kindBreakdown,
   fmtCount,
   fmtRatio,
   laneInputs,
@@ -43,9 +45,12 @@ import {
 } from "./radarModel";
 
 const n = (v: number) => v.toLocaleString("en-US");
-const SRC = { label: RADAR_SOURCES[0].label, href: RADAR_SOURCES[0].url };
+const FAERS = { label: RADAR_SOURCES[0].label, href: RADAR_SOURCES[0].url };
 const JPML = { label: RADAR_SOURCES[2].label, href: RADAR_SOURCES[2].url };
 const NHTSA = { label: RADAR_SOURCES[1].label, href: RADAR_SOURCES[1].url };
+/** FAERS and NHTSA have their own windows: a figure that mixes drugs and vehicles cites both, each with its period. */
+const bothPeriods = (faers: string | undefined, nhtsa: string | undefined) =>
+  `FAERS ${faers ?? "window not recorded"}; NHTSA ${nhtsa ?? "window not recorded"}`;
 
 const COLUMNS: DataColumn<RadarRow>[] = [
   { key: "rank", label: "Rank", align: "right", value: (r) => r.rank ?? null },
@@ -98,9 +103,12 @@ const COLUMNS: DataColumn<RadarRow>[] = [
 export function EmergingTortRadar({
   unit,
   onUnit,
+  onShowMdl,
 }: {
   unit: string | null;
   onUnit: (id: string | null) => void;
+  /** Opens the "In an MDL" mode (offered while the radar is not published). */
+  onShowMdl?: (() => void) | undefined;
 }) {
   const q = useQuery(radarQuery);
   const [kind, setKind] = useState<"drug" | "vehicle">("drug");
@@ -149,6 +157,13 @@ export function EmergingTortRadar({
         icon={Radar}
         title="The emerging-tort radar is not published yet"
         description="It will rank products and vehicles whose FDA adverse-event reports or NHTSA complaints are rising while no MDL is linked to them, with every part of the score shown. The In an MDL tab lists products already in an MDL."
+        action={
+          onShowMdl ? (
+            <button type="button" className="text-meta underline" onClick={onShowMdl}>
+              Open products in an MDL
+            </button>
+          ) : undefined
+        }
       />
     );
 
@@ -168,8 +183,11 @@ export function EmergingTortRadar({
       <div className="space-y-2">
         <p className="text-body">
           Products, vehicles and JPML matters with rising published counts and{" "}
-          <strong>no MDL linked</strong>.
-          {asOf ? <span className="text-muted-foreground"> As of {asOf}.</span> : null}
+          <strong>no open MDL linked</strong>
+          {kpis.closedMdlRanked
+            ? ` (${n(kpis.closedMdlRanked)} are linked only to an MDL that has closed and are marked "Earlier MDL closed")`
+            : ""}
+          .{asOf ? <span className="text-muted-foreground"> As of {asOf}.</span> : null}
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           <StatusPill tone="neutral" icon={false}>
@@ -195,8 +213,8 @@ export function EmergingTortRadar({
           as="li"
           label="Candidates scoring in 3+ families"
           value={n(kpis.threePlusFamilies)}
-          meta="Reports, severity, regulator, litigation"
-          source={{ source: SRC, period: faersWindow }}
+          meta={kindBreakdown(kpis.threePlusByKind)}
+          source={{ source: [FAERS, NHTSA], period: bothPeriods(faersWindow, nhtsaWindow) }}
         />
         <KpiCard
           as="li"
@@ -214,17 +232,17 @@ export function EmergingTortRadar({
         />
         <KpiCard
           as="li"
-          label="Rising with no MDL linked"
+          label="Rising, no open MDL linked"
           value={n(kpis.risingNoMdl)}
-          meta="95% lower bound above 1.5× expected"
-          source={{ source: SRC, period: faersWindow }}
+          meta={`${kindBreakdown(kpis.risingByKind)} · 95% lower bound above 1.5× expected`}
+          source={{ source: [FAERS, NHTSA], period: bothPeriods(faersWindow, nhtsaWindow) }}
         />
         <KpiCard
           as="li"
           label="Open NHTSA investigations"
           value={n(kpis.openInvestigations)}
-          meta="On vehicle units with no MDL linked"
-          source={{ source: NHTSA, period: nhtsaWindow }}
+          meta={`Distinct investigations, on ${n(kpis.investigatedUnits)} vehicle units with no open MDL linked`}
+          source={{ source: NHTSA, asOf }}
         />
       </KpiGrid>
 
@@ -241,7 +259,7 @@ export function EmergingTortRadar({
               ? `${leader.label} leads with ${leader.points} points from ${fams(leader) || "no family"}`
               : "Radar scores"
           }
-          subtitle={`Points per family · top 15 with no MDL linked · FAERS ${faersWindow ?? ""}, NHTSA ${nhtsaWindow ?? ""}`}
+          subtitle={`Points per family · top 15 with no open MDL linked (a closed MDL is marked) · ${bothPeriods(faersWindow, nhtsaWindow)}`}
           status={top.length ? { kind: "ready" } : { kind: "empty", reason: "No unit scored." }}
           sources={[...RADAR_SOURCES]}
           asOf={asOf}
@@ -251,6 +269,7 @@ export function EmergingTortRadar({
             columns: [
               { label: "Unit" },
               { label: "Kind" },
+              { label: "MDL status" },
               { label: "Reports" },
               { label: "Severity" },
               { label: "Regulator" },
@@ -261,13 +280,22 @@ export function EmergingTortRadar({
               const p = familyPoints(r.components);
               return {
                 key: r.unit_id,
-                cells: [r.label, KIND_LABEL[r.kind], p.A, p.B, p.C, p.D, r.points],
+                cells: [
+                  r.label,
+                  KIND_LABEL[r.kind],
+                  closedMdlNote(r) ?? STATUS_LABEL[r.status],
+                  p.A,
+                  p.B,
+                  p.C,
+                  p.D,
+                  r.points,
+                ],
               };
             }),
           }}
         >
           <RadarScoreStack
-            rows={top}
+            rows={top.map((r) => ({ ...r, note: closedMdlNote(r) }))}
             onOpen={onUnit}
             ariaLabel="Radar points by family, top 15 units"
             labelWidth={320}
@@ -443,7 +471,11 @@ export function EmergingTortRadar({
           rowKey={(r) => r.unit_id}
           searchable
           triggerLabel={`View data (${n(rows.length)} units)`}
-          source={{ source: SRC, period: faersWindow, asOf }}
+          source={{
+            source: [FAERS, NHTSA, JPML],
+            period: bothPeriods(faersWindow, nhtsaWindow),
+            asOf,
+          }}
         />
         <p className="text-meta text-muted-foreground">
           {n(kpis.excluded)} units are in an MDL and left out of the ranking

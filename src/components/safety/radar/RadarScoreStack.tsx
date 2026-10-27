@@ -90,18 +90,25 @@ export function RadarScoreStack({
           const Label = onOpen ? "button" : "span";
           return (
             <li key={r.unit_id} className="col-span-full grid grid-cols-subgrid items-center">
-              <Label
-                {...(onOpen ? { type: "button" as const, onClick: () => onOpen(r.unit_id) } : {})}
-                className={cn(
-                  "min-w-0 truncate text-left text-[13px] font-medium text-foreground",
-                  onOpen &&
-                    "rounded hover:underline focus-visible:outline-2 focus-visible:outline-ring",
-                )}
-                title={desc}
-                aria-label={onOpen ? `Open ${desc}` : undefined}
-              >
-                {r.label}
-              </Label>
+              <span className="flex min-w-0 flex-col">
+                <Label
+                  {...(onOpen ? { type: "button" as const, onClick: () => onOpen(r.unit_id) } : {})}
+                  className={cn(
+                    "min-w-0 truncate text-left text-[13px] font-medium text-foreground",
+                    onOpen &&
+                      "rounded hover:underline focus-visible:outline-2 focus-visible:outline-ring",
+                  )}
+                  title={desc}
+                  aria-label={onOpen ? `Open ${desc}${r.note ? ` (${r.note})` : ""}` : undefined}
+                >
+                  {r.label}
+                </Label>
+                {r.note ? (
+                  <span className="truncate text-[11px] text-muted-foreground" title={r.note}>
+                    {r.note}
+                  </span>
+                ) : null}
+              </span>
               <div className="flex h-5 min-w-0 overflow-hidden rounded-sm bg-muted/60" aria-hidden>
                 {FAMILIES.map((f) =>
                   parts[f] > 0 ? (
@@ -121,7 +128,6 @@ export function RadarScoreStack({
               </div>
               <span className="text-meta tabular-nums text-muted-foreground">
                 <span className="font-semibold text-foreground">{total}</span> pt
-                {r.note ? ` · ${r.note}` : ""}
               </span>
             </li>
           );
