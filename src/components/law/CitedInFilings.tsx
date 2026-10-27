@@ -4,10 +4,19 @@
  * MDL as the docket source assigns it, never inferred. Renders nothing when the layer is not published or no filing
  * cites the section.
  */
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Table2 } from "lucide-react";
 import { ChartCard } from "@/components/charts/ChartCard";
-import { RankBars, TrendColumns, periodTable, rankTakeaway } from "@/components/charts/recharts";
+import {
+  RankBars,
+  TrendColumns,
+  periodTable,
+  rankTakeaway,
+  trendTakeaway,
+} from "@/components/charts/recharts";
+import { Button } from "@/components/ui/button";
 import {
   AiSummary,
   AskAiButton,
@@ -17,15 +26,40 @@ import {
   Section,
   buildSectionContext,
 } from "@/components/kit";
-import { getAuthorityProfile } from "@/lib/citations/citations.functions";
-import { citationYears } from "@/lib/law/citedIn";
+import { getAuthorityProfile, getCitedBy } from "@/lib/citations/citations.functions";
+import type { CitedBy } from "@/lib/citations/graph";
+import {
+  CITED_BY_PAGE,
+  CITED_BY_MAX_PAGES,
+  citationYears,
+  citingListLabel,
+} from "@/lib/law/citedIn";
 
+/** The court-filings layer of this atlas (several docket sources), listed on its own documents page. */
 const SOURCE = {
   label: "Court filings in this atlas (citations extracted from filing text)",
-  url: "https://www.courtlistener.com/help/api/rest/",
+  url: "/litigation/documents",
 };
 const fmt = (v: number) => v.toLocaleString("en-US");
 const ID = "cited-in-filings";
+type Citing = CitedBy["list"][number];
+
+/** Every citing filing (newest first), read page by page through the cited-by read; capped at the page limit. */
+async function readAllCiting(
+  dataset: "us_code_sections" | "ecfr_sections_full",
+  id: string,
+  total: number,
+): Promise<Citing[]> {
+  const out: Citing[] = [];
+  const pages = Math.min(Math.ceil(total / CITED_BY_PAGE), CITED_BY_MAX_PAGES);
+  for (let page = 1; page <= pages; page++) {
+    const r = await getCitedBy({ data: { key: null, dataset, id, page, limit: CITED_BY_PAGE } });
+    if (!r.available || !r.value) break;
+    out.push(...r.value.list);
+    if (r.value.list.length < CITED_BY_PAGE) break;
+  }
+  return out;
+}
 
 export function CitedInFilings({
   dataset,
@@ -42,7 +76,16 @@ export function CitedInFilings({
     staleTime: 10 * 60 * 1000,
   });
   const p = q.data && q.data.available ? q.data.value : null;
+  const [wantAll, setWantAll] = useState(false);
+  const all = useQuery({
+    queryKey: ["law", "cited-in-all", dataset, id],
+    queryFn: () => readAllCiting(dataset, id, p?.documents ?? 0),
+    enabled: wantAll && !!p && p.documents > p.list.length,
+    staleTime: 10 * 60 * 1000,
+  });
   if (!p || p.documents <= 0) return null;
+  const listRows: Citing[] = all.data ?? p.list;
+  const listLabel = citingListLabel(listRows.length, p.documents, all.isFetching);
   const years = citationYears(p.byYear);
   const mdls = p.byMdl.map(([m, n]) => ({ id: m, label: `MDL ${m}`, value: n }));
   const period =
@@ -139,10 +182,15 @@ export function CitedInFilings({
           actions={
             <DataDrawer
               title={`Filings citing ${citation}`}
-              description="The citing filings, most mentions first (first page and pinpoints as extracted)."
-              triggerLabel={`View data (${fmt(p.list.length)})`}
+              description={`${listLabel} First page and pinpoints as extracted.`}
+              trigger={
+                <Button variant="outline" size="sm" onClick={() => setWantAll(true)}>
+                  <Table2 />
+                  {`View data (${fmt(p.documents)})`}
+                </Button>
+              }
               filename={`filings-citing-${citation.replace(/\W+/g, "-")}`}
-              rows={p.list}
+              rows={listRows}
               rowKey={(d) => d.id}
               searchable
               source={{ source: SOURCE }}
@@ -188,7 +236,15 @@ export function CitedInFilings({
         <ChartCard
           variant="editorial"
           title={
-            p.coCited[0] ? `Most often cited with ${p.coCited[0].label}` : "Citing filings per year"
+            trendTakeaway(
+              "Citing filings",
+              years.map((y) => ({
+                label: y.year,
+                value: y.filings,
+                partial: y.year === String(new Date().getUTCFullYear()),
+              })),
+              fmt,
+            ) ?? "Citing filings per year"
           }
           subtitle="Citing filings per filing year"
           sources={[SOURCE]}

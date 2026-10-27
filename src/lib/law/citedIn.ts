@@ -16,3 +16,14 @@ export function citationYears(byYear: readonly (readonly [number, number])[]): C
   for (let y = min; y <= max; y++) out.push({ year: String(y), filings: map.get(y) ?? 0 });
   return out;
 }
+
+/** Page size and page cap of the full citing-filings list (the cited-by read allows 50 per page). */
+export const CITED_BY_PAGE = 50;
+export const CITED_BY_MAX_PAGES = 20;
+
+/** Honest description of the citing-filings list: all of them, or the newest `shown` of `total`. */
+export function citingListLabel(shown: number, total: number, loading: boolean): string {
+  const f = (v: number) => v.toLocaleString("en-US");
+  if (shown >= total) return `All ${f(total)} citing filings, newest first.`;
+  return `The newest ${f(shown)} of ${f(total)} citing filings${loading ? "; loading the rest" : ""}.`;
+}

@@ -58,7 +58,10 @@ export function CongressAttention() {
             unit: "bills",
           },
           { label: `${r.topic.label}: hearings`, value: r.hearings.length, unit: "hearings" },
-          { label: `${r.topic.label}: latest hearing`, value: latestHeld(r.hearings) },
+          {
+            label: `${r.topic.label}: latest dated hearing`,
+            value: latestHeld(r.hearings) ?? "Not recorded",
+          },
         ]),
         maxFigures: 20,
       })
@@ -97,7 +100,7 @@ export function CongressAttention() {
         status={status}
         sources={SOURCES}
         period={period}
-        asOf={d?.today}
+        asOf={(measure === "bills" ? d?.dataAsOf.congressBills : d?.dataAsOf.hearings) ?? undefined}
         partial={d ? `The ${ordinal(d.congress)} Congress is in progress.` : undefined}
         about={
           <ul className="list-disc space-y-1 pl-4">
@@ -117,6 +120,8 @@ export function CongressAttention() {
             { label: "Topic" },
             ...congresses.map((c) => ({ label: ordinal(c) })),
             { label: "Total" },
+            { label: "Bills that became law" },
+            { label: "Latest dated hearing" },
           ],
           rows: rows.map((r) => ({
             key: r.topic.id,
@@ -124,10 +129,20 @@ export function CongressAttention() {
               r.topic.label,
               ...congresses.map((c) => value(r, c) ?? "Not recorded"),
               measure === "bills" ? r.bills : r.hearings.length,
+              r.billsBecameLaw,
+              latestHeld(r.hearings) ?? "Not recorded",
             ],
           })),
         }}
-        actions={d ? <HearingsDrawer hearings={hearings} today={d.today} /> : undefined}
+        footnotes={
+          rows.length
+            ? [
+                `Bills that became law: ${rows.map((r) => `${r.topic.label} ${fmt(r.billsBecameLaw)}`).join(" · ")}.`,
+                `Latest dated hearing: ${rows.map((r) => `${r.topic.label} ${latestHeld(r.hearings) ?? "Not recorded"}`).join(" · ")}.`,
+              ]
+            : undefined
+        }
+        actions={d ? <HearingsDrawer hearings={hearings} asOf={d.dataAsOf.hearings} /> : undefined}
       >
         {d ? (
           <>
@@ -164,10 +179,10 @@ export function CongressAttention() {
 
 function HearingsDrawer({
   hearings,
-  today,
+  asOf,
 }: {
   hearings: (Hearing & { topic: string })[];
-  today: string;
+  asOf: string | null;
 }) {
   return (
     <DataDrawer
@@ -178,7 +193,7 @@ function HearingsDrawer({
       rows={hearings}
       rowKey={(h, i) => `${h.id}:${h.topic}:${i}`}
       searchable
-      source={{ source: SOURCES[0], asOf: today }}
+      source={{ source: SOURCES[0], asOf: asOf ?? undefined }}
       columns={[
         { key: "held", label: "Held", value: (h) => h.held },
         { key: "topic", label: "Topic", value: (h) => h.topic },
