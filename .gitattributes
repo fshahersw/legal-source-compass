@@ -23,3 +23,5 @@ public/visuals/** -text
 scripts/vendor/** -text
 # Its SHA-256 is recorded in the generated pattern table (src/lib/citations/patterns.json).
 scripts/citations_v2/pattern_source.py text eol=lf
+# Contract text is applied verbatim; its function md5 (verify SQL) is computed on the LF bytes.
+database/contracts/corpus-register-pdf-assets-v2*.sql text eol=lf
