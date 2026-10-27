@@ -79,6 +79,46 @@ export function liveTier(tier: number | undefined): Tier | null {
   return tier && Number.isInteger(tier) && tier >= 2 && tier <= 7 ? (tier as Tier) : null;
 }
 
+export type CoverageTierInput = {
+  tier: Tier;
+  scope: "full" | "prefix";
+  opinions: number;
+  prefixWords: number | null;
+};
+export type CoverageLine = {
+  tier: Tier;
+  level: "full" | "prefix" | "none";
+  /** "Every word", "First 1,000 words of each opinion" or "Not indexed". */
+  text: string;
+  opinions: number | null;
+};
+
+/**
+ * One plain line per court level for the full-text search: every word, only the first N words, or not indexed.
+ * Every tier is listed, so a level that is missing from the index reads "Not indexed" instead of silently
+ * returning no matches. `installed` false (the coverage function is absent) leaves only the Supreme Court indexed.
+ */
+export function coverageLines(
+  tiers: readonly CoverageTierInput[],
+  all: readonly Tier[],
+): CoverageLine[] {
+  return all.map((tier) => {
+    const t = tiers.find((x) => x.tier === tier && (x.opinions > 0 || x.tier === 1));
+    if (!t) return { tier, level: "none", text: "Not indexed", opinions: null };
+    if (t.scope === "full")
+      return { tier, level: "full", text: "Every word", opinions: t.opinions || null };
+    return {
+      tier,
+      level: "prefix",
+      text:
+        t.prefixWords != null
+          ? `First ${t.prefixWords.toLocaleString("en-US")} words of each opinion`
+          : "Part of each opinion",
+      opinions: t.opinions,
+    };
+  });
+}
+
 export const SORT_LABEL: Record<CaseSort, string> = {
   relevance: "Best match",
   cited: "Most cited",

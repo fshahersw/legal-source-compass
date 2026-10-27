@@ -5,6 +5,8 @@ import { ArrowRight, ScrollText } from "lucide-react";
 import type { StateHit } from "@/lib/external/legislation";
 import { getStateLegislation } from "@/lib/external/legislation.functions";
 import { fmtDay, fmtN } from "./format";
+import { sortByLatestAction } from "@/lib/law/legislationWatch";
+import { easternToday } from "@/lib/law/rulemakingTracker";
 
 /**
  * A state's legislation at a glance (dataset state_bills): the most recent bills Open States records as signed or
@@ -96,6 +98,14 @@ function List({
   total: number | null;
   empty: string;
 }) {
+  // A latest action dated after today (a scheduled "Effective Date" as printed) never sorts as the newest action.
+  const today = easternToday();
+  const sorted = sortByLatestAction(
+    rows.map((r) => ({
+      ...r,
+      scheduled: r.latestActionDate !== null && r.latestActionDate.slice(0, 10) > today,
+    })),
+  );
   return (
     <div>
       <h3 className="m-0 mb-1 flex items-baseline justify-between gap-2 text-[11.5px] font-semibold">
@@ -104,9 +114,9 @@ function List({
           {total != null ? fmtN(total) : ""}
         </span>
       </h3>
-      {rows.length ? (
+      {sorted.length ? (
         <ul className="m-0 list-none space-y-1 p-0">
-          {rows.map((r) => (
+          {sorted.map((r) => (
             <li key={r.id} className="min-w-0">
               <p className="m-0 line-clamp-2" title={r.title}>
                 <Link
@@ -120,6 +130,7 @@ function List({
               </p>
               <span className="block text-[10.5px] text-muted-foreground">
                 {r.statusLabel} · {fmtDay(r.latestActionDate)}
+                {r.scheduled ? " (scheduled)" : ""}
               </span>
             </li>
           ))}

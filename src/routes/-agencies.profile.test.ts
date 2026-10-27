@@ -45,6 +45,7 @@ vi.mock("@/lib/external/agencyProfile.functions", () => ({ getAgencyProfile: vi.
 vi.mock("@/components/agencies/AgencyProfileView", () => ({
   AgencyProfileView: () => createElement("section", null, "Agency analytics view"),
 }));
+vi.mock("@/components/agencies/AgencyMassTortPanel", () => ({ AgencyMassTortPanel: () => null }));
 vi.mock("@/components/enforcement/parts", () => ({ LoadingBlock: () => null }));
 vi.mock("@/components/atlas/AppShell", () => ({
   AppShell: ({ children }: { children: ReactNode }) => createElement("main", null, children),

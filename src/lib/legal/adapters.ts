@@ -1,5 +1,6 @@
 import { LEGAL_ENUMS, calendarDate, legalRecord, recordKey } from "./schema.ts";
 import type { LegalRecord, RecordRef } from "./schema.ts";
+import { FEDERAL_REGISTER_SCHEMA_VERSION, isCanonicalRin, isCorrectionNumber, missingFields } from "./frRefresh.ts";
 
 export type NativeRow = { source_system: string; entity_type: string; native_id: string; data: Record<string, unknown>; provenance: Record<string, unknown> };
 type Lookup<T> = { get(key: string): T | undefined; set(key: string, value: T): unknown };
@@ -121,13 +122,23 @@ export function adaptNative(row: NativeRow, context: AdapterContext): Adapted {
   if (["federalregister", "federal_register"].includes(source) && row.entity_type === "documents") {
     const date = day(d["publication_date"]);
     if (date && date < "2000-01-01") return exclude("Published before 2000-01-01");
-    const type = ({ Rule: "RULE", "Proposed Rule": "PRORULE", Notice: "NOTICE", "Presidential Document": "PRESDOCU" } as Record<string, string>)[scalar(d["type"])] ?? d["type"];
+    // One payload shape: the complete round-3 API field set. Reduced reference fetches stay out of the atlas.
+    if (p["schema_version"] !== FEDERAL_REGISTER_SCHEMA_VERSION) throw new Error("Federal Register row is not from the legal atlas acquisition (schema_version)");
+    const missing = missingFields(d);
+    if (missing.length) throw new Error(`Federal Register row lacks API fields: ${missing.join(", ")}`);
+    // Pre-2009 corrections carry the publisher type "Correction"; later ones keep their parent type and a C1- number.
+    const type = ({ Rule: "RULE", "Proposed Rule": "PRORULE", Notice: "NOTICE", "Presidential Document": "PRESDOCU", Correction: "CORRECTION" } as Record<string, string>)[scalar(d["type"])] ?? d["type"];
     if (row.native_id !== scalar(d["document_number"])) throw new Error("Federal Register document number disagrees with the retained ID");
     const uncategorized = d["type"] === "Uncategorized Document";
+    const listed = Array.isArray(d["regulation_id_numbers"]) ? [...new Set(d["regulation_id_numbers"].map(scalar).filter(Boolean))] : [];
+    // A RIN printed in a non-canonical form (e.g. "7100 AG79") stays as published in the native
+    // payload and is listed here; it is never rewritten, and no proceeding or edge is made from it.
+    const rins = listed.filter(isCanonicalRin);
+    const unlinked = listed.filter((id) => !isCanonicalRin(id));
     const doc = { ...base, id: scalar(d["document_number"]), type: uncategorized ? "source_doc" : "fr_document", id_authority: "federal_register", title: scalar(d["title"]), jurisdiction: "US", source_name: "Federal Register", licence: "Public domain — US federal government work", date, date_type: "published", extraction_method: "api",
       source_url: scalar(d["html_url"] || p["source_url"]), identifiers: { federal_register_document_number: scalar(d["document_number"]) },
-      attributes: { ...base.attributes, ...(uncategorized ? { document_role: "other", classification_qualification: "Publisher marks this publication uncategorized; it is retained as a source document, not assigned a regulatory type." } : { fr_document_type: type }), effective_dates: d["effective_on"] ?? null, cfr_references: d["cfr_references"] ?? [], regulation_id_numbers: d["regulation_id_numbers"] ?? [], docket_ids: d["docket_ids"] ?? [], agencies: d["agencies"] ?? [] } };
-    const rins = Array.isArray(d["regulation_id_numbers"]) ? [...new Set(d["regulation_id_numbers"].map(scalar).filter(Boolean))] : [];
+      attributes: { ...base.attributes, ...(uncategorized ? { document_role: "other", classification_qualification: "Publisher marks this publication uncategorized; it is retained as a source document, not assigned a regulatory type." } : { fr_document_type: type }), effective_dates: d["effective_on"] ?? null, cfr_references: d["cfr_references"] ?? [], regulation_id_numbers: d["regulation_id_numbers"] ?? [], docket_ids: d["docket_ids"] ?? [], agencies: d["agencies"] ?? [],
+        ...(unlinked.length ? { unlinked_regulation_id_numbers: unlinked } : {}) } };
     return candidate(doc, ...rins.map(id => ({ ...doc, id, type: "rule_proceeding", title: `${id} — ${doc.title}`, title_source: "parent_label", identifiers: { rin: id, federal_register_document_number: doc.id },
       attributes: { ...base.attributes, regulation_id: id, regulations_gov_docket_ids: d["docket_ids"] ?? [], referencing_document: { id: doc.id, type: doc.type, id_authority: doc.id_authority, version: doc.version }, date_basis: "Referencing Federal Register publication" } })));
   }
@@ -197,9 +208,12 @@ export function nativeCaseEdges(record: LegalRecord, context: AdapterContext) {
 export function nativeRecordEdges(record: LegalRecord, context: AdapterContext) {
   if (record.type === "case") return nativeCaseEdges(record, context);
   if (record.type !== "fr_document" || !["PRORULE", "RULE"].includes(String(record.attributes["fr_document_type"]))) return [];
+  // A correction notice (pre-2009 type "Correction", or a C1-/C2- number carrying its parent's type)
+  // never proposes or finalizes a rule; its RINs stay on the record as published.
+  if (isCorrectionNumber(record.id)) return [];
   const rins = record.attributes["regulation_id_numbers"];
   if (!Array.isArray(rins)) return [];
-  return [...new Set(rins.map(scalar).filter(Boolean))].map(id => ({
+  return [...new Set(rins.map(scalar).filter(isCanonicalRin))].map(id => ({
     type: record.attributes["fr_document_type"] === "PRORULE" ? "proposes" : "finalizes", from: asRef(record), to: { id, type: "rule_proceeding", id_authority: "federal_register", version: record.version },
     source_record: asRef(record), source_url: record.source_url, date: record.date, extraction_method: "api", confidence: 1, evidence: { paragraph_id: "regulation_id_numbers" }, review_status: "pending", treatment: null, role: null,
   }));

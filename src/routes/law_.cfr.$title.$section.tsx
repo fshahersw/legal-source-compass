@@ -8,6 +8,8 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { CfrBlocks, CfrNotes } from "@/components/regulatory/CfrText";
 import { AsOfPicker, CfrVersionList } from "@/components/regulatory/CfrHistory";
 import { RelatedPanel } from "@/components/semantic/RelatedPanel";
+import { CitedInFilings } from "@/components/law/CitedInFilings";
+import { SectionProductsPanel } from "@/components/law/SectionProductsPanel";
 import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/corpus/head";
 import {
@@ -295,6 +297,8 @@ function SectionBody({
           {!s.reserved ? <RelatedPanel dataset="ecfr_sections_full" recordId={s.id} quiet /> : null}
         </aside>
       </div>
+      <SectionProductsPanel title={s.titleNumber} section={s.identifier} />
+      <CitedInFilings dataset="ecfr_sections_full" id={s.id} citation={s.citation} />
     </div>
   );
 }
@@ -310,7 +314,10 @@ function HistoryPanel({
 }) {
   const changes = history.versions.filter((v) => v.substantive && v.date >= "2017-01-03").length;
   return (
-    <section aria-label="Change history" className="rounded-xl border border-border bg-card shadow-xs p-3">
+    <section
+      aria-label="Change history"
+      className="rounded-xl border border-border bg-card shadow-xs p-3"
+    >
       <h2 className="eyebrow mb-1">Change history</h2>
       <p className="m-0 mb-2 text-[11px] text-muted-foreground">
         {history.versions.length} version{history.versions.length === 1 ? "" : "s"} listed by the

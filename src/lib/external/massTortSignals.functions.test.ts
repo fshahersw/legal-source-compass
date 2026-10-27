@@ -113,3 +113,38 @@ describe("toSignals", () => {
     expect(toSignals({ signal: {}, litigation: { mdl: "3026" } })).toEqual([]);
   });
 });
+
+describe("toSignals for MDLs centralized after the last JPML pending report", () => {
+  it("keeps pending actions absent (never 0) and carries the transfer order", () => {
+    const [s] = toSignals({
+      signal: {
+        product: "Abbott spinal cord stimulators",
+        product_kind: "device",
+        event_total: 1288,
+      },
+      litigation: {
+        mdl: 3194,
+        title: "IN RE: ABBOTT LABORATORIES SPINAL CORD STIMULATOR PRODUCTS LIABILITY LITIGATION",
+        pending: null,
+        total: null,
+        jpml_evidence: {
+          record_id: "matter:2026-09-24:3194:A",
+          order_url:
+            "https://www.jpml.uscourts.gov/sites/jpml/files/MDL-3194-Transfer_Order-9-26.pdf",
+          order_date: "2026-10-02",
+        },
+      },
+    });
+    expect(s?.pending).toBeNull();
+    expect(s?.total).toBeNull();
+    expect(s?.jpmlEvidence?.orderDate).toBe("2026-10-02");
+  });
+  it("leaves out a product no FDA or NHTSA source reports on", () => {
+    expect(
+      toSignals({
+        signal: { product: "Apple AirTag", product_kind: "consumer" },
+        litigation: { mdl: 3199 },
+      }),
+    ).toEqual([]);
+  });
+});

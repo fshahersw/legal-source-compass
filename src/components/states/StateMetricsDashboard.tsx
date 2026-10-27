@@ -36,10 +36,11 @@ import {
   type StateMetricsPatch,
   type StateMetricsSearch,
 } from "./stateMetricsMath";
+import { curateMetrics } from "./metricCuration";
 
 export const stateMetricsQuery = {
   queryKey: ["state-metrics"],
-  queryFn: () => getStateMetrics(),
+  queryFn: async () => curateMetrics(await getStateMetrics()),
   staleTime: 10 * 60 * 1000,
 };
 
