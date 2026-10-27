@@ -14,6 +14,12 @@
 --                     (30,079 left out at build - 30 byte-identical files at an address alias) = 50,868
 --   source_documents  live 612; +380 Not classified (381 - 1 github.com page view saved for a .json address) = 992
 --   mdl_docket_documents  not in this release (bundle unit not on the build machine); 30,846 stay excluded.
+--
+-- Applied 2026-10-27 (lead): checks 1, 1b and 5 matched before; after: court_documents 50,868 (30,049 Not classified,
+-- ordinals 20861-50909, ids_sha256 060036ea...), source_documents 992 (380, ordinals 612-991, ids_sha256 f9e081dc...),
+-- check 4 = 0 mismatches. Check 5 after: source_documents unchanged (fd68a7a1...); court_documents changed to
+-- de7ae989... because the court-document-titles keyword release applied 64 title updates at 22:51 UTC between the pre-
+-- and post-checks (corpus_ingest.title_projection_plan stage keyword_release); the append itself only inserts new ids.
 
 -- 1. PRE: the live state the packet was prepared against (must equal live_before.json).
 -- expect court_documents 20819 | 359a84b3c04cb8459ff77e5eccaa855e | 20860 | 0
