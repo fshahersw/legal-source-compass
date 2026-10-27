@@ -68,8 +68,11 @@ describe("domain registry", () => {
     expect(datasetDisplayName("mdl_appearances")).toBe("MDL counsel appearances");
     expect(datasetDisplayName("judge_entities")).toBe("Consolidated judge profiles");
     expect(datasetDisplayName("expert_rulings")).toBe(
-      "Expert-admissibility docket entries (keyword scan)",
+      "Expert-admissibility docket entries (keyword scan of docket entries, not rulings)",
     );
+    // A keyword scan is source data, not analysis of rulings.
+    expect(datasetPurpose("expert_rulings")).toBe("Source data");
+    expect(datasetRecordGrain("expert_rulings")?.description).toMatch(/not rulings/);
   });
 
   it("keeps every unknown dataset reachable with readable fallbacks", () => {

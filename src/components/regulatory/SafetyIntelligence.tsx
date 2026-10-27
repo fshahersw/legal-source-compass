@@ -22,6 +22,7 @@ import {
   evidenceParams,
   filterInsights,
   KIND_LABEL,
+  insightCaveat,
   metricLine,
   risingThemes,
   SEVERITY_LABEL,
@@ -125,6 +126,11 @@ function InsightCard({ insight }: { insight: SafetyInsight }) {
             {insight.summary}
           </p>
           <p className="mt-1 font-mono text-[11px] text-foreground/80">{metricLine(insight)}</p>
+          {insightCaveat(insight) ? (
+            <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
+              <span className="font-medium text-foreground">Caveat:</span> {insightCaveat(insight)}
+            </p>
+          ) : null}
         </div>
         <div className="hidden flex-col items-end gap-1 sm:flex">
           <Sparkline insight={insight} />
@@ -250,7 +256,10 @@ function SignalMix({
   }).filter((r) => r.total > 0);
   const max = Math.max(1, ...rows.map((r) => r.total));
   return (
-    <section className="rounded-xl border border-border bg-card shadow-xs p-3" aria-label="Signal mix">
+    <section
+      className="rounded-xl border border-border bg-card shadow-xs p-3"
+      aria-label="Signal mix"
+    >
       <h3 className="text-[12px] font-semibold">Signal mix</h3>
       <ul className="mt-2 space-y-1.5">
         {rows.map((r) => (

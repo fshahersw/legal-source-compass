@@ -18,7 +18,7 @@
   "treatment": {"follows": "Follows", "distinguishes": "Distinguishes", "overrules": "Overrules", "criticizes": "Criticizes", "questions": "Questions"},
   "counsel_role": {"lead": "Lead counsel", "liaison": "Liaison counsel", "PSC": "Plaintiffs' steering committee", "PEC": "Plaintiffs' executive committee", "defense": "Defense counsel"},
   "order_class": {"cmo": "Case management order", "pto": "Pretrial order", "daubert": "Daubert ruling", "msj": "Summary judgment", "bellwether": "Bellwether order", "settlement": "Settlement order", "remand": "Remand order", "other": "Other order"},
-  "fr_document_type": {"RULE": "Rule", "PRORULE": "Proposed rule", "NOTICE": "Notice", "PRESDOCU": "Presidential document"},
+  "fr_document_type": {"RULE": "Rule", "PRORULE": "Proposed rule", "NOTICE": "Notice", "PRESDOCU": "Presidential document", "CORRECTION": "Correction"},
   "review_status": {"pending": "Awaiting review", "approved": "Reviewed", "rejected": "Rejected"},
   "court_level": {"supreme": "Supreme Court", "circuit": "Circuit", "district": "District", "state_supreme": "State supreme", "state_appellate": "State appellate", "state_trial": "State trial", "other": "Other"},
   "law_scope": {"federal": "Federal law", "state": "State law", "unknown": "Not recorded"},

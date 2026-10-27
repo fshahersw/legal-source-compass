@@ -66,6 +66,27 @@ F2_FIELDS = ["total", "ch7", "ch11", "ch13", "ch12", "ch9", "ch15", "bus_total",
 DASH_SHOWN = "\u2013"
 
 
+SERIES_PREFIXES = (("terminated_", "C-4A"), ("trials_", "T-1"), ("mdl_", "S-19"))
+
+
+def reconciliation_notes(flags):
+    """One note per series whose printed group total did not add up in some years, e.g.
+    'MDL actions transferred in (cumulative), Table S-19: FY2011 does not add up to the printed total (kept as printed)'.
+    The notes describe those series-years only; every other figure of the record reconciles."""
+    notes = []
+    for name in sorted(flags):
+        years = sorted(flags[name])
+        if not years:
+            continue
+        prefix, table = next(((p, t) for p, t in SERIES_PREFIXES if name.startswith(p)), ("", ""))
+        label = FIELD_LABELS.get(name[len(prefix):], name)
+        where = f"{label}, Table {table}" if table else label
+        fys = ", ".join(f"FY{y}" for y in years)
+        verb = "does" if len(years) == 1 else "do"
+        notes.append(f"{where}: {fys} {verb} not add up to the printed total (kept as printed)")
+    return notes
+
+
 def display_series(series, dash, years=YEARS):
     """Copy of the series for display: a year the source printed as a dash shows the dash (nothing was reported), not Not recorded."""
     out = {}
@@ -263,10 +284,12 @@ def district_records(ctx):
         cells = {"court": title, "circuit": U.CIRCUIT_NAMES.get(circuit, ""), "terminated": fmt(ds["terminated_total"][i]), "trial_rate": fmt(ds["trial_rate_pct"][i], 2, "%") if s["trial_rate_pct"][i] is not None else NOT_RECORDED,
                  "trials": fmt(ds["trials_all_trials"][i]), "mdl_pending": fmt(ds["mdl_pending"][i]), "share": fmt(ds["share_of_national_terminations_pct"][i], 2, "%") if s["share_of_national_terminations_pct"][i] is not None else NOT_RECORDED}
         flagged = bool(data[cid]["flags"])
+        # Per-series notes instead of a record-level badge: one unreconciled series-year must not mark every figure.
+        facts += [["Reconciliation note", n] for n in reconciliation_notes(data[cid]["flags"])]
         rows.append(cw.record(
             "court_jb_districts", cid, title, source_url=c4a_src["url"],
             subtitle=f"FY{latest}: {fmt(ds['terminated_total'][i])} civil cases terminated · {fmt(ds['terminated_trial_total'][i])} during or after trial · {fmt(ds['mdl_pending'][i])} MDL actions pending",
-            cells=cells, facts=facts, links=links, badges=["Source total mismatch"] if flagged else [],
+            cells=cells, facts=facts, links=links, badges=[],
             text=f"{name} {cid} {st} federal district court Judicial Business civil cases terminated action taken trials completed multidistrict litigation transfers",
             state=st, filters={"court": [cid], "circuit": [circuit or ""], "state": [st], "flagged": ["yes" if flagged else "no"]},
             extra={"kind": "district", "court_id": cid, "years": YEARS, "series": s, "dash": data[cid]["dash"], "unreconciled_years": data[cid]["flags"],
@@ -565,7 +588,7 @@ def listings():
         "court_jb_districts": ("U.S. district courts - civil terminations by action taken, trials completed and MDL transfers (Judicial Business, FY2005-FY2025)",
                                cw.listing([("court", "Court"), ("circuit", "Circuit"), ("terminated", "Civil cases terminated"), ("trial_rate", "Trial rate"), ("trials", "Trials completed"),
                                            ("mdl_pending", "MDL actions pending"), ("share", "Share of national terminations")],
-                                          [("circuit", "Circuit", {f"ca{n}": U.CIRCUIT_NAMES[f"ca{n}"] for n in range(1, 12)} | {"cadc": "D.C. Circuit"}), ("flagged", "Source total mismatch", {"yes": "Yes", "no": "No"})])),
+                                          [("circuit", "Circuit", {f"ca{n}": U.CIRCUIT_NAMES[f"ca{n}"] for n in range(1, 12)} | {"cadc": "D.C. Circuit"}), ("flagged", "Has a series-year whose printed total does not add up", {"yes": "Yes", "no": "No"})])),
         "court_jb_bankruptcy": ("U.S. bankruptcy courts - cases filed by chapter, business and nonbusiness (Judicial Business Table F-2, FY2005-FY2025)",
                                 cw.listing([("court", "Court"), ("filed", "Cases filed"), ("ch7", "Chapter 7"), ("ch11", "Chapter 11"), ("ch13", "Chapter 13"), ("business", "Business filings"),
                                             ("business_share", "Business share"), ("share", "Share of national filings")], [])),

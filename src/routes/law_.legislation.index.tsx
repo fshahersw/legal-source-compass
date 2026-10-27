@@ -6,6 +6,10 @@ import {
 } from "@/components/legislation/LegislationSearch";
 import { LegislationTabs } from "@/components/legislation/LegislationTabs";
 import { BillFlow } from "@/components/lawviz/BillFlow";
+import { CivilJusticeWatch } from "@/components/legislation/CivilJusticeWatch";
+import { CongressAttention } from "@/components/legislation/CongressAttention";
+import { legislationWatchQuery } from "@/components/legislation/legislationWatchQuery";
+import { SectionIndex } from "@/components/kit";
 import { pageHead } from "@/lib/corpus/head";
 import { BILL_TYPES, CONGRESS, SESSION, STATE } from "@/lib/external/legislation";
 
@@ -33,6 +37,9 @@ export const Route = createFileRoute("/law_/legislation/")({
         ? s["page"]
         : undefined,
   }),
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(legislationWatchQuery);
+  },
   head: () =>
     pageHead(
       "Legislation",
@@ -43,6 +50,7 @@ export const Route = createFileRoute("/law_/legislation/")({
 
 function LegislationIndexPage() {
   const search = Route.useSearch();
+  const searching = Object.values(search).some((v) => v !== undefined);
   return (
     <AppShell
       breadcrumbs={[
@@ -54,6 +62,24 @@ function LegislationIndexPage() {
       description="Bills and resolutions in Congress since 2003 and in every state legislature's current and preceding regular session, with sponsors, actions, status and the official pages."
     >
       <LegislationTabs active="bills" />
+      {searching ? null : (
+        <>
+          <SectionIndex
+            items={[
+              { id: "civil-justice-watch", label: "Civil-justice watch" },
+              { id: "congress-attention", label: "Congress and mass torts" },
+              { id: "bill-search", label: "Search bills" },
+            ]}
+          />
+          <div className="stack-block mb-8">
+            <CivilJusticeWatch />
+            <CongressAttention />
+          </div>
+          <h2 id="bill-search" className="mb-3 scroll-mt-16 text-heading text-foreground">
+            Search bills
+          </h2>
+        </>
+      )}
       <LegislationSearch search={search} />
       {search.scope !== "state" ? (
         <div className="mt-6">

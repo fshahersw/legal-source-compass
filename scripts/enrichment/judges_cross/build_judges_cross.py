@@ -325,6 +325,10 @@ def build(dry=False):
     people = load_fjc()
     by_nid = {p["nid"]: p for p in people}
     profiles = {r["id"]: r["item"] for r in cw.fetch_all("judge_profiles_fjc", "id,item")}
+    # /judges profile of each FJC nid: the id stored on the FJC record, else the single directory record whose own FJC bridge carries the nid
+    # (judge_cl_crosswalk.profile.fjc_nid); conflicts and many-to-one claims stay unlinked.
+    profile_of = c.profile_ids_by_nid({nid: ((it or {}).get("profile") or {}).get("judge_profile_id") for nid, it in profiles.items()},
+                                      cw.fetch_all("judge_cl_crosswalk", "id,item"))
     judges_photos = {}
     for r in cw.fetch_all("judges", "id,item"):
         photo = ((r["item"] or {}).get("photo_url") or "").strip()
@@ -411,10 +415,10 @@ def build(dry=False):
             "historical_mdls": hist_out, "historical_mdl_count": len(hist_out), "historical_actions": hist_actions,
             "terminated_report_also_pending": also_pending,
             "total_mdls": len(pend) + len(hist_out), "total_actions_handled": pending_total + hist_actions,
-            "judge_profile_id": prof.get("judge_profile_id"), "in_fjc_profiles": nid in profiles,
+            "judge_profile_id": profile_of.get(nid), "in_fjc_profiles": nid in profiles,
             "cl_person_id": cl_id, "cl_person_basis": cl_basis,
             "cl_slug": cl_people[cl_id]["slug"] if cl_id and cl_id in cl_people else None,
-            "photo": judges_photos.get(prof.get("judge_profile_id") or ""),
+            "photo": judges_photos.get(profile_of.get(nid) or ""),
         }
         records.append(rec)
     ranked = sorted(records, key=lambda r: (-r["pending_actions"], -r["total_mdls"], r["name"]))

@@ -335,7 +335,7 @@ def judge_records(ctx):
         name = rec["name"]
         last_p = max(rec["per"])
         first_p = min(rec["per"])
-        match, status = ctx.fjc.match(cid, name) if name and name.get("format") == "surname_first" else (None, "unparsed")
+        match, status = ctx.fjc.match(cid, name, sorted(rec["per"])) if name and name.get("format") == "surname_first" else (None, "unparsed")
         profile, fjc_name = (match if match else (None, None))
         mixed_name = None
         for p in sorted(rec["printed"], reverse=True):
@@ -366,8 +366,7 @@ def judge_records(ctx):
                  [f"{MEASURE_DEFINITIONS['bankruptcy_appeals_6m']} ({label(last_p)})", fmt(lv["bankruptcy_appeals_6m"])],
                  [f"{MEASURE_DEFINITIONS['ss_appeals_6m']} ({label(last_p)})", fmt(lv["ss_appeals_6m"])],
                  ["Highest civil cases pending 3+ years in any listing", fmt(peak)],
-                 ["Profile link", "Exact unique match to an FJC judge profile in the same court" if profile else {"none": "No FJC profile in this court matched the name exactly", "ambiguous": "More than one FJC profile in this court matched; not linked",
-                                                                                                                  "unparsed": "Printed name not in 'SURNAME, GIVEN' form; not linked"}[status]],
+                 ["Profile link", J.PROFILE_LINK_TEXT["unique" if profile else status]],
                  ["Note", "Counts are the judge's own assigned cases and motions as printed in CJRA Appendix A; a judge is one record per court and printed name (no merging of different spellings)."]]
         links = [{"url": f"/courts/{cid}", "label": "Court profile"}]
         if profile:
@@ -381,7 +380,8 @@ def judge_records(ctx):
             facts=facts, links=links, badges=(["Judge profile linked"] if profile else []) + (["Listed in latest report"] if active else []),
             text=f"{shown} {rec['printed'][last_p]} {court_title} {cid} judge Civil Justice Reform Act CJRA caseload delay",
             state=ctx.courts[cid][1],
-            filters={"court": [cid], "circuit": [CIRCUIT_ID[P.CIRCUIT_OF[cid]]], "role": [last_role or "unknown"], "active": ["yes" if active else "no"], "profile": ["linked" if profile else "unlinked"]},
+            filters={"court": [cid], "circuit": [CIRCUIT_ID[P.CIRCUIT_OF[cid]]], "role": [last_role or "unknown"], "active": ["yes" if active else "no"], "profile": ["linked" if profile else "unlinked"],
+                     **({"judge_profile": [profile]} if profile else {})},
             extra={"kind": "judge", "identity": key, "court_id": cid, "periods": ctx.periods, "series": vals, "roles": roles, "printed_names": sorted(set(rec["printed"].values())),
                    "printed_by_period": rec["printed"],
                    "designations": {p: v["designations"] for p, v in rec["per"].items() if v["designations"]}, "pages": {p: v["page"] for p, v in rec["per"].items()},
@@ -500,15 +500,25 @@ def summaries(ctx, counts):
             "hhi": "sum over districts of (district share in percent) squared, range 0-10,000"}},
         "court_cjra_judges": {**common, "records": counts["court_cjra_judges"],
                               "identity": "one record per court and printed name (case, accents and punctuation folded); different spellings of a name are different records",
-                              "profile_links": "linked to /judges/<id> only when exactly one FJC judge profile in the same court matches the surname, the first given name and the middle initials"},
+                              "profile_links": J.PROFILE_LINKS_SUMMARY},
         "court_cjra_reports": {**common, "records": counts["court_cjra_reports"]},
     }
 
 
 # ------------------------------------------------------------------ main
+def load_fjc_lookup(lk):
+    """The FJC judge lookup. Preferred: snapshots of judge_profiles_fjc and judge_cl_crosswalk (lookups/fjc_profiles.json and
+    lookups/crosswalk.json, the jsonb arrays of scripts/enrichment/judge_xwalk/snapshot_queries/*.sql), turned into the lookup by
+    cjra_judges.lookup_from_snapshots (every FJC status, one profile per FJC nid). Fallback: a prepared lookups/judge_profiles_fjc.json."""
+    snaps = (lk / "fjc_profiles.json", lk / "crosswalk.json")
+    if all(p.exists() for p in snaps):
+        return J.lookup_from_snapshots(json.loads(snaps[0].read_text(encoding="utf-8")), json.loads(snaps[1].read_text(encoding="utf-8")))
+    return json.loads((lk / "judge_profiles_fjc.json").read_text())
+
+
 def load_lookups():
     lk = S.BUILD / "lookups"
-    return (json.loads((lk / "court_spine_districts.json").read_text()), json.loads((lk / "judge_profiles_fjc.json").read_text()),
+    return (json.loads((lk / "court_spine_districts.json").read_text()), load_fjc_lookup(lk),
             json.loads((lk / "places_states.json").read_text()), json.loads((lk / "court_stats_district_times_over3.json").read_text()))
 
 

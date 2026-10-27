@@ -172,7 +172,7 @@ def main() -> None:
 
     # --- FJC IDB by county of residence (cached; the DuckDB file and county list are the key)
     st = os.stat(sa_fjc.DB)
-    fkey = hashlib.sha256(json.dumps([st.st_size, int(st.st_mtime), sorted(county_state.items()), sa_fjc.FY_SERIES, sa_fjc.FY_WINDOW, sorted(sa_fjc.RECODE.items())]).encode()).hexdigest()
+    fkey = hashlib.sha256(json.dumps([st.st_size, int(st.st_mtime), sorted(county_state.items()), sa_fjc.FY_SERIES, sa_fjc.FY_WINDOW, sorted(sa_fjc.RECODE.items()), sa_fjc.COUNTS_VERSION]).encode()).hexdigest()
 
     def run_fjc():
         con = sa_fjc.connect()
@@ -260,6 +260,7 @@ def main() -> None:
         late = [core_fy.get(y, 0) for y in (2023, 2024, 2025)]
         if has_fjc and sum(early) / 3 >= 5 and sum(late) / 3 >= 5:
             trend = (sum(late) / 3 - sum(early) / 3) / (sum(early) / 3) * 100
+        product5 = ST.core_group_count(fc.get("nos_core", {}), "product") if has_fjc else None
         lg = {
             "fjc_5y": fjc5 if has_fjc else None, "fjc_rate": r2(rate(fjc5, pmean)) if has_fjc else None,
             "fjc_core_5y": core5 if has_fjc else None, "fjc_core_rate": r2(rate(core5, pmean)) if has_fjc else None,
@@ -267,6 +268,10 @@ def main() -> None:
             "fjc_core_fy": {str(y): core_fy.get(y, 0) for y in sa_fjc.FY_SERIES} if has_fjc else {},
             "fjc_trend_pct": r2(trend, 1),
             "fjc_nos": fc.get("nos", {}) if has_fjc else {},
+            # NOS mix among core filings only: MDL direct filings are coded to the court's or defendant's county.
+            "fjc_nos_core": fc.get("nos_core", {}) if has_fjc else {},
+            "fjc_core_product_5y": product5,
+            "fjc_core_product_rate": r2(ST.suppressed_rate(product5, pmean)) if has_fjc else None,
             "fjc_window": fc.get("window", {}) if has_fjc else {},
             "fjc_own_district_share": r2(own / tot_window * 100, 1) if (own is not None and tot_window and has_fjc) else None,
             "fjc_by_court": by_court if has_fjc else {},
@@ -294,6 +299,7 @@ def main() -> None:
             m[k] = lg[k]
         m["fjc_5y"], m["fjc_core_5y"], m["osha_5y"], m["cfpb_5y"], m["resources"] = lg["fjc_5y"], lg["fjc_core_5y"], lg["osha_5y"], lg["cfpb_5y"], lit_n
         m["fjc_trend_pct"], m["fjc_own_district_share"] = lg["fjc_trend_pct"], lg["fjc_own_district_share"]
+        m["fjc_core_product_rate"], m["fjc_core_product_5y"] = lg["fjc_core_product_rate"], lg["fjc_core_product_5y"]
         county_metrics[f] = m
         legal[f] = lg
         profiles[f] = {"acs": prof, "pep": {str(y): v for y, v in sorted(pep.items())}, "laus_rate": {str(y): v for y, v in sorted(urate.items())},
@@ -512,7 +518,7 @@ def screen_residence_codes(counties, legal, cm, assign) -> dict[str, list[str]]:
             out[f] = reasons
             lg["fjc_flag"] = reasons
             lg["fjc_rate_unscreened"] = lg["fjc_rate"]
-            for k in ("fjc_rate", "fjc_core_rate", "fjc_trend_pct"):
+            for k in ("fjc_rate", "fjc_core_rate", "fjc_trend_pct", "fjc_core_product_rate"):
                 lg[k] = None
                 cm[f][k] = None
     return out
@@ -748,7 +754,8 @@ def write_county_legal(counties, cm, legal, assign, fjc, echo, osha, cfpb, built
             links=[place_link(c["usps"], f)] + ([{"url": f"/courts/{a['court_id']}", "label": a["district"]}] if a else []),
             extra={"legal": lg, "metrics": {k: lg.get(k) for k in ("fjc_rate", "fjc_core_rate", "osha_rate", "cfpb_rate", "cfpb_noncredit_rate", "echo_formal_per_1k",
                                                                     "fjc_5y", "fjc_core_5y", "osha_5y", "cfpb_5y", "cfpb_noncredit_5y", "echo_facilities",
-                                                                    "resources", "fjc_trend_pct", "fjc_own_district_share")}}))
+                                                                    "resources", "fjc_trend_pct", "fjc_own_district_share",
+                                                                    "fjc_core_product_rate", "fjc_core_product_5y")}}))
     summary = {
         "source": "FJC Integrated Database civil file; OSHA inspection data; CFPB Consumer Complaint Database; EPA ECHO Exporter; Census ZCTA-county relationship file; county_litigation tags",
         "sources": [{"name": "FJC IDB civil cases 1988-present", "url": sa_fjc.IDB_URL, "page": sa_fjc.IDB_PAGE},
@@ -758,6 +765,7 @@ def write_county_legal(counties, cm, legal, assign, fjc, echo, osha, cfpb, built
         "definitions": {
             "fjc": "civil cases whose IDB COUNTY code (residence of the first listed plaintiff; the first defendant's when the U.S. is plaintiff) is this county and that were filed in a district court of the same state, by fiscal year of FDATEUSE",
             "fjc_core": "the same, excluding prisoner petitions (NOS 510-560), cases with an MDL docket number and U.S.-plaintiff cases",
+            "fjc_core_product": "core filings in the product-liability NOS group (195, 245, 315, 345, 355, 365, 367, 368, 385), FY2021-FY2025; the yearly rate per 100,000 is not published when the five-year count is under 5",
             "rate": "five-year count / 5 / mean of the July 1, 2021-2025 population estimates x 100,000",
             "zip_to_county": "ZIP placed in the county holding the largest land share of its 2020 ZCTA; split-ZCTA shares are stored per county",
             "echo_formal_per_1k": "formal actions recorded for facilities with this county FIPS / facilities listed with it x 1,000 (counties with at least 20 facilities)",
