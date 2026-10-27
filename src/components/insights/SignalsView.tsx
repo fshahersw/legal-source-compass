@@ -1,7 +1,8 @@
 /**
  * /insights/signals: patterns that need more than one series — time to MDL termination (Kaplan–Meier), growth of new
- * MDLs aligned on their first transfer order, the recall-to-MDL event study (insights data layer), clusters of states,
- * where member actions were first filed, and co-counsel networks. Each section states its method; every figure is a
+ * MDLs aligned on their first transfer order, gross new-filing waves of product-liability MDLs (FJC IDB), the
+ * recall-to-MDL event study (insights data layer), where member actions were first filed, co-counsel networks and,
+ * last and labelled exploratory, clusters of states. Each section states its method; every figure is a
  * historical count or rate with its n, never a prediction.
  */
 import { useMemo, useState } from "react";
@@ -42,6 +43,7 @@ import {
   originSankey,
 } from "./bridge/mdl";
 import { DEFAULT_FEATURES, clusterInput, clusterStates } from "./clusters";
+import { FilingWaves } from "./FilingWaves";
 
 const count = metricFormatter("count");
 const STATE_NAME = new Map(STATES.map((s) => [s.usps, s.name] as const));
@@ -49,10 +51,12 @@ const STATE_NAME = new Map(STATES.map((s) => [s.usps, s.name] as const));
 const SECTIONS = [
   { id: "termination", label: "Time to termination" },
   { id: "growth", label: "Growth after centralization" },
+  { id: "waves", label: "New-filing waves" },
   { id: "recalls", label: "Recall to MDL" },
-  { id: "clusters", label: "State clusters" },
   { id: "origins", label: "Where actions were filed" },
   { id: "cocounsel", label: "Co-counsel network" },
+  // Demoted (kept, not removed): an exploratory grouping, last on the page.
+  { id: "clusters", label: "State clusters (exploratory)" },
 ] as const;
 
 function statusOf(
@@ -424,7 +428,7 @@ function Clusters() {
   return (
     <ChartFrame
       id="clusters"
-      title="States grouped by similar values of the chosen metrics"
+      title="Exploratory: states grouped by similar values of the chosen metrics"
       unit="mean z-score in each cluster"
       period={input?.year ?? undefined}
       sources={[
@@ -709,8 +713,8 @@ export function SignalsView() {
   return (
     <div className="space-y-4">
       <p className="max-w-4xl text-xs leading-5 text-muted-foreground">
-        Patterns across many records: how long MDLs last, how fast new ones grow, how states group
-        together, where litigation starts and who works together. Every figure is a historical count
+        Patterns across many records: how long MDLs last, how fast new ones grow and take in new
+        cases, where litigation starts and who works together. Every figure is a historical count
         or rate from the records shown, with its n; none is a prediction for a particular matter.
       </p>
       <nav
@@ -731,10 +735,11 @@ export function SignalsView() {
         <Termination />
         <Growth />
       </div>
+      <FilingWaves />
       <RecallStudy />
-      <Clusters />
       <Origins />
       <CoCounsel />
+      <Clusters />
       <p className="text-[11px] text-muted-foreground">
         <Button asChild variant="link" size="sm" className="h-auto px-0 text-[11px]">
           <Link to="/insights/explore">Compare any two metrics in Explore</Link>
