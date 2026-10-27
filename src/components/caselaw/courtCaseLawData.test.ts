@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeCourtCases, normalizeDirectory, tierTotals, yearSeries } from "./courtCaseLaw";
+import { normalizeCourtCases, normalizeDirectory, tierTotals, yearSeries } from "./courtCaseLawData";
 import type { CourtOption } from "@/lib/external/caselaw.functions";
 
 const court = (

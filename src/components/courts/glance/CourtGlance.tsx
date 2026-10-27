@@ -12,7 +12,7 @@ import { AskAiButton } from "@/components/kit/ai/AskAiButton";
 import { buildSectionContext, type FigureInput } from "@/components/kit/ai/buildSectionContext";
 import { getCourtAnalytics } from "@/lib/external/courtAnalytics.functions";
 import { getCourtSittingJudges, getCourtVacancies } from "@/lib/external/judiciary.functions";
-import { latestWithYear } from "./courtGlance";
+import { latestWithYear } from "./courtGlanceData";
 
 const FCMS = {
   label: "U.S. Courts, Federal Court Management Statistics",

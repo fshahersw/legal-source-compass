@@ -10,7 +10,7 @@ import { COURT_LEVEL_LABEL, TIER_PLURAL } from "@/lib/external/caselaw";
 import { courtCasesQuery, courtYearsQuery } from "./caseQueries";
 import { fmtInt, NOT_RECORDED, stateLabel } from "./caseFormat";
 import { HitTable, Pager, Problem, Skeleton } from "./CaseSearchPage";
-import { yearSeries, type CourtCaseState } from "./courtCaseLaw";
+import { yearSeries, type CourtCaseState } from "./courtCaseLawData";
 
 export function CourtCaseLaw({
   courtId,

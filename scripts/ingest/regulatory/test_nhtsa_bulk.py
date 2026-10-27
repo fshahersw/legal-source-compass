@@ -1,4 +1,5 @@
 """Offline synthetic ZIPs only; no real source rows or source acquisition."""
+import json
 import tempfile
 import unittest
 import zipfile
@@ -52,6 +53,25 @@ class BulkTests(unittest.TestCase):
         self.assertEqual(result['records'][0]['published_on'], '2026-01-01')
         self.assertIsNone(result['records'][0]['status'])
         self.assertIn('\u2028', result['records'][0]['fields']['publisher_rows'][0][10])
+
+    def test_small_campaign_keeps_full_row_layout(self):
+        fields = self.run_parse([row(), row('2', model='SYNTHETIC SECOND')])['records'][0]['fields']
+        self.assertNotIn('publisher_shared_cells', fields)
+        self.assertEqual(len(fields['publisher_rows'][0]), 29)
+
+    def test_oversized_campaign_factors_shared_cells_without_dropping_values(self):
+        long_rows = []
+        for i in range(400):
+            r = row(str(i + 1), model=f'SYNTHETIC MODEL {i}')
+            r[19], r[20], r[21] = 'Synthetic defect. ' * 40, 'Synthetic consequence. ' * 20, 'Synthetic remedy. ' * 20
+            long_rows.append(r)
+        record = self.run_parse(long_rows)['records'][0]
+        fields = record['fields']
+        self.assertLessEqual(len(json.dumps(record, ensure_ascii=False, separators=(',', ':')).encode('utf-8')), 180000)
+        self.assertEqual(fields['publisher_shared_cells']['DESC_DEFECT'], long_rows[0][19])
+        self.assertEqual(len(fields['publisher_rows']), 400)
+        rebuilt = [{**fields['publisher_shared_cells'], **dict(zip(fields['publisher_row_field_names'], cells))} for cells in fields['publisher_rows']]
+        self.assertEqual(rebuilt, [dict(zip(fields['publisher_field_names'], r)) for r in long_rows])
 
     def test_invalid_selected_date_is_not_silently_normalized(self):
         with self.assertRaises(ValueError):

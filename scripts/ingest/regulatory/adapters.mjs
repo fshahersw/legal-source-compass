@@ -96,6 +96,21 @@ export function normalizeEnforcement(row, category) {
   const u = new URL(`https://api.fda.gov/${category}/enforcement.json`); u.searchParams.set('search', `recall_number:"${row.recall_number}"`);
   // No harmonized terminology is copied into application data. Original source bytes remain private.
   const fields = Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'openfda'));
+  const data = enforcementData(row, category, u, fields);
+  // Device lot/serial lists (more_code_info) can run to 500 KB. Only an oversized record is shortened, longest field
+  // first, and each cut is recorded; the complete published record stays in the private raw capture.
+  const shortened = [];
+  for (const key of Object.keys(fields).filter((k) => typeof fields[k] === 'string').sort((a, b) => fields[b].length - fields[a].length || (a < b ? -1 : 1))) {
+    if (Buffer.byteLength(JSON.stringify(data)) <= OPENFDA_PAYLOAD_LIMIT || fields[key].length <= OPENFDA_FIELD_KEEP) break;
+    shortened.push({ field: key, kept_chars: OPENFDA_FIELD_KEEP, published_chars: fields[key].length });
+    fields[key] = fields[key].slice(0, OPENFDA_FIELD_KEEP);
+    data.fields.shortened_publisher_fields = shortened;
+  }
+  return data;
+}
+const OPENFDA_PAYLOAD_LIMIT = 170000; // under the 180000-byte record cap in core.mjs record()
+const OPENFDA_FIELD_KEEP = 20000;
+function enforcementData(row, category, u, fields) {
   return { native_id: row.recall_number, title: `${row.recalling_firm || row.recall_number}: ${row.product_description}`.slice(0, 1900), document_type: 'recall_enforcement', published_on: sourceDate(row.report_date), source_updated_on: null, source_url: u.href, agency_ids: ['fda'], agency_names: ['Food and Drug Administration'], entity_refs: [{ namespace: `openfda:${category}:event`, native_id: row.event_id, label: row.event_id }], identifiers: [row.recall_number, `event:${row.event_id}`], status: row.status ?? null, evidence_excerpt: row.reason_for_recall.slice(0, 1800), fields: { publisher_record: fields, event_id: row.event_id, recall_initiation_date: sourceDate(row.recall_initiation_date), date_basis: 'FDA report date; initiation date separately retained', qualification: SOURCES[`openfda_enforcement_${category}`].qualification } };
 }
 export async function collectOpenFda(client, source, options) {

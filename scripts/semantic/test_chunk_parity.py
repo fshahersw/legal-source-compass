@@ -28,8 +28,11 @@ class ChunkParityTest(unittest.TestCase):
             cls.golden_text = fh.read()
 
     def test_golden_fixture_is_what_python_produces(self):
-        # the TypeScript test reproduces this file; if the Python chunker or builders change, the file must be rebuilt
-        self.assertEqual(mf.dump(mf.build(self.rows_doc)), self.golden_text)
+        # the TypeScript test reproduces this file; if the Python chunker or builders change, the file must be rebuilt.
+        # The generating interpreter's patch release is provenance, not behaviour; the Unicode version still must match.
+        produced = mf.build(self.rows_doc)
+        produced["meta"]["python"] = json.loads(self.golden_text)["meta"]["python"]
+        self.assertEqual(mf.dump(produced), self.golden_text)
 
     def test_fixture_covers_every_collection_and_shape(self):
         golden = json.loads(self.golden_text)
