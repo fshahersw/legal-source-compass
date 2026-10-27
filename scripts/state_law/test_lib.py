@@ -181,8 +181,11 @@ class RunContextTests(unittest.TestCase):
     def test_host_guard(self):
         with tempfile.TemporaryDirectory() as tmp:
             ctx = lib.RunContext(META, pathlib.Path(tmp), None, fetcher=FakeFetcher({}), log=lambda m: None)
-            with self.assertRaises(lib.ModelError):
-                ctx.fetch("https://www.commercial-host.example.com/x")
+            try:
+                with self.assertRaises(lib.ModelError):
+                    ctx.fetch("https://www.commercial-host.example.com/x")
+            finally:
+                ctx.finish()  # closes the gzip outputs; Windows cannot delete the temp dir while they are open
 
 
 class EffectiveMarkerTests(unittest.TestCase):
