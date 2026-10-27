@@ -1,4 +1,4 @@
-"""Acquire FDA's complete warning-letter index from the official FDA.gov table, raw bytes unchanged.
+"""Acquire every letter in FDA's current warning-letter table on FDA.gov (letters posted from 2021), raw bytes unchanged.
 
 Usage: python -I -B scripts/enrichment/fda_warning_letters/fetch_warning_letters.py [--acq DIR]
 

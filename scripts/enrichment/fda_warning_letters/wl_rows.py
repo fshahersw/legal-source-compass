@@ -1,4 +1,4 @@
-"""Corpus rows for the complete FDA warning-letter index (pure; tested by test_warning_letters.py).
+"""Corpus rows for the FDA warning-letter index of FDA.gov's current table (pure; tested by test_warning_letters.py).
 
 One row per letter page listed in FDA's warning-letter table, keyed by the letter's FDA.gov URL path (the publisher's
 own identifier for the page). source_url is that letter page. Dates are the table's Posted Date and Letter Issue
@@ -10,10 +10,11 @@ import re
 import wl_parse as wp
 
 DATASET = "agency_safety_fda_warning_letters_index"
-LABEL = "FDA warning letters (complete FDA.gov index)"
+LABEL = "FDA warning letters posted 2021 onward (FDA.gov table)"
 CATEGORY = "agency_safety"
 QUALIFICATION = (
-    "Every warning letter listed in FDA's warning-letter table on FDA.gov at the capture date. Posted Date is when "
+    "Every warning letter listed in FDA's current warning-letter table on FDA.gov at the capture date; the table "
+    "lists letters posted from 2021, and older letters in FDA's archive are not included. Posted Date is when "
     "FDA posted the letter; Letter Issue Date is when it was issued, and posting can lag issue. A warning letter "
     "states FDA's allegations at the time; it is not a final agency or court finding, and later responses and "
     "closeouts are linked as FDA lists them. FDA's table does not publish FEI numbers; letter bodies were not "
@@ -147,7 +148,7 @@ def summary(rows, *, captured, table_total, passes):
                     f"{posted[0] if posted else 'Not recorded'}. Earlier letters are not in this table.",
         "partial_period": f"{captured[:4]} is a partial year (captured {captured[:10]}).",
         "source_url_rule": "The letter's own FDA.gov page.",
-        "replaces_sample": "agency_safety_fda_warning_letters held a 1,000-row export sample; this index lists every letter in FDA's table.",
+        "replaces_sample": "agency_safety_fda_warning_letters held a 1,000-row export sample; this index lists every letter in FDA's current table (letters posted from 2021).",
         "license": "U.S. Government work (public domain)",
         "qualification": QUALIFICATION,
     }
