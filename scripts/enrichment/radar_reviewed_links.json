@@ -10,7 +10,7 @@
         {"dataset": "openfda_ndc", "url": "https://download.open.fda.gov/drug/ndc/drug-ndc-0001-of-0001.json.zip", "field": "openfda.pharm_class_epc"}
       ],
       "tirzepatide_note": "Tirzepatide is a dual GIP and GLP-1 receptor agonist; the openFDA NDC directory (last_updated 2026-10-27) lists both 'GLP-1 Receptor Agonist' and 'Glucose-dependent Insulinotropic Polypeptide Receptor Agonist' as its classes. Kept here too so it stays excluded if the NDC class is ever missing.",
-      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_by": "lead review (Claude Code for the owner): exact class or product checked against the cited JPML caption and recall records",
       "reviewed_on": "2026-10-27"
     },
     {
@@ -18,7 +18,7 @@
       "class": "GLP-1 Receptor Agonist (title: 'GLP-1 RAs ... Non-Arteritic Anterior Ischemic Optic Neuropathy')",
       "generic_names": ["SEMAGLUTIDE", "ORAL SEMAGLUTIDE", "LIRAGLUTIDE", "DULAGLUTIDE", "EXENATIDE", "LIXISENATIDE", "ALBIGLUTIDE", "TIRZEPATIDE"],
       "evidence": [{"dataset": "mdls", "id": "3163", "url": "https://www.jpml.uscourts.gov/pending-mdl-reports-archive"}],
-      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_by": "lead review (Claude Code for the owner): exact class or product checked against the cited JPML caption and recall records",
       "reviewed_on": "2026-10-27"
     },
     {
@@ -29,7 +29,7 @@
         {"dataset": "mdls", "id": "2789", "url": "https://www.jpml.uscourts.gov/pending-mdl-reports-archive"},
         {"dataset": "openfda_ndc", "url": "https://download.open.fda.gov/drug/ndc/drug-ndc-0001-of-0001.json.zip", "field": "openfda.pharm_class_epc"}
       ],
-      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_by": "lead review (Claude Code for the owner): exact class or product checked against the cited JPML caption and recall records",
       "reviewed_on": "2026-10-27"
     },
     {
@@ -40,7 +40,7 @@
         {"dataset": "agency_safety_openfda_drugsfda", "id": "openfda:drug/drugsfda:NDA018680", "field": "brand_names PARAGARD T 380A; active_ingredients COPPER"},
         {"dataset": "mdls", "id": "2974", "url": "https://www.jpml.uscourts.gov/pending-mdl-reports-archive"}
       ],
-      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_by": "lead review (Claude Code for the owner): exact class or product checked against the cited JPML caption and recall records",
       "reviewed_on": "2026-10-27"
     }
   ],
@@ -49,7 +49,7 @@
       "mdl": 3204,
       "caption_tokens": ["Igloo", "90 Quart", "Rolling Cooler"],
       "note": "Both CPSC recalls are of Igloo 90-quart rolling coolers ('90 Quart' / '90 Qt.' in the recall titles), the product the caption names.",
-      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_by": "lead review (Claude Code for the owner): exact class or product checked against the cited JPML caption and recall records",
       "reviewed_on": "2026-10-27",
       "recalls": [
         {"dataset": "agency_safety_cpsc_recalls_api", "id": "cpsc-api:25136", "recall_number": "25136", "date": "2025-02-13",
@@ -64,7 +64,7 @@
       "mdl": 3172,
       "caption_tokens": ["Cartiva", "Synthetic Cartilage Implant"],
       "note": "FDA device recall Z-0598-2025 is of the Cartiva Synthetic Cartilage Implant by Cartiva, Inc, the product the caption names. Backtest case: recall reported 2024-12-11, MDL centralized 2026-02-05.",
-      "reviewed_by": "radar build agent, pending lead review",
+      "reviewed_by": "lead review (Claude Code for the owner): exact class or product checked against the cited JPML caption and recall records",
       "reviewed_on": "2026-10-27",
       "recalls": [
         {"dataset": "agency_safety_openfda_device_enforcement", "id": "openfda:device/enforcement:Z-0598-2025", "recall_number": "Z-0598-2025",

@@ -378,7 +378,7 @@ class VehicleTest(unittest.TestCase):
                  "items": [{"make": " jeep ", "model": "GRAND  CHEROKEE", "component": "ENGINE"}]}] * 3
         out = r.nhtsa_windows_from_records(recs, dt.date(2026, 9, 1), 12, 1)
         unit = next(x for x in out if x["scope"] == "unit")
-        # upper(btrim(x)): ends trimmed, inner whitespace kept, exactly as safety_nhtsa_complaint_windows_v1 keys it
+        # upper(btrim(x)): ends trimmed, inner whitespace kept, exactly as safety_radar_nhtsa_windows_v1 keys it
         self.assertEqual((unit["make"], unit["model"], unit["component"]), ("JEEP", "GRAND  CHEROKEE", "ENGINE"))
         self.assertEqual(unit["recent"], 3)
         self.assertEqual(unit["months"][23], 3)

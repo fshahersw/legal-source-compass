@@ -9,7 +9,7 @@
 --     summed over the covered months only; the builder scales it or refuses to rate it), an md5 of the window values
 --     (equal hashes = identical counts, used to group duplicate subjects) and the last p_tail_months values (the chart).
 --     A series whose coverage ends before p_end is left out (its recent window would be partial).
---   public.safety_nhtsa_complaint_windows_v1(p_end, p_months, p_min_recent)
+--   public.safety_radar_nhtsa_windows_v1(p_end, p_months, p_min_recent)
 --     NHTSA ODI complaints received in the p_months months ending with the month of p_end (recent) and the p_months
 --     before (prior), counted once per complaint and (make, model, component) as NHTSA lists them on the complaint
 --     (model year dropped), with crash/fire/injury and death counts and the monthly prior+recent values. Units with
@@ -71,7 +71,7 @@ begin
    order by s.subject_id, s.series;
 end $$;
 
-create or replace function public.safety_nhtsa_complaint_windows_v1(
+create or replace function public.safety_radar_nhtsa_windows_v1(
   p_end date,
   p_months integer default 12,
   p_min_recent integer default 50)
@@ -144,7 +144,7 @@ declare f text;
 begin
   foreach f in array array[
     'public.safety_series_window_v1(text,text[],date,integer,integer,integer)',
-    'public.safety_nhtsa_complaint_windows_v1(date,integer,integer)'] loop
+    'public.safety_radar_nhtsa_windows_v1(date,integer,integer)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);
   end loop;

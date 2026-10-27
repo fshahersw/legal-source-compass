@@ -43,7 +43,7 @@ Modes (read-only unless publishing):
   python -B scripts/enrichment/build_emerging_tort_radar.py build --live [--no-rpc] --ndc <ndc_epc.json> --dry-run
   python -B scripts/enrichment/build_emerging_tort_radar.py build --live --ndc <ndc_epc.json>       (lead: publishes)
 --live reads with EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY from the environment: the RPCs
-safety_series_window_v1 / safety_nhtsa_complaint_windows_v1 (database/contracts/safety-radar-v1.sql) when present,
+safety_series_window_v1 / safety_radar_nhtsa_windows_v1 (database/contracts/safety-radar-v1.sql) when present,
 otherwise (or with --no-rpc) the slower existing RPCs safety_subject_v1 / safety_records_v1. --dry-run writes the
 packet (records.json, summary.json, top.md) to --out (default private/acq/radar/packet) and never writes the corpus.
 """
@@ -1123,7 +1123,7 @@ class LiveInputs:
                         "p_recent_months": 12, "p_baseline_months": 36, "p_tail_months": 24}
                 self.faers_windows = self._rpc("safety_series_window_v1", {"p_prefix": "faers:", **args}) + \
                     self._rpc("safety_series_window_v1", {"p_prefix": "national:", **args})
-                self.nhtsa_windows = self._rpc("safety_nhtsa_complaint_windows_v1", {"p_end": end_n.isoformat(), "p_months": 12, "p_min_recent": MIN_REPORTS})
+                self.nhtsa_windows = self._rpc("safety_radar_nhtsa_windows_v1", {"p_end": end_n.isoformat(), "p_months": 12, "p_min_recent": MIN_REPORTS})
             except RuntimeError as e:
                 if "404" not in str(e) and "PGRST202" not in str(e):
                     raise
@@ -1238,13 +1238,13 @@ def window_from_values(subject_id, series, vals, coverage_from, coverage_to, end
 
 
 def sql_key(s):
-    """The unit key exactly as safety_nhtsa_complaint_windows_v1 builds it: upper(btrim(x)), where btrim removes
+    """The unit key exactly as safety_radar_nhtsa_windows_v1 builds it: upper(btrim(x)), where btrim removes
     spaces only and inner whitespace is kept (the RPC path and this fallback must give the same units)."""
     return (s or "").strip(" ").upper()
 
 
 def nhtsa_windows_from_records(records, end, months, min_recent):
-    """Python twin of safety_nhtsa_complaint_windows_v1 over safety_records_v1 rows."""
+    """Python twin of safety_radar_nhtsa_windows_v1 over safety_records_v1 rows."""
     split = month_add(end, -(months - 1))
     start = month_add(split, -months)
     stop = month_add(end, 1)
