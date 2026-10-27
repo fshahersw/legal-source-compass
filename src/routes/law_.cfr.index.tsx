@@ -9,7 +9,8 @@ import { parseCitation } from "@/lib/external/ecfrFull";
 import { getCfrCollection } from "@/lib/external/ecfrFull.functions";
 import { CfrAgencyIndex } from "@/components/authorities/AgencyPanels";
 import { LawAtlas } from "@/components/lawviz/LawAtlas";
-import { CfrChangeRadar, cfrRadarQuery } from "@/components/law/CfrChangeRadar";
+import { CfrChangeRadar } from "@/components/law/CfrChangeRadar";
+import { cfrRadarQuery } from "@/components/law/lawQueries";
 import { SectionIndex } from "@/components/kit";
 
 export const Route = createFileRoute("/law_/cfr/")({

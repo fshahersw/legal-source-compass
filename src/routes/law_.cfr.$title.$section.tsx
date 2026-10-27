@@ -298,11 +298,7 @@ function SectionBody({
         </aside>
       </div>
       <SectionProductsPanel title={s.titleNumber} section={s.identifier} />
-      <CitedInFilings
-        dataset="ecfr_sections_full"
-        id={s.id}
-        citation={s.citation}
-      />
+      <CitedInFilings dataset="ecfr_sections_full" id={s.id} citation={s.citation} />
     </div>
   );
 }
@@ -318,7 +314,10 @@ function HistoryPanel({
 }) {
   const changes = history.versions.filter((v) => v.substantive && v.date >= "2017-01-03").length;
   return (
-    <section aria-label="Change history" className="rounded-xl border border-border bg-card shadow-xs p-3">
+    <section
+      aria-label="Change history"
+      className="rounded-xl border border-border bg-card shadow-xs p-3"
+    >
       <h2 className="eyebrow mb-1">Change history</h2>
       <p className="m-0 mb-2 text-[11px] text-muted-foreground">
         {history.versions.length} version{history.versions.length === 1 ? "" : "s"} listed by the

@@ -14,13 +14,15 @@ export function crosswalkFor(
   title: string,
   section: string,
 ): { kind: "device"; regulation: string } | { kind: "vehicle"; fmvss: string } | null {
-  if (title === "21" && /^8\d{2}\.\d{1,5}$/.test(section)) return { kind: "device", regulation: section };
+  if (title === "21" && /^8\d{2}\.\d{1,5}$/.test(section))
+    return { kind: "device", regulation: section };
   const m = title === "49" ? /^571\.(\d{3}[a-z]?)$/.exec(section) : null;
   return m ? { kind: "vehicle", fmvss: m[1]! } : null;
 }
 
 type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {});
+const obj = (v: unknown): Obj =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {};
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 export type DeviceType = {
@@ -97,7 +99,10 @@ export function toVehicleRecall(raw: unknown): VehicleRecall | null {
     title: (str(r["title"]) ?? id).replace(/\s+/g, " "),
     manufacturer: str(r["manufacturer"]),
     date: date && /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : null,
-    units: r["units"] != null && r["units"] !== "" && Number.isFinite(units) && units >= 0 ? units : null,
+    units:
+      r["units"] != null && r["units"] !== "" && Number.isFinite(units) && units >= 0
+        ? units
+        : null,
     url: str(r["source_url"]),
   };
 }
@@ -119,7 +124,9 @@ export function recallYears(rows: readonly VehicleRecall[], today: string): Reca
     out.push({
       year: String(y),
       recalls: mine.length,
-      units: mine.some((r) => r.units === null) ? null : mine.reduce((a, r) => a + (r.units ?? 0), 0),
+      units: mine.some((r) => r.units === null)
+        ? null
+        : mine.reduce((a, r) => a + (r.units ?? 0), 0),
       partial: y === last,
     });
   }
@@ -127,5 +134,12 @@ export function recallYears(rows: readonly VehicleRecall[], today: string): Reca
 }
 
 export type SectionCrosswalk =
-  | { kind: "device"; key: string; dataset: string; sourceUrl: string | null; exportDate: string | null; devices: DeviceType[] }
+  | {
+      kind: "device";
+      key: string;
+      dataset: string;
+      sourceUrl: string | null;
+      exportDate: string | null;
+      devices: DeviceType[];
+    }
   | { kind: "vehicle"; key: string; recalls: VehicleRecall[]; today: string };

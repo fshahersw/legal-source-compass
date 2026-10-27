@@ -21,7 +21,8 @@ export type LifecycleRow = {
 export type RuleLifecycle = { asOf: string | null; rows: LifecycleRow[] };
 
 type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {});
+const obj = (v: unknown): Obj =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {};
 const num = (v: unknown): number | null =>
   typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null;
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);

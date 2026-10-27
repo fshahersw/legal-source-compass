@@ -22,10 +22,9 @@ const read = memoAsync(30 * 60 * 1000, async (): Promise<CfrRadar> => {
   return buildRadar(byPart, easternToday());
 });
 
-export const getCfrRadar = createServerFn({ method: "GET" }).handler(
-  async (): Promise<CfrRadar> =>
-    read().catch((e: unknown) => {
-      console.error("cfr radar", e);
-      throw new Error("The CFR change radar could not be read just now.");
-    }),
+export const getCfrRadar = createServerFn({ method: "GET" }).handler(async (): Promise<CfrRadar> =>
+  read().catch((e: unknown) => {
+    console.error("cfr radar", e);
+    throw new Error("The CFR change radar could not be read just now.");
+  }),
 );

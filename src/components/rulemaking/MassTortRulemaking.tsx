@@ -30,7 +30,10 @@ import {
 import { RuleLifecyclePace } from "./RuleLifecyclePace";
 import { rulemakingTrackerQuery } from "./rulemakingQueries";
 
-const REGS = { label: "Regulations.gov (GSA), documents API v4", url: "https://www.regulations.gov/" };
+const REGS = {
+  label: "Regulations.gov (GSA), documents API v4",
+  url: "https://www.regulations.gov/",
+};
 const FR = {
   label: "Federal Register API, agency facets",
   url: "https://www.federalregister.gov/developers/documentation/api/v1",
@@ -76,7 +79,11 @@ export function MassTortRulemaking() {
   const status = q.isPending
     ? ({ kind: "loading" } as const)
     : q.isError
-      ? ({ kind: "error", message: "This chart could not be loaded.", onRetry: () => void q.refetch() } as const)
+      ? ({
+          kind: "error",
+          message: "This chart could not be loaded.",
+          onRetry: () => void q.refetch(),
+        } as const)
       : ({ kind: "ready" } as const);
   const top = [...summaries].sort((a, b) => b.within30 - a.within30)[0];
 
@@ -183,11 +190,16 @@ export function MassTortRulemaking() {
           label="Agenda items past projected month"
           state={q.isPending ? "loading" : q.isError ? "error" : "ready"}
           value={d ? fmt(agendaPassed) : null}
-          meta={d ? `of ${fmt(agendaDated)} dated · ${edition ?? "edition not recorded"} edition` : undefined}
+          meta={
+            d
+              ? `of ${fmt(agendaDated)} dated · ${edition ?? "edition not recorded"} edition`
+              : undefined
+          }
           source={{
             source: AGENDA,
             period: edition ? `${edition} edition` : undefined,
-            about: "Prerule, proposed and final rule stages. The projected month is as printed in the only edition held; agencies revise it in each new edition.",
+            about:
+              "Prerule, proposed and final rule stages. The projected month is as printed in the only edition held; agencies revise it in each new edition.",
           }}
         />
       </KpiGrid>
@@ -201,15 +213,21 @@ export function MassTortRulemaking() {
               : "Comment periods closing in the next 90 days"
           }
           subtitle="Documents whose comment period closes in each window, by agency (Eastern time)"
-          status={d && !dated.length ? { kind: "empty", reason: "No comment period is open." } : status}
+          status={
+            d && !dated.length ? { kind: "empty", reason: "No comment period is open." } : status
+          }
           sources={[REGS]}
           asOf={d?.today}
           about={
             <ul className="list-disc space-y-1 pl-4">
-              <li>Rules, proposed rules and notices posted on Regulations.gov whose comment end date is today or later.</li>
               <li>
-                End dates more than two years ahead are placeholders some agencies print for open-ended dockets (for
-                example 2050-02-21); they are counted as “no fixed close date”, not as open periods.
+                Rules, proposed rules and notices posted on Regulations.gov whose comment end date
+                is today or later.
+              </li>
+              <li>
+                End dates more than two years ahead are placeholders some agencies print for
+                open-ended dockets (for example 2050-02-21); they are counted as “no fixed close
+                date”, not as open periods.
               </li>
               <li>Comment counts are shown only where they have been read.</li>
             </ul>
@@ -232,7 +250,15 @@ export function MassTortRulemaking() {
                     const n = (w: Deadline["window"]) => mine.filter((r) => r.window === w).length;
                     return {
                       key: s.agency,
-                      cells: [s.agency, n("30"), n("60"), n("90"), n("later"), n("open_ended"), s.nextClose ?? "Not recorded"],
+                      cells: [
+                        s.agency,
+                        n("30"),
+                        n("60"),
+                        n("90"),
+                        n("later"),
+                        n("open_ended"),
+                        s.nextClose ?? "Not recorded",
+                      ],
                     };
                   }),
                 }
@@ -241,7 +267,12 @@ export function MassTortRulemaking() {
           actions={d ? <DeadlineDrawer rows={d.deadlines} today={d.today} /> : undefined}
         >
           {d && dated.length ? (
-            <StackedBarsOverTime rows={windowRows(d.deadlines, codes)} keys={codes} format={fmt} height={240} />
+            <StackedBarsOverTime
+              rows={windowRows(d.deadlines, codes)}
+              keys={codes}
+              format={fmt}
+              height={240}
+            />
           ) : null}
         </ChartCard>
 
@@ -253,11 +284,13 @@ export function MassTortRulemaking() {
           sources={[FR]}
           period={selRows.length ? `${selRows[0]!.year}–${selRows.at(-1)!.year}` : undefined}
           asOf={frAsOf ?? undefined}
-          partial={partialYear && frAsOf ? `${partialYear} counts run through ${frAsOf}.` : undefined}
+          partial={
+            partialYear && frAsOf ? `${partialYear} counts run through ${frAsOf}.` : undefined
+          }
           about={
             <p>
-              Counts by publication year from the Federal Register API agency facets (document types Rule and Proposed
-              Rule). A year the source does not list shows as Not recorded.
+              Counts by publication year from the Federal Register API agency facets (document types
+              Rule and Proposed Rule). A year the source does not list shows as Not recorded.
             </p>
           }
           table={
@@ -270,7 +303,11 @@ export function MassTortRulemaking() {
                     { key: "proposed", label: "Proposed rules" },
                   ],
                   fmt,
-                  { caption: `${sel.agency} rules per year`, xLabel: "Year", partialKey: "partial" },
+                  {
+                    caption: `${sel.agency} rules per year`,
+                    xLabel: "Year",
+                    partialKey: "partial",
+                  },
                 )
               : undefined
           }
@@ -308,18 +345,23 @@ export function MassTortRulemaking() {
               : "Unified Agenda items against their projected month"
           }
           subtitle={`Prerule, proposed and final rule stage items, by agency · ${edition ?? "edition not recorded"} edition, the only one held`}
-          status={d && !agenda.some((a) => a.active) ? { kind: "empty", reason: "No agenda item is recorded for these agencies." } : status}
+          status={
+            d && !agenda.some((a) => a.active)
+              ? { kind: "empty", reason: "No agenda item is recorded for these agencies." }
+              : status
+          }
           sources={[AGENDA]}
           period={edition ? `${edition} edition` : undefined}
           about={
             <ul className="list-disc space-y-1 pl-4">
               <li>
-                Each item&apos;s next action carries a projected month as printed in the {edition ?? "held"} edition. An item
-                is past its projected month when that month is before the current month.
+                Each item&apos;s next action carries a projected month as printed in the{" "}
+                {edition ?? "held"} edition. An item is past its projected month when that month is
+                before the current month.
               </li>
               <li>
-                Only one edition is held, so this shows how far that schedule has slipped, not the agencies&apos; current
-                plans. Long-term and completed actions are left out.
+                Only one edition is held, so this shows how far that schedule has slipped, not the
+                agencies&apos; current plans. Long-term and completed actions are left out.
               </li>
             </ul>
           }
@@ -387,7 +429,12 @@ function DeadlineDrawer({ rows, today }: { rows: Deadline[]; today: string }) {
           value: (r) => r.title,
           render: (r) =>
             r.url ? (
-              <a href={r.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+              <a
+                href={r.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary hover:underline"
+              >
                 {r.title}
               </a>
             ) : (
@@ -398,7 +445,8 @@ function DeadlineDrawer({ rows, today }: { rows: Deadline[]; today: string }) {
         {
           key: "end",
           label: "Comments close",
-          value: (r) => (r.window === "open_ended" ? `${r.commentEnd} (no fixed close date)` : r.commentEnd),
+          value: (r) =>
+            r.window === "open_ended" ? `${r.commentEnd} (no fixed close date)` : r.commentEnd,
         },
         { key: "days", label: "Days left", align: "right", value: (r) => r.daysLeft },
         { key: "comments", label: "Comments posted", align: "right", value: (r) => r.comments },

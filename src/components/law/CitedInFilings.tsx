@@ -45,7 +45,10 @@ export function CitedInFilings({
   if (!p || p.documents <= 0) return null;
   const years = citationYears(p.byYear);
   const mdls = p.byMdl.map(([m, n]) => ({ id: m, label: `MDL ${m}`, value: n }));
-  const period = p.firstFiled && p.lastFiled ? `${p.firstFiled.slice(0, 4)}–${p.lastFiled.slice(0, 4)}` : undefined;
+  const period =
+    p.firstFiled && p.lastFiled
+      ? `${p.firstFiled.slice(0, 4)}–${p.lastFiled.slice(0, 4)}`
+      : undefined;
   const context = buildSectionContext({
     id: ID,
     title: `Court filings citing ${citation}`,
@@ -57,7 +60,11 @@ export function CitedInFilings({
       { label: "Mentions in those filings", value: p.mentions },
       { label: "MDLs with a citing filing", value: p.byMdl.length },
       ...mdls.slice(0, 6).map((m) => ({ label: `Filings in ${m.label}`, value: m.value })),
-      ...p.coCited.slice(0, 4).map((c) => ({ label: `Also cited with: ${c.label}`, value: c.documentsTogether, unit: "filings" })),
+      ...p.coCited.slice(0, 4).map((c) => ({
+        label: `Also cited with: ${c.label}`,
+        value: c.documentsTogether,
+        unit: "filings",
+      })),
     ],
   });
   return (
@@ -65,25 +72,63 @@ export function CitedInFilings({
       id={ID}
       title="Cited in court filings"
       description={`Filings in this atlas that cite ${citation}.`}
-      actions={<AskAiButton sectionId={ID} title={`Filings citing ${citation}`} context={context} size="icon" />}
+      actions={
+        <AskAiButton
+          sectionId={ID}
+          title={`Filings citing ${citation}`}
+          context={context}
+          size="icon"
+        />
+      }
     >
       <KpiGrid columns={4} label="Filings citing this section">
-        <KpiCard as="li" size="sm" label="Filings" value={fmt(p.documents)} meta={period} source={{ source: SOURCE }} />
-        <KpiCard as="li" size="sm" label="Mentions" value={fmt(p.mentions)} meta="Full and short cites" source={{ source: SOURCE }} />
-        <KpiCard as="li" size="sm" label="MDLs" value={fmt(p.byMdl.length)} meta={mdls[0] ? `Most: ${mdls[0].label}` : undefined} source={{ source: SOURCE }} />
-        <KpiCard as="li" size="sm" label="Latest citing filing" value={p.lastFiled} meta={p.undated ? `${fmt(p.undated)} undated` : undefined} source={{ source: SOURCE }} />
+        <KpiCard
+          as="li"
+          size="sm"
+          label="Filings"
+          value={fmt(p.documents)}
+          meta={period}
+          source={{ source: SOURCE }}
+        />
+        <KpiCard
+          as="li"
+          size="sm"
+          label="Mentions"
+          value={fmt(p.mentions)}
+          meta="Full and short cites"
+          source={{ source: SOURCE }}
+        />
+        <KpiCard
+          as="li"
+          size="sm"
+          label="MDLs"
+          value={fmt(p.byMdl.length)}
+          meta={mdls[0] ? `Most: ${mdls[0].label}` : undefined}
+          source={{ source: SOURCE }}
+        />
+        <KpiCard
+          as="li"
+          size="sm"
+          label="Latest citing filing"
+          value={p.lastFiled}
+          meta={p.undated ? `${fmt(p.undated)} undated` : undefined}
+          source={{ source: SOURCE }}
+        />
       </KpiGrid>
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <ChartCard
           variant="editorial"
-          title={rankTakeaway(mdls, fmt, { verb: "has the most citing filings," }) ?? "Citing filings by MDL"}
+          title={
+            rankTakeaway(mdls, fmt, { verb: "has the most citing filings," }) ??
+            "Citing filings by MDL"
+          }
           subtitle="Filings citing the section, by the MDL their docket belongs to"
           sources={[SOURCE]}
           period={period}
           about={
             <p>
-              Counts cover only filings held in this atlas&apos;s court-filings layer, not every filing in these cases. A
-              filing&apos;s MDL is the one its docket source assigns.
+              Counts cover only filings held in this atlas&apos;s court-filings layer, not every
+              filing in these cases. A filing&apos;s MDL is the one its docket source assigns.
             </p>
           }
           table={{
@@ -111,7 +156,11 @@ export function CitedInFilings({
                   value: (d) => d.mdl,
                   render: (d) =>
                     d.mdl ? (
-                      <Link to="/litigation/documents" search={{ mdl: d.mdl }} className="text-primary hover:underline">
+                      <Link
+                        to="/litigation/documents"
+                        search={{ mdl: d.mdl }}
+                        className="text-primary hover:underline"
+                      >
                         {d.mdl}
                       </Link>
                     ) : (
@@ -120,16 +169,27 @@ export function CitedInFilings({
                 },
                 { key: "mentions", label: "Mentions", align: "right", value: (d) => d.mentions },
                 { key: "page", label: "First page", align: "right", value: (d) => d.firstPage },
-                { key: "pins", label: "Pinpoints", value: (d) => (d.pins.length ? d.pins.join("; ") : null) },
+                {
+                  key: "pins",
+                  label: "Pinpoints",
+                  value: (d) => (d.pins.length ? d.pins.join("; ") : null),
+                },
               ]}
             />
           }
         >
-          <RankBars items={mdls} format={fmt} limit={10} ariaLabel={`Filings citing ${citation} by MDL`} />
+          <RankBars
+            items={mdls}
+            format={fmt}
+            limit={10}
+            ariaLabel={`Filings citing ${citation} by MDL`}
+          />
         </ChartCard>
         <ChartCard
           variant="editorial"
-          title={p.coCited[0] ? `Most often cited with ${p.coCited[0].label}` : "Citing filings per year"}
+          title={
+            p.coCited[0] ? `Most often cited with ${p.coCited[0].label}` : "Citing filings per year"
+          }
           subtitle="Citing filings per filing year"
           sources={[SOURCE]}
           period={period}
@@ -139,7 +199,12 @@ export function CitedInFilings({
           })}
           footnotes={
             p.coCited.length
-              ? [`Also cited with: ${p.coCited.slice(0, 5).map((c) => `${c.label} (${fmt(c.documentsTogether)})`).join("; ")}.`]
+              ? [
+                  `Also cited with: ${p.coCited
+                    .slice(0, 5)
+                    .map((c) => `${c.label} (${fmt(c.documentsTogether)})`)
+                    .join("; ")}.`,
+                ]
               : undefined
           }
         >
@@ -153,7 +218,9 @@ export function CitedInFilings({
               ariaLabel={`Filings citing ${citation} per year`}
             />
           ) : (
-            <p className="text-meta text-muted-foreground">All dated citing filings fall in one year.</p>
+            <p className="text-meta text-muted-foreground">
+              All dated citing filings fall in one year.
+            </p>
           )}
         </ChartCard>
       </div>

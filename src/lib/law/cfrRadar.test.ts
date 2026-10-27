@@ -8,7 +8,11 @@ const FR = {
   publication_date: "2026-09-09",
 };
 // Shaped like ecfr_section_versions rows read as select=id,title,versions:detail->versions.
-const row = (id: string, versions: unknown[]) => ({ id, title: `49 CFR ${id.slice(7)} Heading`, versions });
+const row = (id: string, versions: unknown[]) => ({
+  id,
+  title: `49 CFR ${id.slice(7)} Heading`,
+  versions,
+});
 const v = (date: string, substantive: boolean, basis = "none", fr: unknown[] = []) => ({
   date,
   substantive,
@@ -46,7 +50,11 @@ describe("buildRadar", () => {
       [
         "49:571",
         [
-          row("cfr:49:571.208", [v("2016-12-27", true), v("2022-03-30", true), v("2026-10-09", true)]),
+          row("cfr:49:571.208", [
+            v("2016-12-27", true),
+            v("2022-03-30", true),
+            v("2026-10-09", true),
+          ]),
           row("cfr:49:571.108", [v("2016-12-27", true), v("2025-11-01", true)]),
           row("cfr:49:571.101", [v("2016-12-27", true)]),
         ],

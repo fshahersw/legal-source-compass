@@ -32,11 +32,17 @@ export function CongressAttention() {
   const status = q.isPending
     ? ({ kind: "loading" } as const)
     : q.isError
-      ? ({ kind: "error", message: "This chart could not be loaded.", onRetry: () => void q.refetch() } as const)
+      ? ({
+          kind: "error",
+          message: "This chart could not be loaded.",
+          onRetry: () => void q.refetch(),
+        } as const)
       : ({ kind: "ready" } as const);
   const hearings = rows.flatMap((r) => r.hearings.map((h) => ({ ...h, topic: r.topic.label })));
   const top = [...rows].sort((a, b) => b.bills - a.bills)[0];
-  const period = congresses.length ? `${ordinal(congresses[0]!)}–${ordinal(congresses.at(-1)!)} Congress` : undefined;
+  const period = congresses.length
+    ? `${ordinal(congresses[0]!)}–${ordinal(congresses.at(-1)!)} Congress`
+    : undefined;
   const context = d
     ? buildSectionContext({
         id: ID,
@@ -46,7 +52,11 @@ export function CongressAttention() {
         source: SOURCES.map((s) => s.label).join("; "),
         figures: rows.flatMap((r) => [
           { label: `${r.topic.label}: bills introduced`, value: r.bills, unit: "bills" },
-          { label: `${r.topic.label}: bills that became law`, value: r.billsBecameLaw, unit: "bills" },
+          {
+            label: `${r.topic.label}: bills that became law`,
+            value: r.billsBecameLaw,
+            unit: "bills",
+          },
           { label: `${r.topic.label}: hearings`, value: r.hearings.length, unit: "hearings" },
           { label: `${r.topic.label}: latest hearing`, value: latestHeld(r.hearings) },
         ]),
@@ -78,7 +88,11 @@ export function CongressAttention() {
     >
       <ChartCard
         variant="editorial"
-        title={top ? `${top.topic.label} drew the most bills (${fmt(top.bills)} since the ${ordinal(congresses[0] ?? 108)} Congress)` : TITLE}
+        title={
+          top
+            ? `${top.topic.label} drew the most bills (${fmt(top.bills)} since the ${ordinal(congresses[0] ?? 108)} Congress)`
+            : TITLE
+        }
         subtitle={`${measure === "bills" ? "Bills introduced" : "Hearings published"} per Congress whose title or summary mentions the topic · ${d ? `${ordinal(d.congress)} Congress in progress` : ""}`}
         status={status}
         sources={SOURCES}
@@ -87,16 +101,23 @@ export function CongressAttention() {
         partial={d ? `The ${ordinal(d.congress)} Congress is in progress.` : undefined}
         about={
           <ul className="list-disc space-y-1 pl-4">
-            <li>Topic membership is a text match on titles and summaries, not a subject classification.</li>
             <li>
-              Hearings carry no committee in the source, and some print no date (“Not stated”); undated hearings are
-              counted by Congress but never used as the latest date.
+              Topic membership is a text match on titles and summaries, not a subject
+              classification.
+            </li>
+            <li>
+              Hearings carry no committee in the source, and some print no date (“Not stated”);
+              undated hearings are counted by Congress but never used as the latest date.
             </li>
           </ul>
         }
         table={{
           caption: `${measure === "bills" ? "Bills" : "Hearings"} per Congress by topic`,
-          columns: [{ label: "Topic" }, ...congresses.map((c) => ({ label: ordinal(c) })), { label: "Total" }],
+          columns: [
+            { label: "Topic" },
+            ...congresses.map((c) => ({ label: ordinal(c) })),
+            { label: "Total" },
+          ],
           rows: rows.map((r) => ({
             key: r.topic.id,
             cells: [
@@ -121,7 +142,10 @@ export function CongressAttention() {
             />
             <Heatmap
               rows={rows.map((r) => ({ id: r.topic.id, label: r.topic.label }))}
-              columns={congresses.map((c) => ({ id: String(c), label: c === d.congress ? `${c}*` : String(c) }))}
+              columns={congresses.map((c) => ({
+                id: String(c),
+                label: c === d.congress ? `${c}*` : String(c),
+              }))}
               value={(row, col) => {
                 const r = rows.find((x) => x.topic.id === row);
                 return r ? value(r, Number(col)) : null;
@@ -138,7 +162,13 @@ export function CongressAttention() {
   );
 }
 
-function HearingsDrawer({ hearings, today }: { hearings: (Hearing & { topic: string })[]; today: string }) {
+function HearingsDrawer({
+  hearings,
+  today,
+}: {
+  hearings: (Hearing & { topic: string })[];
+  today: string;
+}) {
   return (
     <DataDrawer
       title="Hearings that mention a mass-tort topic"
@@ -158,7 +188,12 @@ function HearingsDrawer({ hearings, today }: { hearings: (Hearing & { topic: str
           value: (h) => h.title,
           render: (h) =>
             h.url ? (
-              <a href={h.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+              <a
+                href={h.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary hover:underline"
+              >
                 {h.title}
               </a>
             ) : (

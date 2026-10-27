@@ -5,7 +5,9 @@
 export type CitationYear = { year: string; filings: number };
 
 export function citationYears(byYear: readonly (readonly [number, number])[]): CitationYear[] {
-  const ok = byYear.filter(([y, n]) => Number.isInteger(y) && y > 1900 && Number.isFinite(n) && n >= 0);
+  const ok = byYear.filter(
+    ([y, n]) => Number.isInteger(y) && y > 1900 && Number.isFinite(n) && n >= 0,
+  );
   if (!ok.length) return [];
   const min = Math.min(...ok.map(([y]) => y));
   const max = Math.max(...ok.map(([y]) => y));

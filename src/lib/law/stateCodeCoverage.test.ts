@@ -3,7 +3,12 @@ import { describe, expect, it, vi } from "vitest";
 const { rpcPost } = vi.hoisted(() => ({
   rpcPost: vi.fn(async () => ({
     states: [
-      { jurisdiction: "tx", public_projection_allowed: true, sections: 1200, publisher: "Texas Legislative Council" },
+      {
+        jurisdiction: "tx",
+        public_projection_allowed: true,
+        sections: 1200,
+        publisher: "Texas Legislative Council",
+      },
     ],
   })),
 }));

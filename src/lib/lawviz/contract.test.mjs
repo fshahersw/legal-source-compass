@@ -682,7 +682,8 @@ test("nhtsa/epa calendar: series, agency views, undated recalls, idempotent", as
   await recall("22V004000", null);
   await one(db, "select public.lawviz_refresh_v1('t1', 'calendar')");
   await one(db, "select public.lawviz_refresh_v1('t2', 'calendar')"); // replaces, never duplicates
-  const cal = async (a, y) => (await one(db, "select public.lawviz_calendar_v1($1,$2) r", [a, y])).r;
+  const cal = async (a, y) =>
+    (await one(db, "select public.lawviz_calendar_v1($1,$2) r", [a, y])).r;
   const nhtsa = await cal("nhtsa", 2022);
   assert.equal(nhtsa.status, "ok");
   assert.deepEqual(

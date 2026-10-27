@@ -29,8 +29,14 @@ import {
 import { ordinal } from "@/lib/analytics/trend";
 import { legislationWatchQuery } from "./legislationWatchQuery";
 
-const OPEN_STATES = { label: "Open States bulk data (public domain)", url: "https://open.pluralpolicy.com/data/" };
-const CONGRESS = { label: "GovInfo Bill Status and Congress.gov", url: "https://www.govinfo.gov/bulkdata/BILLSTATUS" };
+const OPEN_STATES = {
+  label: "Open States bulk data (public domain)",
+  url: "https://open.pluralpolicy.com/data/",
+};
+const CONGRESS = {
+  label: "GovInfo Bill Status and Congress.gov",
+  url: "https://www.govinfo.gov/bulkdata/BILLSTATUS",
+};
 const fmt = (v: number) => v.toLocaleString("en-US");
 const ID = "civil-justice-watch";
 const TITLE = "Civil-justice and litigation-funding watch";
@@ -44,7 +50,11 @@ export function CivilJusticeWatch() {
   const status = q.isPending
     ? ({ kind: "loading" } as const)
     : q.isError
-      ? ({ kind: "error", message: "This chart could not be loaded.", onRetry: () => void q.refetch() } as const)
+      ? ({
+          kind: "error",
+          message: "This chart could not be loaded.",
+          onRetry: () => void q.refetch(),
+        } as const)
       : ({ kind: "ready" } as const);
   const bills = d?.stateBills ?? [];
   const counts = stageCounts(bills);
@@ -60,7 +70,8 @@ export function CivilJusticeWatch() {
     ? buildSectionContext({
         id: ID,
         title: TITLE,
-        scope: "State legislatures (current and preceding regular sessions) and the current Congress; bills whose title or summary mentions the topic",
+        scope:
+          "State legislatures (current and preceding regular sessions) and the current Congress; bills whose title or summary mentions the topic",
         period: `As of ${d.today}; current sessions in progress`,
         source: `${OPEN_STATES.label}; ${CONGRESS.label}`,
         figures: [
@@ -68,10 +79,21 @@ export function CivilJusticeWatch() {
           { label: "Enacted", value: counts.enacted, unit: "bills" },
           { label: "Pending in current sessions", value: counts.pending, unit: "bills" },
           { label: "States with an enactment", value: enactedStates.size, unit: "states" },
-          ...topics.map((t) => ({ label: `${t.topic.label}: bills (enacted)`, value: `${fmt(t.total)} (${fmt(t.counts.enacted)})` })),
-          ...states.slice(0, 5).map((s) => ({ label: `${s.state}: matching bills`, value: s.total })),
-          { label: `Federal litigation-funding bills, ${congress}`, value: d.federal.length, unit: "bills" },
-          ...d.federal.slice(0, 3).map((f) => ({ label: `${f.citation} cosponsors`, value: f.cosponsors })),
+          ...topics.map((t) => ({
+            label: `${t.topic.label}: bills (enacted)`,
+            value: `${fmt(t.total)} (${fmt(t.counts.enacted)})`,
+          })),
+          ...states
+            .slice(0, 5)
+            .map((s) => ({ label: `${s.state}: matching bills`, value: s.total })),
+          {
+            label: `Federal litigation-funding bills, ${congress}`,
+            value: d.federal.length,
+            unit: "bills",
+          },
+          ...d.federal
+            .slice(0, 3)
+            .map((f) => ({ label: `${f.citation} cosponsors`, value: f.cosponsors })),
         ],
         maxFigures: 20,
       })
@@ -154,7 +176,11 @@ export function CivilJusticeWatch() {
           about={<WatchAbout />}
           table={{
             caption: "State bills by topic and outcome",
-            columns: [{ label: "Topic" }, ...STAGES.map((s) => ({ label: STAGE_LABEL[s] })), { label: "Total" }],
+            columns: [
+              { label: "Topic" },
+              ...STAGES.map((s) => ({ label: STAGE_LABEL[s] })),
+              { label: "Total" },
+            ],
             rows: topics.map((t) => ({
               key: t.topic.id,
               cells: [t.topic.label, ...STAGES.map((s) => t.counts[s]), t.total],
@@ -174,7 +200,11 @@ export function CivilJusticeWatch() {
         </ChartCard>
         <ChartCard
           variant="editorial"
-          title={states[0] ? `${states[0].state} has the most matching bills (${fmt(states[0].total)})` : "Bills by state"}
+          title={
+            states[0]
+              ? `${states[0].state} has the most matching bills (${fmt(states[0].total)})`
+              : "Bills by state"
+          }
           subtitle="Matching state bills by state and outcome, the 15 states with the most"
           status={status}
           sources={[OPEN_STATES]}
@@ -182,8 +212,15 @@ export function CivilJusticeWatch() {
           about={<WatchAbout />}
           table={{
             caption: "Matching state bills by state",
-            columns: [{ label: "State" }, ...STAGES.map((s) => ({ label: STAGE_LABEL[s] })), { label: "Total" }],
-            rows: states.map((s) => ({ key: s.state, cells: [s.state, ...STAGES.map((k) => s.counts[k]), s.total] })),
+            columns: [
+              { label: "State" },
+              ...STAGES.map((s) => ({ label: STAGE_LABEL[s] })),
+              { label: "Total" },
+            ],
+            rows: states.map((s) => ({
+              key: s.state,
+              cells: [s.state, ...STAGES.map((k) => s.counts[k]), s.total],
+            })),
           }}
         >
           {d ? (
@@ -197,7 +234,9 @@ export function CivilJusticeWatch() {
           ) : null}
         </ChartCard>
       </div>
-      {d && d.federal.length ? <FederalBills bills={d.federal} congress={congress} today={d.today} /> : null}
+      {d && d.federal.length ? (
+        <FederalBills bills={d.federal} congress={congress} today={d.today} />
+      ) : null}
       <AiSummary context={context} className="mt-4" />
     </Section>
   );
@@ -207,16 +246,18 @@ function WatchAbout() {
   return (
     <ul className="list-disc space-y-1 pl-4">
       <li>
-        A bill is listed when its title or summary mentions a watched phrase (for example “litigation financing” or
-        “noneconomic damages”). That is a text match, not a legal classification; read the bill before relying on it.
+        A bill is listed when its title or summary mentions a watched phrase (for example
+        “litigation financing” or “noneconomic damages”). That is a text match, not a legal
+        classification; read the bill before relying on it.
       </li>
       <li>
-        {Object.keys(EXCLUDED_STATE_BILLS).length} bills that mention a phrase but are plainly about something else are
-        left out (listed in the code with the reason).
+        {Object.keys(EXCLUDED_STATE_BILLS).length} bills that mention a phrase but are plainly about
+        something else are left out (listed in the code with the reason).
       </li>
       <li>
-        A bill carried over between sessions under the same number, first action and title counts once. Pending means
-        no signature, enactment or veto is recorded yet; “not passed” bills died with the preceding session.
+        A bill carried over between sessions under the same number, first action and title counts
+        once. Pending means no signature, enactment or veto is recorded yet; “not passed” bills died
+        with the preceding session.
       </li>
     </ul>
   );
@@ -241,26 +282,43 @@ function StateBillsDrawer({ bills, today }: { bills: WatchBill[]; today: string 
           label: "Bill",
           value: (b) => b.identifier,
           render: (b) => (
-            <Link to="/law/legislation/state/$id" params={{ id: b.id }} className="text-primary hover:underline">
+            <Link
+              to="/law/legislation/state/$id"
+              params={{ id: b.id }}
+              className="text-primary hover:underline"
+            >
               {b.identifier}
             </Link>
           ),
         },
         { key: "title", label: "Title", value: (b) => b.title },
-        { key: "topics", label: "Mentions", value: (b) => b.topics.map((t) => TOPIC_LABEL[t] ?? t).join(", ") },
+        {
+          key: "topics",
+          label: "Mentions",
+          value: (b) => b.topics.map((t) => TOPIC_LABEL[t] ?? t).join(", "),
+        },
         { key: "stage", label: "Outcome", value: (b) => STAGE_LABEL[b.stage] },
         { key: "session", label: "Session", value: (b) => b.session },
         {
           key: "latest",
           label: "Latest action",
-          value: (b) => (b.latestActionDate ? `${b.latestActionDate}${b.scheduled ? " (scheduled)" : ""}` : null),
+          value: (b) =>
+            b.latestActionDate ? `${b.latestActionDate}${b.scheduled ? " (scheduled)" : ""}` : null,
         },
       ]}
     />
   );
 }
 
-function FederalBills({ bills, congress, today }: { bills: FederalWatchBill[]; congress: string; today: string }) {
+function FederalBills({
+  bills,
+  congress,
+  today,
+}: {
+  bills: FederalWatchBill[];
+  congress: string;
+  today: string;
+}) {
   const top = bills.slice(0, 5);
   return (
     <div className="mt-4 rounded-xl border border-border bg-card p-4 shadow-xs">
@@ -290,7 +348,10 @@ function FederalBills({ bills, congress, today }: { bills: FederalWatchBill[]; c
         {top.map((b) => {
           const [c, type, number] = b.id.split("-");
           return (
-            <li key={b.id} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2">
+            <li
+              key={b.id}
+              className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2"
+            >
               <span className="min-w-0">
                 {c && type && number ? (
                   <Link
@@ -322,7 +383,9 @@ function FederalBills({ bills, congress, today }: { bills: FederalWatchBill[]; c
                 </span>
               </span>
               <span className="shrink-0 text-meta tabular-nums text-muted-foreground">
-                {b.cosponsors == null ? "Cosponsors not recorded" : `${fmt(b.cosponsors)} cosponsors`}
+                {b.cosponsors == null
+                  ? "Cosponsors not recorded"
+                  : `${fmt(b.cosponsors)} cosponsors`}
               </span>
             </li>
           );

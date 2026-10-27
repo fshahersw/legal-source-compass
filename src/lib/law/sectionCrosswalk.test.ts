@@ -52,13 +52,28 @@ describe("devices", () => {
 
 describe("vehicle recalls", () => {
   const r = (id: string, date: string | null, units: string | null) =>
-    toVehicleRecall({ id, title: `MAKER — ${id}`, report_date: date, units, manufacturer: "MAKER" })!;
+    toVehicleRecall({
+      id,
+      title: `MAKER — ${id}`,
+      report_date: date,
+      units,
+      manufacturer: "MAKER",
+    })!;
   it("keeps a missing unit count null and fills quiet years with zero recalls", () => {
-    const rows = [r("10V1", "2010-08-05", "53449"), r("12V1", "2012-01-02", null), r("26V1", "2026-03-01", "10")];
+    const rows = [
+      r("10V1", "2010-08-05", "53449"),
+      r("12V1", "2012-01-02", null),
+      r("26V1", "2026-03-01", "10"),
+    ];
     expect(rows[1]!.units).toBeNull();
     const ys = recallYears(rows, "2026-10-27");
     expect(ys[0]).toEqual({ year: "2010", recalls: 1, units: 53449, partial: false });
-    expect(ys.find((y) => y.year === "2011")).toEqual({ year: "2011", recalls: 0, units: 0, partial: false });
+    expect(ys.find((y) => y.year === "2011")).toEqual({
+      year: "2011",
+      recalls: 0,
+      units: 0,
+      partial: false,
+    });
     expect(ys.find((y) => y.year === "2012")?.units).toBeNull();
     expect(ys.at(-1)).toEqual({ year: "2026", recalls: 1, units: 10, partial: true });
     expect(recallYears([], "2026-10-27")).toEqual([]);

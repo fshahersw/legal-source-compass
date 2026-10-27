@@ -19,13 +19,7 @@ import {
   buildSectionContext,
 } from "@/components/kit";
 import { partCitation, type SectionChange } from "@/lib/law/cfrRadar";
-import { getCfrRadar } from "@/lib/law/cfrRadar.functions";
-
-export const cfrRadarQuery = {
-  queryKey: ["law", "cfr-radar"],
-  queryFn: () => getCfrRadar(),
-  staleTime: 30 * 60 * 1000,
-};
+import { cfrRadarQuery } from "./lawQueries";
 
 const SOURCE = {
   label: "eCFR point-in-time versions (Office of the Federal Register)",
@@ -42,7 +36,11 @@ export function CfrChangeRadar() {
   const status = q.isPending
     ? ({ kind: "loading" } as const)
     : q.isError
-      ? ({ kind: "error", message: "This chart could not be loaded.", onRetry: () => void q.refetch() } as const)
+      ? ({
+          kind: "error",
+          message: "This chart could not be loaded.",
+          onRetry: () => void q.refetch(),
+        } as const)
       : ({ kind: "ready" } as const);
   const totals = r
     ? r.years.map((y) => ({
@@ -52,7 +50,9 @@ export function CfrChangeRadar() {
       }))
     : [];
   const allChanges = r ? r.parts.reduce((a, p) => a + p.changes, 0) : 0;
-  const partsRecent = r ? r.parts.filter((p) => p.latest !== null && p.latest > r.last12.since) : [];
+  const partsRecent = r
+    ? r.parts.filter((p) => p.latest !== null && p.latest > r.last12.since)
+    : [];
   const latest = r?.changes[0];
   const latestPart = latest && r ? r.parts.find((p) => p.key === latest.partKey) : undefined;
   const period = r ? `2017–${r.partialYear} (${r.partialYear} partial)` : undefined;
@@ -65,9 +65,21 @@ export function CfrChangeRadar() {
         period: `Since 2017-01-03, through ${r.today}`,
         source: SOURCE.label,
         figures: [
-          { label: `Sections changed since ${r.last12.since}`, value: r.last12.sections, unit: "sections" },
-          { label: `Substantive changes since ${r.last12.since}`, value: r.last12.changes, unit: "changes" },
-          { label: "Substantive changes since 2017, all watched parts", value: allChanges, unit: "changes" },
+          {
+            label: `Sections changed since ${r.last12.since}`,
+            value: r.last12.sections,
+            unit: "sections",
+          },
+          {
+            label: `Substantive changes since ${r.last12.since}`,
+            value: r.last12.changes,
+            unit: "changes",
+          },
+          {
+            label: "Substantive changes since 2017, all watched parts",
+            value: allChanges,
+            unit: "changes",
+          },
           ...r.parts.map((p) => ({
             label: `${partCitation(p)} (${p.label}): sections changed since 2017`,
             value: p.changedSections,
@@ -102,7 +114,9 @@ export function CfrChangeRadar() {
           label="Sections changed in the last 12 months"
           state={state}
           value={r ? fmt(r.last12.sections) : null}
-          meta={r ? `${fmt(r.last12.changes)} substantive changes since ${r.last12.since}` : undefined}
+          meta={
+            r ? `${fmt(r.last12.changes)} substantive changes since ${r.last12.since}` : undefined
+          }
           source={{ source: SOURCE, asOf: r?.today }}
         />
         <KpiCard
@@ -126,7 +140,11 @@ export function CfrChangeRadar() {
           label="Latest change"
           state={state}
           value={latest ? latest.date : null}
-          meta={latest && latestPart ? `${latestPart.title} CFR ${latest.section} · ${latestPart.label}` : undefined}
+          meta={
+            latest && latestPart
+              ? `${latestPart.title} CFR ${latest.section} · ${latestPart.label}`
+              : undefined
+          }
           source={{ source: SOURCE, asOf: r?.today }}
         />
       </KpiGrid>
@@ -148,20 +166,30 @@ export function CfrChangeRadar() {
           about={
             <ul className="list-disc space-y-1 pl-4">
               <li>
-                eCFR history begins on 2017-01-03, so earlier amendments are not counted (for example 21 CFR 314.70
-                was last changed in 2016).
+                eCFR history begins on 2017-01-03, so earlier amendments are not counted (for
+                example 21 CFR 314.70 was last changed in 2016).
               </li>
-              <li>Editorial reissues are not counted; each change is one new version of one section.</li>
+              <li>
+                Editorial reissues are not counted; each change is one new version of one section.
+              </li>
             </ul>
           }
           table={
             r
               ? {
                   caption: "Substantive changes per part and year since 2017",
-                  columns: [{ label: "Part" }, ...r.years.map((y) => ({ label: y === r.partialYear ? `${y} (partial)` : y })), { label: "Sections changed" }],
+                  columns: [
+                    { label: "Part" },
+                    ...r.years.map((y) => ({ label: y === r.partialYear ? `${y} (partial)` : y })),
+                    { label: "Sections changed" },
+                  ],
                   rows: r.parts.map((p) => ({
                     key: p.key,
-                    cells: [`${partCitation(p)} · ${p.label}`, ...r.years.map((y) => p.byYear[y] ?? 0), `${fmt(p.changedSections)} of ${fmt(p.sections)}`],
+                    cells: [
+                      `${partCitation(p)} · ${p.label}`,
+                      ...r.years.map((y) => p.byYear[y] ?? 0),
+                      `${fmt(p.changedSections)} of ${fmt(p.sections)}`,
+                    ],
                   })),
                 }
               : undefined
@@ -170,7 +198,10 @@ export function CfrChangeRadar() {
         >
           {r ? (
             <Heatmap
-              rows={r.parts.map((p) => ({ id: p.key, label: `${p.title} CFR ${p.part} · ${p.label}` }))}
+              rows={r.parts.map((p) => ({
+                id: p.key,
+                label: `${p.title} CFR ${p.part} · ${p.label}`,
+              }))}
               columns={r.years.map((y) => ({ id: y, label: y === r.partialYear ? `${y}*` : y }))}
               value={(row, col) => r.parts.find((p) => p.key === row)?.byYear[col] ?? null}
               formatter={metricFormatter("count")}
@@ -178,7 +209,9 @@ export function CfrChangeRadar() {
               ariaLabel="Substantive changes per CFR part and year since 2017"
               cellNote={(row) => {
                 const p = r.parts.find((x) => x.key === row);
-                return p ? `${fmt(p.changedSections)} of ${fmt(p.sections)} sections changed since 2017` : undefined;
+                return p
+                  ? `${fmt(p.changedSections)} of ${fmt(p.sections)} sections changed since 2017`
+                  : undefined;
               }}
             />
           ) : null}
@@ -248,16 +281,27 @@ function ChangesDrawer({ changes, today }: { changes: SectionChange[]; today: st
             </Link>
           ),
         },
-        { key: "heading", label: "Heading", value: (c) => (c.removed ? `${c.heading} (removed)` : c.heading) },
+        {
+          key: "heading",
+          label: "Heading",
+          value: (c) => (c.removed ? `${c.heading} (removed)` : c.heading),
+        },
         {
           key: "fr",
           label: "Federal Register rule",
-          value: (c) => (c.fr.length ? c.fr.map((f) => f.citation ?? f.documentNumber).join("; ") : null),
+          value: (c) =>
+            c.fr.length ? c.fr.map((f) => f.citation ?? f.documentNumber).join("; ") : null,
           render: (c) =>
             c.fr.length ? (
               <span className="flex flex-wrap gap-x-2">
                 {c.fr.map((f) => (
-                  <a key={f.documentNumber} href={f.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                  <a
+                    key={f.documentNumber}
+                    href={f.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
                     {f.citation ?? f.documentNumber}
                   </a>
                 ))}

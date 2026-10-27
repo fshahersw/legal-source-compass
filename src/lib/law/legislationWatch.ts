@@ -28,7 +28,11 @@ export const STATE_TOPICS: readonly WatchTopic[] = [
     label: "Damages limits",
     query: '"punitive damages" OR "noneconomic damages" OR "non-economic damages"',
   },
-  { id: "product", label: "Product liability", query: '"product liability" OR "products liability"' },
+  {
+    id: "product",
+    label: "Product liability",
+    query: '"product liability" OR "products liability"',
+  },
   { id: "asbestos", label: "Asbestos trust claims", query: '"asbestos trust"' },
 ];
 
@@ -85,7 +89,8 @@ export type WatchBill = {
 };
 
 type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {});
+const obj = (v: unknown): Obj =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {};
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const first = (v: unknown): string | null => (Array.isArray(v) ? str(v[0]) : str(v));
 const day = (v: unknown): string | null => {
@@ -103,7 +108,13 @@ export function toWatchBill(raw: unknown, topic: string, today: string): WatchBi
   const outcome = first(f["outcome"]);
   const current = first(f["session_role"]) === "current";
   const stage: BillStage =
-    outcome === "enacted" ? "enacted" : outcome === "vetoed" ? "vetoed" : current ? "pending" : "not_passed";
+    outcome === "enacted"
+      ? "enacted"
+      : outcome === "vetoed"
+        ? "vetoed"
+        : current
+          ? "pending"
+          : "not_passed";
   const latest = day(c["latest_action_date"]);
   return {
     id,
@@ -138,7 +149,9 @@ export function mergeBills(lists: readonly (readonly WatchBill[])[]): WatchBill[
     }
   const byKey = new Map<string, WatchBill>();
   for (const b of byId.values()) {
-    const key = b.firstAction ? `${b.state}|${b.identifier}|${b.firstAction}|${b.title}` : `id|${b.id}`;
+    const key = b.firstAction
+      ? `${b.state}|${b.identifier}|${b.firstAction}|${b.title}`
+      : `id|${b.id}`;
     const had = byKey.get(key);
     if (!had) byKey.set(key, b);
     else {
@@ -151,14 +164,16 @@ export function mergeBills(lists: readonly (readonly WatchBill[])[]): WatchBill[
 }
 
 /** Latest action first; scheduled (future-dated) actions and undated bills after every dated past action. */
-export function sortByLatestAction<T extends { latestActionDate: string | null; scheduled: boolean; id: string }>(
-  rows: readonly T[],
-): T[] {
+export function sortByLatestAction<
+  T extends { latestActionDate: string | null; scheduled: boolean; id: string },
+>(rows: readonly T[]): T[] {
   const rank = (b: T) => (b.latestActionDate && !b.scheduled ? 0 : b.scheduled ? 1 : 2);
   return [...rows].sort(
     (a, b) =>
       rank(a) - rank(b) ||
-      (rank(a) === 0 ? (b.latestActionDate as string).localeCompare(a.latestActionDate as string) : 0) ||
+      (rank(a) === 0
+        ? (b.latestActionDate as string).localeCompare(a.latestActionDate as string)
+        : 0) ||
       a.id.localeCompare(b.id),
   );
 }
@@ -172,7 +187,9 @@ export function stageCounts(rows: readonly WatchBill[]): StageCounts {
   return out;
 }
 
-export function byState(rows: readonly WatchBill[]): { state: string; counts: StageCounts; total: number }[] {
+export function byState(
+  rows: readonly WatchBill[],
+): { state: string; counts: StageCounts; total: number }[] {
   const m = new Map<string, WatchBill[]>();
   for (const b of rows) m.set(b.state, [...(m.get(b.state) ?? []), b]);
   return [...m.entries()]
@@ -250,7 +267,13 @@ export const ATTENTION_TOPICS: readonly WatchTopic[] = [
 /** First Congress the bill collection covers (GovInfo Bill Status). */
 export const FIRST_CONGRESS = 108;
 
-export type Hearing = { id: string; title: string; congress: number | null; held: string | null; url: string | null };
+export type Hearing = {
+  id: string;
+  title: string;
+  congress: number | null;
+  held: string | null;
+  url: string | null;
+};
 
 /** A govinfo_hearings row; the publisher's "Not stated" for the date is a missing date, never a date. */
 export function toHearing(raw: unknown): Hearing | null {
@@ -269,7 +292,10 @@ export function toHearing(raw: unknown): Hearing | null {
 
 /** Latest held date among hearings, ignoring missing dates (max over the "Not stated" sentinel is not a date). */
 export function latestHeld(rows: readonly { held: string | null }[]): string | null {
-  return rows.reduce<string | null>((m, h) => (h.held && (m === null || h.held > m) ? h.held : m), null);
+  return rows.reduce<string | null>(
+    (m, h) => (h.held && (m === null || h.held > m) ? h.held : m),
+    null,
+  );
 }
 
 export type AttentionCell = { congress: number; bills: number; hearings: number };

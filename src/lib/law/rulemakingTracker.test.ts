@@ -71,7 +71,12 @@ describe("summaries", () => {
     ].flatMap((r) => toDeadline(r, TODAY) ?? []),
   );
   it("sorts soonest first with open-ended last", () => {
-    expect(rows.map((r) => r.id)).toEqual(["FDA-3-0001", "FDA-2-0001", "CPSC-1-0001", "FDA-1-0001"]);
+    expect(rows.map((r) => r.id)).toEqual([
+      "FDA-3-0001",
+      "FDA-2-0001",
+      "CPSC-1-0001",
+      "FDA-1-0001",
+    ]);
   });
   it("counts open periods without placeholders and keeps a real zero", () => {
     const s = agencySummaries(rows, ["FDA", "CPSC", "FTC"]);
@@ -100,7 +105,10 @@ describe("frAgencyYears", () => {
         trends: {
           asOf: "2026-10-19",
           partialYear: "2026",
-          yearly: { RULE: { "2024": 70, "2026": 95 }, PRORULE: { "2024": 30, "2025": 20, "2026": 27 } },
+          yearly: {
+            RULE: { "2024": 70, "2026": 95 },
+            PRORULE: { "2024": 30, "2025": 20, "2026": 27 },
+          },
         },
       },
     };

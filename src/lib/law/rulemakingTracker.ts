@@ -62,7 +62,8 @@ export type Deadline = {
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {});
+const obj = (v: unknown): Obj =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {};
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const first = (v: unknown): string | null => (Array.isArray(v) ? str(v[0]) : str(v));
 
@@ -163,7 +164,12 @@ export function agencySummaries(
 
 // ------------------------------------------------------------------------------------------------ Federal Register
 
-export type FrYear = { year: string; rules: number | null; proposed: number | null; partial: boolean };
+export type FrYear = {
+  year: string;
+  rules: number | null;
+  proposed: number | null;
+  partial: boolean;
+};
 export type FrAgencyYears = { agency: string; asOf: string | null; years: FrYear[] };
 
 const count = (v: unknown): number | null =>

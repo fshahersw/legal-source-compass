@@ -18,13 +18,24 @@ vi.mock("@tanstack/react-router", () => ({
 
 import { MassTortRulemaking } from "@/components/rulemaking/MassTortRulemaking";
 import { rulemakingTrackerQuery } from "@/components/rulemaking/rulemakingQueries";
-import { CfrChangeRadar, cfrRadarQuery } from "./CfrChangeRadar";
+import { CfrChangeRadar } from "./CfrChangeRadar";
+import { cfrRadarQuery } from "./lawQueries";
 import { CivilJusticeWatch } from "@/components/legislation/CivilJusticeWatch";
 import { CongressAttention } from "@/components/legislation/CongressAttention";
 import { legislationWatchQuery } from "@/components/legislation/legislationWatchQuery";
 import { buildRadar } from "@/lib/law/cfrRadar";
-import { TRACKED_AGENCIES, frAgencyYears, toAgendaItem, toDeadline } from "@/lib/law/rulemakingTracker";
-import { attentionMatrix, mergeBills, toFederalBill, toWatchBill } from "@/lib/law/legislationWatch";
+import {
+  TRACKED_AGENCIES,
+  frAgencyYears,
+  toAgendaItem,
+  toDeadline,
+} from "@/lib/law/rulemakingTracker";
+import {
+  attentionMatrix,
+  mergeBills,
+  toFederalBill,
+  toWatchBill,
+} from "@/lib/law/legislationWatch";
 
 const TODAY = "2026-10-27";
 
@@ -62,11 +73,26 @@ const tracker = {
   fr: TRACKED_AGENCIES.map((a) =>
     frAgencyYears(
       a.code,
-      { item: { trends: { asOf: "2026-10-19", partialYear: "2026", yearly: { RULE: { "2025": 5, "2026": 4 }, PRORULE: { "2025": 3 } } } } },
+      {
+        item: {
+          trends: {
+            asOf: "2026-10-19",
+            partialYear: "2026",
+            yearly: { RULE: { "2025": 5, "2026": 4 }, PRORULE: { "2025": 3 } },
+          },
+        },
+      },
       2025,
     ),
   ),
-  agenda: [toAgendaItem("NHTSA", { id: "2127-AK17", title: "FMVSS", source_url: "https://www.reginfo.gov/public/do/eAgendaViewRule?pubId=202510&RIN=2127-AK17", item: { cells: { stage: "Final Rule Stage", next_action: "Final Rule · 07/00/2026" } } })!],
+  agenda: [
+    toAgendaItem("NHTSA", {
+      id: "2127-AK17",
+      title: "FMVSS",
+      source_url: "https://www.reginfo.gov/public/do/eAgendaViewRule?pubId=202510&RIN=2127-AK17",
+      item: { cells: { stage: "Final Rule Stage", next_action: "Final Rule · 07/00/2026" } },
+    })!,
+  ],
   agendaEdition: "202510",
   readAt: "2026-10-27T12:00:00Z",
 };
@@ -88,12 +114,23 @@ describe("law lead sections render", () => {
       new Map([
         [
           "49:571",
-          [{ id: "cfr:49:571.208", title: "x", versions: [{ date: "2016-12-27", substantive: true }, { date: "2026-10-09", substantive: true }] }],
+          [
+            {
+              id: "cfr:49:571.208",
+              title: "x",
+              versions: [
+                { date: "2016-12-27", substantive: true },
+                { date: "2026-10-09", substantive: true },
+              ],
+            },
+          ],
         ],
       ]),
       TODAY,
     );
-    const html = render(createElement(CfrChangeRadar), (qc) => qc.setQueryData(cfrRadarQuery.queryKey, radar));
+    const html = render(createElement(CfrChangeRadar), (qc) =>
+      qc.setQueryData(cfrRadarQuery.queryKey, radar),
+    );
     expect(html).toContain("Changes to mass-tort regulations since 2017");
     expect(html).toContain("1 sections of these parts changed in the last 12 months");
   });
@@ -105,7 +142,12 @@ describe("law lead sections render", () => {
         title: "HB 280",
         source_url: null,
         filters: { state: ["UT"], session_role: ["current"], outcome: ["enacted"] },
-        cells: { identifier: "HB 280", title: "Third Party Litigation Funding Amendments", latest_action_date: "2026-03-20", first_action_date: "2026-01-20" },
+        cells: {
+          identifier: "HB 280",
+          title: "Third Party Litigation Funding Amendments",
+          latest_action_date: "2026-03-20",
+          first_action_date: "2026-01-20",
+        },
       },
       "funding",
       TODAY,
@@ -114,14 +156,35 @@ describe("law lead sections render", () => {
       today: TODAY,
       congress: 119,
       stateBills: mergeBills([[bill]]),
-      federal: [toFederalBill({ id: "119-hr-3512", filters: { sponsor: ["H001082"] }, cells: { citation: "H.R. 3512, 119th Congress", title: "Tackling Predatory Litigation Funding Act", sponsor: "Rep. Hern, Kevin [R-OK-1]", cosponsors: 39 } })!],
+      federal: [
+        toFederalBill({
+          id: "119-hr-3512",
+          filters: { sponsor: ["H001082"] },
+          cells: {
+            citation: "H.R. 3512, 119th Congress",
+            title: "Tackling Predatory Litigation Funding Act",
+            sponsor: "Rep. Hern, Kevin [R-OK-1]",
+            cosponsors: 39,
+          },
+        })!,
+      ],
       attention: [
-        attentionMatrix({ id: "pfas", label: "PFAS", query: "PFAS" }, [{ congress: 118, becameLaw: false }], [], 119),
+        attentionMatrix(
+          { id: "pfas", label: "PFAS", query: "PFAS" },
+          [{ congress: 118, becameLaw: false }],
+          [],
+          119,
+        ),
       ],
       readAt: "2026-10-27T12:00:00Z",
     };
     const html = render(
-      createElement("div", null, createElement(CivilJusticeWatch), createElement(CongressAttention)),
+      createElement(
+        "div",
+        null,
+        createElement(CivilJusticeWatch),
+        createElement(CongressAttention),
+      ),
       (qc) => qc.setQueryData(legislationWatchQuery.queryKey, watch),
     );
     expect(html).toContain("1 bills mention litigation funding; 1 became law");

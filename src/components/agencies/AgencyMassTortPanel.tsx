@@ -15,7 +15,10 @@ import {
 } from "@/lib/law/rulemakingTracker";
 
 const REGS = { label: "Regulations.gov", url: "https://www.regulations.gov/" };
-const AGENDA = { label: "Unified Agenda (reginfo.gov)", url: "https://www.reginfo.gov/public/do/eAgendaMain" };
+const AGENDA = {
+  label: "Unified Agenda (reginfo.gov)",
+  url: "https://www.reginfo.gov/public/do/eAgendaMain",
+};
 const fmt = (v: number) => v.toLocaleString("en-US");
 
 export function AgencyMassTortPanel({ frId }: { frId: string }) {
@@ -33,7 +36,11 @@ export function AgencyMassTortPanel({ frId }: { frId: string }) {
       title="Comment deadlines and agenda"
       description={`${agency.code} documents open for comment on Regulations.gov, and its agenda schedule.`}
       actions={
-        <Link to="/law/rulemaking" hash="mass-tort-rulemaking" className="text-meta font-medium text-primary hover:underline">
+        <Link
+          to="/law/rulemaking"
+          hash="mass-tort-rulemaking"
+          className="text-meta font-medium text-primary hover:underline"
+        >
           All five agencies
         </Link>
       }
@@ -45,7 +52,11 @@ export function AgencyMassTortPanel({ frId }: { frId: string }) {
           label="Open comment periods"
           state={state}
           value={s ? fmt(s.open) : null}
-          meta={s?.openEnded ? `${fmt(s.openEnded)} more with no fixed close date` : "Regulations.gov documents"}
+          meta={
+            s?.openEnded
+              ? `${fmt(s.openEnded)} more with no fixed close date`
+              : "Regulations.gov documents"
+          }
           source={{ source: REGS, asOf: d?.today }}
         />
         <KpiCard
@@ -71,7 +82,11 @@ export function AgencyMassTortPanel({ frId }: { frId: string }) {
           label="Agenda items past projected month"
           state={state}
           value={a ? fmt(a.passed) : null}
-          meta={a ? `of ${fmt(a.dated)} dated · ${edition ?? "edition not recorded"} edition` : undefined}
+          meta={
+            a
+              ? `of ${fmt(a.dated)} dated · ${edition ?? "edition not recorded"} edition`
+              : undefined
+          }
           source={{ source: AGENDA, period: edition ? `${edition} edition` : undefined }}
         />
       </KpiGrid>

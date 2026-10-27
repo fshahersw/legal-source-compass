@@ -63,7 +63,9 @@ export function RegsOverview() {
 }
 
 const pct = (n: number, of: number) =>
-  of > 0 ? `${((n / of) * 100).toLocaleString("en-US", { maximumFractionDigits: n / of < 0.01 ? 2 : 1 })}%` : "Not recorded";
+  of > 0
+    ? `${((n / of) * 100).toLocaleString("en-US", { maximumFractionDigits: n / of < 0.01 ? 2 : 1 })}%`
+    : "Not recorded";
 
 function OverviewBody({ o }: { o: NonNullable<Overview> }) {
   const coverage = useQuery({

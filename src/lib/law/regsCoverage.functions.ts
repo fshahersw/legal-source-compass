@@ -12,7 +12,9 @@ const read = memoAsync(60 * 60 * 1000, async (): Promise<DocketCommentCoverage> 
   const base = "corpus_records?dataset=eq.regulations_gov_dockets";
   const [dockets, notRecorded] = await Promise.all([
     countRows(base),
-    countRows(`${base}&filters=cs.${encodeURIComponent(JSON.stringify({ comments: ["not_recorded"] }))}`),
+    countRows(
+      `${base}&filters=cs.${encodeURIComponent(JSON.stringify({ comments: ["not_recorded"] }))}`,
+    ),
   ]);
   return { dockets, counted: Math.max(0, dockets - notRecorded) };
 });

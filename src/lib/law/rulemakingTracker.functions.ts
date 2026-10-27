@@ -43,10 +43,7 @@ async function openDeadlines(agency: string, today: string): Promise<Deadline[]>
     { max: 3_000 },
   );
   return rows.flatMap((r) => {
-    const d = toDeadline(
-      { ...r, item: { dates_et: r.dates_et, comments: r.comments } },
-      today,
-    );
+    const d = toDeadline({ ...r, item: { dates_et: r.dates_et, comments: r.comments } }, today);
     return d ? [d] : [];
   });
 }

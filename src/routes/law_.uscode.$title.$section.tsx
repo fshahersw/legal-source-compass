@@ -164,7 +164,10 @@ function SectionBody({ s }: { s: UscSection }) {
             above states what happened to it; the notes below give the details.
           </p>
         ) : null}
-        <section aria-label="Text" className="rounded-xl border border-border bg-card shadow-xs px-4 py-3">
+        <section
+          aria-label="Text"
+          className="rounded-xl border border-border bg-card shadow-xs px-4 py-3"
+        >
           <h2 className="m-0 mb-2 flex flex-wrap items-baseline gap-x-2 text-heading font-semibold text-foreground">
             <span>{s.num ?? s.citation}</span>
             <span className="font-normal">{s.heading}</span>
@@ -377,7 +380,9 @@ function AmendingLaws({ title, section }: { title: string; section: string }) {
       className="rounded-xl border border-border bg-card shadow-xs"
     >
       <header className="border-b border-border/70 px-4 py-2.5">
-        <h2 className="m-0 text-heading font-semibold text-foreground">Enacting and amending laws</h2>
+        <h2 className="m-0 text-heading font-semibold text-foreground">
+          Enacting and amending laws
+        </h2>
         <p className="m-0 mt-0.5 text-[11px] text-muted-foreground">
           Laws named in this unit's source credit or notes, and laws whose Statutes at Large text or
           margin cites it. Matched on public law number, act date and chapter, or Statutes at Large

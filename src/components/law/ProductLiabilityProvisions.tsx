@@ -4,11 +4,17 @@
  * not a doctrine classification, and common-law states can show few or none; the section says so.
  */
 import { useQuery } from "@tanstack/react-query";
-import { AiSummary, AskAiButton, KpiCard, KpiGrid, Section, buildSectionContext } from "@/components/kit";
+import {
+  AiSummary,
+  AskAiButton,
+  KpiCard,
+  KpiGrid,
+  Section,
+  buildSectionContext,
+} from "@/components/kit";
 import { searchStateLaw } from "@/lib/law/stateLaw.functions";
 import { snippetSegments } from "@/lib/law/stateLawContract";
-
-export const PRODUCT_LIABILITY_QUERY = '"product liability"';
+import { PRODUCT_LIABILITY_QUERY } from "./lawQueries";
 const ID = "product-liability-provisions";
 const fmt = (v: number) => v.toLocaleString("en-US");
 
@@ -25,7 +31,10 @@ export function ProductLiabilityProvisions({
 }) {
   const q = useQuery({
     queryKey: ["law", "product-liability", state],
-    queryFn: () => searchStateLaw({ data: { state, q: PRODUCT_LIABILITY_QUERY, offset: 0, status: "in_force" } }),
+    queryFn: () =>
+      searchStateLaw({
+        data: { state, q: PRODUCT_LIABILITY_QUERY, offset: 0, status: "in_force" },
+      }),
     staleTime: 30 * 60 * 1000,
   });
   const r = q.data;
@@ -39,8 +48,13 @@ export function ProductLiabilityProvisions({
     scope: `${stateName} statutes in force; sections whose text mentions "product liability"`,
     source: source.label,
     figures: [
-      { label: "Sections in force mentioning product liability", value: r.totalCapped ? "over 10,000" : r.total },
-      ...hits.slice(0, 8).map((h) => ({ label: h.citation, value: h.heading ?? "Heading not recorded" })),
+      {
+        label: "Sections in force mentioning product liability",
+        value: r.totalCapped ? "over 10,000" : r.total,
+      },
+      ...hits
+        .slice(0, 8)
+        .map((h) => ({ label: h.citation, value: h.heading ?? "Heading not recorded" })),
     ],
   });
   return (
@@ -49,7 +63,14 @@ export function ProductLiabilityProvisions({
       className="mb-6"
       title="Product liability provisions"
       description={`Sections of the ${stateName} code in force whose text mentions “product liability”, most relevant first.`}
-      actions={<AskAiButton sectionId={ID} title="Product liability provisions" context={context} size="icon" />}
+      actions={
+        <AskAiButton
+          sectionId={ID}
+          title="Product liability provisions"
+          context={context}
+          size="icon"
+        />
+      }
     >
       <KpiGrid columns={4} label="Product liability provisions">
         <KpiCard
@@ -60,10 +81,18 @@ export function ProductLiabilityProvisions({
           meta="In force, full-text match"
           source={{
             source,
-            about: "A text match on the section's words (English stemming), not a legal classification. States whose product-liability law is mostly judge-made show few sections.",
+            about:
+              "A text match on the section's words (English stemming), not a legal classification. States whose product-liability law is mostly judge-made show few sections.",
           }}
         />
-        <KpiCard as="li" size="sm" label="Codes among the top hits" value={fmt(codes.size)} meta={`Top ${fmt(r.hits.length)} hits`} source={{ source }} />
+        <KpiCard
+          as="li"
+          size="sm"
+          label="Codes among the top hits"
+          value={fmt(codes.size)}
+          meta={`Top ${fmt(r.hits.length)} hits`}
+          source={{ source }}
+        />
       </KpiGrid>
       {hits.length ? (
         <ol className="m-0 mt-3 list-none divide-y divide-border/70 rounded-xl border border-border bg-card p-0 shadow-xs">
@@ -75,7 +104,9 @@ export function ProductLiabilityProvisions({
                 className="block w-full px-3 py-2 text-left hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring"
               >
                 <span className="text-body font-medium text-primary">{h.citation}</span>
-                {h.heading ? <span className="block text-meta text-foreground">{h.heading}</span> : null}
+                {h.heading ? (
+                  <span className="block text-meta text-foreground">{h.heading}</span>
+                ) : null}
                 {h.snippet ? (
                   <span className="mt-0.5 block text-meta leading-relaxed text-muted-foreground">
                     {snippetSegments(h.snippet).map((seg, i) =>
@@ -95,11 +126,16 @@ export function ProductLiabilityProvisions({
         </ol>
       ) : (
         <p className="mt-3 text-meta text-muted-foreground">
-          No section in force mentions the phrase; this state&apos;s product-liability law may be mostly judge-made.
+          No section in force mentions the phrase; this state&apos;s product-liability law may be
+          mostly judge-made.
         </p>
       )}
       {r.total > hits.length ? (
-        <button type="button" onClick={onSeeAll} className="mt-2 text-meta font-medium text-primary hover:underline">
+        <button
+          type="button"
+          onClick={onSeeAll}
+          className="mt-2 text-meta font-medium text-primary hover:underline"
+        >
           See all {r.totalCapped ? "matches" : fmt(r.total)} in the code search
         </button>
       ) : null}

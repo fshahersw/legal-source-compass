@@ -74,7 +74,8 @@ export type CfrRadar = {
 };
 
 type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {});
+const obj = (v: unknown): Obj =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : {};
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const LINKED_BASES = new Set(["source_note", "only_rule_for_part_on_date"]);
@@ -103,7 +104,8 @@ export function sectionChanges(row: unknown, key: string): SectionChange[] {
   return versions.flatMap((raw) => {
     const v = obj(raw);
     const date = str(v["date"]);
-    if (!date || !ISO.test(date) || date < ECFR_HISTORY_START || v["substantive"] !== true) return [];
+    if (!date || !ISO.test(date) || date < ECFR_HISTORY_START || v["substantive"] !== true)
+      return [];
     return [
       {
         id,
@@ -151,7 +153,10 @@ export function buildRadar(
       sections: rows.length,
       changedSections: new Set(changes.map((c) => c.id)).size,
       changes: changes.length,
-      latest: changes.reduce<string | null>((m, c) => (m === null || c.date > m ? c.date : m), null),
+      latest: changes.reduce<string | null>(
+        (m, c) => (m === null || c.date > m ? c.date : m),
+        null,
+      ),
       byYear,
     };
   });
