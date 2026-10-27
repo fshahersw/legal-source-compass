@@ -63,6 +63,16 @@ import {
   TierBadge,
 } from "./CompanyUi";
 import {
+  applyUiExposure,
+  countsInUi,
+  dataFlags,
+  exposureSentence,
+  sumSeries,
+  uiExposure,
+} from "./exposure";
+import { ReserveVsDocket } from "./ReserveVsDocket";
+import { CorporateTransactions } from "./CorporateTransactions";
+import {
   dateSpan,
   linkedMdlNote,
   pendingActionsValue,
@@ -119,6 +129,7 @@ export function CompanyProfile({
         </Link>
       </Notice>
     );
+  const uiSummary = d ? applyUiExposure(d.summary) : null;
   const tab = tabOf(search);
   const grain: Grain = search.grain ?? "annual";
   const open = (id: CompanyTab) =>
@@ -130,7 +141,7 @@ export function CompanyProfile({
     );
   return (
     <div className="space-y-3">
-      <CompanyFacts cik={cik} profile={p} summary={d?.summary ?? null} />
+      <CompanyFacts cik={cik} profile={p} summary={uiSummary} />
       <TabBar tab={tab} onOpen={open} />
       <div
         role="tabpanel"
@@ -144,7 +155,7 @@ export function CompanyProfile({
             {statements.error instanceof Error ? statements.error.message : ""}
           </Notice>
         ) : tab === "overview" ? (
-          <OverviewTab profile={p} summary={d?.summary ?? null} onOpen={open} />
+          <OverviewTab profile={p} summary={uiSummary} onOpen={open} />
         ) : tab === "statements" || tab === "segments" ? (
           <ViewParts
             first={tab === "segments" ? 1 : 0}
@@ -296,11 +307,22 @@ function reportsToCms(sic: string | null): boolean {
   );
 }
 
-function Litigation({ d }: { d: CompanyDetail }) {
+function Litigation({ d: published }: { d: CompanyDetail }) {
+  // Exposure under the UI rule: tier C links never count; pending actions are MDL-wide.
+  const d: CompanyDetail = {
+    ...published,
+    summary: applyUiExposure(published.summary),
+    links: published.links.map((l) => ({ ...l, countsTowardExposure: countsInUi(l) })),
+  };
   const { summary: s, financials: f } = d;
   const p = s.profile;
   const acc = s.latest.litigation_accrual;
   const unit = s.currency;
+  const ui = uiExposure(published.summary.mdls);
+  const flags = dataFlags(
+    s,
+    d.links.flatMap((l) => l.verified.flatMap((v) => v.coRegistrants)),
+  );
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -308,13 +330,26 @@ function Litigation({ d }: { d: CompanyDetail }) {
           <TierBadge tier={s.exposure.strongestTier} />
         ) : (
           <span className="text-[11px] text-muted-foreground">
-            No pending MDL read as defendant
+            No pending MDL counted (tier A or B, read as defendant)
           </span>
         )}
         {s.flags.map((k) => (
           <FlagBadge key={k} flag={k} label={FLAG_TEXT[k]} />
         ))}
       </div>
+      {flags.length ? (
+        <ul className="space-y-1" aria-label="Data notes">
+          {flags.map((fl) => (
+            <li
+              key={fl.id}
+              className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-foreground"
+            >
+              <span className="font-medium">{fl.label}: </span>
+              {fl.detail}
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi
           label="Linked MDLs"
@@ -322,17 +357,19 @@ function Litigation({ d }: { d: CompanyDetail }) {
           note={linkedMdlNote(s.mdls, s.exposure.pendingMdls)}
         />
         <Kpi
-          label="Pending actions (defendant)"
+          label="Pending in named MDLs (MDL-wide)"
           value={pendingActionsValue(s.exposure)}
-          note={strengthSplit(s.exposure.pendingActionsAB, s.exposure.pendingActionsC) ?? undefined}
+          note={exposureSentence(ui)}
           detail={
-            s.exposure.pendingActionsUnclear
-              ? `+${s.exposure.pendingActionsUnclear.toLocaleString("en-US")} where role not stated`
-              : s.exposure.pendingChange12m !== null
-                ? `${s.exposure.pendingChange12m >= 0 ? "+" : ""}${s.exposure.pendingChange12m.toLocaleString("en-US")} in 12 months`
-                : undefined
+            ui.tierCPendingMdls
+              ? `+${ui.tierCPendingMdls} tier C MDL${ui.tierCPendingMdls === 1 ? "" : "s"} not counted (requires review)`
+              : s.exposure.pendingActionsUnclear
+                ? `+${s.exposure.pendingActionsUnclear.toLocaleString("en-US")} where role not stated`
+                : s.exposure.pendingChange12m !== null
+                  ? `${s.exposure.pendingChange12m >= 0 ? "+" : ""}${s.exposure.pendingChange12m.toLocaleString("en-US")} in 12 months`
+                  : undefined
           }
-          title="Sum of JPML pending actions in MDLs whose evidence excerpt reads the company as a defendant. A/B = MDL number or caption evidence; C = subject evidence (requires review)."
+          title="JPML pending actions of the MDLs this company's own filings name it a defendant in (tier A or B evidence). The count is for the whole docket and is shared with every co-defendant; it is not this company's share."
         />
         <Kpi
           label="Litigation accrual (company-wide)"
@@ -371,12 +408,15 @@ function Litigation({ d }: { d: CompanyDetail }) {
         </Notice>
       )}
 
+      <ReserveVsDocket d={d} />
+
       <div className="grid gap-3 xl:grid-cols-2">
         <PendingTrend d={d} />
         <MentionTimeline d={d} />
       </div>
 
       <Exposure links={d.links} records={d.mdlRecords} />
+      <CorporateTransactions cik={p.cik} name={p.name} />
       {reportsToCms(p.sic) ? (
         <section aria-label="Industry payments and device reports" className="space-y-2">
           <div>
@@ -533,20 +573,25 @@ function LitigationFinancials({ d }: { d: CompanyDetail }) {
 }
 
 function PendingTrend({ d }: { d: CompanyDetail }) {
-  const series = d.summary.pendingSeries.map((p) => ({
+  // Summed from the counted links' own monthly series (tier A/B, read as defendant), not the stored profile
+  // series, which also carried tier C links.
+  const counted = sumSeries(
+    d.links.filter((l) => l.status === "pending" && l.countsTowardExposure).map((l) => l.series),
+  );
+  const series = counted.map((p) => ({
     label: chartDateLabel(p.date),
     pending: p.pending,
     mdls: p.mdls ?? null,
   }));
   // Chart only MDLs read as defendant (the same rule as the KPI totals); every other pending link
   // is named with the reason it is left out, so an empty chart never reads as "nothing pending".
-  const view = pendingTrendView(d.summary.mdls, d.summary.pendingSeries);
+  const view = pendingTrendView(d.summary.mdls, counted);
   const leftOut = pendingTrendFootnote(view);
   return (
     <ChartCard
-      title="Pending actions across linked pending MDLs"
-      subtitle="Sum of JPML pending actions per monthly report for the MDLs where this company's filings read it as a defendant"
-      footnote={`Counts only MDLs whose evidence passage reads the company as a defendant (not dismissed, not flagged for review). An MDL created during the window counts from its first report.${leftOut ? ` ${leftOut}` : ""}`}
+      title="Pending actions in the MDLs this company is named in (MDL-wide)"
+      subtitle="Sum of JPML pending actions per monthly report for the counted MDLs: the whole dockets, shared with co-defendants"
+      footnote={`Counts only MDLs whose tier A or B evidence reads the company as a defendant (not dismissed, not flagged for review); tier C links require review and are not counted. An MDL created during the window counts from its first report.${leftOut ? ` ${leftOut}` : ""}`}
     >
       {view.kind === "chart" ? (
         <div className="h-56 px-2 py-2">
@@ -765,7 +810,9 @@ function ExposureRow({ l, record }: { l: CompanyLink; record: ReturnType<typeof 
             </span>
           ) : null}
           {!l.countsTowardExposure ? (
-            <span className="text-[10px] text-muted-foreground">Not counted in totals</span>
+            <span className="text-[10px] text-muted-foreground">
+              {l.tier === "C" ? "Requires review · not counted" : "Not counted in totals"}
+            </span>
           ) : null}
         </div>
         <div className="text-[11px] text-muted-foreground">

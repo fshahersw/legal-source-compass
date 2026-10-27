@@ -55,11 +55,45 @@ export const getCompaniesIntelligence = createServerFn({ method: "GET" }).handle
       .filter((r) => r.id !== "summary:overview")
       .map((r) => parseCompanySummary((r as Row & { summary?: unknown }).summary))
       .filter((c): c is NonNullable<typeof c> => c !== null);
-    const value = overview ? { overview, companies } : null;
+    const mdlChange = overview ? await readMdlChange() : undefined;
+    const value = overview ? { overview, companies, ...(mdlChange ? { mdlChange } : {}) } : null;
     listCache = { at: Date.now(), value };
     return value;
   },
 );
+
+/** "+1,829" / "-1,324" / "0" as published in mdl_analytics cells; anything else is null ("Not recorded"). */
+export function parseSignedCount(v: unknown): number | null {
+  if (typeof v === "number") return Number.isInteger(v) ? v : null;
+  if (typeof v !== "string") return null;
+  const m = /^([+\-−]?)(\d{1,3}(?:,\d{3})*|\d+)$/.exec(v.trim());
+  if (!m) return null;
+  const n = Number(m[2]!.replace(/,/g, ""));
+  return m[1] === "-" || m[1] === "−" ? -n : n;
+}
+
+/**
+ * 12-month change of every pending products-liability MDL in mdl_analytics, keyed by its exact MDL number (the record
+ * id). Optional: a failed read leaves the change "Not recorded" and never fails the dashboard.
+ */
+async function readMdlChange(): Promise<Record<string, number | null> | undefined> {
+  try {
+    const filter = encodeURIComponent(
+      JSON.stringify({ status: ["pending"], type: ["products liability"] }),
+    );
+    const { rows } = await restGet<{ id: string; c: unknown }[]>(
+      `corpus_records?select=id,c:item->cells->change_12m&dataset=eq.mdl_analytics&filters=cs.${filter}&order=ordinal.asc&limit=1000`,
+    );
+    const out: Record<string, number | null> = {};
+    for (const r of rows) if (/^\d{1,6}$/.test(r.id)) out[r.id] = parseSignedCount(r.c);
+    return out;
+  } catch (err) {
+    console.error(
+      `mdl_analytics change read failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return undefined;
+  }
+}
 
 /**
  * Which linked MDL numbers have a record to open: mdl_analytics (pending and recently reported MDLs, id = number)

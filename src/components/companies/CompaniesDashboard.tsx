@@ -44,8 +44,31 @@ import {
   type SortKey,
   type Tier,
 } from "./companyData";
-import { FlagBadge, Kpi, LoadingBlocks, Notice, RoleText, Spark, TierBadge } from "./CompanyUi";
+import { FlagBadge, LoadingBlocks, Notice, Spark, TierBadge } from "./CompanyUi";
 import { pendingActionsValue } from "./companyViewNotes";
+import {
+  ChartCard as KitChartCard,
+  DumbbellRange,
+} from "@/components/charts/recharts";
+import {
+  AiSummary,
+  AskAiButton,
+  buildSectionContext,
+  KpiCard,
+  KpiGrid,
+  Section,
+} from "@/components/kit";
+import { CoverageMapSection } from "./CoverageMapSection";
+import {
+  accrualDumbbell,
+  applyUiExposure,
+  coverageMap,
+  coverageTotals,
+  dataFlags,
+  exposureSentence,
+  STALE_FY,
+  uiExposure,
+} from "./exposure";
 
 export const companiesQuery = {
   queryKey: ["companies-sec-intelligence"],
@@ -77,7 +100,12 @@ export function CompaniesDashboard() {
   return <Dashboard data={q.data} />;
 }
 
-function Dashboard({ data }: { data: CompaniesData }) {
+function Dashboard({ data: raw }: { data: CompaniesData }) {
+  // Exposure under the UI rule: tier C links never count; pending actions are MDL-wide.
+  const data = useMemo(
+    () => ({ ...raw, companies: raw.companies.map(applyUiExposure) }),
+    [raw],
+  );
   const { overview: o, companies } = data;
   const [filter, setFilter] = useState<CompanyFilter>(EMPTY_FILTER);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" }>({
@@ -97,9 +125,22 @@ function Dashboard({ data }: { data: CompaniesData }) {
     setFilter((f) => ({ ...f, ...patch }));
     setLimit(PAGE);
   };
+  const exposed = companies.filter((c) => c.exposure.pendingMdls > 0);
+  const staleExposed = exposed.filter((c) => dataFlags(c).some((f) => f.id === "stale"));
+  const coverage = useMemo(() => {
+    const change = new Map<number, number | null>();
+    for (const [k, v] of Object.entries(raw.mdlChange ?? {})) change.set(Number(k), v);
+    return coverageTotals(coverageMap(o.coverage, change).rows);
+  }, [o.coverage, raw.mdlChange]);
+  const share = (n: number) =>
+    coverage.pending ? `${((n / coverage.pending) * 100).toFixed(0)}% of ${count(coverage.pending)}` : null;
+  const kpiSource = {
+    source: { label: "SEC EDGAR filings; JPML pending MDL report" },
+    asOf: o.jpmlAsOf ?? o.asOf,
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>
           {count(o.companies)} SEC registrants linked to MDLs · {count(o.links)} links · built{" "}
@@ -109,49 +150,62 @@ function Dashboard({ data }: { data: CompaniesData }) {
           <p>
             Companies are linked to an MDL only when their own SEC filing names it: the MDL number
             (tier A), the official JPML caption (tier B), or, labelled for review, the
-            caption&apos;s subject next to &ldquo;MDL&rdquo; (tier C). Every link was re-checked
-            against the downloaded filing text.
+            caption&apos;s subject next to &ldquo;MDL&rdquo; (tier C). Tier C links are shown but
+            never counted as exposure here.
+          </p>
+          <p className="mt-2">
+            JPML pending actions belong to the whole MDL and are shared by every co-defendant, so a
+            company is shown as &ldquo;named in N pending MDLs with X pending actions
+            (MDL-wide)&rdquo;, never as its own share.
           </p>
           <p className="mt-2">
             Links by tier: A {o.tiers.A ?? 0} · B {o.tiers.B ?? 0} · C {o.tiers.C ?? 0}.{" "}
             {count(o.companiesWithFinancials)} of {count(o.companies)} linked registrants have XBRL
-            financials, the registrant&apos;s own reported facts.
-          </p>
-          <p className="mt-2">
-            Built {o.asOf}; JPML pending counts as of {o.jpmlAsOf ?? NOT_RECORDED}.
+            financials. Built {o.asOf}; JPML pending counts as of {o.jpmlAsOf ?? NOT_RECORDED}.
           </p>
         </InfoPopover>
       </div>
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Kpi
-          label="Pending MDLs linked"
-          value={`${o.pendingMdlsWithLinks} / ${o.pendingTargets}`}
-          note="pending mass-tort MDLs searched"
+      <KpiGrid columns={5} label="Defendant exposure figures">
+        <KpiCard
+          as="li"
+          label="Pending products-liability MDLs with an acknowledged public defendant"
+          value={`${count(coverage.groups.ab.mdls)} of ${count(coverage.mdls)}`}
+          meta="SEC filing cites the MDL number or caption and reads the filer as a defendant"
+          source={kpiSource}
         />
-        <Kpi
-          label="Pending actions, defendants"
-          value={count(o.pendingActionsCounted)}
-          note={strengthSplit(o.pendingActionsCountedAB, o.pendingActionsCountedC) ?? undefined}
-          detail={`+${count(o.pendingActionsUnclearOnly)} where role not stated (not counted)`}
-          title="Each pending MDL counted once, when at least one linked company's own filing reads it as a defendant. A/B = MDL number or caption evidence; C = subject evidence (requires review)."
+        <KpiCard
+          as="li"
+          label="Pending actions in those MDLs"
+          value={count(coverage.groups.ab.pending)}
+          meta={`MDL-wide, each MDL counted once${share(coverage.groups.ab.pending) ? ` · ${share(coverage.groups.ab.pending)}` : ""}`}
+          source={kpiSource}
         />
-        <Kpi
-          label="Verified filings"
-          value={count(o.verifiedFilings)}
-          note="filing documents re-checked"
+        <KpiCard
+          as="li"
+          label="MDLs with tier C evidence only"
+          value={count(coverage.groups.c.mdls)}
+          meta={`${count(coverage.groups.c.pending)} pending actions, not counted (requires review)`}
+          source={kpiSource}
         />
-        <Kpi
-          label="Median accrual / revenue"
-          value={pct(median(ratios), 2)}
-          note={`${ratios.length} companies, current FY only`}
-          title="Same-year litigation accrual / revenue, only for accruals from a company's latest or prior fiscal year while it still files XBRL."
+        <KpiCard
+          as="li"
+          label="MDLs no SEC filer names"
+          value={count(coverage.groups.none.mdls)}
+          meta={`${count(coverage.groups.none.pending)} pending actions`}
+          source={kpiSource}
         />
-      </div>
+        <KpiCard
+          as="li"
+          label="Exposed companies with stale financials"
+          value={`${count(staleExposed.length)} of ${count(exposed.length)}`}
+          meta={`Latest XBRL fiscal year FY${STALE_FY} or earlier`}
+          source={{ source: { label: "SEC XBRL company facts" }, asOf: o.asOf }}
+        />
+      </KpiGrid>
 
-      <div className="grid gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <ExposureScatter companies={companies} />
-        <FilingsByYear data={o.filingsByYear} />
-      </div>
+      <CoverageMapSection data={raw} />
+
+      <ReserveSection companies={companies} medianRatio={median(ratios)} ratioCount={ratios.length} />
 
       <FlagPanel
         rules={o.flagRules}
@@ -178,22 +232,22 @@ function Dashboard({ data }: { data: CompaniesData }) {
             />
           </label>
           <select
-            aria-label="Strongest evidence tier"
+            aria-label="Strongest counted evidence tier"
             value={filter.tier}
             onChange={(e) => setF({ tier: e.target.value as CompanyFilter["tier"] })}
             className="h-8 rounded-md border border-border bg-surface px-2 text-xs"
           >
             <option value="">All evidence tiers</option>
-            {(["A", "B", "C"] as const).map((t) => (
+            {(["A", "B"] as const).map((t) => (
               <option key={t} value={t}>
-                Strongest: {t} · {TIER_LABEL[t].replace(" (requires review)", "")}
+                Strongest: {t} · {TIER_LABEL[t]}
               </option>
             ))}
           </select>
           <Toggle
             on={filter.pendingOnly}
             onClick={() => setF({ pendingOnly: !filter.pendingOnly })}
-            title="Shows companies with at least one pending MDL counted as defendant exposure: the evidence excerpt reads the company as a defendant, no dismissal is reported and the link is not flagged for review. A pending MDL where the role is not stated is not counted."
+            title="Shows companies named in at least one pending MDL counted as exposure: tier A or B evidence, the excerpt reads the company as a defendant, no dismissal and no review note. Tier C links and links whose role is not stated are not counted."
           >
             Counted pending MDLs only
           </Toggle>
@@ -222,7 +276,7 @@ function Dashboard({ data }: { data: CompaniesData }) {
                     MDLs
                   </Th>
                   <Th k="pending" sort={sort} setSort={setSort} right>
-                    Pending actions
+                    Pending in named MDLs (MDL-wide)
                   </Th>
                   <Th k="revenue" sort={sort} setSort={setSort} right>
                     Revenue
@@ -273,11 +327,10 @@ function Dashboard({ data }: { data: CompaniesData }) {
         )}
         <div className="flex flex-wrap items-center gap-3 border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
           <span>
-            Showing {Math.min(limit, rows.length)} of {rows.length}. Pending actions sum the JPML
-            count of each linked pending MDL (excluding links whose excerpt says the company is not
-            named or is a claimant). Accrual is the company&apos;s total reported loss-contingency /
-            litigation accrual for the XBRL concept named on its page, not an MDL-specific reserve.
-            &ldquo;Not recorded&rdquo; = no such XBRL fact.
+            Showing {Math.min(limit, rows.length)} of {rows.length}. Pending actions are the JPML
+            count of each counted MDL, for the whole docket and shared with co-defendants: never
+            add them across companies. Accrual is the company-wide XBRL loss-contingency figure,
+            not an MDL reserve. &ldquo;Not recorded&rdquo; = no such XBRL fact.
           </span>
           {rows.length > limit ? (
             <button
@@ -292,7 +345,7 @@ function Dashboard({ data }: { data: CompaniesData }) {
       </section>
 
       <AccrualMultiples companies={companies} />
-      <Coverage data={data} />
+      <FilingsByYear data={o.filingsByYear} />
       <details className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
         <summary className="cursor-pointer font-medium text-foreground">Method and limits</summary>
         <ul className="mt-2 list-disc space-y-1 pl-4">
@@ -397,6 +450,8 @@ function CompanyRow({
 }) {
   const p = c.profile;
   const acc = c.latest.litigation_accrual;
+  const ui = uiExposure(c.mdls);
+  const flags = dataFlags(c);
   const tickerSic =
     [p.tickers.slice(0, 2).join(", "), p.sicDescription].filter(Boolean).join(" · ") ||
     "Ticker and SIC not recorded";
@@ -427,21 +482,38 @@ function CompanyRow({
           {c.flags.map((f) => (
             <FlagBadge key={f} flag={f} label={flagLabels[f] ?? f} rule={flagRules[f]} />
           ))}
+          {flags.map((f) => (
+            <span
+              key={f.id}
+              title={f.detail}
+              className="rounded border border-warning/40 bg-warning/10 px-1 text-[10px] font-medium text-foreground"
+            >
+              {f.label}
+            </span>
+          ))}
         </div>
       </td>
       <td className="px-2 py-1.5 text-right tabular-nums">
         {c.exposure.linkedMdls}
         <div className="text-[11px] text-muted-foreground">{c.exposure.pendingMdls} counted</div>
       </td>
-      <td className="px-2 py-1.5 text-right tabular-nums">
+      <td className="px-2 py-1.5 text-right tabular-nums" title={exposureSentence(ui)}>
         {c.exposure.pendingMdls ? (
           count(c.exposure.pendingActions)
         ) : (
           <span className="text-muted-foreground">{pendingActionsValue(c.exposure)}</span>
         )}
-        {strengthSplit(c.exposure.pendingActionsAB, c.exposure.pendingActionsC) ? (
+        {c.exposure.pendingMdls ? (
           <div className="whitespace-nowrap text-[11px] text-muted-foreground">
-            {strengthSplit(c.exposure.pendingActionsAB, c.exposure.pendingActionsC)}
+            in {c.exposure.pendingMdls} MDL{c.exposure.pendingMdls === 1 ? "" : "s"}, MDL-wide
+          </div>
+        ) : null}
+        {ui.tierCPendingMdls ? (
+          <div
+            className="whitespace-nowrap text-[11px] italic text-muted-foreground"
+            title="Tier C evidence describes the MDL by its subject only; it requires review and is not counted"
+          >
+            +{ui.tierCPendingMdls} tier C (not counted)
           </div>
         ) : null}
         {c.exposure.pendingActionsUnclear ? (
@@ -536,95 +608,6 @@ function CompanyRow({
         {signedPct(c.accrualYoyPct)}
       </td>
     </tr>
-  );
-}
-
-function ExposureScatter({ companies }: { companies: CompanySummary[] }) {
-  const points = companies
-    .filter(
-      (c) =>
-        (c.exposure.pendingActions ?? 0) > 0 &&
-        (c.latest.litigation_accrual?.value ?? 0) > 0 &&
-        c.latest.litigation_accrual?.unit === "USD" &&
-        c.accrualCurrent,
-    )
-    .map((c) => ({
-      name: c.profile.name,
-      pending: c.exposure.pendingActions!,
-      accrual: c.latest.litigation_accrual!.value,
-      fy: c.latest.litigation_accrual!.fy,
-      flagged: c.flags.length > 0,
-    }));
-  const flagged = points.filter((p) => p.flagged);
-  const plain = points.filter((p) => !p.flagged);
-  return (
-    <ChartCard
-      title="Pending MDL actions vs litigation accrual"
-      subtitle="Each dot is a company: JPML pending actions in MDLs where its filings read it as a defendant (x) against its current XBRL accrual in USD (y), log scales"
-      footnote={`${points.length} companies with a current accrual (latest or prior fiscal year). Red dots carry at least one flag. The accrual is company-wide, covering all loss contingencies, not only these MDLs.`}
-    >
-      {points.length < 2 ? (
-        <ChartUnavailable reason="Fewer than two companies report both a USD litigation accrual and pending actions in linked MDLs." />
-      ) : (
-        <div className="h-72 px-2 py-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <ScatterChart margin={{ top: 8, right: 16, bottom: 18, left: 4 }}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis
-                type="number"
-                dataKey="pending"
-                name="Pending actions"
-                scale="log"
-                domain={["auto", "auto"]}
-                tick={axis}
-                tickFormatter={compact}
-                label={{
-                  value: "Pending actions (log)",
-                  position: "insideBottom",
-                  offset: -10,
-                  fontSize: 11,
-                  fill: "var(--muted-foreground)",
-                }}
-              />
-              <YAxis
-                type="number"
-                dataKey="accrual"
-                name="Accrual"
-                scale="log"
-                domain={["auto", "auto"]}
-                tick={axis}
-                tickFormatter={(v: number) => money(v, "USD")}
-                width={60}
-              />
-              <ZAxis range={[48, 48]} />
-              <Tooltip
-                cursor={{ strokeDasharray: "3 3" }}
-                content={({ payload }) => {
-                  const d = payload?.[0]?.payload as (typeof points)[number] | undefined;
-                  if (!d) return null;
-                  return (
-                    <div className="rounded border border-border bg-surface px-2 py-1 text-xs shadow-sm">
-                      <div className="font-medium">{d.name}</div>
-                      <div>Pending actions: {d.pending.toLocaleString("en-US")}</div>
-                      <div>
-                        Accrual FY{d.fy}: {money(d.accrual, "USD")}
-                      </div>
-                    </div>
-                  );
-                }}
-              />
-              <Scatter name="No flag" data={plain} fill={FDA_COLORS[0]} isAnimationActive={false} />
-              <Scatter
-                name="Flagged"
-                data={flagged}
-                fill="var(--destructive)"
-                isAnimationActive={false}
-              />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </ChartCard>
   );
 }
 
@@ -810,112 +793,103 @@ function AccrualMultiples({ companies }: { companies: CompanySummary[] }) {
   );
 }
 
-function Coverage({ data }: { data: CompaniesData }) {
-  const [all, setAll] = useState(false);
-  const pending = data.overview.coverage.filter((c) => c.status === "pending");
-  const shown = all ? pending : pending.slice(0, 15);
-  const unlinked = pending.filter((c) => !c.companies.length).length;
+const XBRL_SOURCE = {
+  label: "SEC XBRL company facts (company_sec_profiles)",
+  url: "https://www.sec.gov/edgar/sec-api-documentation",
+};
+
+/**
+ * Reserves against revenue: each company's litigation accrual as a share of same-year revenue in its latest two
+ * consecutive fiscal years (current filers only; stale financials are left out). The per-company reserve vs docket
+ * index chart is on each company page.
+ */
+function ReserveSection({
+  companies,
+  medianRatio,
+  ratioCount,
+}: {
+  companies: CompanySummary[];
+  medianRatio: number | null;
+  ratioCount: number;
+}) {
+  const rows = useMemo(() => accrualDumbbell(companies), [companies]);
+  const rising = rows.filter((r) => r.b > r.a).length;
+  const context = useMemo(
+    () =>
+      buildSectionContext({
+        title: "Litigation accruals as a share of revenue",
+        scope: "SEC registrants named in MDLs, current XBRL filers",
+        source: XBRL_SOURCE.label,
+        figures: [
+          { label: "Median accrual / revenue, current FY", value: medianRatio, unit: "%", decimals: 2 },
+          { label: "Companies in the median", value: ratioCount },
+          ...rows.flatMap((r) => [
+            { label: `${r.label} accrual / revenue`, value: r.a, unit: "%", period: r.note.split(" → ")[0], decimals: 2 },
+            { label: `${r.label} accrual / revenue`, value: r.b, unit: "%", period: r.note.split(" → ")[1], decimals: 2 },
+          ]),
+        ],
+      }),
+    [rows, medianRatio, ratioCount],
+  );
   return (
-    <section
-      className="rounded-md border border-border bg-surface"
-      aria-label="Pending MDL coverage"
+    <Section
+      id="reserves"
+      title="Are reserves keeping pace?"
+      description="Company-wide litigation accruals as a share of revenue, prior against latest fiscal year."
+      actions={<AskAiButton sectionId="reserves" context={context} />}
     >
-      <div className="border-b border-border/70 px-3 py-2">
-        <h3 className="text-label font-semibold text-foreground">
-          Pending mass-tort MDLs and the SEC filers that name them
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Ranked by JPML pending actions. {unlinked} of {pending.length} pending MDLs have no SEC
-          registrant whose filing matched the rules (recall is incomplete; many defendants are
-          private or foreign non-filers).
-        </p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-xs">
-          <thead className="text-left text-muted-foreground">
-            <tr className="border-b border-border/70">
-              <th className="px-2 py-1.5 font-medium">MDL</th>
-              <th className="px-2 py-1.5 font-medium">Litigation</th>
-              <th className="px-2 py-1.5 text-right font-medium">Pending</th>
-              <th className="px-2 py-1.5 font-medium">Linked SEC filers (tier · excerpt role)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((m) => (
-              <tr key={m.mdl} className="border-b border-border/50 align-top">
-                <td className="px-2 py-1.5 font-mono">
-                  <Link
-                    to="/records/$dataset/$id"
-                    params={{ dataset: "mdl_analytics", id: String(m.mdl) }}
-                    className="text-primary hover:underline"
-                  >
-                    {m.mdl}
-                  </Link>
-                </td>
-                <td className="max-w-[320px] px-2 py-1.5">
-                  {mdlTitle(m.title, m.titleTruncated, m.mdl)}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums">{count(m.pending)}</td>
-                <td className="px-2 py-1.5">
-                  {m.companies.length ? (
-                    <ul className="flex flex-wrap gap-x-3 gap-y-0.5">
-                      {m.companies.slice(0, 8).map((c) => (
-                        <li key={c.cik} className="inline-flex items-center gap-1">
-                          <Link
-                            to="/companies/$cik"
-                            params={{ cik: c.cik }}
-                            className="text-primary hover:underline"
-                          >
-                            {c.name}
-                          </Link>
-                          {!c.counted ? (
-                            <span className="text-[10px] text-muted-foreground">
-                              {c.dismissed ? "dismissed" : c.review ? "review" : "not counted"}
-                            </span>
-                          ) : null}
-                          <span className="font-mono text-[10px] text-muted-foreground">
-                            {c.tier}
-                          </span>
-                          <RoleText role={c.role} />
-                        </li>
-                      ))}
-                      {m.companies.length > 8 ? (
-                        <li className="text-muted-foreground">+{m.companies.length - 8} more</li>
-                      ) : null}
-                    </ul>
-                  ) : (
-                    <span className="text-muted-foreground">
-                      No filing matched the rules (recall incomplete)
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex items-center gap-3 border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
-        <span>
-          Source: JPML pending MDL reports (dataset mdl_analytics) and SEC EDGAR filings.{" "}
-          <a
-            href="https://efts.sec.gov/LATEST/search-index?q=%22MDL%20No.%22"
-            className="inline-flex items-center gap-0.5 text-primary hover:underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            EDGAR full-text search <ExternalLink className="size-3" aria-hidden />
-          </a>
-        </span>
-        {pending.length > 15 ? (
-          <button
-            type="button"
-            onClick={() => setAll((v) => !v)}
-            className="ml-auto font-medium text-primary hover:underline"
-          >
-            {all ? "Show top 15" : `Show all ${pending.length}`}
-          </button>
-        ) : null}
-      </div>
-    </section>
+      <KitChartCard
+        variant="editorial"
+        title={
+          rows.length
+            ? `${rising} of ${rows.length} companies raised their accrual's share of revenue in the latest year`
+            : "Litigation accruals as a share of revenue"
+        }
+        subtitle={`Litigation / loss-contingency accrual ÷ same-year revenue · % · median ${medianRatio === null ? NOT_RECORDED : `${medianRatio.toFixed(2)}%`} across ${ratioCount} current filers`}
+        sources={[XBRL_SOURCE]}
+        status={
+          rows.length
+            ? { kind: "ready" }
+            : { kind: "empty", reason: "No current filer reports an accrual and revenue in two consecutive years." }
+        }
+        about={
+          <>
+            <p>
+              The accrual is the company&rsquo;s whole loss-contingency or litigation reserve under the
+              XBRL concept it uses, not a reserve for any one MDL; concepts differ between companies.
+              Only companies whose latest XBRL fiscal year is after FY{STALE_FY} are shown.
+            </p>
+            <p className="mt-2">
+              Each company page sets its accrual against the pending actions of the MDLs it is named
+              in (an index chart rebased to a date you choose).
+            </p>
+          </>
+        }
+        table={{
+          caption: "Accrual as % of revenue, prior and latest fiscal year",
+          columns: [
+            { label: "Company" },
+            { label: "Fiscal years" },
+            { label: "Prior FY", align: "right" },
+            { label: "Latest FY", align: "right" },
+          ],
+          rows: rows.map((r) => ({
+            key: r.id,
+            cells: [r.label, r.note, `${r.a.toFixed(2)}%`, `${r.b.toFixed(2)}%`],
+          })),
+        }}
+      >
+        <DumbbellRange
+          rows={rows.map((r) => ({ id: r.id, label: r.label, a: r.a, b: r.b, note: r.note }))}
+          aLabel="Prior FY"
+          bLabel="Latest FY"
+          format={(v) => `${v.toFixed(2)}%`}
+          gapLabel="Change (points)"
+          ariaLabel="Litigation accrual as a share of revenue, prior and latest fiscal year"
+        />
+      </KitChartCard>
+      <AiSummary context={context} className="mt-4" />
+    </Section>
   );
 }
+
