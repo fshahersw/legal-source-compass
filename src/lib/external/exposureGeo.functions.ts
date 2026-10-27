@@ -84,15 +84,24 @@ const readReady = memoAsync(READ_TTL_MS, async (): Promise<Set<DatasetKey>> => {
   return ready;
 });
 
+/** Most distinct inputs kept memoised; the least recently used is dropped beyond this (inputs are open-ended). */
+export const MEMO_LIMIT = 300;
 const memo = new Map<string, () => Promise<unknown>>();
 function keyed<T>(key: string, fn: () => Promise<T>): Promise<T> {
   let m = memo.get(key);
-  if (!m) {
-    m = memoAsync(READ_TTL_MS, fn);
-    memo.set(key, m);
-  }
+  if (m)
+    memo.delete(key); // re-inserted below, so Map order tracks recent use
+  else m = memoAsync(READ_TTL_MS, fn);
+  memo.set(key, m);
+  while (memo.size > MEMO_LIMIT) memo.delete(memo.keys().next().value!);
   return m() as Promise<T>;
 }
+/** Number of memoised inputs (for tests). */
+export const memoSize = () => memo.size;
+
+export const stateInput = z.object({ usps: z.string().regex(/^[A-Z]{2}$/) });
+export const countyInput = z.object({ fips: z.string().regex(/^\d{5}$/) });
+export const mdlInput = z.object({ mdl: z.string().regex(/^[1-9]\d{0,5}$/) });
 
 const exposureRows = (dataset: string, filter: string, limit: number) =>
   restGet<Row[]>(
@@ -155,9 +164,7 @@ function fail(scope: string) {
 }
 
 export const getStateExposure = createServerFn({ method: "GET" })
-  .inputValidator((d: { usps: string }) =>
-    z.object({ usps: z.string().regex(/^[A-Z]{2}$/) }).parse(d),
-  )
+  .inputValidator((d: { usps: string }) => stateInput.parse(d))
   .handler(async ({ data }): Promise<StateExposure> => {
     const { usps } = data;
     return keyed(`state:${usps}`, async () => {
@@ -179,7 +186,7 @@ export const getStateExposure = createServerFn({ method: "GET" })
   });
 
 export const getCountyExposure = createServerFn({ method: "GET" })
-  .inputValidator((d: { fips: string }) => z.object({ fips: z.string().regex(/^\d{5}$/) }).parse(d))
+  .inputValidator((d: { fips: string }) => countyInput.parse(d))
   .handler(async ({ data }): Promise<CountyExposure | null> => {
     const { fips } = data;
     return keyed(`county:${fips}`, async () => {
@@ -200,9 +207,7 @@ export const getCountyExposure = createServerFn({ method: "GET" })
   });
 
 export const getMdlExposure = createServerFn({ method: "GET" })
-  .inputValidator((d: { mdl: string }) =>
-    z.object({ mdl: z.string().regex(/^[1-9]\d{0,5}$/) }).parse(d),
-  )
+  .inputValidator((d: { mdl: string }) => mdlInput.parse(d))
   .handler(async ({ data }): Promise<MdlExposure | null> => {
     const { mdl } = data;
     return keyed(`mdl:${mdl}`, async () => {

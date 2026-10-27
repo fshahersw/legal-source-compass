@@ -13,7 +13,15 @@ import {
 } from "@/components/kit";
 import type { PfasPart } from "@/lib/external/exposureGeo.functions";
 import { SDWIS_SOURCE, UCMR_SOURCE, type UcmrSystem } from "./exposureModel";
-import { AboutList, fmtInt, fmtShare, orNR, PFAS_ABOUT } from "./exposureParts";
+import {
+  AboutList,
+  fmtInt,
+  fmtShare,
+  orNR,
+  PFAS_ABOUT,
+  ucmrPartial,
+  ucmrPeriod,
+} from "./exposureParts";
 
 const SYSTEM_COLUMNS: readonly DataColumn<UcmrSystem>[] = [
   { key: "name", label: "Water system", value: (s) => s.name },
@@ -27,12 +35,13 @@ const SYSTEM_COLUMNS: readonly DataColumn<UcmrSystem>[] = [
 export function PfasExposureBlock({ part, stateName }: { part: PfasPart; stateName: string }) {
   const s = part.state;
   if (!s) return null;
-  const period = s.firstSample && s.lastSample ? `${s.firstSample} to ${s.lastSample}` : "UCMR 5";
+  const period = ucmrPeriod(s);
   const share = s.systemsSampled ? s.systemsWithDetect / s.systemsSampled : null;
-  const nationalShare =
-    part.national && part.national.systemsSampled
-      ? part.national.systemsWithDetect / part.national.systemsSampled
-      : null;
+  // States are compared on large systems: all were tested, while small ones were only sampled.
+  const large = (u: typeof s | null) =>
+    u && u.largeSampled && u.largeWithDetect !== null ? u.largeWithDetect / u.largeSampled : null;
+  const largeShare = large(s);
+  const nationalLarge = large(part.national);
   const items = s.byAnalyte.map((a) => ({ id: a.analyte, label: a.analyte, value: a.systems }));
   const top = s.byAnalyte[0];
   const title =
@@ -52,14 +61,21 @@ export function PfasExposureBlock({ part, stateName }: { part: PfasPart; stateNa
         label: "Share of systems with PFAS detected",
         value: share === null ? null : fmtShare(share),
       },
-      { label: "Share nationally", value: nationalShare === null ? null : fmtShare(nationalShare) },
+      {
+        label: "Share of large systems (all tested) with PFAS detected",
+        value: largeShare === null ? null : fmtShare(largeShare),
+      },
+      {
+        label: "Share of large systems with PFAS nationally",
+        value: nationalLarge === null ? null : fmtShare(nationalLarge),
+      },
       {
         label: "Systems with a PFOA or PFOS result at or above 4.0 ng/L",
         value: s.systemsAtOrAbove4,
       },
       {
-        label: "People served by systems with PFAS detected",
-        value: s.populationWithDetect.sum,
+        label: "People served by community water systems with PFAS detected",
+        value: s.populationWithDetectCws.sum,
         unit: "people",
       },
       ...s.byAnalyte
@@ -78,7 +94,12 @@ export function PfasExposureBlock({ part, stateName }: { part: PfasPart; stateNa
           {
             label: "Systems with PFAS",
             value: `${fmtInt(s.systemsWithDetect)} of ${fmtInt(s.systemsSampled)}`,
-            detail: nationalShare !== null ? `${fmtShare(nationalShare)} nationally` : undefined,
+            detail: share !== null ? `${fmtShare(share)} of all tested` : undefined,
+          },
+          {
+            label: "Large systems with PFAS",
+            value: orNR(largeShare, fmtShare),
+            detail: nationalLarge !== null ? `${fmtShare(nationalLarge)} nationally` : undefined,
           },
           {
             label: "PFOA or PFOS at or above 4 ng/L",
@@ -86,15 +107,16 @@ export function PfasExposureBlock({ part, stateName }: { part: PfasPart; stateNa
             detail: "systems, single results",
           },
           {
-            label: "People served by systems with PFAS",
-            value: orNR(s.populationWithDetect.sum, fmtInt),
-            detail: s.populationWithDetect.withoutPopulation
-              ? `${fmtInt(s.populationWithDetect.withoutPopulation)} systems without a population figure`
+            label: "People served by community systems with PFAS",
+            value: orNR(s.populationWithDetectCws.sum, fmtInt),
+            detail: s.populationWithDetectCws.withoutPopulation
+              ? `${fmtInt(s.populationWithDetectCws.withoutPopulation)} systems without a population figure`
               : "SDWIS, by water-system ID",
           },
         ]}
         sources={[UCMR_SOURCE, SDWIS_SOURCE]}
         period={period}
+        partial={ucmrPartial(s)}
         about={<AboutList items={PFAS_ABOUT} />}
         actions={<AskAiButton sectionId="exposure-pfas" context={context} size="icon" />}
         table={{

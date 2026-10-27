@@ -1,6 +1,6 @@
 /**
- * "Exposure" section of a state page: where people who were prescribed MDL drugs, who have conditions those drugs
- * treat, or whose drinking water carries PFAS are found. Opens with up to four key figures, then one block per source
+ * "Exposure" section of a state page: how many MDL-drug prescriptions prescribers in the state write, how common the
+ * conditions those drugs treat are, and how many drinking-water systems found PFAS. Opens with up to four key figures, then one block per source
  * (Medicare Part D, CDC PLACES, EPA UCMR 5). Each block renders only when its dataset is published; with none published
  * the section renders nothing. Not mounted yet: see the de-exposure report for the mount point.
  */
@@ -9,6 +9,8 @@ import { KpiCard, KpiGrid, Section } from "@/components/kit";
 import type { StateExposure } from "@/lib/external/exposureGeo.functions";
 import { stateExposureQuery } from "./exposureQueries";
 import {
+  boundedLeader,
+  boundedText,
   latestYear,
   linkedMeasures,
   measureDistribution,
@@ -17,7 +19,7 @@ import {
   stateMdlRows,
   UCMR_SOURCE,
 } from "./exposureModel";
-import { fmtInt, fmtPct, fmtShare } from "./exposureParts";
+import { fmtInt, fmtPct, fmtShare, ucmrPeriod } from "./exposureParts";
 import { PartdExposureBlock } from "./PartdExposureBlock";
 import { PfasExposureBlock } from "./PfasExposureBlock";
 import { PlacesExposureBlock } from "./PlacesExposureBlock";
@@ -48,7 +50,7 @@ export function StateExposureView({ data, stateName }: { data: StateExposure; st
     <Section
       id="exposure"
       title="Exposure"
-      description="Where people prescribed MDL drugs, people with linked conditions and PFAS-affected water systems are. These are populations, not plaintiffs."
+      description="Where MDL drugs are prescribed (by prescriber's state), how common linked conditions are, and which water systems found PFAS. Populations, not plaintiffs."
     >
       {kpis.length ? (
         <KpiGrid columns={4} label={`Exposure figures, ${stateName}`} className="mb-4">
@@ -89,18 +91,23 @@ export function stateKpis(data: StateExposure): Kpi[] {
   const { partd, places, pfas } = data;
   if (partd) {
     const year = latestYear(partd.national);
-    const top =
-      year === null
-        ? null
-        : stateMdlRows(partd.state, partd.national, year).find((r) => r.claims !== null);
-    if (top && year !== null)
+    // Named only when no other MDL's [claims, claimsMax] interval can overtake it.
+    const lead =
+      year === null ? null : boundedLeader(stateMdlRows(partd.state, partd.national, year));
+    if (lead?.certain && year !== null) {
+      const top = lead.row;
+      const share =
+        top.share === null
+          ? ""
+          : `, ${top.lowerBound ? "at least " : ""}${fmtShare(top.share)} of national`;
       out.push({
         label: "Most-prescribed MDL drug",
-        value: `${fmtInt(top.claims!)} claims`,
-        meta: `${top.label}${top.share !== null ? `, ${fmtShare(top.share)} of national` : ""}`,
+        value: `${boundedText(top, fmtInt)} claims`,
+        meta: `${top.label}${share}`,
         period: String(year),
         source: PARTD_SOURCE,
       });
+    }
   }
   if (places && places.counties.length) {
     const measures = linkedMeasures(places.counties);
@@ -118,10 +125,7 @@ export function stateKpis(data: StateExposure): Kpi[] {
   }
   if (pfas?.state) {
     const s = pfas.state;
-    const period =
-      s.firstSample && s.lastSample
-        ? `${s.firstSample.slice(0, 4)}–${s.lastSample.slice(0, 4)}`
-        : "UCMR 5";
+    const period = ucmrPeriod(s, true);
     out.push({
       label: "Water systems with PFAS detected",
       value: `${fmtInt(s.systemsWithDetect)} of ${fmtInt(s.systemsSampled)}`,
@@ -131,8 +135,8 @@ export function stateKpis(data: StateExposure): Kpi[] {
     });
     out.push({
       label: "People served by those systems",
-      value: s.populationWithDetect.sum === null ? null : fmtInt(s.populationWithDetect.sum),
-      meta: "population served, SDWIS",
+      value: s.populationWithDetectCws.sum === null ? null : fmtInt(s.populationWithDetectCws.sum),
+      meta: "community water systems, SDWIS",
       period,
       source: UCMR_SOURCE,
     });

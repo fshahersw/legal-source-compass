@@ -1,20 +1,37 @@
 /**
  * Medicare Part D prescriptions in one state for the drugs named in MDL titles: which MDL drugs are prescribed most
- * (latest data year, complete totals only) and how one MDL's claims moved over the years. Renders nothing without data.
+ * (latest data year; a total missing a product CMS hid is shown as "at least") and how one MDL's claims moved over the
+ * years. MDLs that name the same drugs share one bar. Renders nothing without data.
  */
 import { useMemo, useState } from "react";
 import { ChartCard } from "@/components/charts/ChartCard";
-import {
-  periodTable,
-  RankBars,
-  rankTakeaway,
-  TrendColumns,
-  trendTakeaway,
-} from "@/components/charts/recharts";
+import { periodTable, RankBars, TrendColumns, trendTakeaway } from "@/components/charts/recharts";
 import { AiSummary, AskAiButton, buildSectionContext } from "@/components/kit";
 import type { PartdPart } from "@/lib/external/exposureGeo.functions";
-import { claimsSeries, latestYear, PARTD_SOURCE, stateMdlRows } from "./exposureModel";
-import { AboutList, fmtInt, fmtShare, orNR, PARTD_ABOUT, Picker } from "./exposureParts";
+import {
+  boundedTakeaway,
+  boundedText,
+  claimsSeries,
+  latestYear,
+  PARTD_SOURCE,
+  rankText,
+  stateMdlRows,
+  type StateMdlRow,
+} from "./exposureModel";
+import { NOT_RECORDED } from "@/components/charts/format";
+import { AboutList, fmtInt, fmtShare, PARTD_ABOUT, Picker } from "./exposureParts";
+
+const shareText = (r: StateMdlRow) =>
+  r.share === null ? null : `${r.lowerBound ? "at least " : ""}${fmtShare(r.share)}`;
+
+/** Tooltip and AI note for a bounded total. */
+export function boundNote(r: StateMdlRow): string | null {
+  if (!r.lowerBound) return null;
+  const hidden = r.missingProducts.length ? ` (${r.missingProducts.join(", ")})` : "";
+  return r.claimsMax !== null
+    ? `At most ${fmtInt(r.claimsMax)}: CMS hid ${r.missingProducts.length} product${r.missingProducts.length === 1 ? "" : "s"} under 11 claims${hidden}`
+    : `CMS hid a product under 11 claims${hidden}`;
+}
 
 export function PartdExposureBlock({ part, stateName }: { part: PartdPart; stateName: string }) {
   const year = latestYear(part.national);
@@ -23,8 +40,8 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
     [part, year],
   );
   const [pick, setPick] = useState<string | null>(null);
-  const selected =
-    part.state.find((e) => e.mdl === pick) ?? part.state.find((e) => e.mdl === rows[0]?.mdl);
+  const selectedRow = rows.find((r) => pick !== null && r.mdls.includes(pick)) ?? rows[0];
+  const selected = part.state.find((e) => e.mdl === selectedRow?.mdls[0]);
   const years = useMemo(
     () =>
       [...new Set(part.national.flatMap((e) => e.series.map((p) => p.year)))].sort((a, b) => a - b),
@@ -33,11 +50,9 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
   const series = selected ? claimsSeries(selected, years) : [];
   if (!part.state.length || year === null) return null;
 
-  const items = rows.map((r) => ({ id: r.id, label: r.label, value: r.claims }));
-  const title = rankTakeaway(
-    items.map((i) => ({ label: i.label, value: i.value })),
-    (v) => `${fmtInt(v)} claims`,
-  );
+  const barLabel = (r: StateMdlRow) => (r.lowerBound ? `${r.label} (at least)` : r.label);
+  const items = rows.map((r) => ({ id: r.id, label: barLabel(r), value: r.claims }));
+  const title = boundedTakeaway(rows, (v) => `${fmtInt(v)} claims`);
   const context = buildSectionContext({
     id: "exposure-partd",
     title: `Medicare Part D claims for MDL drugs, ${stateName}`,
@@ -49,25 +64,20 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
         label: `${r.label} claims`,
         value: r.claims,
         unit: "claims",
-        note: r.lowerBound ? "lower bound, not ranked" : undefined,
+        note: r.lowerBound ? `at least; ${boundNote(r)}` : undefined,
       },
-      {
-        label: `${r.label} share of national claims`,
-        value: r.share === null ? null : fmtShare(r.share),
-      },
-      {
-        label: `${r.label} rank among states`,
-        value: r.rank ? `${r.rank.rank} of ${r.rank.of}` : null,
-      },
+      { label: `${r.label} share of national claims`, value: shareText(r) },
+      { label: `${r.label} rank among the 50 states and DC`, value: rankText(r.rank) },
     ]),
     maxFigures: 30,
   });
+  const trendLabel = selectedRow?.label ?? selected?.label ?? "";
   const trendTitle = selected
     ? (trendTakeaway(
-        `${selected.label} Part D claims`,
+        `${trendLabel} Part D claims`,
         series.map((s) => ({ label: s.year, value: s.claims, partial: s.partial })),
         fmtInt,
-      ) ?? `${selected.label} Part D claims per year`)
+      ) ?? `${trendLabel} Part D claims per year`)
     : "Part D claims per year";
 
   return (
@@ -91,9 +101,9 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
             key: r.id,
             cells: [
               `${r.label} (${r.title})`,
-              r.lowerBound ? `at least ${orNR(r.atLeast, fmtInt)}` : orNR(r.claims, fmtInt),
-              orNR(r.share, fmtShare),
-              r.rank ? `${r.rank.rank} of ${r.rank.of}` : "Not ranked",
+              boundedText(r, fmtInt) ?? NOT_RECORDED,
+              shareText(r) ?? NOT_RECORDED,
+              rankText(r.rank) ?? "Not ranked",
             ],
           })),
         }}
@@ -103,11 +113,16 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
           items={items}
           format={fmtInt}
           limit={10}
-          labelWidth={220}
+          labelWidth={240}
           ariaLabel={`Part D claims by MDL drug, ${stateName}, ${year}`}
           note={(id) => {
             const r = rows.find((x) => x.id === id);
-            return r?.share != null ? `${fmtShare(r.share)} of national claims` : null;
+            if (!r) return null;
+            const share = shareText(r);
+            const text = [share ? `${share} of national claims` : null, boundNote(r)]
+              .filter(Boolean)
+              .join(". ");
+            return text || null;
           }}
         />
       </ChartCard>
@@ -119,7 +134,7 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
           period={`${years[0]}–${years.at(-1)}`}
           partial={
             series.some((s) => s.partial)
-              ? "Years marked partial miss a product CMS hid (fewer than 11 claims); the bar is a lower bound."
+              ? "Years marked partial miss a product CMS hid (fewer than 11 claims each); the bar is a lower bound."
               : undefined
           }
           about={
@@ -135,12 +150,12 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
               id="exposure-partd-mdl"
               label="MDL"
               value={selected.mdl}
-              options={rows.map((r) => ({ id: r.mdl, label: r.label }))}
+              options={rows.map((r) => ({ id: r.mdls[0]!, label: r.label }))}
               onChange={setPick}
             />
           }
           table={periodTable(series, "year", [{ key: "claims", label: "Claims" }], fmtInt, {
-            caption: `${selected.label} Part D claims, ${stateName}`,
+            caption: `${trendLabel} Part D claims, ${stateName}`,
             xLabel: "Year",
             partialKey: "partial",
           })}
@@ -151,7 +166,7 @@ export function PartdExposureBlock({ part, stateName }: { part: PartdPart; state
             series={[{ key: "claims", label: "Claims" }]}
             format={fmtInt}
             partialKey="partial"
-            ariaLabel={`${selected.label} Part D claims per year, ${stateName}`}
+            ariaLabel={`${trendLabel} Part D claims per year, ${stateName}`}
           />
         </ChartCard>
       ) : null}

@@ -93,6 +93,27 @@ describe("exposure geography reads", () => {
     expect(paths(restGet).some((p) => p.includes("dataset=eq.exposure_ucmr5"))).toBe(false);
   });
 
+  it("validates inputs as exact identifiers", async () => {
+    vi.resetModules();
+    const { stateInput, countyInput, mdlInput } = await import("./exposureGeo.functions");
+    expect(stateInput.safeParse({ usps: "NJ" }).success).toBe(true);
+    expect(stateInput.safeParse({ usps: "nj" }).success).toBe(false);
+    expect(stateInput.safeParse({ usps: "NJX" }).success).toBe(false);
+    expect(countyInput.safeParse({ fips: "34023" }).success).toBe(true);
+    expect(countyInput.safeParse({ fips: "3402" }).success).toBe(false);
+    expect(countyInput.safeParse({ fips: "3402a" }).success).toBe(false);
+    expect(mdlInput.safeParse({ mdl: "2873" }).success).toBe(true);
+    expect(mdlInput.safeParse({ mdl: "0" }).success).toBe(false);
+    expect(mdlInput.safeParse({ mdl: "1234567" }).success).toBe(false);
+  });
+
+  it("keeps the memo bounded however many distinct inputs arrive", async () => {
+    const { mdl } = await load({ corpus_datasets: [] });
+    const mod = await import("./exposureGeo.functions");
+    for (let i = 1; i <= mod.MEMO_LIMIT + 50; i++) await mdl({ data: { mdl: String(i) } });
+    expect(mod.memoSize()).toBe(mod.MEMO_LIMIT);
+  });
+
   it("surfaces a read failure as a plain message", async () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { state } = await load(new Error("boom"));

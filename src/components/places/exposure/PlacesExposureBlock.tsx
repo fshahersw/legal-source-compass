@@ -44,6 +44,10 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
       : [...recorded.slice(0, SHOWN), ...recorded.slice(-SHOWN)];
   const national = part.national?.measures.find((m) => m.id === measure.id)?.crude.v ?? null;
   const adults = derivedAdults(part.counties, measure.id);
+  const adultsRange =
+    adults && adults.lo !== null && adults.hi !== null
+      ? `${fmtInt(adults.lo)}–${fmtInt(adults.hi)}`
+      : null;
   const top = recorded[0];
   const low = recorded.at(-1);
   const mdls = [...new Set(measure.links.flatMap((l) => l.mdls))];
@@ -61,9 +65,11 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
       { label: "Median county, crude prevalence", value: dist.median, unit: "%" },
       { label: "United States, crude prevalence", value: national, unit: "%" },
       {
-        label: "Adults with the condition, derived (prevalence × adults)",
-        value: adults,
+        label:
+          "Adults with the condition, derived estimate (prevalence × adults, 3 significant figures)",
+        value: adults ? `about ${fmtInt(adults.v)}` : null,
         unit: "adults",
+        note: adultsRange ? `range from county 95% limits: ${adultsRange}` : undefined,
       },
       { label: "Counties with an estimate", value: dist.recorded },
       ...picks.map((p) => ({ label: p.label, value: p.value, unit: "%" })),
@@ -86,19 +92,19 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
           { label: "United States", value: orNR(national, fmtPct) },
           {
             label: "Adults with the condition",
-            value: orNR(adults, fmtInt),
-            detail: "derived: prevalence × adults",
+            value: adults ? `about ${fmtInt(adults.v)}` : orNR(null, fmtInt),
+            detail: adultsRange
+              ? `derived estimate; ${adultsRange} from county 95% limits`
+              : "derived: prevalence × adults",
           },
         ]}
-        sources={[
-          PLACES_SOURCE,
-          ...measure.links.map((l) => ({ label: l.sourceLabel, url: l.sourceUrl })),
-        ]}
+        sources={[PLACES_SOURCE, ...measure.links.flatMap((l) => l.sources)]}
         period={measure.year}
         about={
           <AboutList
             items={[
               ...PLACES_ABOUT,
+              "Adults with the condition is our estimate, not a CDC count: each county's crude prevalence times its adult population, summed and rounded to three significant figures. The range uses the counties' 95% limits the same way.",
               ...measure.links.map(
                 (l) => `MDL ${l.mdls.join(", ")}: ${l.relation}.${l.caveat ? ` ${l.caveat}` : ""}`,
               ),

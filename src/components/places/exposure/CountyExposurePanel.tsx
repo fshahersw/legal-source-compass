@@ -14,6 +14,17 @@ import { AboutList, fmtPct, orNR, PLACES_ABOUT } from "./exposureParts";
 
 export function CountyExposurePanel({ fips }: { fips: string }) {
   const q = useQuery(countyExposureQuery(fips));
+  if (q.isError)
+    return (
+      <Section id="county-exposure" title="Linked health conditions">
+        <p role="alert" className="text-xs text-muted-foreground">
+          Health condition figures could not load.{" "}
+          <button type="button" className="underline" onClick={() => void q.refetch()}>
+            Retry
+          </button>
+        </p>
+      </Section>
+    );
   if (!q.data) return null;
   return <CountyExposureView data={q.data} />;
 }
@@ -41,7 +52,7 @@ export function countyRows(data: CountyExposure) {
         year: m.year,
         mdls: [...new Set(m.links.flatMap((l) => l.mdls))],
         relations: m.links.map((l) => `MDL ${l.mdls.join(", ")}: ${l.relation}.`),
-        sources: m.links.map((l) => ({ label: l.sourceLabel, url: l.sourceUrl })),
+        sources: m.links.flatMap((l) => l.sources),
       };
     });
 }

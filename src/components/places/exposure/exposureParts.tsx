@@ -11,6 +11,27 @@ export const fmtNgl = (v: number) =>
 export const orNR = (v: number | null | undefined, f: (n: number) => string) =>
   typeof v === "number" && Number.isFinite(v) ? f(v) : NOT_RECORDED;
 
+/** UCMR 5 period: sample dates (years only when `short`) and the EPA data file they come from. */
+export function ucmrPeriod(
+  s: { firstSample: string | null; lastSample: string | null; fileDate: string | null },
+  short = false,
+): string {
+  const range =
+    s.firstSample && s.lastSample
+      ? short
+        ? `${s.firstSample.slice(0, 4)}–${s.lastSample.slice(0, 4)}`
+        : `${s.firstSample} to ${s.lastSample}`
+      : "UCMR 5";
+  return s.fileDate ? `${range} (EPA file of ${s.fileDate})` : range;
+}
+
+/** Partial-period note for UCMR 5: EPA is still adding results, so counts are not final. */
+export function ucmrPartial(s: { fileDate: string | null }): string {
+  return s.fileDate
+    ? `EPA data file of ${s.fileDate}; EPA may add results, so these counts are not final.`
+    : "EPA may add results, so these counts are not final.";
+}
+
 const selectClass =
   "h-8 min-w-0 max-w-full rounded-md border border-input bg-surface px-2 text-xs focus-visible:outline-2 focus-visible:outline-ring";
 
@@ -61,7 +82,9 @@ export function AboutList({ items }: { items: readonly ReactNode[] }) {
 export const PARTD_ABOUT: readonly ReactNode[] = [
   "Claims are Medicare Part D prescription fills, including refills, for the drugs the MDL title names (or the drug class it names, by FDA pharmacologic class).",
   "The state is where the prescriber practices, not where the patient lives.",
-  "CMS hides rows with fewer than 11 claims. A year where a product was hidden is a lower bound and is not ranked.",
+  'CMS leaves out rows with fewer than 11 claims. Where a product is missing for a state, the total is shown as "at least": the true figure is at most 10 claims higher per missing product.',
+  "States (50 and DC) are ranked on those ranges. A rank such as 3–4 means a hidden product could change the order; a wider range is shown as Not ranked.",
+  "MDLs that name the same drugs (such as the two GLP-1 MDLs) count the same prescriptions and share one bar.",
   "Part D only: no Medicaid, commercial or cash prescriptions, and no clinic-administered (Part B) doses.",
   "These are prescriptions, not people with a claim, and never plaintiffs.",
 ];
@@ -77,5 +100,7 @@ export const PFAS_ABOUT: readonly ReactNode[] = [
   "EPA's fifth Unregulated Contaminant Monitoring Rule (UCMR 5) tested public water systems for 29 PFAS; the sample dates shown are the first and last in EPA's file.",
   "A detection is a result at or above EPA's minimum reporting level. It shows occurrence only and does not identify a source; it is not evidence of firefighting foam.",
   "4.0 ng/L is the value of the 2024 PFOA and PFOS drinking-water standards. Single results above it are not compliance findings, which use annual averages.",
-  "Population served comes from EPA's SDWIS by exact water-system ID. Non-community systems report the people they serve on a typical day.",
+  "UCMR 5 tested every system serving more than 3,300 people but only a national sample of smaller systems, so a state's share of all tested systems depends on its sample. States are compared on large systems (more than 10,000 people), which were all tested.",
+  "Population served comes from EPA's SDWIS by exact water-system ID and is summed over community water systems. Non-community systems (schools, workplaces) count people on a typical day and are left out of that sum; systems that buy water from another system can still overlap.",
+  "EPA keeps adding UCMR 5 results; the file date shown is the version used.",
 ];

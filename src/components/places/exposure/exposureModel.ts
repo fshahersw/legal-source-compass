@@ -3,8 +3,9 @@
  * (CMS Part D prescriptions for drugs named in MDL titles, CDC PLACES county estimates for MDL-linked conditions, EPA
  * UCMR 5 PFAS occurrence for the AFFF MDL). Pure: parses jsonb, never fills a gap, never sums what is not additive.
  *
- * Every value is either the published figure or null ("Not recorded"). A Part D year whose state total misses a
- * suppressed product is a lower bound and is flagged, never ranked.
+ * Every value is either the published figure or null ("Not recorded"). A Part D state total that misses a product CMS
+ * hid (fewer than 11 claims) is the published interval [claims, claimsMax]; it is shown as "at least", ranked on that
+ * interval, and named as a leader only when no other interval can overtake it.
  */
 
 export const EXPOSURE_DATASETS = {
@@ -41,7 +42,10 @@ export type PartdProduct = {
 };
 export type PartdPoint = {
   year: number;
+  /** Published sum; with `lowerBound`, the true total lies in [claims, claimsMax]. */
   claims: number | null;
+  /** Upper end of the total (claims + 10 per hidden product); null when the record does not give it. */
+  claimsMax: number | null;
   fills: number | null;
   cost: number | null;
   benes: number | null;
@@ -51,9 +55,21 @@ export type PartdPoint = {
 };
 export type PartdRank = {
   year: number;
+  /** Best possible rank; `rankMax` is the worst (equal when the order is certain). */
   rank: number;
+  rankMax: number;
   of: number;
   shareOfNational: number | null;
+  shareIsLowerBound: boolean;
+};
+/** The median state (50 states and DC) as an interval, on the national record. */
+export type PartdStateDistribution = {
+  year: number;
+  states: number;
+  statesWithRow: number;
+  statesLowerBound: number;
+  medianLo: number | null;
+  medianHi: number | null;
 };
 export type PartdExposure = {
   mdl: string;
@@ -67,6 +83,7 @@ export type PartdExposure = {
   geo: { level: "state" | "national"; usps: string; name: string };
   series: PartdPoint[];
   latestRank: PartdRank | null;
+  stateDistribution: PartdStateDistribution | null;
 };
 
 export type Interval = { v: number | null; lo: number | null; hi: number | null };
@@ -75,6 +92,8 @@ export type MdlLink = {
   relation: string;
   sourceLabel: string;
   sourceUrl: string;
+  /** Every document the link cites (the first is sourceLabel/sourceUrl). */
+  sources: { label: string; url: string }[];
   caveat: string | null;
 };
 export type PlacesMeasure = {
@@ -109,9 +128,16 @@ export type UcmrState = {
   populationSampled: UcmrPopulation;
   populationWithDetect: UcmrPopulation;
   populationAtOrAbove4: UcmrPopulation;
+  /** Community water systems only (non-community systems count workers or visitors). */
+  populationWithDetectCws: UcmrPopulation;
+  /** Large systems (more than 10,000 people) were all tested; small ones only by national sample. */
+  largeSampled: number | null;
+  largeWithDetect: number | null;
   byAnalyte: { analyte: string; systems: number }[];
   firstSample: string | null;
   lastSample: string | null;
+  /** Date of the EPA data file the figures come from; EPA keeps adding results. */
+  fileDate: string | null;
 };
 export type UcmrSystem = {
   pwsid: string;
@@ -154,13 +180,16 @@ function parsePoint(v: unknown): PartdPoint | null {
         benes: num(p["benes"]),
       }))
     : [];
+  const claims = num(v["claims"]);
+  const lowerBound = v["lower_bound"] === true;
   return {
     year,
-    claims: num(v["claims"]),
+    claims,
+    claimsMax: num(v["claims_max"]) ?? (lowerBound ? null : claims),
     fills: num(v["fills"]),
     cost: num(v["cost"]),
     benes: num(v["benes"]),
-    lowerBound: v["lower_bound"] === true,
+    lowerBound,
     missingProducts: strs(v["missing_products"]),
     products,
   };
@@ -176,6 +205,8 @@ export function parsePartd(v: unknown): PartdExposure | null {
   const rankYear = rank ? num(rank["year"]) : null;
   const rankN = rank ? num(rank["rank"]) : null;
   const rankOf = rank ? num(rank["of"]) : null;
+  const dist = isObj(v["state_distribution"]) ? v["state_distribution"] : null;
+  const distYear = dist ? num(dist["year"]) : null;
   const title = str(v["mdl_title"]);
   return {
     mdl,
@@ -196,8 +227,21 @@ export function parsePartd(v: unknown): PartdExposure | null {
         ? {
             year: rankYear,
             rank: rankN,
+            rankMax: num(rank?.["rank_max"]) ?? rankN,
             of: rankOf,
             shareOfNational: num(rank?.["share_of_national"]),
+            shareIsLowerBound: rank?.["share_is_lower_bound"] === true,
+          }
+        : null,
+    stateDistribution:
+      dist && distYear !== null
+        ? {
+            year: distYear,
+            states: num(dist["states"]) ?? 0,
+            statesWithRow: num(dist["states_with_row"]) ?? 0,
+            statesLowerBound: num(dist["states_lower_bound"]) ?? 0,
+            medianLo: num(dist["median_lo"]),
+            medianHi: num(dist["median_hi"]),
           }
         : null,
   };
@@ -230,13 +274,22 @@ export function parsePlaces(v: unknown): PlacesCounty | null {
         ageAdjusted: interval(m["age_adjusted"]),
         links: (Array.isArray(linkMap[id]) ? (linkMap[id] as unknown[]) : [])
           .filter(isObj)
-          .map((l) => ({
-            mdls: strs(l["mdls"]),
-            relation: str(l["relation"]),
-            sourceLabel: str(l["source_label"]),
-            sourceUrl: str(l["source_url"]),
-            caveat: str(l["caveat"]) || null,
-          })),
+          .map((l) => {
+            const sourceLabel = str(l["source_label"]);
+            const sourceUrl = str(l["source_url"]);
+            const listed = (Array.isArray(l["sources"]) ? l["sources"] : [])
+              .filter(isObj)
+              .map((x) => ({ label: str(x["label"]), url: str(x["url"]) }))
+              .filter((x) => x.label && x.url);
+            return {
+              mdls: strs(l["mdls"]),
+              relation: str(l["relation"]),
+              sourceLabel,
+              sourceUrl,
+              sources: listed.length ? listed : [{ label: sourceLabel, url: sourceUrl }],
+              caveat: str(l["caveat"]) || null,
+            };
+          }),
       }))
       .sort((a, b) => a.id.localeCompare(b.id)),
   };
@@ -265,11 +318,15 @@ export function parseUcmrState(v: unknown): UcmrState | null {
     populationSampled: population(v["population_sampled"]),
     populationWithDetect: population(v["population_with_detect"]),
     populationAtOrAbove4: population(v["population_pfoa_pfos_at_or_above_4"]),
+    populationWithDetectCws: population(v["population_with_detect_cws"]),
+    largeSampled: num(v["large_systems_sampled"]),
+    largeWithDetect: num(v["large_systems_with_detect"]),
     byAnalyte: Object.entries(by)
       .map(([analyte, n]) => ({ analyte, systems: num(n) ?? 0 }))
       .sort((a, b) => b.systems - a.systems || a.analyte.localeCompare(b.analyte)),
     firstSample: str(v["first_sample"]) || null,
     lastSample: str(v["last_sample"]) || null,
+    fileDate: str(v["epa_file_date"]) || null,
   };
 }
 
@@ -300,34 +357,116 @@ export function latestYear(national: readonly PartdExposure[]): number | null {
   return years.length ? Math.max(...years) : null;
 }
 
+/** The 50 states and DC: the geographies Part D ranks and PFAS shares are compared across (not territories). */
+export const COMPARED_STATES: ReadonlySet<string> = new Set(
+  "AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY".split(
+    " ",
+  ),
+);
+
+/** Exact drug set of a Part D record: MDLs with the same set count the same prescriptions. */
+const drugSetKey = (e: PartdExposure) =>
+  [e.scope, [...e.genericNames].sort().join("|"), [...e.brandNames].sort().join("|")].join("#");
+
+export type StateMdlRow = {
+  id: string;
+  mdls: string[];
+  label: string;
+  title: string;
+  /** Published claims (the lower end when `lowerBound`); null when the state has no row that year. */
+  claims: number | null;
+  /** Upper end of the total; null when unknown. Equal to claims when complete. */
+  claimsMax: number | null;
+  lowerBound: boolean;
+  missingProducts: string[];
+  share: number | null;
+  rank: PartdRank | null;
+};
+
 /**
- * One row per MDL for a state in `year`: claims (null when not published, or when a suppressed product makes the total
- * a lower bound), the state's share of the national claims, and its rank among states.
+ * One row per drug set for a state in `year` (MDLs that count the same drugs, such as the two GLP-1 MDLs, share a row
+ * labelled with both numbers): claims as published, with the [claims, claimsMax] interval when CMS hid a product, the
+ * state's share of the national claims, and its rank among states. Highest first.
  */
 export function stateMdlRows(
   state: readonly PartdExposure[],
   national: readonly PartdExposure[],
   year: number,
-) {
+): StateMdlRow[] {
   const nat = new Map(national.map((e) => [e.mdl, pointFor(e, year)] as const));
-  return state
-    .map((e) => {
+  const groups = new Map<string, PartdExposure[]>();
+  for (const e of [...state].sort((a, b) => Number(a.mdl) - Number(b.mdl))) {
+    const key = drugSetKey(e);
+    groups.set(key, [...(groups.get(key) ?? []), e]);
+  }
+  return [...groups.values()]
+    .map((group): StateMdlRow => {
+      const e = group[0]!;
+      const mdls = group.map((g) => g.mdl);
       const p = pointFor(e, year);
-      const complete = p && !p.lowerBound ? p.claims : null;
       const natClaims = nat.get(e.mdl)?.claims ?? null;
+      const claims = p?.claims ?? null;
       return {
-        id: e.mdl,
-        mdl: e.mdl,
-        label: `${e.label} · MDL ${e.mdl}`,
-        title: e.mdlTitle,
-        claims: complete,
+        id: mdls.join("+"),
+        mdls,
+        label: `${e.label} · MDL ${mdls.join(", ")}`,
+        title: group.map((g) => g.mdlTitle).join(" / "),
+        claims,
+        claimsMax: p ? p.claimsMax : null,
         lowerBound: p?.lowerBound ?? false,
-        atLeast: p?.lowerBound ? p.claims : null,
-        share: complete !== null && natClaims ? complete / natClaims : null,
+        missingProducts: p?.missingProducts ?? [],
+        share: claims !== null && natClaims ? claims / natClaims : null,
         rank: e.latestRank && e.latestRank.year === year ? e.latestRank : null,
       };
     })
-    .sort((a, b) => (b.claims ?? -1) - (a.claims ?? -1) || Number(a.mdl) - Number(b.mdl));
+    .sort((a, b) => (b.claims ?? -1) - (a.claims ?? -1) || Number(a.mdls[0]) - Number(b.mdls[0]));
+}
+
+type Bounded = { claims: number | null; claimsMax: number | null };
+
+/**
+ * The row with the most claims, and whether it is certainly the most: its lower end must exceed every other row's
+ * upper end (an unknown upper end can overtake anything). Null when no row has a figure.
+ */
+export function boundedLeader<T extends Bounded>(rows: readonly T[]) {
+  const recorded = rows.filter((r) => r.claims !== null);
+  const top = [...recorded].sort((a, b) => b.claims! - a.claims!)[0];
+  if (!top) return null;
+  const certain = recorded.every(
+    (r) => r === top || (r.claimsMax !== null && r.claimsMax < top.claims!),
+  );
+  return { row: top, certain };
+}
+
+/** "at least 1,234" for a bounded total, the plain figure otherwise. */
+export function boundedText(r: Bounded & { lowerBound: boolean }, f: (v: number) => string) {
+  if (r.claims === null) return null;
+  return r.lowerBound ? `at least ${f(r.claims)}` : f(r.claims);
+}
+
+/**
+ * Rank text: "3 of 51", "3–4 of 51" when hidden products leave the order open by a place or two; null ("Not ranked")
+ * when the range is wider than that.
+ */
+export function rankText(rank: PartdRank | null): string | null {
+  if (!rank) return null;
+  if (rank.rankMax === rank.rank) return `${rank.rank} of ${rank.of}`;
+  if (rank.rankMax - rank.rank <= 2) return `${rank.rank}–${rank.rankMax} of ${rank.of}`;
+  return null;
+}
+
+/** Takeaway for bounded rows: names a leader only when it is certain. */
+export function boundedTakeaway<T extends Bounded & { label: string; lowerBound: boolean }>(
+  rows: readonly T[],
+  f: (v: number) => string,
+): string | null {
+  const lead = boundedLeader(rows);
+  if (!lead || !lead.certain) return null;
+  const next = rows
+    .filter((r) => r !== lead.row && r.claims !== null)
+    .sort((a, b) => b.claims! - a.claims!)[0];
+  const text = (r: T) => boundedText(r, f)!;
+  return `${lead.row.label} leads with ${text(lead.row)}${next ? `; ${next.label} next at ${text(next)}` : ""}`;
 }
 
 /** Year series of one record, with lower-bound years flagged so charts treat them as incomplete. */
@@ -372,19 +511,39 @@ export function measureDistribution(counties: readonly PlacesCounty[], measureId
   return { items, median: median(values), recorded: values.length };
 }
 
+/** Round to three significant figures: a derived estimate is not precise to the person. */
+export function roundSig(v: number, digits = 3): number {
+  return Number(v.toPrecision(digits));
+}
+
 /**
- * Adults with the condition, derived as crude prevalence × adult population for each county and summed; null when any
- * county lacks either figure. Labelled "derived" wherever it is shown.
+ * Adults with the condition, derived as crude prevalence × adult population for each county and summed, rounded to
+ * three significant figures; `lo`/`hi` use the counties' 95% confidence limits the same way (a range, not a confidence
+ * interval of the sum). Null when any county lacks the value or its adult population. Labelled "derived" and "about"
+ * wherever it is shown.
  */
-export function derivedAdults(counties: readonly PlacesCounty[], measureId: string): number | null {
+export function derivedAdults(
+  counties: readonly PlacesCounty[],
+  measureId: string,
+): { v: number; lo: number | null; hi: number | null } | null {
   let total = 0;
+  let lo: number | null = 0;
+  let hi: number | null = 0;
   let any = false;
   for (const c of counties) {
     if (!c.fips) continue;
-    const v = c.measures.find((m) => m.id === measureId)?.crude.v ?? null;
-    if (v === null || c.adultPopulation === null) return null;
-    total += (v / 100) * c.adultPopulation;
+    const m = c.measures.find((x) => x.id === measureId)?.crude;
+    if (!m || m.v === null || c.adultPopulation === null) return null;
+    const adults = c.adultPopulation / 100;
+    total += m.v * adults;
+    lo = lo === null || m.lo === null ? null : lo + m.lo * adults;
+    hi = hi === null || m.hi === null ? null : hi + m.hi * adults;
     any = true;
   }
-  return any ? Math.round(total) : null;
+  if (!any) return null;
+  return {
+    v: roundSig(total),
+    lo: lo === null ? null : roundSig(lo),
+    hi: hi === null ? null : roundSig(hi),
+  };
 }
