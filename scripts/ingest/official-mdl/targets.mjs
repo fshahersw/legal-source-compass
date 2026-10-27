@@ -370,6 +370,14 @@ export const MATTERS = {
     pages: [{ id: 'flsd-3015-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.flsd.uscourts.gov/21-md-3015-singhal-%E2%80%93-re-johnson-johnson-aerosol-sunscreen-marketing-sales-practices-and-products' }],
     index_pages: [],
   },
+  // D. Mass. MDL 3083 (shared court MDL hub; order PDFs scoped by path /caseinfo/pdf/mdl/3083/).
+  '3083': {
+    name: 'In re MOVEit Customer Data Security Breach Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:23-md-3083', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 3083 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 3083', listing_href_substring: 'pdf/mdl/3083',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
