@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  MATTER_TAB_ANCHORS,
   MATTER_TABS,
   MATTER_VIEWS,
+  MDL_SECTION_IDS,
+  matterAnchorOf,
   matterViewOf,
   validateMatterSearch,
   withEntry,
@@ -47,6 +50,26 @@ describe("URL state updates", () => {
       view: "docketbird|x",
     });
     expect("view" in withView({ view: "docketbird|x" }, null)).toBe(false);
+  });
+});
+
+describe("command page anchors", () => {
+  it("maps every former tab to a section of the command page", () => {
+    for (const tab of MATTER_TABS)
+      expect(MDL_SECTION_IDS as readonly string[]).toContain(MATTER_TAB_ANCHORS[tab]);
+    expect(matterAnchorOf({ tab: "lifecycle" })).toBe("mdl-regulatory");
+    expect(matterAnchorOf({ tab: "cases" })).toBe("mdl-counsel");
+    expect(matterAnchorOf({ tab: "parties" })).toBe("mdl-counsel");
+    expect(matterAnchorOf({ tab: "docket" })).toBe("mdl-activity");
+    expect(matterAnchorOf({ tab: "evidence" })).toBe("mdl-sources");
+  });
+
+  it("opens the documents section for an entry filter or an open document, else the top", () => {
+    expect(matterAnchorOf({ entry: 12 })).toBe("mdl-documents");
+    expect(matterAnchorOf({ view: "docketbird|x" })).toBe("mdl-documents");
+    expect(matterAnchorOf({ tab: "documents", entry: 12 })).toBe("mdl-documents");
+    expect(matterAnchorOf({})).toBeNull();
+    expect(MDL_SECTION_IDS).toHaveLength(11);
   });
 });
 
