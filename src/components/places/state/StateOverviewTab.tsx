@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, MapPin } from "lucide-react";
 import { StateCensusSection } from "@/components/places/census/StateCensusSection";
+import { StateExposureSection } from "@/components/places/exposure/StateExposureSection";
 import { StateSourcePanelWithRegistry } from "@/components/corpus/StateSourcePanelWithRegistry";
 import { StateMetricsPanel } from "@/components/states/StateMetricsPanel";
 import type { MergedStateSource } from "@/lib/atlas/stateSources";
@@ -17,6 +18,7 @@ export const OVERVIEW_SECTIONS = [
   { id: "courts", label: "Courts and judges" },
   { id: "law", label: "Law" },
   { id: "litigation", label: "Litigation and enforcement" },
+  { id: "exposure", label: "Exposure" },
   { id: "demographics", label: "Demographics and economy" },
   { id: "resources", label: "Research resources" },
   { id: "government-sites", label: "Government sites" },
@@ -193,6 +195,7 @@ export function StateOverviewTab(props: {
       >
         <LitigationSection usps={usps} stateName={stateName} />
       </Section>
+      <StateExposureSection usps={usps} stateName={stateName} />
       <Section
         id="demographics"
         title="Demographics and economy"
