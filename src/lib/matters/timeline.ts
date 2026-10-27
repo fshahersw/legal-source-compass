@@ -424,6 +424,7 @@ export const RECAP_LABELS: Record<string, string> = {
   // External entries: the court's or GovInfo's own published PDF.
   official_pdf: "Official PDF",
   provider_pdf: "Provider PDF",
+  provider_not_downloaded: "PDF not held by the provider",
 };
 
 /** Who published an entry; CourtListener is the default and needs no label of its own. */

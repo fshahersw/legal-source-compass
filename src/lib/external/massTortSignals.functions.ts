@@ -31,13 +31,18 @@ export type MassTortSignal = {
   recallBreakdown: Record<string, number>;
   recentRecalls: SignalRecall[];
   eventsQuery: string | null;
-  pending: number;
-  total: number;
+  /** Actions pending per the latest JPML report; null when the MDL is not in a pending report yet (newly centralized). */
+  pending: number | null;
+  total: number | null;
   change12m: number | null;
   judge: string | null;
   district: string | null;
   series: { date: string; pending: number; total: number }[];
+  /** For an MDL centralized after the last JPML pending report: the transfer order the row rests on. */
+  jpmlEvidence: { recordId: string; orderUrl: string; orderDate: string | null } | null;
 };
+
+const KINDS = new Set<MassTortSignal["kind"]>(["drug", "device", "food", "cosmetic", "vehicle"]);
 
 export type TopTerm = {
   term: string;
@@ -103,13 +108,20 @@ export function toSignals(item: Item): MassTortSignal[] {
   const s = item.signal;
   const l = item.litigation;
   if (!s || !l || typeof l["mdl"] !== "number") return [];
+  // A product no FDA/NHTSA source reports on (kind "consumer", e.g. MDL 3199) has no signal to chart here.
+  const kind = str(s["product_kind"]) ?? "drug";
+  if (!KINDS.has(kind as MassTortSignal["kind"])) return [];
+  const ev =
+    l["jpml_evidence"] && typeof l["jpml_evidence"] === "object"
+      ? (l["jpml_evidence"] as Record<string, unknown>)
+      : null;
   const queries = (s["queries"] ?? {}) as Record<string, unknown>;
   return [
     {
       mdl: l["mdl"],
       title: str(l["title"]) ?? "",
       product: str(s["product"]) ?? "",
-      kind: (str(s["product_kind"]) ?? "drug") as MassTortSignal["kind"],
+      kind: kind as MassTortSignal["kind"],
       source: str(s["source"]) ?? "",
       sourceUrl: str(s["source_url"]) ?? "",
       caveat: str(s["caveat"]) ?? "",
@@ -124,12 +136,20 @@ export function toSignals(item: Item): MassTortSignal[] {
         ? (s["recent_recalls"] as SignalRecall[])
         : [],
       eventsQuery: str(queries["events"]),
-      pending: num(l["pending"]) ?? 0,
-      total: num(l["total"]) ?? 0,
+      pending: num(l["pending"]),
+      total: num(l["total"]),
       change12m: num(l["change_12m"]),
       judge: str(l["judge"]),
       district: str(l["district"]),
       series: Array.isArray(l["series"]) ? (l["series"] as MassTortSignal["series"]) : [],
+      jpmlEvidence:
+        ev && str(ev["record_id"]) && str(ev["order_url"])
+          ? {
+              recordId: str(ev["record_id"])!,
+              orderUrl: str(ev["order_url"])!,
+              orderDate: str(ev["order_date"]),
+            }
+          : null,
     },
   ];
 }

@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
 import { HubLinks, SectionHub } from "@/components/atlas/hub/SectionHub";
 import { LawHeadline } from "@/components/corpus/LawHeadline";
+import { LawAnswerKpis } from "@/components/law/LawAnswerKpis";
+import { listStateRegCodes } from "@/lib/external/stateRegs.functions";
 import { FederalLawCollections, LawLanding } from "@/components/corpus/LawLanding";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid, type FolderItem } from "@/components/corpus/FolderGrid";
@@ -58,6 +60,12 @@ function LawPage() {
     queryFn: loadStateLawDirectory,
     staleTime: 60_000,
     enabled: s.scope === "states",
+  });
+  const regCodes = useQuery({
+    queryKey: ["state-reg-codes-v2"],
+    queryFn: () => listStateRegCodes(),
+    staleTime: 10 * 60 * 1000,
+    enabled: s.scope === "reference",
   });
   if (s.view === "list" || s.ds === "outline")
     return <SectionPage section="law" path="/law" ds={s.ds === "outline" ? undefined : s.ds} />;
@@ -116,7 +124,15 @@ function LawPage() {
   const savedLawError = datasets.error;
   const err = s.scope === "states" ? stateSources.error : savedLawError;
   const landing = (
-    <SectionHub section="law" lead={<LawHeadline />}>
+    <SectionHub
+      section="law"
+      lead={
+        <>
+          <LawAnswerKpis />
+          <LawHeadline />
+        </>
+      }
+    >
       <LawLanding
         datasets={lawDs}
         metadataState={datasets.error ? "error" : datasets.isLoading ? "loading" : "ready"}
@@ -227,7 +243,11 @@ function LawPage() {
           {
             key: "regulations",
             label: "State administrative codes",
-            note: "Tables of contents, 12 states",
+            note: regCodes.data
+              ? `Rule text for ${regCodes.data.filter((c) => c.textRules > 0).length} states; ${regCodes.data.length} jurisdictions listed with their official publisher`
+              : regCodes.isLoading
+                ? "Official publishers, tables of contents and rule text"
+                : "Coverage not recorded",
             link: { to: "/law/regulations", search: { q: "" } },
           },
           ...lawDs

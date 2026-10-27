@@ -86,3 +86,43 @@ export type MatterView = (typeof MATTER_VIEWS)[number];
 
 export const matterViewOf = (tab: MatterTab): MatterView =>
   MATTER_VIEWS.find((v) => (v.tabs as readonly MatterTab[]).includes(tab)) ?? MATTER_VIEWS[0];
+
+/**
+ * The sections of the MDL command page (/matters/$id), in page order. The page is one scrollable page with a sticky
+ * section index; there are no tabs, so a former `?tab=` address scrolls to the section that now holds its content.
+ */
+export const MDL_SECTION_IDS = [
+  "mdl-overview",
+  "mdl-changes",
+  "mdl-velocity",
+  "mdl-jpml",
+  "mdl-orders",
+  "mdl-dates",
+  "mdl-counsel",
+  "mdl-activity",
+  "mdl-documents",
+  "mdl-regulatory",
+  "mdl-sources",
+] as const;
+export type MdlSectionId = (typeof MDL_SECTION_IDS)[number];
+
+/** Where each former tab's content lives on the command page. */
+export const MATTER_TAB_ANCHORS: Record<MatterTab, MdlSectionId> = {
+  overview: "mdl-overview",
+  lifecycle: "mdl-regulatory",
+  cases: "mdl-counsel",
+  parties: "mdl-counsel",
+  docket: "mdl-activity",
+  documents: "mdl-documents",
+  evidence: "mdl-sources",
+};
+
+/**
+ * The section a matter address should scroll to: its `?tab=`, else the documents section when an entry filter or an
+ * open document (`?entry=`, `?view=`) is in the address, else none (the page opens at the top).
+ */
+export function matterAnchorOf(search: MatterSearch): MdlSectionId | null {
+  if (search.tab) return MATTER_TAB_ANCHORS[search.tab];
+  if (search.entry !== undefined || search.view !== undefined) return "mdl-documents";
+  return null;
+}

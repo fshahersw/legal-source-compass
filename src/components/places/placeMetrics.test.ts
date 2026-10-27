@@ -5,6 +5,7 @@ import {
   formatPlaceValue,
   histogram,
   isSmallBase,
+  METRIC_BY_KEY,
   metricGroups,
   NOT_RECORDED,
   quantile,
@@ -90,9 +91,26 @@ describe("rankings and distributions", () => {
     const g = metricGroups(new Set(["fjc_core_rate", "poverty_rate"]));
     expect(g.map((x) => x.group)).toEqual(["Legal activity", "Economy"]);
   });
+  it("never offers the MDL-inflated or corpus-coverage measures in a picker", () => {
+    const keys = metricGroups().flatMap((g) => g.items.map((m) => m.key));
+    expect(keys).not.toContain("fjc_rate");
+    expect(keys).not.toContain("resources");
+    expect(keys).toContain("fjc_core_rate");
+    expect(METRIC_BY_KEY.get("fjc_rate")?.label).toMatch(/not a residence measure/);
+    expect(METRIC_BY_KEY.get("fjc_rate")?.caveat).toMatch(/MDL/);
+  });
+  it("offers a measure only when some row records it", () => {
+    const rows = [{ metrics: { fjc_core_rate: 60.6, fjc_core_product_rate: null } }];
+    const keys = metricGroups(undefined, rows).flatMap((g) => g.items.map((m) => m.key));
+    expect(keys).toEqual(["fjc_core_rate"]);
+  });
 });
 
 describe("state hub search with the Analysis tab", () => {
+  it("drops a measure no picker offers, so the default core rate is shown", () => {
+    expect(parsePlaceHubSearch({ tab: "analysis", metric: "fjc_rate" }).metric).toBeUndefined();
+    expect(parsePlaceHubSearch({ tab: "analysis", metric: "resources" }).metric).toBeUndefined();
+  });
   it("keeps analysis view and a known metric", () => {
     expect(
       parsePlaceHubSearch({ tab: "analysis", view: "districts", metric: "osha_rate" }),

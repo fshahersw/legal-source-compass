@@ -168,10 +168,15 @@ function DisclosureLine({ p }: { p: JudgeCrossProfile }) {
               finding
             </Link>
           ) : (
-            "no exact or near name match · requires review"
+            `no exact or near name match in reports through ${cov.latestReportYear ?? "the years checked"}`
           )}
         </>
       ) : null}
+      <span className="block">
+        {cov.latestReportYear !== null
+          ? `No reports after ${cov.latestReportYear} in this corpus (disclosure coverage ends in 2020), so 0 name matches does not mean no conflict.`
+          : "No checked report in this corpus (disclosure coverage ends in 2020), so 0 name matches does not mean no conflict."}
+      </span>
       {later.length ? (
         <span className="block">
           MDL {later.join(", ")} began after the latest available report, so no report covers the

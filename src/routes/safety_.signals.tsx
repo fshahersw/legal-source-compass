@@ -3,53 +3,77 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { MassTortSignals, massTortSignalsQuery } from "@/components/regulatory/MassTortSignals";
 import { NeissSignals } from "@/components/safety/neiss/NeissSignals";
+import { EmergingTortRadar } from "@/components/safety/radar/EmergingTortRadar";
+import { radarQuery } from "@/components/safety/radar/radarQueries";
 import { SaferProductsSignals } from "@/components/safety/saferproducts/SaferProductsSignals";
 import { SafetyTabPanel, SafetyTabs } from "@/components/safety/SafetyTabs";
-import { safetyViewOf, type SafetyView } from "@/components/safety/safetyView";
+import { signalsViewOf, type SignalsView } from "@/components/safety/safetyView";
+import { UNIT_ID } from "@/components/safety/radar/radarModel";
 import { pageHead } from "@/lib/corpus/head";
 
-type S = { view?: "reports" | "neiss" | undefined };
+type S = {
+  view?: "mdl" | "reports" | "neiss" | undefined;
+  /** A radar unit to open (emerging mode). */
+  unit?: string | undefined;
+};
 
 export const Route = createFileRoute("/safety_/signals")({
   validateSearch: (s: Record<string, unknown>): S => {
-    const view = safetyViewOf(s["view"]);
-    return { view: view === "overview" ? undefined : view };
+    const view = signalsViewOf(s["view"]);
+    const unit = typeof s["unit"] === "string" && UNIT_ID.test(s["unit"]) ? s["unit"] : undefined;
+    return {
+      view: view === "emerging" ? undefined : view,
+      unit: view === "emerging" ? unit : undefined,
+    };
   },
-  loader: ({ context }) => context.queryClient.prefetchQuery(massTortSignalsQuery),
+  loaderDeps: ({ search }) => ({ view: signalsViewOf(search.view) }),
+  loader: ({ context, deps }) =>
+    deps.view === "mdl"
+      ? context.queryClient.prefetchQuery(massTortSignalsQuery)
+      : deps.view === "emerging"
+        ? context.queryClient.prefetchQuery(radarQuery)
+        : undefined,
   head: () =>
     pageHead(
-      "Mass-tort product signals",
-      "Products-liability MDLs matched to FDA adverse-event and recall data and NHTSA vehicle complaints.",
+      "Product safety signals",
+      "Emerging torts with no MDL linked, products already in an MDL, consumer-report growth and NEISS signals.",
     ),
   component: Page,
 });
 
+const TITLE: Record<SignalsView, string> = {
+  emerging: "Emerging torts (no open MDL linked)",
+  mdl: "Products in an MDL",
+  reports: "Consumer-report growth signals",
+  neiss: "NEISS product signals",
+};
+
+const DESCRIPTION: Record<SignalsView, string> = {
+  emerging:
+    "Rising safety reports, regulator actions and JPML motions where no open MDL is linked; a closed MDL is marked.",
+  mdl: "Litigation volume next to adverse-event reporting and recalls for the same products.",
+  reports:
+    "Growth in unverified SaferProducts.gov reports by product, with the measured precision of the hazard-term rules.",
+  neiss:
+    "Weighted national estimates, CPSC NEISS: product estimates, changes beyond sampling error and withheld cells.",
+};
+
 function Page() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const view = safetyViewOf(search.view);
-  const selectView = (next: SafetyView) =>
-    void navigate({ search: next === "overview" ? {} : { view: next } });
-  const title =
-    view === "reports"
-      ? "Consumer-report growth signals"
-      : view === "neiss"
-        ? "NEISS product signals"
-        : "Mass-tort product signals";
+  const view = signalsViewOf(search.view);
+  const selectView = (next: SignalsView) =>
+    void navigate({ search: next === "emerging" ? {} : { view: next } });
+  const openUnit = (unit: string | null) =>
+    void navigate({ search: unit ? { unit } : {}, replace: !unit, resetScroll: false });
   return (
     <AppShell
-      title={title}
-      description={
-        view === "reports"
-          ? "Growth in unverified SaferProducts.gov reports by product, with the measured precision of the hazard-term rules."
-          : view === "neiss"
-            ? "Weighted national estimates, CPSC NEISS: product estimates, changes beyond sampling error and withheld cells."
-            : "Litigation volume next to adverse-event reporting and recalls for the same products."
-      }
+      title={TITLE[view]}
+      description={DESCRIPTION[view]}
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Product safety", to: "/safety" },
-        { label: view === "overview" ? "Mass-tort signals" : title },
+        { label: TITLE[view] },
       ]}
     >
       <DailyInsightCard section="safety" className="mb-3" />
@@ -60,8 +84,14 @@ function Page() {
             <SaferProductsSignals />
           ) : view === "neiss" ? (
             <NeissSignals />
-          ) : (
+          ) : view === "mdl" ? (
             <MassTortSignals />
+          ) : (
+            <EmergingTortRadar
+              unit={search.unit ?? null}
+              onUnit={openUnit}
+              onShowMdl={() => selectView("mdl")}
+            />
           )}
         </SafetyTabPanel>
       </div>

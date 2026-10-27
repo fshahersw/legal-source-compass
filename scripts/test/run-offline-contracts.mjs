@@ -24,6 +24,7 @@ const databaseTests = new Set([
   "publisher-code-multicode-v3.test.mjs",
   "publisher-code-outline-v4.test.mjs",
   "ca-parser4-promotion.test.mjs",
+  "safety-radar-contract.test.mjs",
 ]);
 const files = directories.flatMap((directory) =>
   readdirSync(resolve(root, directory))

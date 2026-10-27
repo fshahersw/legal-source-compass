@@ -77,6 +77,21 @@ function Page() {
           })
         }
       />
+      {kind.value === "archive" ? (
+        <p role="note" className="mb-3 text-meta text-muted-foreground">
+          This archive covers 1994 to 2008 only: GovInfo&apos;s GAO collection stops in 2008, and
+          later GAO reports are not held here. Read them on{" "}
+          <a
+            href="https://www.gao.gov/reports-testimonies"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+          >
+            gao.gov
+          </a>
+          .
+        </p>
+      ) : null}
       <ApiLawBrowser
         key={kind.dataset}
         dataset={kind.dataset}
