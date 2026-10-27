@@ -2,15 +2,25 @@
 -- Removes the 'docket_case' filings with their links, then the page index, page sets and extractions no remaining
 -- filing serves (the same clean-up documents_refresh_v1 does), restores the v1 constraints and the v1 function bodies
 -- (verbatim from documents-v1.sql). The litviz_refresh_v1 filter (litviz-v1.sql) is harmless under v1 and is kept.
--- citations v2 rows of removed filings: check with
---   select count(*) from citations.edges e where e.citing_type = 'document'
---      and not exists (select 1 from documents.documents d where d.id = e.citing_id);
--- and let the next citations run prune them.
+-- citations v2 rows of the removed filings are deleted here too (the citations run prunes edges only for byte sets it
+-- processes, never for a document row that is gone); then run select insights.refresh_citations('manual') and
+-- select public.litviz_refresh_v1(). Check: select count(*) from citations.edges e where e.citing_type = 'document'
+--   and not exists (select 1 from documents.documents d where d.id = e.citing_id);  -- 0
 
 begin;
 
 delete from documents.links l using documents.documents d where d.id = l.document_id and d.listed_by = 'docket_case';
 delete from documents.documents where listed_by = 'docket_case';
+do $orphans$
+begin
+  if to_regclass('citations.edges') is not null then
+    delete from citations.edges e where e.citing_type = 'document'
+       and not exists (select 1 from documents.documents d where d.id = e.citing_id);
+  end if;
+  if to_regclass('citations.document_links') is not null then
+    delete from citations.document_links l where not exists (select 1 from documents.documents d where d.id = l.document_id);
+  end if;
+end $orphans$;
 delete from documents.pages p where not exists (select 1 from documents.documents d where d.sha256 = p.sha256
                                                   and d.text_status in ('text_layer', 'partial_text', 'pending_index'));
 delete from documents.page_sets s where not exists (select 1 from documents.documents d where d.sha256 = s.sha256);
