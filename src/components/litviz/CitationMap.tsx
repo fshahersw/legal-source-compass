@@ -513,12 +513,16 @@ export function FilingCitationContext({ document }: { document: string }) {
         This filing cites no authority that could be resolved exactly.
       </p>
     );
-  const total = f.mdlCiting ?? 0;
+  const total = f.mdl ? (f.mdlCiting ?? 0) : 0;
   return (
     <ul
       className="space-y-1 text-[12px]"
       style={chartTokens}
-      aria-label="Authorities this filing cites, with their use in the MDL"
+      aria-label={
+        f.mdl
+          ? "Authorities this filing cites, with their use in the MDL"
+          : "Authorities this filing cites, with the number of filings citing each"
+      }
     >
       {f.authorities.slice(0, 12).map((a) => {
         const share = total && a.mdlFilings !== null ? a.mdlFilings / total : null;
@@ -533,16 +537,22 @@ export function FilingCitationContext({ document }: { document: string }) {
               </span>
             </span>
             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <svg width={48} height={6} aria-hidden>
-                <rect width={48} height={6} rx={2} fill="var(--muted)" />
-                {share ? (
-                  <rect width={Math.max(2, 48 * share)} height={6} rx={2} fill="var(--chart-1)" />
-                ) : null}
-              </svg>
+              {f.mdl ? (
+                <svg width={48} height={6} aria-hidden>
+                  <rect width={48} height={6} rx={2} fill="var(--muted)" />
+                  {share ? (
+                    <rect width={Math.max(2, 48 * share)} height={6} rx={2} fill="var(--chart-1)" />
+                  ) : null}
+                </svg>
+              ) : null}
               <span className="tabular-nums">
-                {a.mdlFilings !== null && total
-                  ? `${count.full(a.mdlFilings)} of the MDL's ${count.full(total)} citing filings`
-                  : "Not recorded"}
+                {f.mdl
+                  ? a.mdlFilings !== null && total
+                    ? `${count.full(a.mdlFilings)} of the MDL's ${count.full(total)} citing filings`
+                    : "Not recorded"
+                  : a.allFilings !== null
+                    ? `cited in ${count.full(a.allFilings)} MDL filing${a.allFilings === 1 ? "" : "s"}`
+                    : "Not recorded"}
               </span>
             </span>
           </li>

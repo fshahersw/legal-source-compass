@@ -427,13 +427,15 @@ begin
   insert into litviz.mdl_sources (mdl, scope, src) select r.mdl, r.scope, r.src from litviz.source_rows() r;
   get diagnostics n_sources = row_count;
 
-  -- citations of open, text-serving filings (exact ids only; litviz.citing_links says from which source)
+  -- citations of open, text-serving filings (exact ids only; litviz.citing_links says from which source); a filing with
+  -- no MDL listing (documents/2 'docket_case', mdl null) has no MDL to count under
   with d as (delete from litviz.citations c where c.mdl is not null returning 1) select count(*) into n from d;
   insert into litviz.citations (mdl, to_type, to_id, filings, mentions)
   select d.mdl, l.to_type, l.to_id, count(distinct d.id), sum(l.mentions)
     from litviz.citing_links() l
     join documents.documents d on d.id = l.document_id
-   where d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
+   where d.mdl is not null
+     and d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
    group by 1, 2, 3;
   get diagnostics n_cit = row_count;
 
@@ -520,7 +522,8 @@ begin
   cm as (
     select d.mdl, count(distinct d.id)::integer as citing
       from litviz.citing_links() l join documents.documents d on d.id = l.document_id
-     where d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
+     where d.mdl is not null
+       and d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
      group by d.mdl),
   um as (select u.mdl, u.unresolved, u.ambiguous from litviz.unresolved_by_mdl() u),
   ids as (select dkm.mdl from dkm union select dm.mdl from dm)

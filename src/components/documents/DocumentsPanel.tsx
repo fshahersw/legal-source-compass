@@ -7,6 +7,7 @@ import { TrendCardView, type CardState } from "@/components/analytics/hub/TrendC
 import type { BlockDef } from "@/lib/analytics/registry";
 import {
   ENTITY_NOUN,
+  NO_MDL_LABEL,
   documentTitle,
   fmtCount,
   fmtDay,
@@ -148,13 +149,17 @@ export function DocumentsPanel({
                             {typeLabel(r.docType)} ·{" "}
                             {r.filedDate ? fmtDay(r.filedDate) : "Date not recorded"}
                             {court ? ` · ${court}` : ""} ·{" "}
-                            <Link
-                              to="/matters/$id"
-                              params={{ id: r.mdl }}
-                              className="underline-offset-2 hover:underline"
-                            >
-                              MDL {r.mdl}
-                            </Link>
+                            {r.mdl ? (
+                              <Link
+                                to="/matters/$id"
+                                params={{ id: r.mdl }}
+                                className="underline-offset-2 hover:underline"
+                              >
+                                MDL {r.mdl}
+                              </Link>
+                            ) : (
+                              NO_MDL_LABEL
+                            )}
                             {r.mentions
                               ? ` · cited ${r.mentions}× from page ${r.firstPage ?? "?"}`
                               : ""}
