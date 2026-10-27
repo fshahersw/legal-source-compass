@@ -1,6 +1,6 @@
 /**
  * /safety: FDA recall events, counted on FDA's own event id (one event can list hundreds of products), by initiation
- * year and center, with a Class I trend and the firms with the most events in the latest 12 months.
+ * year and center, with a Class I trend and the firms with the most events in the 12 classified months.
  */
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -20,7 +20,7 @@ import {
   Section,
   buildSectionContext,
 } from "@/components/kit";
-import { FDA_CENTER_LABEL } from "@/lib/safety/fdaRecallEvents";
+import { CLASSIFICATION_LAG_MONTHS, FDA_CENTER_LABEL } from "@/lib/safety/fdaRecallEvents";
 import { fdaRecallEventsQuery } from "./sectionQueries";
 
 const SOURCE = {
@@ -51,11 +51,20 @@ export function FdaRecallEventsSection() {
         : ({ kind: "ready" } as const);
   const totals = years.map((y) => ({ label: y.year, value: y.total, partial: y.partial }));
   const classI = years.map((y) => ({ label: y.year, value: y.classI, partial: y.partial }));
-  const partialNote = years.at(-1)?.partial
-    ? `${last} runs to ${d?.latestInitiation ?? "the latest initiation date"}; FDA classifies recalls weeks to months after they start, so recent months fill in later.`
-    : undefined;
+  const partialNote =
+    [
+      years[0]?.partial
+        ? `${first} is partial: openFDA's enforcement reports start in June 2012.`
+        : null,
+      years.at(-1)?.partial
+        ? `${last} runs to ${d?.latestInitiation ?? "the latest initiation date"}; FDA classifies recalls weeks to months after they start, so recent months fill in later.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined;
   const ratio = d && d.kpis.events > 0 ? d.kpis.rows / d.kpis.events : null;
-  const windowText = d?.window ? `${d.window.from} to ${d.window.to}` : "Latest 12 months";
+  const windowText = d?.window ? `${d.window.from} to ${d.window.to}` : "12 classified months";
+  const lagNote = `the latest ${CLASSIFICATION_LAG_MONTHS} months are left out while FDA classifies them`;
   const leaders = d?.firms ?? [];
   const context = d
     ? buildSectionContext({
@@ -65,14 +74,16 @@ export function FdaRecallEventsSection() {
         source: SOURCE.label,
         figures: [
           {
-            label: "Recall events initiated in the latest 12 months",
+            label: "Recall events initiated in 12 classified months",
             value: d.kpis.eventsLast12,
             period: windowText,
+            note: lagNote,
           },
           {
-            label: "Class I events in the latest 12 months",
+            label: "Class I events in 12 classified months",
             value: d.kpis.classILast12,
             period: windowText,
+            note: lagNote,
           },
           { label: "Ongoing events", value: d.kpis.ongoing },
           { label: "Product rows per event", value: ratio, decimals: 1 },
@@ -92,6 +103,7 @@ export function FdaRecallEventsSection() {
             label: `${f.firm} (${FDA_CENTER_LABEL[f.center]}) recall events`,
             value: f.events,
             period: windowText,
+            note: lagNote,
           })),
         ],
         maxFigures: 24,
@@ -127,16 +139,16 @@ export function FdaRecallEventsSection() {
       <KpiGrid columns={4} label="FDA recall event figures">
         <KpiCard
           as="li"
-          label="Events, latest 12 months"
+          label="Events, 12 classified months"
           value={d ? fmt(d.kpis.eventsLast12) : null}
-          meta={windowText}
+          meta={`${windowText}; ${lagNote}`}
           state={q.isPending ? "loading" : q.isError ? "error" : "ready"}
         />
         <KpiCard
           as="li"
-          label="Class I events, latest 12 months"
+          label="Class I events, 12 classified months"
           value={d ? fmt(d.kpis.classILast12) : null}
-          meta="Most serious class"
+          meta={`Most serious class · ${windowText}`}
           state={q.isPending ? "loading" : q.isError ? "error" : "ready"}
         />
         <KpiCard
@@ -218,7 +230,7 @@ export function FdaRecallEventsSection() {
         </div>
         {leaders.length ? (
           <BarList
-            ariaLabel="Firms by FDA recall events in the latest 12 months"
+            ariaLabel="Firms by FDA recall events in 12 classified months"
             items={leaders.slice(0, 8).map((f) => ({
               id: `${f.center}-${f.firmKey}`,
               label: f.firm,
@@ -233,9 +245,9 @@ export function FdaRecallEventsSection() {
           </p>
         )}
         <DataDrawer
-          title="FDA recall events by firm"
-          description={`Events initiated ${windowText}, by exact firm name and center.`}
-          triggerLabel={`See all ${leaders.length}`}
+          title={`Top ${leaders.length} firms by FDA recall events`}
+          description={`The ${leaders.length} firms with the most events initiated ${windowText}, by exact firm name and center.`}
+          triggerLabel={`Top ${leaders.length} firms`}
           rows={leaders}
           rowKey={(f) => `${f.center}-${f.firmKey}`}
           columns={[

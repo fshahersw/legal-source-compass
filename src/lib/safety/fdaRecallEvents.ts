@@ -128,19 +128,37 @@ export function toEvents(
   return { events, rowsWithoutEvent };
 }
 
-const addDays = (iso: string, n: number) => {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + n);
-  return d.toISOString().slice(0, 10);
-};
+/**
+ * FDA classifies a recall weeks to months after it starts, so the newest months are incomplete (in October 2026 the
+ * enforcement reports held about 110–190 events a month through August, then 48 for September and 5 for October).
+ * The 12-month KPI window leaves out the latest initiation month and the LAG - 1 months before it.
+ */
+export const CLASSIFICATION_LAG_MONTHS = 3;
 
-/** Events per initiation year by center with the Class I count; the latest year is partial unless it ends on 31 Dec. */
+/** Twelve whole calendar months ending CLASSIFICATION_LAG_MONTHS months before the latest initiation month. */
+export function classifiedWindow(latest: string): { from: string; to: string } {
+  const y = Number(latest.slice(0, 4));
+  const m = Number(latest.slice(5, 7)) - 1;
+  const end = new Date(Date.UTC(y, m - CLASSIFICATION_LAG_MONTHS + 1, 0)); // last day of the end month
+  const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - 11, 1));
+  return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+}
+
+/**
+ * Events per initiation year by center with the Class I count. The latest year is partial unless it ends on 31 Dec;
+ * the year the enforcement reports start is partial too when the first report is dated after 1 January (openFDA's
+ * reports begin in June 2012, so recalls started and reported before then are missing).
+ */
 export function eventYears(events: readonly FdaEvent[], firstYear = 2012): FdaEventYear[] {
   const latest = events.reduce<string | null>(
     (m, e) => (e.initiated && (!m || e.initiated > m) ? e.initiated : m),
     null,
   );
   if (!latest) return [];
+  const firstReport = events.reduce<string | null>(
+    (m, e) => (e.reported && (!m || e.reported < m) ? e.reported : m),
+    null,
+  );
   const lastYear = Number(latest.slice(0, 4));
   const out = new Map<string, FdaEventYear>();
   for (let y = firstYear; y <= lastYear; y += 1)
@@ -151,7 +169,9 @@ export function eventYears(events: readonly FdaEvent[], firstYear = 2012): FdaEv
       food: 0,
       classI: 0,
       total: 0,
-      partial: y === lastYear && !latest.endsWith("-12-31"),
+      partial:
+        (y === lastYear && !latest.endsWith("-12-31")) ||
+        (!!firstReport && Number(firstReport.slice(0, 4)) === y && !firstReport.endsWith("-01-01")),
     });
   for (const e of events) {
     if (!e.initiated) continue;
@@ -212,7 +232,7 @@ export function buildFdaRecallEvents(
     (m, e) => (e.initiated && (!m || e.initiated > m) ? e.initiated : m),
     null,
   );
-  const window = latest ? { from: addDays(latest, -364), to: latest } : null;
+  const window = latest ? classifiedWindow(latest) : null;
   const recent = window
     ? all.filter((e) => e.initiated && e.initiated >= window.from && e.initiated <= window.to)
     : [];

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildFdaRecallEvents,
+  classifiedWindow,
   eventYears,
   firmLeaders,
   toEvents,
@@ -94,25 +95,49 @@ describe("firmLeaders", () => {
 });
 
 describe("buildFdaRecallEvents", () => {
-  it("reports events, rows and the 12-month window ending at the latest initiation", () => {
+  it("reports events, rows and the 12 classified months before the latest initiation", () => {
     const p = buildFdaRecallEvents(
       {
         device: [
-          row({ ev: "d1", idt: "2026-10-01", cls: "Class I" }),
+          row({ ev: "d1", idt: "2026-10-01", cls: "Class I" }), // still being classified: left out
           row({ ev: "d1", idt: "2026-10-01" }),
           row({ ev: "d2", idt: "2025-01-01" }),
+          row({ ev: "d3", idt: "2026-07-31", cls: "Class I" }),
         ],
         drug: [row({ ev: null })],
       },
       "2026-10-27T00:00:00Z",
     );
-    expect(p.window).toEqual({ from: "2025-10-02", to: "2026-10-01" });
+    expect(p.window).toEqual({ from: "2025-08-01", to: "2026-07-31" });
     expect(p.kpis).toMatchObject({
       eventsLast12: 1,
       classILast12: 1,
-      rows: 4,
-      events: 2,
+      rows: 5,
+      events: 3,
       rowsWithoutEvent: 1,
     });
+  });
+});
+
+describe("classifiedWindow", () => {
+  it("ends three months before the latest initiation month, across a year boundary", () => {
+    expect(classifiedWindow("2026-10-07")).toEqual({ from: "2025-08-01", to: "2026-07-31" });
+    expect(classifiedWindow("2026-02-15")).toEqual({ from: "2024-12-01", to: "2025-11-30" });
+  });
+});
+
+describe("eventYears first year", () => {
+  it("marks the year the reports start partial when the first report is after 1 January", () => {
+    const { events } = toEvents("drug", [
+      row({ ev: "a", idt: "2012-03-01", rd: "2012-06-20" }),
+      row({ ev: "b", idt: "2013-05-01", rd: "2013-06-01" }),
+      row({ ev: "c", idt: "2014-12-31", rd: "2015-01-10" }),
+    ]);
+    const years = eventYears(events, 2012);
+    expect(years.map((y) => [y.year, y.partial])).toEqual([
+      ["2012", true],
+      ["2013", false],
+      ["2014", false],
+    ]);
   });
 });

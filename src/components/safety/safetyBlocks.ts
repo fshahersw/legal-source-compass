@@ -1,11 +1,12 @@
 import { agencyBlockIds } from "@/components/agencies/agencyBlocks";
 
 /**
- * The analytics block "fda-recalls" counts openFDA product rows (one recall can list hundreds of products), so the
- * /safety pages show FDA recalls as events instead (FdaRecallEventsSection) and leave that block out here. The block and
- * its reader are unchanged; it still serves the Analytics hub.
+ * The analytics blocks "fda-recalls" and "fda-class-i" count openFDA product rows (one recall can list hundreds of
+ * products), so the /safety pages show FDA recalls and the Class I trend as events instead (FdaRecallEventsSection) and
+ * leave those blocks out here. The blocks and their readers are unchanged; they still serve the Analytics hub.
  */
 export const FDA_ENTRY_BLOCK = "fda-recalls";
+export const FDA_ROW_BLOCKS: readonly string[] = [FDA_ENTRY_BLOCK, "fda-class-i"];
 
 /** The landing page's recall cards: one national yearly series per recalling agency (FDA shown as events below). */
 export const LANDING_RECALL_BLOCKS = ["cpsc-recalls", "nhtsa-recalls", "fsis-recalls"] as const;
@@ -15,7 +16,7 @@ const SAFETY_AGENCY_ID: Readonly<Record<string, number>> = { FDA: 199, CPSC: 84,
 
 export const safetyAgencyBlockIds = (agency: string): readonly string[] => {
   const id = SAFETY_AGENCY_ID[agency];
-  return id === undefined ? [] : agencyBlockIds(id).filter((b) => b !== FDA_ENTRY_BLOCK);
+  return id === undefined ? [] : agencyBlockIds(id).filter((b) => !FDA_ROW_BLOCKS.includes(b));
 };
 
 /**
