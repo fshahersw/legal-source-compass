@@ -10,6 +10,7 @@ import type { CorpusClient } from "../corpus.ts";
 import type { CorpusRow, JsonObject, StoredRow } from "../types.ts";
 import {
   enforcementRow,
+  enforcementSourceUrl,
   firmId,
   firmNorm,
   openfdaEnforcement,
@@ -36,7 +37,12 @@ describe("openFDA rows equal the stored corpus rows (capture provenance masked)"
       (r) => `openfda:${kind}/enforcement:${r["recall_number"]}` === id,
     )!;
     const row = enforcementRow(kind, rec, cap);
-    expect(jsonbHash(comparableOf(openfdaEnforcement(kind), row))).toBe(storedHash);
+    // The stored hashes were read before fda-source-url-backfill-v1 set source_url; every other field must match.
+    const before = { ...row, source_url: "" };
+    expect(jsonbHash(comparableOf(openfdaEnforcement(kind), before))).toBe(storedHash);
+    expect(row.source_url).toBe(
+      `https://api.fda.gov/${kind}/enforcement.json?search=recall_number:%22${String(rec["recall_number"])}%22`,
+    );
   });
 
   it.each(["drug", "device", "food"] as Kind[])(
@@ -56,7 +62,9 @@ describe("openFDA rows equal the stored corpus rows (capture provenance masked)"
     expect((row.detail["temporal"] as JsonObject)["source_as_of"]).toBe("2026-10-14");
     expect((row.detail["original_file"] as JsonObject)["url"]).toBe(cap.url);
     expect(row.detail["publisher_record"]).toEqual(records.drug[0]);
-    expect(row.source_url).toBe("");
+    expect(row.source_url).toBe(
+      enforcementSourceUrl("drug", String(records.drug[0]!["recall_number"])),
+    );
   });
 });
 
