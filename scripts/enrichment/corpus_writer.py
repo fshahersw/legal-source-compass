@@ -81,7 +81,13 @@ def publish(dataset, label, rows, *, listing_block, summary, replace=True):
     ids = [row["id"] for row in rows]
     if len(ids) != len(set(ids)):
         raise ValueError(f"{dataset}: duplicate record ids")
-    digest = hashlib.sha256("\n".join(json.dumps(row, sort_keys=True) for row in rows).encode()).hexdigest()
+    # Validate every row before anything is written: the replace below deletes the live rows first, so a row the database
+    # would reject (no dataset, another dataset, no id) must stop the publish here, not after the delete.
+    for row in rows:
+        row.setdefault("dataset", dataset)
+        if row["dataset"] != dataset or not isinstance(row.get("id"), str) or not row["id"]:
+            raise ValueError(f"{dataset}: row {row.get('id')!r} has dataset {row.get('dataset')!r} or no id; nothing written")
+    digest =hashlib.sha256("\n".join(json.dumps(row, sort_keys=True) for row in rows).encode()).hexdigest()
     metadata = {"id": dataset, "label": label, "ready": False, "listing": {**listing_block, "total": len(rows)}, "summary": summary}
     _call("POST", "corpus_datasets", [{"id": dataset, "label": label, "ready": False, "expected_records": len(rows), "imported_records": 0, "manifest_sha256": digest, "metadata": metadata}], prefer="return=minimal,resolution=merge-duplicates")
     if replace:
