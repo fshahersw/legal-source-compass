@@ -15,8 +15,19 @@ Detectors
   crl_cluster       FDA complete response letters in the last 12 months vs prior 3 years
   warning_theme     FDA warning letter subjects grouped into themes, last 12 months vs prior 3 years
 
-Usage: python build_safety_insights.py [--cache=DIR] [--dry-run]
+Counting rules (2026-10-27)
+  - FDA recall events are FDA's own recall events: product rows are grouped on detail.fields.event_id. A row without an
+    event_id falls back to firm + initiation date + reason and is counted as its own event (reported in the packet).
+  - CPSC themes and fatality flags read agency_safety_cpsc_recalls_api (the superseded _local snapshot stops 2026-08-20).
+  - A CPSC recall counts as fatality-linked only when its title reports deaths or its injury statement explicitly says
+    someone died, drowned, suffocated, strangled or was killed (negated phrases removed).
+  - Warning-letter themes carry the caveat that agency_safety_fda_warning_letters is an uneven 1,000-row sample.
+
+Usage: python build_safety_insights.py [--cache=DIR] [--dry-run] [--packet=DIR]
   --cache=DIR reads <DIR>/<dataset>.json snapshots instead of the live corpus (offline runs and tests).
+  --dry-run prints the flags and publishes nothing.
+  --packet=DIR (with --dry-run) also writes the rows that would be published, a summary and the flag list to DIR,
+               for the lead to review before publishing. Nothing is written to the corpus.
 """
 import collections
 import datetime as dt
@@ -31,12 +42,20 @@ import corpus_writer as writer  # noqa: E402
 
 DATASET = "agency_safety_insights"
 FDA_SELECT = "id,title,filters,snippet:item->>snippet,firm:item->>firm,cls:item->>classification,dates:item->dates,status:item->>status"
+ENFORCEMENT_SELECT = FDA_SELECT + ",event_id:detail->fields->>event_id"
+CPSC_DATASET = "agency_safety_cpsc_recalls_api"
+CPSC_SELECT = "id,title,filters,cells:item->cells,injuries:item->recall->>injuries,hazards:item->recall->hazards"
+WARNING_SAMPLE_NOTE = (
+    "agency_safety_fda_warning_letters is an uneven 1,000-row sample of FDA's warning letters (for example 69 letters "
+    "in 2022, 322 in 2024 and none from September 2025 to February 2026), so a rise or fall may reflect the sample, "
+    "not FDA's letters."
+)
 SOURCES = {
-    "agency_safety_openfda_drug_enforcement": FDA_SELECT,
-    "agency_safety_openfda_device_enforcement": FDA_SELECT,
-    "agency_safety_openfda_food_enforcement": FDA_SELECT,
+    "agency_safety_openfda_drug_enforcement": ENFORCEMENT_SELECT,
+    "agency_safety_openfda_device_enforcement": ENFORCEMENT_SELECT,
+    "agency_safety_openfda_food_enforcement": ENFORCEMENT_SELECT,
     "agency_safety_fda_warning_letters": FDA_SELECT,
-    "agency_safety_cpsc_recalls_local": FDA_SELECT,
+    CPSC_DATASET: CPSC_SELECT,
     "agency_safety_openfda_drug_shortages": FDA_SELECT,
     "agency_safety_openfda_crl": FDA_SELECT,
     "agency_safety_nhtsa_recalls": "id,title,item",
@@ -92,6 +111,22 @@ DEATH = re.compile(
     r"|(?:one|two|three|four|five|six|seven|eight|nine|ten) deaths?|death of|fatalit(?:y|ies)|fatal (?:incident|injur))",
     re.I,
 )
+# An injury statement that explicitly says someone died. CPSC's own death_mention tag misses some of these (e.g. the
+# 2025-07-21 above-ground pools recall, "nine children ... have drowned", is tagged "No").
+EXPLICIT_DEATH = re.compile(r"\b(?:died|drowned|suffocated|strangled|killed)\b", re.I)
+NEGATED_DEATH = re.compile(
+    r"\b(?:no one|nobody|no (?:children|child|consumers?|people|persons?|users?|infants?|deaths?))\b[^.;]{0,40}?"
+    r"\b(?:died|drowned|suffocated|strangled|killed)\b"
+    r"|\bnot (?:been )?(?:died|drowned|suffocated|strangled|killed)\b",
+    re.I,
+)
+
+
+def explicit_death(text):
+    """True when the text says someone died, drowned, suffocated, strangled or was killed, after negated phrases
+    ("no one has died") are removed. A text mention, not a verified count of deaths caused by the product."""
+    return bool(EXPLICIT_DEATH.search(NEGATED_DEATH.sub(" ", text or "")))
+
 
 WARNING_THEMES = {
     "CGMP / adulteration": r"cgmp|adulterat|good manufacturing",
@@ -194,6 +229,7 @@ class Builder:
     def __init__(self, data):
         self.data = data
         self.insights = []
+        self.fallback_rows = {}
 
     def add(self, *, kind, agency, entity, headline, summary, score, serious, metric, series, evidence_rows, method, as_of, tags=()):
         score = round(100 * (1 - math.exp(-max(score, 0.0) / 70)), 1)
@@ -217,7 +253,10 @@ class Builder:
 
     # FDA enforcement --------------------------------------------------------------------------------------------
     def fda_events(self, dataset):
-        """Collapse product-level enforcement rows into recall events (same firm, initiation date and reason)."""
+        """Collapse product-level enforcement rows into FDA recall events, keyed on FDA's own event_id
+        (detail.fields.event_id). One event's products can carry many reason texts (allergen recalls list one per
+        product), so the reason is never part of the key. A row without an event_id is its own fallback event, keyed on
+        firm, initiation date and reason, and is counted in self.fallback_rows."""
         events = {}
         for row in self.data.get(dataset, []):
             dates = row.get("dates") or {}
@@ -226,9 +265,21 @@ class Builder:
                 continue
             firm = (row.get("filters") or {}).get("firm_norm") or (row.get("firm") or "").upper()
             reason = (row.get("snippet") or "").strip()
-            key = (firm, dates.get("recall_initiation_date") or when.isoformat(), reason[:80].lower())
-            event = events.setdefault(key, {"firm": row.get("firm") or firm.title(), "firm_norm": firm, "date": when, "reason": reason, "class": row.get("cls") or "", "rows": []})
+            event_id = str(row.get("event_id") or "").strip()
+            if event_id:
+                key = ("event", event_id)
+            else:
+                key = ("fallback", firm, dates.get("recall_initiation_date") or when.isoformat(), reason[:80].lower())
+                self.fallback_rows[dataset] = self.fallback_rows.get(dataset, 0) + 1
+            event = events.setdefault(key, {"event_id": event_id or None, "firm": row.get("firm") or firm.title(), "firm_norm": firm, "date": when, "reason": reason, "class": row.get("cls") or "", "rows": []})
+            # The event's date is its earliest report date; its class the most serious class of its products.
+            if when < event["date"]:
+                event["date"] = when
+            if not event["reason"] and reason:
+                event["reason"] = reason
             event["rows"].append({"id": row["id"], "title": row.get("title"), "date": when.isoformat(), "note": reason})
+            if reason and reason not in event.setdefault("reasons", []):
+                event["reasons"].append(reason)
             if (row.get("cls") or "") == "Class I":
                 event["class"] = "Class I"
         return list(events.values())
@@ -241,7 +292,7 @@ class Builder:
             end = max(e["date"] for e in events)
             self.firm_clusters(dataset, center, events, end)
             self.class_i(dataset, center, events, end)
-            self.themes(dataset, f"FDA {center.lower()}", events, end, FDA_THEMES, lambda e: e["reason"], agency="FDA")
+            self.themes(dataset, f"FDA {center.lower()}", events, end, FDA_THEMES, lambda e: " ".join(e.get("reasons") or [e["reason"]]), agency="FDA")
 
     def firm_clusters(self, dataset, center, events, end):
         recent_start = end - dt.timedelta(days=180)
@@ -271,9 +322,10 @@ class Builder:
                 summary=(f"{len(recent)} recall events since {recent_start.isoformat()} against an expected {expected:.1f} from the prior three years"
                          + (f"; {class_i} Class I" if class_i else "") + (f". Most common reason: {reasons[0][0]}" if reasons else "") + "."),
                 score=score, serious=class_i > 0,
-                metric={"recent": len(recent), "baseline": round(expected, 2), "ratio": ratio, "window": "180 days", "unit": "recall events", "class_i": class_i},
+                metric={"recent": len(recent), "baseline": round(expected, 2), "ratio": ratio, "window": "180 days", "unit": "recall events", "class_i": class_i,
+                        "product_rows": sum(len(e["rows"]) for e in recent)},
                 series=monthly([e["date"] for e in items], end, 24), evidence_rows=evidence(dataset, rows),
-                method="Product rows collapsed to events by firm, initiation date and reason; Poisson tail of the 180-day count against the firm's prior 3-year rate.",
+                method="Product rows grouped into FDA recall events on FDA's event_id (earliest report date, most serious class); Poisson tail of the 180-day event count against the firm's prior 3-year rate.",
                 as_of=end, tags=[center, "Recall cluster"] + (["Class I"] if class_i else []),
             )
 
@@ -299,7 +351,7 @@ class Builder:
             as_of=end, tags=[center, "Class I"],
         )
 
-    def themes(self, dataset, label, events, end, themes, text_of, *, agency, unit="recall events"):
+    def themes(self, dataset, label, events, end, themes, text_of, *, agency, unit="recall events", caveat=None):
         recent_start = end - dt.timedelta(days=365)
         base_start = recent_start - dt.timedelta(days=3 * 365)
         compiled = {name: re.compile(pattern, re.I) for name, pattern in themes.items()}
@@ -321,10 +373,12 @@ class Builder:
                 headline=f"{name} {unit} rising in {label}: {len(recent)} in 12 months",
                 summary=f"{len(recent)} {unit} citing {name.lower()} in the 12 months to {end.isoformat()}, against an annual average of {expected:.1f} over the prior three years" + (f" ({ratio:.1f}×)." if ratio else "."),
                 score=surprise * 5 + min(len(recent), 40) * 0.5, serious=serious,
-                metric={"recent": len(recent), "baseline": round(expected, 2), "ratio": round(ratio, 2) if ratio else None, "window": "12 months", "unit": unit},
+                metric={"recent": len(recent), "baseline": round(expected, 2), "ratio": round(ratio, 2) if ratio else None, "window": "12 months", "unit": unit,
+                        **({"caveat": caveat} if caveat else {})},
                 series=monthly([e["date"] for e in matched], end, 24), evidence_rows=evidence(dataset, rows),
-                method=f"Keyword theme match on the stated reason; Poisson tail of the 12-month count against the prior 3-year annual rate.",
-                as_of=end, tags=[label, name],
+                method="Keyword theme match on the stated reason; Poisson tail of the 12-month count against the prior 3-year annual rate."
+                + (f" Caveat: {caveat}" if caveat else ""),
+                as_of=end, tags=[label, name] + (["Uneven sample"] if caveat else []),
             )
 
     # CPSC, warning letters, CRLs, shortages ---------------------------------------------------------------------
@@ -340,25 +394,64 @@ class Builder:
                         "rows": [{"id": row["id"], "title": row.get("title"), "date": when.isoformat(), "note": (row.get("snippet") or "")[:200]}]})
         return out
 
+    def cpsc_events(self):
+        """CPSC recalls from the API dataset: one event per recall number, dated by the recall date, with the title,
+        hazards and injury statement as text, and whether the injury statement explicitly reports a death."""
+        out = []
+        for row in self.data.get(CPSC_DATASET, []):
+            cells = row.get("cells") or {}
+            when = parse_date(cells.get("date"))
+            if not when:
+                continue
+            hazards = row.get("hazards") or []
+            hazard_text = " ".join(h if isinstance(h, str) else (h or {}).get("name") or "" for h in hazards) if isinstance(hazards, list) else str(hazards)
+            injuries = row.get("injuries") or ""
+            title = row.get("title") or ""
+            died = explicit_death(injuries) or bool(DEATH.search(title))
+            tagged = (cells.get("death_mention") or "").strip()
+            out.append({
+                "date": when, "text": " ".join(filter(None, [title, cells.get("hazard"), hazard_text])),
+                "firm": cells.get("firm") or "", "firm_norm": "", "class": "", "died": died,
+                "untagged_death": died and tagged.lower() in ("", "no"),
+                "rows": [{"id": row["id"], "title": title, "date": when.isoformat(),
+                          "note": (injuries if died else (cells.get("hazard") or ""))[:200]}],
+            })
+        return out
+
     def cpsc(self):
-        dataset = "agency_safety_cpsc_recalls_local"
-        events = self.simple_events(dataset, "both")
+        dataset = CPSC_DATASET
+        events = self.cpsc_events()
         if not events:
             return
         end = max(e["date"] for e in events)
         self.themes(dataset, "CPSC consumer products", events, end, CPSC_THEMES, lambda e: e["text"], agency="CPSC", unit="recalls")
-        recent = [e for e in events if e["date"] > end - dt.timedelta(days=365) and DEATH.search(e["text"])]
+        fatal = [e for e in events if e["died"]]
+        recent = [e for e in fatal if e["date"] > end - dt.timedelta(days=365)]
+        untagged = [e for e in fatal if e["untagged_death"]]
         if len(recent) >= 3:
             self.add(
                 kind="hazard_surge", agency="CPSC", entity="CPSC fatality-linked recalls",
                 headline=f"{len(recent)} CPSC recalls in 12 months report deaths",
-                summary=f"{len(recent)} recall notices published in the 12 months to {end.isoformat()} report deaths, as distinct from the standard risk-of-death hazard wording.",
+                summary=f"{len(recent)} recall notices published in the 12 months to {end.isoformat()} report deaths in the title or say in the injury statement that someone died, drowned, suffocated, strangled or was killed, as distinct from the standard risk-of-death hazard wording.",
                 score=45 + len(recent), serious=True,
-                metric={"recent": len(recent), "baseline": None, "ratio": None, "window": "12 months", "unit": "recalls citing deaths"},
-                series=monthly([e["date"] for e in events if DEATH.search(e["text"])], end, 24),
+                metric={"recent": len(recent), "baseline": None, "ratio": None, "window": "12 months", "unit": "recalls citing deaths",
+                        "untagged_by_source": len(untagged)},
+                series=monthly([e["date"] for e in fatal], end, 24),
                 evidence_rows=evidence(dataset, [e["rows"][0] for e in sorted(recent, key=lambda e: -e["date"].toordinal())]),
-                method="Recall notices whose title or text reports deaths or a person who died; the generic risk-of-death hazard phrase is excluded.",
+                method="CPSC recalls (API dataset) whose title reports deaths or whose injury statement explicitly says someone died, drowned, suffocated, strangled or was killed; negated phrases and the generic risk-of-death hazard phrase are excluded. A text mention, not a verified count.",
                 as_of=end, tags=["Fatality"],
+            )
+        if untagged:
+            self.add(
+                kind="hazard_surge", agency="CPSC", entity="CPSC deaths missed by the death tag",
+                headline=f"{len(untagged)} CPSC recalls say someone died but are tagged with no death mention",
+                summary=f"{len(untagged)} recalls through {end.isoformat()} have an injury statement or title reporting a death while the dataset's death_mention tag reads No. Review them before relying on the tag.",
+                score=30 + min(len(untagged), 30), serious=True,
+                metric={"recent": len(untagged), "baseline": None, "ratio": None, "window": "all recalls", "unit": "recalls"},
+                series=[],
+                evidence_rows=evidence(dataset, [e["rows"][0] for e in sorted(untagged, key=lambda e: -e["date"].toordinal())], 12),
+                method="Explicit death words (died, drowned, suffocated, strangled, killed) in the injury statement, or deaths reported in the title, on recalls whose death_mention cell is No or blank.",
+                as_of=end, tags=["Fatality", "Data quality"],
             )
 
     def warning_letters(self):
@@ -366,7 +459,8 @@ class Builder:
         events = self.simple_events(dataset, "both")
         if events:
             end = max(e["date"] for e in events)
-            self.themes(dataset, "FDA warning letters", events, end, WARNING_THEMES, lambda e: e["text"], agency="FDA", unit="warning letters")
+            self.themes(dataset, "FDA warning letters", events, end, WARNING_THEMES, lambda e: e["text"], agency="FDA", unit="warning letters",
+                        caveat=WARNING_SAMPLE_NOTE)
 
     def crl(self):
         dataset = "agency_safety_openfda_crl"
@@ -811,17 +905,46 @@ def load(cache):
     return {ds: writer.fetch_all(ds, select=select) for ds, select in SOURCES.items()}
 
 
+def write_packet(directory, insights, rows, generated, data, fallback_rows):
+    """A dry-run packet for review: the rows that would be published, a summary and a flat flag list. Local files only."""
+    os.makedirs(directory, exist_ok=True)
+    with open(os.path.join(directory, "rows.jsonl"), "w", encoding="utf-8") as out:
+        for row in rows:
+            out.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+    summary = {
+        "dataset": DATASET, "generated_at": generated, "insights": len(insights),
+        "kinds": dict(collections.Counter(i["kind"] for i in insights)),
+        "severity": dict(collections.Counter(i["severity"] for i in insights)),
+        "sources": {ds: len(rows_) for ds, rows_ in sorted(data.items())},
+        "fda_rows_without_event_id": fallback_rows,
+        "publish": "python scripts/enrichment/build_safety_insights.py (no --dry-run) publishes these rows; nothing was written.",
+    }
+    with open(os.path.join(directory, "summary.json"), "w", encoding="utf-8") as out:
+        json.dump(summary, out, indent=1, ensure_ascii=False, default=str)
+    with open(os.path.join(directory, "flags.tsv"), "w", encoding="utf-8") as out:
+        out.write("rank\tscore\tseverity\tkind\tagency\theadline\tmetric\n")
+        for rank, insight in enumerate(insights, 1):
+            out.write("\t".join([str(rank), f"{insight['score']:.1f}", insight["severity"], insight["kind"], insight["agency"],
+                                 insight["headline"].replace("\t", " "), json.dumps(insight["metric"], default=str)]) + "\n")
+
+
 def main(argv):
     cache = next((a.split("=", 1)[1] for a in argv if a.startswith("--cache=")), None)
+    packet = next((a.split("=", 1)[1] for a in argv if a.startswith("--packet=")), None)
     data = load(cache)
-    insights = Builder(data).build()
+    builder = Builder(data)
+    insights = builder.build()
     generated = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     counts = collections.Counter(i["kind"] for i in insights)
     severities = collections.Counter(i["severity"] for i in insights)
-    print(json.dumps({"insights": len(insights), "kinds": counts, "severity": severities}, default=dict))
+    print(json.dumps({"insights": len(insights), "kinds": counts, "severity": severities,
+                      "fda_rows_without_event_id": builder.fallback_rows}, default=dict))
     if "--dry-run" in argv:
         for insight in insights[:40]:
             print(f"{insight['score']:5.1f} {insight['severity']:8} {insight['kind']:16} {insight['headline']}")
+        if packet:
+            write_packet(packet, insights, to_rows(insights, generated), generated, data, builder.fallback_rows)
+            print(f"packet written to {packet}")
         return
     rows = to_rows(insights, generated)
     writer.publish(
