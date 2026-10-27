@@ -23,7 +23,7 @@ export const DOCUMENT_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "search_documents",
     description:
-      'Search the text of the court filings stored for the MDLs and matters in this workspace (orders, opinions, motions, briefs, transcripts listed on the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number, document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL, docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings on a docket entry the source flags as sealed or withheld are never searched or quoted; scanned filings without text are not searched.',
+      'Search the text of the court filings stored for the MDLs and matters in this workspace (orders, opinions, motions, briefs, transcripts listed on the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number, document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL, docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings on a docket entry the source flags as sealed, and filings whose docket text carries contact or hearing-access details, are never searched or quoted; scanned filings without text are not searched.',
     input_schema: {
       type: "object",
       properties: {
@@ -123,7 +123,7 @@ async function searchDocumentsTool(input: Record<string, unknown>): Promise<Tool
         total_is_lower_bound: res.capped,
         page: res.page,
         has_more: res.hasMore,
-        note: "Passages are the stored text of the page named; matched words are marked «». Quote a passage only with its page, and open the link to check it. Filings on entries the docket source flags as sealed or withheld, and scanned filings without text, are not searched, so absence here is not proof a filing does not exist.",
+        note: "Passages are the stored text of the page named; matched words are marked «». Quote a passage only with its page, and open the link to check it. Filings on entries the docket source flags as sealed, filings whose docket text carries contact or hearing-access details, and scanned filings without text are not searched, so absence here is not proof a filing does not exist.",
         results: rows,
       }),
     ),

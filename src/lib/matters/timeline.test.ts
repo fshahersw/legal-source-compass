@@ -123,11 +123,26 @@ describe("registry entry rows", () => {
     )!;
     expect(e.withheld).toBe("sealed_or_restricted_text");
     expect(e.description).toBeNull();
-    expect(e.documents).toEqual([]);
-    expect(e.documentIds).toEqual([]);
   });
 
-  it("lists no document at all for an entry with a sealed document", () => {
+  it("still lists the documents of an entry held under the retired keyword rule", () => {
+    const e = parseRegistryEntry(
+      entryRow(
+        { description: null, description_withheld: "sealed_or_restricted_text", held: true, document_ids: [] },
+        {
+          documents: [
+            { native_document_id: "11", description: "Order on motion to seal" },
+            { native_document_id: "12", is_sealed: true, description: "Sealed exhibit" },
+          ],
+        },
+      ),
+    )!;
+    expect(e.withheld).toBe("sealed_or_restricted_text");
+    expect(e.documents.map((d) => d.nativeDocumentId)).toEqual(["11"]);
+    expect(e.documentIds).toEqual(["11"]);
+  });
+
+  it("lists no document for an entry with a sealed document when the source gives no per-document flag", () => {
     const e = parseRegistryEntry(
       entryRow(
         { description: null, description_withheld: "sealed_document", documents_sealed: 1 },
@@ -136,7 +151,26 @@ describe("registry entry rows", () => {
     )!;
     expect(e.withheld).toBe("sealed_document");
     expect(e.documents).toEqual([]);
+    expect(e.documentIds).toEqual([]);
     expect(e.sealedCount).toBe(1);
+  });
+
+  it("lists only the documents the source flags unsealed on an entry with a sealed document", () => {
+    const e = parseRegistryEntry(
+      entryRow(
+        { description: null, description_withheld: "sealed_document", documents_sealed: 1, document_ids: [] },
+        {
+          description_withheld: "sealed_document",
+          documents: [
+            { native_document_id: "21", is_sealed: true, description: "Sealed brief" },
+            { native_document_id: "22", is_sealed: false, description: "Notice of filing" },
+            { native_document_id: "23", description: "No flag" },
+          ],
+        },
+      ),
+    )!;
+    expect(e.documents.map((d) => d.nativeDocumentId)).toEqual(["22"]);
+    expect(e.documentIds).toEqual(["22"]);
   });
 
   it("drops a document the source flags sealed and hides a document description that was withheld", () => {
@@ -529,11 +563,30 @@ describe("entry to archive mapping", () => {
     expect(archiveCounts(m.documents)).toEqual({ open: 1, held: 1 });
   });
 
-  it("maps an entry the publication rule held back to nothing, whichever rule held it", () => {
-    for (const withheld of ["sealed_document", "sealed_or_restricted_text"]) {
-      const m = matchEntryDocuments(entry({ withheld }), "flnd-3:2025-md-03140", index);
-      expect(m).toEqual({ documents: [], notArchived: 0 });
-    }
+  it("joins a source-sealed entry only by its listed unsealed ids, never by entry number", () => {
+    const none = matchEntryDocuments(
+      entry({ withheld: "sealed_document", documentIds: [] }),
+      "flnd-3:2025-md-03140",
+      index,
+    );
+    expect(none).toEqual({ documents: [], notArchived: 0 });
+    const listed = matchEntryDocuments(
+      entry({ withheld: "sealed_document", documentIds: ["495058040"] }),
+      "flnd-3:2025-md-03140",
+      index,
+    );
+    expect(listed.documents.map((d) => d.via)).toEqual(["document_id"]);
+  });
+
+  it("joins an entry held under the retired keyword rule like any other entry", () => {
+    const plain = matchEntryDocuments(entry({ documentIds: [] }), "flnd-3:2025-md-03140", index);
+    const held = matchEntryDocuments(
+      entry({ withheld: "sealed_or_restricted_text", documentIds: [] }),
+      "flnd-3:2025-md-03140",
+      index,
+    );
+    expect(held).toEqual(plain);
+    expect(held.documents.length).toBeGreaterThan(0);
   });
 
   it("joins an external entry to the court-hosted PDF by its exact URL", () => {
@@ -641,14 +694,14 @@ describe("external entries (GovInfo, court website)", () => {
     );
   });
 
-  it("treats the held flag as withheld even when no reason is given, and lists no document", () => {
+  it("treats the held flag as withheld text even when no reason is given, but keeps its documents", () => {
     const e = parseRegistryEntry(
       external({ held: true, description: "text", document_ids: ["x1"] }),
     )!;
     expect(e.withheld).toBe("sealed_or_restricted_text");
     expect(e.description).toBeNull();
-    expect(e.documentIds).toEqual([]);
-    expect(e.documents).toEqual([]);
+    // No source seal flag: the held flag alone is a caution hold and no longer hides documents.
+    expect(e.documentIds).toEqual(["x1"]);
   });
 
   it("falls back to the per-document ids when the row has no document_ids and drops an unusable id", () => {

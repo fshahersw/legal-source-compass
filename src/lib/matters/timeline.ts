@@ -106,14 +106,18 @@ export function parseRegistryEntry(row: {
         : null;
   const text = str(cells["description"]);
   const documents: EntryDocumentRef[] = [];
-  // A withheld entry (sealed document, or text the rule withholds) lists no documents at all (contract §6.0, `held`).
-  if (!withheld && Array.isArray(reg["documents"])) {
+  // Owner 2026-10-27 ("dont withhold any data"): only what the source flags sealed is left out. A document the
+  // source flags sealed is never listed; on an entry the source says carries a sealed document, a document is
+  // listed only when the source explicitly flags it unsealed (is_sealed === false). Text held under the retired
+  // keyword rule (`sealed_or_restricted_text`) no longer hides the entry's documents.
+  const sealedEntry = withheld === "sealed_document";
+  if (Array.isArray(reg["documents"])) {
     for (const d of reg["documents"]) {
       if (!isObj(d)) continue;
       const nativeDocumentId = idStr(d["native_document_id"]);
       if (!nativeDocumentId || !DOC_ID.test(nativeDocumentId)) continue;
-      // A document the source flags sealed is never listed, whatever else the row says.
       if (d["is_sealed"] === true) continue;
+      if (sealedEntry && d["is_sealed"] !== false) continue;
       const docWithheld = str(d["description_withheld"]);
       documents.push({
         nativeDocumentId,
@@ -125,12 +129,16 @@ export function parseRegistryEntry(row: {
       });
     }
   }
-  // The join key to the archive: the row's own document_ids, else the ids of the per-document detail.
+  // The join key to the archive: the row's own document_ids, else the ids of the per-document detail. The projection
+  // empties a withheld row's document_ids, so such a row joins through the documents listed above; an entry with a
+  // source-sealed document always does (source-sealed and unflagged documents are not there).
   const documentIds: string[] = [];
-  if (!withheld) {
-    const listed = Array.isArray(cells["document_ids"])
-      ? cells["document_ids"].flatMap((v) => (typeof v === "string" ? [v.trim()] : []))
-      : documents.map((d) => d.nativeDocumentId);
+  {
+    const rowIds = cells["document_ids"];
+    const listed =
+      !sealedEntry && Array.isArray(rowIds) && (!withheld || rowIds.length > 0)
+        ? rowIds.flatMap((v) => (typeof v === "string" ? [v.trim()] : []))
+        : documents.map((d) => d.nativeDocumentId);
     for (const docId of listed)
       if (
         DOCUMENT_ID_PATTERN.test(docId) &&
@@ -360,7 +368,8 @@ export function matchEntryDocuments(
   docketbirdCaseId: string | null,
   index: ArchiveIndex,
 ): EntryArchive {
-  if (entry.withheld) return { documents: [], notArchived: 0 };
+  // An entry carrying a source-sealed document joins only by its listed (unsealed) document ids, never by entry number.
+  const sealedEntry = entry.withheld === "sealed_document";
   const out: EntryArchiveDocument[] = [];
   const seen = new Set<string>();
   const seenFiles = new Set<MatterDocument>();
@@ -385,7 +394,7 @@ export function matchEntryDocuments(
       out.push({ doc: forOccurrence(hit.doc, hit.copy), via: "document_id" });
     }
   }
-  if (docketbirdCaseId && entry.entryNumber !== null) {
+  if (!sealedEntry && docketbirdCaseId && entry.entryNumber !== null) {
     for (const hit of index.byCaseEntry.get(entryKey(docketbirdCaseId, entry.entryNumber)) ?? []) {
       const key = docKey(hit.copy.sourceSystem, hit.copy.nativeDocumentId);
       if (!seen.has(key) && !seenFiles.has(hit.doc)) {
@@ -446,7 +455,7 @@ export function recapLabel(availability: string | null): string | null {
 
 export const WITHHELD_NOTES: Record<EntryWithheld, string> = {
   sealed_document:
-    "Published without text or document list: the entry has a document the source flags as sealed.",
+    "The docket source flags a document on this entry as sealed, so the entry's text and that document are not shown. Documents the source lists as unsealed are shown.",
   sealed_or_restricted_text:
-    "Published without text or document list: the docket text mentions sealing, restriction, in camera, ex parte or redaction, which the publication rule withholds.",
+    "Docket text not yet republished: a retired rule held text that mentions sealing or redaction. The source does not flag this entry as sealed.",
 };
