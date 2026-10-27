@@ -85,6 +85,15 @@ test('replay guard recomputes the exact v1 observation digest, so a replayed rec
   assert.ok(v2.indexOf('if exists(select 1 from corpus_ingest.pdf_asset_observations') < v2.indexOf('pdf_availability:='));
 });
 
+test('verify file names the md5 the applied v2 text will have', async () => {
+  const def = functionDef(await read('corpus-register-pdf-assets-v2.sql'));
+  const md5 = createHash('md5').update(def, 'utf8').digest('hex');
+  const verify = await read('corpus-register-pdf-assets-v2-verify.sql');
+  assert.ok(verify.includes(`After apply: ${md5}.`), `verify file expects ${md5}`);
+  assert.ok(verify.includes(`Before apply: ${LIVE_V1_MD5}.`));
+  assert.doesNotMatch(verify, /\b(insert|update|delete|create|alter|drop|grant|revoke|truncate)\b\s/i, 'verify file is read-only');
+});
+
 test('grants stay service_role only', async () => {
   for (const name of ['corpus-register-pdf-assets-v2.sql', 'corpus-register-pdf-assets-v2.rollback.sql']) {
     const sql = await read(name);

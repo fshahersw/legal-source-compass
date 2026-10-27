@@ -31,8 +31,11 @@
 -- Existing observations are NOT rewritten: they are content-hash addressed. Their v1 label is historical (AGENTS.md).
 -- Not changed: public.corpus_admin_register_local_bundle_pdf_assets_v1. Its private_quarantine_required/public_projection_allowed
 -- values are part of hash-pinned frozen packet occurrences (local_pdf_asset_expected_occurrences) and table CHECKs; those
--- 752 local occurrences carry no publisher-native document identity, so they stay out on the exact-link rule, not on caution.
+-- 752 local occurrences carry no publisher-native document identity (native_document_id null). 12 are locally_flagged_sealed
+-- (explicit seal evidence; documents_refresh_v1 leaves those bytes out). Of the 740 unknown_local_blank, 450 share bytes with a
+-- publisher-native asset that is already open; the other 290 stay out on the exact-link rule, not on caution.
 -- Rollback: corpus-register-pdf-assets-v2.rollback.sql (live v1 text, md5 beaf86b57d3ffadee3f029bbe93b7fb6).
+-- Verify: corpus-register-pdf-assets-v2-verify.sql (after apply, md5 of pg_get_functiondef = f245cb3985cf2b2bf13a6f357fb828a1).
 CREATE OR REPLACE FUNCTION public.corpus_admin_register_pdf_assets_v1(p_rows jsonb)
  RETURNS jsonb
  LANGUAGE plpgsql
