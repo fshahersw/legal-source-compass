@@ -180,7 +180,7 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | JPML multidistrict litigation | mdls | Matters and dockets | 179 | 1.52 MB | Available |
 | County court rules and orders — September 28 additions | county_enrichment_20260928 | Courts and court resources | 14 | 1.27 MB | Available |
 | Seeger Weiss matter registry — regulatory evidence links (topical associations, 6 MDLs) | sw_matter_regulatory_links_v1 | Matters and dockets | 165 | 1.06 MB | Available |
-| Court profiles & seals | court_reference | Courts and court resources | 253 | 827.97 KB | Held |
+| Court profiles & seals | court_reference | Courts and court resources | 253 | 827.97 KB | Published 2026-10-27: 253 records, 250 seal files (248 distinct objects); ilsd, mdd, nyappdiv seal files held as wrong-court images (court-reference-release-20261027, run c36e2186) |
 | Cited U.S. limitations rules — October 2026 review | statutory_limitations_review | Law | 124 | 827.24 KB | Available |
 | Selected eCFR authority and source notes | ecfr_authority_notes | Law | 36 | 680.26 KB | Available |
 | Official JPML and court HTML references — October 2026 | jpml_html_reference | Law | 93 | 573.91 KB | Available |
