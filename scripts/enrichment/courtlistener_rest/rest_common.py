@@ -257,6 +257,80 @@ def attribution(person_last: str | None, parsed: list[dict | None]) -> dict:
             "mismatch": checks.count("mismatch"), "unchecked": checks.count("unchecked")}
 
 
+# Which disclosure reports' gifts, reimbursements and agreements are listed (owner decision 2026-10-27, "dont withhold any data"):
+# a report whose file name carries the person's surname ('match') and a report whose file name could not be read ('unchecked',
+# listed with an 'attribution not checked' label) are listed; a report whose file name carries another surname ('mismatch':
+# evidence from the source file itself that CourtListener may have joined another person's report) and every report of a person
+# whose matching reports carry two numbered circuits ('conflict') are not.
+LISTED_CHECKS = ("match", "unchecked")
+DISCLOSURE_ITEM_KINDS = ("gifts", "reimbursements", "agreements")
+
+
+def withheld_reason(check: str | None, conflict: bool) -> str | None:
+    """Why an item of a report with this file check is not listed (None when it is listed): 'attribution_conflict' or 'other_surname'."""
+    if conflict:
+        return "attribution_conflict"
+    if check in LISTED_CHECKS:
+        return None
+    return "other_surname"
+
+
+DISCLOSURE_MAX_TEXT = 300
+
+
+def clip_text(v, n: int = DISCLOSURE_MAX_TEXT) -> str | None:
+    """Whitespace collapsed; None when empty; trimmed to n characters with an ellipsis."""
+    if v is None:
+        return None
+    s = " ".join(str(v).split())
+    if not s:
+        return None
+    return s if len(s) <= n else s[: n - 1].rstrip() + "…"
+
+
+def _report_id(v):
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
+# A gift, reimbursement or agreement row as CourtListener published it. `redacted` is CourtListener's flag that the filer redacted
+# part of the line; the text CourtListener extracted around the redaction is kept (the redacted part itself is not in the source).
+def gift_item(year, report_id, source, description, value, redacted) -> dict:
+    return {"year": year, "report_id": _report_id(report_id), "redacted": redacted == "t",
+            "source": clip_text(source), "description": clip_text(description), "value_as_filed": clip_text(value)}
+
+
+def reimbursement_item(year, report_id, source, date_raw, location, purpose, paid, redacted) -> dict:
+    return {"year": year, "report_id": _report_id(report_id), "redacted": redacted == "t", "source": clip_text(source),
+            "dates_as_filed": clip_text(date_raw), "location": clip_text(location), "purpose": clip_text(purpose), "items_paid_or_provided": clip_text(paid)}
+
+
+def agreement_item(year, report_id, date_raw, terms, redacted) -> dict:
+    return {"year": year, "report_id": _report_id(report_id), "redacted": redacted == "t", "date_as_filed": clip_text(date_raw), "parties_and_terms": clip_text(terms)}
+
+
+def split_disclosure_items(items: dict, checks: dict, conflict: bool) -> tuple[dict, dict]:
+    """Split one person's gifts, reimbursements and agreements into listed items and withheld counts by reason.
+
+    `items` maps each kind to item dicts carrying `report_id`; `checks` maps report id -> 'match' / 'mismatch' / 'unchecked'
+    (a report id missing from `checks` is treated as 'mismatch': no file evidence ties it to this person, so it is not listed).
+    Listed items get `attribution`: 'checked' (file name carries the surname) or 'not_checked' (file name unreadable).
+    Returns (listed by kind, {reason: {kind: n}}) with every kind and both reasons present."""
+    listed = {k: [] for k in DISCLOSURE_ITEM_KINDS}
+    withheld = {r: {k: 0 for k in DISCLOSURE_ITEM_KINDS} for r in ("other_surname", "attribution_conflict")}
+    for k in DISCLOSURE_ITEM_KINDS:
+        for it in items.get(k, []):
+            chk = checks.get(it.get("report_id"), "mismatch")
+            reason = withheld_reason(chk, conflict)
+            if reason:
+                withheld[reason][k] += 1
+            else:
+                listed[k].append({**it, "attribution": "checked" if chk == "match" else "not_checked"})
+    return listed, withheld
+
+
 def interval_ok(a, b) -> bool:
     """Both dates recorded and the second not before the first (the only intervals used in timing figures)."""
     return a is not None and b is not None and b >= a

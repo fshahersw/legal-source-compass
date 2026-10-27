@@ -166,20 +166,25 @@ def disclosures(db):
         check("clb_judge_disclosures", "gifts", rid, gifts[pid], p["items_total"]["gifts"])
         check("clb_judge_disclosures", "reimbursements", rid, reimb[pid], p["items_total"]["reimbursements"])
         check("clb_judge_disclosures", "investments", rid, inv[pid], p["items_total"]["investments"])
-    # attribution rule over every row: listed items only from 'match' reports, none for conflicts, and listed + withheld = total
+    # attribution rule over every row: listed items only from 'match' reports (attribution 'checked') or 'unchecked' reports
+    # (attribution 'not_checked'), none from 'mismatch' reports, none for conflicts; listed + withheld = total for every kind
+    # (no display cap since the 2026-10-27 release); withheld split by reason adds up
     viol = 0
     for rid, r in rows.items():
         p = r["item"]["profile"]
-        good = {x["id"] for x in p["report_list"] if x["file_check"] == "match"}
+        checks = {x["id"]: x["file_check"] for x in p["report_list"]}
         conflict = p["attribution"]["status"] == "conflict"
         for k in ("gifts", "agreements", "reimbursements"):
             for it in p[k]:
-                if conflict or it["report_id"] not in good:
+                chk = checks.get(it["report_id"])
+                if conflict or chk not in ("match", "unchecked") or it.get("attribution") != ("checked" if chk == "match" else "not_checked"):
                     viol += 1
-        for k in ("gifts", "agreements"):
             if len(p[k]) + p["items_withheld"][k] != p["items_total"][k]:
                 viol += 1
-        if p["reimbursements_listed"] + p["items_withheld"]["reimbursements"] > p["items_total"]["reimbursements"]:
+            by_reason = p["items_withheld_by_reason"]
+            if by_reason["other_surname"][k] + by_reason["attribution_conflict"][k] != p["items_withheld"][k] or (by_reason["other_surname"][k] and conflict):
+                viol += 1
+        if p["reimbursements_listed"] != len(p["reimbursements"]):
             viol += 1
         for x in p["report_list"]:
             if x["pdf"] and not x["pdf"].startswith(f"https://storage.courtlistener.com/us/federal/judicial/financial-disclosures/{rid}/"):
