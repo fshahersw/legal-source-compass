@@ -2,7 +2,8 @@ import { BadgeDollarSign } from "lucide-react";
 import { HubTrend, TrendGrid } from "@/components/trends/ProfileTrend";
 import { cn } from "@/lib/utils";
 import { ACTION_VIEWS, type ActionsView } from "./actionsView";
-import { DojReleases } from "./DojReleases";
+import { DojCoverageNote, DojReleases } from "./DojReleases";
+import { DojHealthSection } from "./DojHealthSection";
 import { FtcActions } from "./FtcActions";
 import { OfficialSettlements } from "./OfficialSettlements";
 import { SecActions } from "./SecActions";
@@ -54,6 +55,12 @@ export function ActionsPanel({ view }: { view: ActionsView }) {
   const trends = ACTION_TREND_BLOCKS[view] ?? [];
   return (
     <div className="min-w-0 space-y-3">
+      {view === "doj" ? (
+        <>
+          <DojHealthSection />
+          <DojCoverageNote />
+        </>
+      ) : null}
       {trends.length ? (
         <TrendGrid>
           {trends.map((id) => (

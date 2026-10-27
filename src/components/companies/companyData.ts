@@ -116,6 +116,8 @@ export type CoverageRow = {
   mdl: number;
   title: string;
   status: MdlStatus;
+  /** JPML litigation type as published ("Products Liability"); null when not recorded. */
+  type: string | null;
   pending: number | null;
   titleTruncated: boolean;
   companies: {
@@ -156,7 +158,15 @@ export type CompaniesOverview = {
   roleLabels: Partial<Record<Role, string>>;
   method: string[];
 };
-export type CompaniesData = { overview: CompaniesOverview; companies: CompanySummary[] };
+export type CompaniesData = {
+  overview: CompaniesOverview;
+  companies: CompanySummary[];
+  /**
+   * 12-month change in JPML pending actions of pending products-liability MDLs, by exact MDL number (dataset
+   * mdl_analytics). Absent when that read failed; a number missing from it is "Not recorded".
+   */
+  mdlChange?: Record<string, number | null> | undefined;
+};
 
 export type EvidenceFiling = {
   adsh: string;
@@ -490,6 +500,7 @@ export function parseOverview(v: unknown): CompaniesOverview | null {
           mdl: r["mdl"] as number,
           title: r["title"] as string,
           status: status(r["status"]),
+          type: str(r["type"]),
           pending: int(r["pending"]),
           titleTruncated: r["title_truncated"] === true,
           companies: arr(r["companies"])

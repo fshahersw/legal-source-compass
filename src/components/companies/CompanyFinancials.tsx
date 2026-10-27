@@ -118,7 +118,7 @@ export function OverviewTab({
             company&rsquo;s own filings
           </span>
           {exposure.pendingActions !== null
-            ? `, ${exposure.pendingActions.toLocaleString("en-US")} pending actions where its filings read it as a defendant`
+            ? `, ${exposure.pendingActions.toLocaleString("en-US")} pending actions (MDL-wide) in the ${exposure.pendingMdls} pending MDL${exposure.pendingMdls === 1 ? "" : "s"} its filings name it a defendant in`
             : ""}
           .{" "}
           <button
