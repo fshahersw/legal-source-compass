@@ -176,7 +176,7 @@ function inSiteChrome(node) {
   return false;
 }
 
-// Drupal MDL content pages (MND node tabs, NYSM hubs, LAED quicktabs): PDF anchors outside field--name-body.
+// Drupal MDL content pages (MND node tabs, NYSM hubs, LAED quicktabs, PAWD): PDF anchors outside field--name-body.
 export function parseMndMdl({ html, pageUrl }) {
   const root = parseHtml(html);
   const scope = findFirst(root, n => hasClass(n, 'node--mdl'))
