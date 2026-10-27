@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
 import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
+import { InfoPopover, Section, SectionIndex } from "@/components/kit";
+import { PortfolioSection } from "@/components/matters/hub/PortfolioSection";
+import { matterHubPdfQuery, matterHubQuery } from "@/components/matters/hub/hubQueries";
 import {
   Chip,
   DataTable,
@@ -19,15 +21,37 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { evidenceKindLabel } from "@/lib/matters/cases";
-import { getMatterHub } from "@/lib/matters/matters.functions";
 import { TIER_LABELS, type SwTier } from "@/lib/matters/tiers";
-import type { HubRow } from "@/lib/matters/types";
+import type { HubPdfCounts, HubRegistry, HubRow } from "@/lib/matters/types";
 
 type Sort = "priority" | "pending" | "mdl";
 /** A stable empty list, so the memoised filter does not re-run on every render while data loads. */
 const NO_HUB_ROWS: HubRow[] = [];
 
-function Coverage({ row }: { row: HubRow }) {
+type PdfState = { count: HubRegistry | undefined; pending: boolean; failed: boolean };
+
+/** The verified-PDF chip: "PDF records …" while counting, nothing on a failed read; never a 0 or a guess. */
+function pdfChip(pdf: PdfState): React.ReactNode {
+  if (pdf.pending)
+    return (
+      <span aria-busy="true" className="inline-block min-w-[8.5rem]">
+        <Chip title="Counting verified PDF records">PDF records …</Chip>
+      </span>
+    );
+  const c = pdf.count;
+  if (pdf.failed || !c || !("open" in c)) return null;
+  return (
+    <Chip
+      tone="success"
+      title="Verified PDF source records on the master docket: open (linkable) and held (status unconfirmed, no link). Identical bytes can have multiple source records."
+    >
+      PDF records {c.open.toLocaleString()} open
+      {c.held ? ` · ${c.held.toLocaleString()} held` : ""}
+    </Chip>
+  );
+}
+
+function Coverage({ row, pdf }: { row: HubRow; pdf: PdfState }) {
   const chips: { key: string; node: React.ReactNode }[] = [];
   const num = (n: number | null) => (n === null ? null : n.toLocaleString());
   const mix = (row.metrics?.byBasis ?? [])
@@ -97,19 +121,8 @@ function Coverage({ row }: { row: HubRow }) {
         </Chip>
       ),
     });
-  if (row.registry && "open" in row.registry)
-    chips.push({
-      key: "pdf",
-      node: (
-        <Chip
-          tone="success"
-          title="Verified PDF source records on the master docket: open (linkable) and held (status unconfirmed, no link). Identical bytes can have multiple source records."
-        >
-          PDF records {row.registry.open.toLocaleString()} open
-          {row.registry.held ? ` · ${row.registry.held.toLocaleString()} held` : ""}
-        </Chip>
-      ),
-    });
+  const pdfNode = pdfChip(pdf);
+  if (pdfNode) chips.push({ key: "pdf", node: pdfNode });
   if (row.swAppearances !== null)
     chips.push({
       key: "sw",
@@ -140,7 +153,13 @@ function Coverage({ row }: { row: HubRow }) {
   );
 }
 
-function TierTable({ tier, rows }: { tier: SwTier; rows: HubRow[] }) {
+type PdfQueryState = {
+  data: HubPdfCounts | undefined;
+  pending: boolean;
+  failed: boolean;
+};
+
+function TierTable({ tier, rows, pdf }: { tier: SwTier; rows: HubRow[]; pdf: PdfQueryState }) {
   if (!rows.length) return null;
   return (
     <section aria-labelledby={`tier-${tier}`} className="space-y-2">
@@ -255,7 +274,10 @@ function TierTable({ tier, rows }: { tier: SwTier; rows: HubRow[] }) {
                 )}
               </td>
               <td className={td}>
-                <Coverage row={r} />
+                <Coverage
+                  row={r}
+                  pdf={{ count: pdf.data?.[r.mdl], pending: pdf.pending, failed: pdf.failed }}
+                />
                 {r.inCorpus ? (
                   <div className="mt-1 flex flex-wrap gap-x-3 text-[11px]">
                     <Link
@@ -302,8 +324,14 @@ function TierTable({ tier, rows }: { tier: SwTier; rows: HubRow[] }) {
 }
 
 export function HubPage() {
-  const fn = useServerFn(getMatterHub);
-  const q = useQuery({ queryKey: ["matter-hub"], queryFn: () => fn(), staleTime: 2 * 60_000 });
+  // The table, the PDF counts and the JPML series start together; the table never waits for the counts.
+  const q = useQuery(matterHubQuery);
+  const pdfQ = useQuery(matterHubPdfQuery);
+  const pdf: PdfQueryState = {
+    data: pdfQ.data,
+    pending: pdfQ.isPending,
+    failed: pdfQ.isError,
+  };
   const [text, setText] = useState("");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState<Sort>("priority");
@@ -335,88 +363,97 @@ export function HubPage() {
         { label: "Seeger Weiss hub" },
       ]}
       title="Seeger Weiss priority matters"
-      description="Priority matters, grouped by tier. Open a matter for its cases, docket entries, documents, and counsel."
+      description="Portfolio size, growth and coverage, then each matter's records."
     >
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2 text-[12px]">
-          <span>
-            JPML action totals show MDL size as of the report date. Coverage values describe
-            available records.
-          </span>
-          <details>
-            <summary className="cursor-pointer font-medium text-primary">
-              About tiers & coverage
-            </summary>
-            <p className="mt-1 max-w-2xl text-muted-foreground">
-              Tiers order this list and do not indicate representation. Member-like docket counts
-              require recorded relationship evidence and are not a full MDL census. Seeger Weiss
-              appearances come from an incomplete saved docket sample.
-            </p>
-          </details>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-4">
-          <FilterField label="Search">
-            <Input
-              aria-label="Search matters"
-              className="h-8 text-[12px]"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="MDL number, name, court or judge"
-            />
-          </FilterField>
-          <FilterField label="Status">
-            <select
-              className={selectClass}
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="">Any status</option>
-              <option value="pending">Pending</option>
-              <option value="terminated">Terminated</option>
-              <option value="missing">No matter profile</option>
-            </select>
-          </FilterField>
-          <FilterField label="Order">
-            <select
-              className={selectClass}
-              value={sort}
-              onChange={(e) => setSort(e.target.value as Sort)}
-            >
-              <option value="priority">Priority order</option>
-              <option value="pending">Pending actions, most first</option>
-              <option value="mdl">MDL number</option>
-            </select>
-          </FilterField>
-          <div className="flex items-end">
-            {text || status || sort !== "priority" ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8"
-                onClick={() => {
-                  setText("");
-                  setStatus("");
-                  setSort("priority");
-                }}
-              >
-                Clear
-              </Button>
+      <SectionIndex
+        items={[
+          { id: "portfolio", label: "Portfolio" },
+          { id: "matters", label: "Matters" },
+        ]}
+      />
+      <div className="stack-block">
+        <PortfolioSection rows={rows} rowsReady={!!q.data} />
+        <Section
+          id="matters"
+          title="Matters"
+          description="Grouped by tier. Open a matter for its cases, docket, documents and counsel."
+          actions={
+            <InfoPopover label="About tiers and coverage" showLabel>
+              <p>
+                Tiers order this list and do not indicate representation. JPML action totals show
+                MDL size as of the report date; coverage values describe available records.
+                Member-like docket counts require recorded relationship evidence and are not a full
+                MDL census. Seeger Weiss appearances come from an incomplete saved docket sample.
+              </p>
+            </InfoPopover>
+          }
+        >
+          <div className="space-y-4">
+            <div className="grid gap-2 sm:grid-cols-4">
+              <FilterField label="Search">
+                <Input
+                  aria-label="Search matters"
+                  className="h-8 text-[12px]"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="MDL number, name, court or judge"
+                />
+              </FilterField>
+              <FilterField label="Status">
+                <select
+                  className={selectClass}
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  <option value="">Any status</option>
+                  <option value="pending">Pending</option>
+                  <option value="terminated">Terminated</option>
+                  <option value="missing">No matter profile</option>
+                </select>
+              </FilterField>
+              <FilterField label="Order">
+                <select
+                  className={selectClass}
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value as Sort)}
+                >
+                  <option value="priority">Priority order</option>
+                  <option value="pending">Pending actions, most first</option>
+                  <option value="mdl">MDL number</option>
+                </select>
+              </FilterField>
+              <div className="flex items-end">
+                {text || status || sort !== "priority" ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => {
+                      setText("");
+                      setStatus("");
+                      setSort("priority");
+                    }}
+                  >
+                    Clear
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            {q.isLoading ? <Loading what="the matters hub" /> : null}
+            {q.error ? <ExternalError error={q.error} /> : null}
+            {q.data && !filtered.length ? (
+              <EmptyState>No matter matches these filters.</EmptyState>
             ) : null}
+            {sort === "priority" ? (
+              <>
+                <TierTable tier={1} rows={t1} pdf={pdf} />
+                <TierTable tier={2} rows={t2} pdf={pdf} />
+              </>
+            ) : (
+              <TierTable tier={1} rows={filtered} pdf={pdf} />
+            )}
           </div>
-        </div>
-        {q.isLoading ? <Loading what="the matters hub" /> : null}
-        {q.error ? <ExternalError error={q.error} /> : null}
-        {q.data && !filtered.length ? (
-          <EmptyState>No matter matches these filters.</EmptyState>
-        ) : null}
-        {sort === "priority" ? (
-          <>
-            <TierTable tier={1} rows={t1} />
-            <TierTable tier={2} rows={t2} />
-          </>
-        ) : (
-          <TierTable tier={1} rows={filtered} />
-        )}
+        </Section>
       </div>
     </AppShell>
   );

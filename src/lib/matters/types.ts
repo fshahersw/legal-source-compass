@@ -4,6 +4,7 @@ import type { DocumentsPage, MatterDocument, RegistrySummary } from "./documents
 import type { DocketEntry } from "./entries";
 import type { EntryArchive, RegistryEntry } from "./timeline";
 import type { MatterOverview } from "./overview";
+import type { VelocityModel } from "@/components/matters/hub/velocity";
 import type { AppearanceRow, CounselRow, PartyKind } from "./parties";
 import type {
   AttorneyView,
@@ -244,3 +245,21 @@ export type HubRow = {
   /** The matter registry's computed numbers (evidence mix, entries captured vs reported, last capture); null without a record. */
   metrics: RegistryMetrics | null;
 };
+
+/** Verified-PDF counts per hub matter, keyed by MDL number (the same call each matter header makes). */
+export type HubPdfCounts = Record<string, HubRegistry>;
+
+/**
+ * JPML filing velocity for every MDL in the monthly-report series, with the national and hub-portfolio pending series
+ * (model in src/components/matters/hub/velocity.ts). `published: false` when the series is not published.
+ */
+export type MdlVelocityPayload =
+  | { published: false }
+  | (VelocityModel & {
+      published: true;
+      /** The JPML report PDF the latest figures come from. */
+      reportUrl: string | null;
+      datasetUpdatedAt: string | null;
+      /** False when the matter registry could not be read: "in our registry" is then unknown, never "no". */
+      registryRead: boolean;
+    });
