@@ -379,6 +379,7 @@ const USED_ON: Readonly<Record<string, readonly AppLink[]>> = {
   judicial_nominations: [P.judges],
   judicial_confirmation_votes: [P.judges],
   judge_cl_crosswalk: [P.judges],
+  court_cjra_judges: [P.judges, P.judgeAnalytics],
   "judge_cross_*": [P.judgeAnalytics],
   firm_profiles: [P.firms],
   firm_network: [P.firms],
