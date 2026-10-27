@@ -1,0 +1,19 @@
+-- Rollback for release state-codes-official-unprojected (2026-10-27). Lead only, and only if a loaded edition is
+-- found wrong. Withdrawing flips the edition to 'withdrawn' (rows stay, the in-force layer stops serving it; the
+-- captured editions remain browsable as before). Replace <edition_id> with the id load.py printed (e.g. ny-20261028).
+-- The same calls are available over REST: POST /rest/v1/rpc/state_law_withdraw_edition_v1.
+--
+--   select public.state_law_withdraw_edition_v1('<il edition_id>', 'release 2026-10-27 rolled back: <reason>');
+--   select public.state_law_withdraw_edition_v1('<or edition_id>', 'release 2026-10-27 rolled back: <reason>');
+--   select public.state_law_withdraw_edition_v1('<ks edition_id>', 'release 2026-10-27 rolled back: <reason>');
+--   select public.state_law_withdraw_edition_v1('<md edition_id>', 'release 2026-10-27 rolled back: <reason>');
+--   select public.state_law_withdraw_edition_v1('<ny edition_id>', 'release 2026-10-27 rolled back: <reason>');
+--   select public.state_law_withdraw_edition_v1('<oh edition_id>', 'release 2026-10-27 rolled back: <reason>');
+--   select public.state_law_withdraw_edition_v1('<ma edition_id>', 'release 2026-10-27 rolled back: <reason>');
+--
+-- Optional, after a withdrawal is final: remove its rows in bounded batches (repeat until {"done": true}).
+--   select public.state_law_purge_edition_v1('<edition_id>', 20000);
+--
+-- Check: select state, edition_id, lifecycle from state_law.editions
+--        where state in ('IL','OR','KS','MD','NY','OH','MA') order by state, created_at;
+select 1 where false;  -- this file runs nothing by itself

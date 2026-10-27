@@ -145,7 +145,7 @@ class IllinoisTests(unittest.TestCase):
 
 
 class IllinoisSameTableVersionsTests(unittest.TestCase):
-    """735 ILCS 5/13-213 (and 12 more sections in the 2026-10 capture) print two versions in ONE table: the text WITH
+    """735 ILCS 5/13-213 (and 59 more sections in the 2026-10 capture's staged rows) print two versions: the text WITH
     the changes made by P.A. 89-7 (held unconstitutional) and the text WITHOUT them. Layout copied from ilga.gov's
     Art. XIII page (2026-10-27): line breaks are <br>, every run is a <code><font>, a "&nbsp;" line separates them."""
     F = "<code><font size='2' face='Courier New'>{}</font></code>"

@@ -304,3 +304,15 @@ each LRB certificate date; NH, NM, OH, OK when the live source is reachable/deci
 - OK: the retained capture (2026-10-06) includes that day's robots.txt, which already disallowed `/` for all agents.
 - OH: robots.txt is the single line `User-agent: * Disallow: /`; standard parsers read no rule, its intent reads as
   disallow-all; no live crawl was run.
+
+## Release 2026-10-27 (state-codes-official-unprojected)
+
+Owner decision 2026-10-27 ("dont withhold any data. If its accurate and valuable, USE IT"): holds kept only on explicit
+source evidence. Packet: `private/acq/release-state-codes-official-unprojected/` (lead loads; workers never write).
+
+| | Decision | Why |
+|---|---|---|
+| NY | released: `ny.py` (ny-openleg-html/3) re-parses the retained nysenate.gov pages, never live | the capture is the official publisher's pages, taken through a fetch proxy the owner accepted on 2026-10-07 (as for PA); labelled "captured via fetch proxy from nysenate.gov" |
+| OH | released from the retained originals (2026-10-07) | robots.txt is still the single line `User-agent: * Disallow: /` (re-read 2026-10-27), which no standard parser reads as a rule; no live crawl |
+| OR | released (live, or retained chapter files with the index read fresh) | no restriction; the title chapter lists' bare "2. …" lines are now read, plus every number in a title's range |
+| OK | **held** | explicit publisher restriction: robots.txt opens `User-agent: *`, a blank line, `Disallow: /` (RFC 9309 group), and the retained capture was taken under it; needs the owner's call or the Legislative Service Bureau's permission |

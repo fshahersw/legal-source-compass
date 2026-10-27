@@ -182,7 +182,7 @@ def parse_chapter(raw: bytes):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
-    index = ctx.get(INDEX_URL)
+    index = ctx.get(INDEX_URL, fallback_fresh=True)  # the 2026-10-06 capture kept chapter files, not the ORS page
     page = lib.norm_ws(lib.html_text(index.body))
     m = re.search(r"The 20\d\d Edition does not include changes to the law .*?for the most up-to-date version of the "
                   r"law\.", page)

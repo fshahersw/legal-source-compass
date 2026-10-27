@@ -228,3 +228,13 @@ norm_vectors.json, test_lib.py, test_states.py, state-law-contract.test.mjs, cer
 dc, de, fl, ga, hi, ia, id, il, in, ks, ky, la, ma, md, me}.py`. App: `src/lib/law/stateLaw{Contract,.server,
 .functions}.ts`, `src/components/law/{InForceCodeBrowser, CodeCurrencyTable}.tsx`, `src/routes/law_.codes.{$state,
 index}.tsx`.
+
+## Release 2026-10-27 (state-codes-official-unprojected)
+
+Owner decision 2026-10-27: IL, KS, MA and MD were planned as fresh crawls and never run (no policy hold); they are
+released (IL/KS/MA from the retained captures with fresh reads for pages the capture lacks, MD fresh). IL prints two
+texts of a section in one table where a Public Act was held unconstitutional (735 ILCS 5/13-213 and 59 more in the
+2026-10 capture): `il.py` emits each as `@1`/`@2` with its verbatim "(Text of Section WITH/WITHOUT …)" label; the
+WITH text is `not_recorded`. CO stays **held** under the statute source rule: olls.info is on commercial shared hosting,
+no General Assembly page links it, and leg.colorado.gov links only LexisNexis for current text; the Revisor of Statutes
+(OLLS) can confirm whether it is theirs. Packet: `private/acq/release-state-codes-official-unprojected/`.

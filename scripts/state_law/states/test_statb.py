@@ -436,6 +436,122 @@ class OregonChapterList(unittest.TestCase):
         self.assertEqual(orx.chapter_url("72A"), "https://www.oregonlegislature.gov/bills_laws/ors/ors072a.html")
 
 
+class _Retained:
+    """In-memory RetainedStore: url -> bytes (what the owner-accepted capture holds)."""
+
+    def __init__(self, pages: dict):
+        self.pages = pages
+        self.by_url = {u: {"url": u, "sha256": sb.sha256(b), "retrieved_at": "2026-10-07T00:00:00Z"}
+                       for u, b in pages.items()}
+
+    def urls(self, prefix=""):
+        return sorted(u for u in self.pages if u.startswith(prefix))
+
+    def prefetch(self, urls):
+        list(urls)
+
+    def get(self, url):
+        body = self.pages[url]
+        return lib.Fetched(url=url, final_url=url, status=200, headers={}, body=body, sha256=sb.sha256(body),
+                           bytes=len(body), retrieved_at="2026-10-07T00:00:00Z", method="retained_original")
+
+
+class NewYork(unittest.TestCase):
+    """Markup of the OpenLegislation pages in the 2026-10-06/07 capture (scripts/legal/state-codes/ny/fixtures)."""
+    LAWS = "https://www.nysenate.gov/legislation/laws/"
+    FIXTURE = HERE.parents[1] / "legal" / "state-codes" / "ny" / "fixtures" / "abp-101.html"
+
+    @staticmethod
+    def container(headline, short, items):
+        lis = "".join(f'<li class="nys-openleg-result-item-container"><a href="{h}">{label}</a></li>' for h, label in items)
+        head = (f'<h2 class="nys-openleg-result-title-headline">{headline}</h2>'
+                f'<h3 class="nys-openleg-result-title-short">{short}</h3>') if headline else ""
+        return (f'<html><body><div class="nys-openleg-statute-container">{head}'
+                f'<div class="nys-openleg-history-published">Viewing most recent revision (from 2020-01-03)</div>'
+                f'<ul class="nys-openleg-items-container">{lis}</ul></div></body></html>').encode()
+
+    @staticmethod
+    def leaf(headline, short, text):
+        return (f'<html><body><div class="nys-openleg-history-published">Viewing most recent revision (from '
+                f'2014-09-22)</div><h2 class="nys-openleg-result-title-headline">{headline}</h2>'
+                f'<h3 class="nys-openleg-result-title-short">{short}</h3><div class="nys-openleg-content-container">'
+                f'<ul class="nys-openleg-items-container"></ul><div class="nys-openleg-result-text">{text}</div></div>'
+                f'</body></html>').encode()
+
+    def pages(self):
+        L = self.LAWS
+        return {
+            L + "CONSOLIDATED": self.container(None, None, [("/legislation/laws/ABP/", "ABP Abandoned Property")]),
+            L + "ABP": self.container(None, None, [("/legislation/laws/ABP/A1", "ARTICLE 1 Short Title; Definitions")]),
+            L + "ABP/A1": self.container("ARTICLE 1", "Short Title; Definitions",
+                                         [("/legislation/laws/ABP/101", "SECTION 101 Short title"),
+                                          ("/legislation/laws/ABP/102", "SECTION 102 Definitions"),
+                                          ("https://www.nysenate.gov/legislation/laws/ABP/103#x", "SECTION 103 Report")]),
+            L + "ABP/101": self.FIXTURE.read_bytes(),
+            # the plain URL kept a stale not-found answer; the ?view=all copy prints the page
+            L + "ABP/103": b'<html><body><div class="nys-openleg-statute-container">The requested entry could not be '
+                           b'found.</div></body></html>',
+            L + "ABP/103?view=all": self.leaf("SECTION 103", "Report", "  &#167; 103. Report. Repealed.<br>"),
+        }
+
+    def test_page_and_text_split(self):
+        ny = load("ny")
+        page = ny.parse_page(self.FIXTURE.read_bytes(), self.LAWS + "ABP/101")
+        self.assertTrue(page["leaf"])
+        self.assertEqual((page["number"], page["heading"]), ("101", "Short title"))
+        self.assertEqual(page["text"], '§ 101. Short title. This chapter shall be known and may be cited as\nthe '
+                                       '"Abandoned Property Law."')
+        self.assertEqual(ny.split_text(page["text"], "101", "Short title"),
+                         ("101", 'This chapter shall be known and may be cited as\nthe "Abandoned Property Law."'))
+        self.assertEqual(ny.split_text("Rule 3211. Motion to dismiss. (a) Motion to dismiss cause of action.", "3211",
+                                       "Motion to dismiss"),
+                         ("3211", "(a) Motion to dismiss cause of action."))
+        self.assertEqual(ny.split_text("§ 2-a. Definitions. As used", "2-A", "Definitions"), ("2-a", "As used"))
+        # a prefix whose number is not the page's number is text, never stripped
+        self.assertEqual(ny.split_text("§ 7. Other. Text", "8", "Other"), (None, "§ 7. Other. Text"))
+
+    def test_retained_walk(self):
+        import tempfile
+        from state_law import verify as verify_mod
+        ny = load("ny")
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = pathlib.Path(tmp)
+            ctx = lib.RunContext(ny.META, tmp / "out", tmp / "raw", sample=1000, log=lambda m: None,
+                                 today=dt.date(2026, 10, 27))
+            ctx.retained = _Retained(self.pages())
+            ny.acquire(ctx)
+            ctx.finish()
+            rows = list(lib.read_jsonl(ctx.dir / "sections.jsonl.gz"))
+            self.assertEqual([r["section_id"] for r in rows], ["NY:ABP:101", "NY:ABP:103"])
+            first, second = rows
+            self.assertEqual(first["citation"], "N.Y. Abandoned Property Law § 101")
+            self.assertEqual(first["heading"], "Short title")
+            self.assertEqual(first["text"], 'This chapter shall be known and may be cited as\nthe "Abandoned Property Law."')
+            self.assertEqual(first["path"][0]["level"], "article")
+            self.assertEqual(first["path"][0]["number"], "1")
+            self.assertEqual(first["source"]["method"], "retained_original")
+            self.assertEqual((second["status"], second["status_marker"]), ("repealed", "Repealed."))
+            self.assertTrue(second["source"]["url"].endswith("?view=all"))
+            rejects = list(lib.read_jsonl(ctx.dir / "rejects.jsonl.gz"))
+            self.assertEqual(len(rejects), 1)
+            self.assertTrue(rejects[0]["reason"].startswith("unavailable: https://www.nysenate.gov/legislation/laws/ABP/102"))
+            self.assertTrue(verify_mod.verify(ctx.dir, tmp / "raw")["ok"])
+
+    def test_never_live(self):
+        with self.assertRaises(lib.Blocked):
+            load("ny").acquire(_Ctx())
+
+    def test_citations(self):
+        codes = load("ny").META.codes
+        for cite, hit in (("N.Y. C.P.L.R. 214", ("CVP", "214")), ("CPLR 3211", ("CVP", "3211")),
+                          ("N.Y. Gen. Bus. Law § 349", ("GBS", "349")), ("GBL § 349", ("GBS", "349")),
+                          ("N.Y. Penal Law § 120.05", ("PEN", "120.05")), ("EPTL 5-4.1", ("EPT", "5-4.1")),
+                          ("N.Y. U.C.C. Law § 2-725", ("UCC", "2-725")),
+                          ("N.Y. General Obligations Law § 15-108", ("GOB", "15-108"))):
+            self.assertIn(hit, lib.apply_patterns(codes, cite), cite)
+        self.assertEqual(lib.apply_patterns(codes, "U.C.C. § 2-725"), [])
+
+
 class Metadata(unittest.TestCase):
     def test_all_modules_validate(self):
         for state in MINE:
