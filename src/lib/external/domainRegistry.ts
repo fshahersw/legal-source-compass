@@ -212,6 +212,16 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
     description:
       "Opinion bodies, federal provisions, research routes, access gaps and legislative-status evidence retain their separate source kinds. A research route or gap is not a case holding, binding-authority finding or activated calculator rule.",
   },
+  agency_safety_openfda_device_recalls: {
+    unit: "FDA product recall numbers",
+    description:
+      "One record per FDA product recall number; several products can share one recall event, so counts are products, not events. The cause category is FDA's, not a defect, injury or liability finding, and the initiation date is the firm's, which can precede public notice.",
+  },
+  agency_safety_fda_warning_letters_index: {
+    unit: "FDA warning-letter pages",
+    description:
+      "Every letter listed in FDA's warning-letter table at capture (posted from 2021). Posted and issue dates differ; a warning letter states FDA's allegations and is not a final finding. FDA's table publishes no FEI number.",
+  },
   agency_safety_openfda_device_classification_20261002: {
     unit: "FDA product categories",
     description:

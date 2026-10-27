@@ -178,6 +178,7 @@ const EXPLICIT: Readonly<Record<string, CategoryId>> = {
   eousa_caseload_annual: "courts",
   enforcement_data_sources_catalog: "enforcement",
   agency_safety_fda_warning_letters: "enforcement",
+  agency_safety_fda_warning_letters_index: "enforcement",
   agency_safety_openfda_crl: "enforcement",
   npdb_adverse_actions: "enforcement",
   npdb_state_board_compliance: "enforcement",

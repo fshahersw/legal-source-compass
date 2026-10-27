@@ -65,6 +65,14 @@ const PAGE = 1000;
 export const datasetOf = (kind: Kind) => `agency_safety_openfda_${kind}_enforcement`;
 export const sourceOf = (kind: Kind) => `openfda_${kind}_enforcement`;
 
+/**
+ * The record's official source URL: the openFDA query for its own recall number. The same string is written to
+ * stored rows by database/contracts/fda-source-url-backfill-v1.sql, so a refresh compares equal to a backfilled row.
+ * Only recall numbers that pass isRecallNumber become rows, and those hold URL-safe characters only.
+ */
+export const enforcementSourceUrl = (kind: Kind, recallNumber: string) =>
+  `${API}/${kind}/enforcement.json?search=recall_number:%22${recallNumber}%22`;
+
 /** The qualification each dataset carries; the last sentence names how the rows were read. */
 export function qualification(kind: Kind, via: "bulk" | "api"): string {
   const codeInfo =
@@ -216,7 +224,7 @@ export function enforcementRow(kind: Kind, rec: JsonObject, cap: Capture): Corpu
     state: state ?? "",
     county_geoids: [],
     title,
-    source_url: "",
+    source_url: enforcementSourceUrl(kind, number),
     item: common,
     detail,
     text: textParts(rec).join(" "),
