@@ -66,6 +66,20 @@ export function suggestionsFor(path: string): string[] {
       "What drove the unusual months on this page?",
       "How are recall themes classified here?",
     ];
+  if (path.startsWith("/courts/analytics"))
+    return [
+      "Which districts hold most pending MDL actions, and how has that changed since FY2005?",
+      "Which MDL venues have the oldest civil dockets?",
+      "Compare opposition deadlines and page limits in the largest MDL districts",
+      "How is the jury-eligible population on this page estimated?",
+    ];
+  if (path.startsWith("/courts/vacancies"))
+    return [
+      "Which MDL districts have open or announced judgeship vacancies?",
+      "Which departing judges still hold MDLs?",
+      "How long have vacancies in MDL districts been open?",
+      "How are vacancies linked to judges on this page?",
+    ];
   if (/^\/courts\/[^/]+$/.test(path))
     return [
       "Summarize this court: caseload, MDLs and judges",

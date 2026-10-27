@@ -1,7 +1,28 @@
 import { describe, expect, it } from "vitest";
 import type { Citator } from "@/lib/external/caselaw";
 import { citeLine, courtBars, decadeBars, fmtDay, fmtInt, sortCiting } from "./caseFormat";
-import { liveTier, normalizeCaseSearch } from "./caseSearch";
+import { coverageLines, liveTier, normalizeCaseSearch } from "./caseSearch";
+
+describe("coverageLines", () => {
+  it("lists every court level: every word, a prefix, or not indexed", () => {
+    // Shape of caselaw_text_coverage_v2 (opinion counts from the brief: SCOTUS full, district first 1,000 words).
+    const lines = coverageLines(
+      [
+        { tier: 1, scope: "full", opinions: 521822, prefixWords: null },
+        { tier: 5, scope: "prefix", opinions: 1270000, prefixWords: 1000 },
+        { tier: 3, scope: "prefix", opinions: 0, prefixWords: 1000 },
+      ],
+      [1, 2, 3, 5],
+    );
+    expect(lines.map((l) => [l.tier, l.level, l.text])).toEqual([
+      [1, "full", "Every word"],
+      [2, "none", "Not indexed"],
+      [3, "none", "Not indexed"],
+      [5, "prefix", "First 1,000 words of each opinion"],
+    ]);
+    expect(lines[0]?.opinions).toBe(521822);
+  });
+});
 
 describe("normalizeCaseSearch", () => {
   it("keeps valid values and drops the rest", () => {
