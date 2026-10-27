@@ -68,17 +68,19 @@ export function NhtsaPipelineSection() {
     : q.isError
       ? ({ kind: "error", onRetry: () => void q.refetch() } as const)
       : ({ kind: "ready" } as const);
+  // Time to recall is a measure for PEs and EAs, which precede the recall; recall queries and petitions often follow it.
   const dumbbell = (d?.conversion ?? [])
-    .filter((c) => c.matched >= 5)
+    .filter(
+      (c) =>
+        (c.type === "Preliminary evaluation" || c.type === "Engineering analysis") && c.timed >= 5,
+    )
     .map((c) => ({
       id: c.type,
       label: SHORT_TYPE[c.type] ?? c.type,
       a: c.p25Days,
       b: c.p75Days,
       note:
-        c.medianDays != null
-          ? `median ${days(c.medianDays)} · ${fmt(c.matched)} recalls`
-          : undefined,
+        c.medianDays != null ? `median ${days(c.medianDays)} · ${fmt(c.timed)} recalls` : undefined,
     }));
   const context = d
     ? buildSectionContext({
@@ -112,10 +114,6 @@ export function NhtsaPipelineSection() {
             label: "Median days from opening to recall, EA",
             value: ea?.medianDays ?? null,
             unit: "days",
-          },
-          {
-            label: "ODI-influenced recall campaigns, latest 12 months",
-            value: d.odiCampaignsLast12,
           },
           ...years.slice(-5).map((y) => ({
             label: "ODI-influenced recall campaigns",
@@ -172,7 +170,7 @@ export function NhtsaPipelineSection() {
         <ChartCard
           variant="editorial"
           title="Time from opening a probe to the recall it cites"
-          subtitle="Middle half of probes (25th to 75th percentile), days · probes opened since 2010"
+          subtitle="Middle half of PEs and EAs (25th to 75th percentile), days · probes opened since 2010"
           status={
             dumbbell.length
               ? status
@@ -185,9 +183,18 @@ export function NhtsaPipelineSection() {
             <ul className="list-disc space-y-1 pl-4">
               <li>
                 A probe is linked to a recall only when its record cites an exact campaign number
-                (NNVNNN000) that exists in the recall data, which starts in 2010.
+                that exists in the recall data, which starts in 2010. Both NHTSA forms are accepted:
+                NNVNNN000 and the short NNVNNN (the same id).
               </li>
-              <li>Days run from the probe&apos;s opening date to the recall&apos;s report date.</li>
+              <li>
+                Days run from the probe&apos;s opening date to the recall&apos;s report date.
+                Recalls dated before the probe opened are left out of the days and counted apart in
+                the table.
+              </li>
+              <li>
+                The chart shows PEs and EAs only: recall queries and petitions often review a recall
+                that came first.
+              </li>
               <li>An open investigation is not a defect finding.</li>
             </ul>
           }
@@ -198,6 +205,7 @@ export function NhtsaPipelineSection() {
               { label: "Closed", align: "right" },
               { label: "Cite a campaign", align: "right" },
               { label: "Linked to a recall", align: "right" },
+              { label: "Recall before opening", align: "right" },
               { label: "Median days", align: "right" },
               { label: "25th pct", align: "right" },
               { label: "75th pct", align: "right" },
@@ -209,6 +217,7 @@ export function NhtsaPipelineSection() {
                 c.closed,
                 c.citesRecall,
                 c.matched,
+                c.recallBeforeOpening,
                 c.medianDays ?? "Not recorded",
                 c.p25Days ?? "Not recorded",
                 c.p75Days ?? "Not recorded",

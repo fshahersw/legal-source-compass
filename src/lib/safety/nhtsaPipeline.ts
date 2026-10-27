@@ -5,8 +5,10 @@
  *
  * Accuracy: an open investigation is not a defect finding. Rows NHTSA still marks "Open" but opened before 2015
  * (legacy action numbers such as ID92001, SQ, TA) or with no opening date or manufacturer are kept apart as "legacy" and
- * "incomplete", never counted as current probes. A recall link needs the exact NNXNNN000 campaign number on the
- * investigation and the same id in the recall dataset (which starts in 2010).
+ * "incomplete", never counted as current probes. A recall link needs the exact campaign number on the investigation
+ * (NNXNNN000, or NHTSA's short form NNXNNN, which is the same id) and that id in the recall dataset (which starts in
+ * 2010). Days to recall count only recalls dated on or after the probe's opening; earlier recalls (the one a recall
+ * query reviews) are counted apart.
  */
 
 export type InvestigationRow = {
@@ -46,6 +48,10 @@ export type ConversionRow = {
   closed: number;
   citesRecall: number;
   matched: number;
+  /** Linked probes whose recall is dated before the probe opened (left out of the day counts). */
+  recallBeforeOpening: number;
+  /** Linked probes with a recall on or after the opening date: the base of the day quantiles. */
+  timed: number;
   medianDays: number | null;
   p25Days: number | null;
   p75Days: number | null;
@@ -72,6 +78,14 @@ export type NhtsaPipelinePayload = {
 };
 
 export const CAMPAIGN = /^\d{2}[VEITC]\d{3}000$/;
+/** NHTSA's short campaign form ("17V189"), the same exact identifier as "17V189000". */
+const SHORT_CAMPAIGN = /^\d{2}[VEITC]\d{3}$/;
+
+/** The exact NNXNNN000 campaign id for a recall cell, accepting NHTSA's short form; other text is returned trimmed. */
+export function campaignId(cell: string | null | undefined): string {
+  const c = (cell ?? "").trim().toUpperCase();
+  return SHORT_CAMPAIGN.test(c) ? `${c}000` : c;
+}
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const day = (v: string | null | undefined) =>
   typeof v === "string" && DAY.test(v.slice(0, 10)) ? v.slice(0, 10) : null;
@@ -127,13 +141,13 @@ export function buildNhtsaPipeline(
   const openCounts: Record<ProbeStatus, number> = { current: 0, legacy: 0, incomplete: 0 };
   const conv = new Map<
     string,
-    { closed: number; cites: number; matched: number; days: number[] }
+    { closed: number; cites: number; matched: number; before: number; days: number[] }
   >();
   let citing = 0;
   let matched = 0;
   for (const i of investigations) {
     const type = (i.type ?? "").trim() || "Not recorded";
-    const campaign = (i.recall ?? "").trim();
+    const campaign = campaignId(i.recall);
     const cites = CAMPAIGN.test(campaign);
     const link = cites && recallDate.has(campaign);
     if (cites) citing += 1;
@@ -156,13 +170,18 @@ export function buildNhtsaPipeline(
     const opened = day(i.opened);
     const closed = day(i.closed);
     if (!opened || !closed || opened < LINK_FROM || !TYPE_ORDER.includes(type)) continue;
-    const c = conv.get(type) ?? { closed: 0, cites: 0, matched: 0, days: [] };
+    const c = conv.get(type) ?? { closed: 0, cites: 0, matched: 0, before: 0, days: [] };
     c.closed += 1;
     if (cites) c.cites += 1;
     if (link) {
       c.matched += 1;
       const rd = recallDate.get(campaign);
-      if (rd) c.days.push(daysBetween(opened, rd));
+      if (rd) {
+        const gap = daysBetween(opened, rd);
+        // A recall dated before the probe opened is the recall the probe reviews, not a time to recall.
+        if (gap < 0) c.before += 1;
+        else c.days.push(gap);
+      }
     }
     conv.set(type, c);
   }
@@ -174,6 +193,8 @@ export function buildNhtsaPipeline(
       closed: c.closed,
       citesRecall: c.cites,
       matched: c.matched,
+      recallBeforeOpening: c.before,
+      timed: sorted.length,
       medianDays: quantile(sorted, 0.5),
       p25Days: quantile(sorted, 0.25),
       p75Days: quantile(sorted, 0.75),

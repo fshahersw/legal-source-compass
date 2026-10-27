@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildNhtsaPipeline,
+  campaignId,
   openProbesByManufacturer,
   probeStatus,
   quantile,
@@ -70,6 +71,36 @@ describe("buildNhtsaPipeline", () => {
     expect(p.recallYears.find((y) => y.year === "2024")!.doNotDrive).toBe(1);
     expect(p.odiVehiclesLast12).toBe(443899);
     expect(openProbesByManufacturer(p.open).get("Nissan North America, Inc.")).toBe(1);
+  });
+
+  it("accepts NHTSA's short campaign form as the same exact id", () => {
+    expect(campaignId("17V189")).toBe("17V189000");
+    expect(campaignId(" 17v189 ")).toBe("17V189000");
+    expect(campaignId("17V189000")).toBe("17V189000");
+    expect(campaignId("17V18")).toBe("17V18");
+    const p = buildNhtsaPipeline(
+      [
+        inv({ id: "PE24001", recall: "25V437" }), // short form of a recall in the data
+        inv({ id: "PE24002", recall: "25V999" }), // short form, absent from the recall data
+      ],
+      [rec({})],
+      "2026-10-27T00:00:00Z",
+    );
+    const pe = p.conversion.find((c) => c.type === "Preliminary evaluation")!;
+    expect(pe).toMatchObject({ closed: 2, citesRecall: 2, matched: 1, medianDays: 534 });
+  });
+
+  it("counts a recall dated before the probe opened apart from the days to recall", () => {
+    const p = buildNhtsaPipeline(
+      [
+        inv({ id: "RQ25001", type: "Recall query", opened: "2025-08-01", recall: "25V437000" }),
+        inv({ id: "RQ24001", type: "Recall query", opened: "2025-01-01", recall: "25V437000" }),
+      ],
+      [rec({})],
+      "2026-10-27T00:00:00Z",
+    );
+    const rq = p.conversion.find((c) => c.type === "Recall query")!;
+    expect(rq).toMatchObject({ matched: 2, recallBeforeOpening: 1, timed: 1, medianDays: 177 });
   });
 });
 
