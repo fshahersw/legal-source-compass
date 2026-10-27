@@ -12,12 +12,16 @@ export function nhtsaCampaigns(ids: readonly string[]): string[] {
 }
 
 /** The complaint radar has data to draw (the RPC is applied and returned its windows). */
-export function hasComplaintWindows(w: ComplaintWindows | null | undefined): w is ComplaintWindows {
+export function hasComplaintWindows(
+  w: ComplaintWindows | null | undefined,
+): w is ComplaintWindows & { totals: ComplaintCounts; as_of: string } {
   return !!(w && w.totals && w.as_of);
 }
 
 /** The silica tracker has data to draw (the RPC is applied and returned its last-12-month block). */
-export function hasSilica(s: OshaSilica | null | undefined): s is OshaSilica {
+export function hasSilica(
+  s: OshaSilica | null | undefined,
+): s is OshaSilica & { last12: NonNullable<OshaSilica["last12"]>; to: string } {
   return !!(s && s.last12 && s.to);
 }
 
