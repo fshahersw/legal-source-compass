@@ -3,7 +3,7 @@
 For each unique document URL found by crawl_courts.py:
   download (robots.txt obeyed; one request per second per court site, or the site's Crawl-delay) -> SHA-256 and size ->
   upload unchanged to corpus-originals at judge_practices/<retrieval date>/<sha256>.<ext> with whole-object SHA-256 readback
-  (scripts/enrichment/caselaw/store.py pattern) -> extract plain text (extract_text.py) -> delete the local copy.
+  (scripts/enrichment/caselaw/store.py pattern) -> extract plain text (extract_text.py), kept as published -> delete the local copy.
 The local copy exists only between download and the verified upload; a failed upload leaves a record with the error and no local file.
 One JSON record per URL is written to private/build/judge_practices/docs/<sha1(url)[:20]>.json and is the resume point.
 
@@ -161,10 +161,10 @@ def process(job: dict, store, upload: bool, stop_at: int) -> dict:
             except Exception as e:  # noqa: BLE001 - recorded; the document stays unarchived
                 rec["storage_error"] = f"{type(e).__name__}: {str(e)[:200]}"
         ex = xt.extract(path, detected)
-        text, counts = xt.redact(ex.text) if ex.text else ("", {"emails": 0, "phones": 0, "staff_lines": 0})
-        capped, truncated, total = xt.cap(text)
+        # the text as the court published it (contact details included: owner decision 2026-10-27); only the cap shortens it
+        capped, truncated, total = xt.cap(ex.text or "")
         rec.update(text=capped, text_chars=len(capped), text_chars_total=total, text_truncated=truncated, text_method=ex.method, pages=ex.pages,
-                   text_error=ex.error, redactions=counts, text_sha256=hashlib.sha256(capped.encode()).hexdigest() if capped else None)
+                   text_error=ex.error, redactions=None, text_sha256=hashlib.sha256(capped.encode()).hexdigest() if capped else None)
     finally:
         if os.path.exists(path):
             os.remove(path)
@@ -248,10 +248,9 @@ def process_pagetext(job: dict, store, upload: bool, manifest: dict[str, dict]) 
             except Exception as e:  # noqa: BLE001
                 rec["storage_error"] = f"{type(e).__name__}: {str(e)[:200]}"
         ex = xt.html_text(body)
-        text, counts = xt.redact_page(ex.text)
-        capped, truncated, total = xt.cap(text)
+        capped, truncated, total = xt.cap(ex.text)
         rec.update(text=capped, text_chars=len(capped), text_chars_total=total, text_truncated=truncated,
-                   text_method=ex.method + "; staff contact blocks in the page header omitted", pages=None, text_error=None, redactions=counts,
+                   text_method=ex.method, pages=None, text_error=None, redactions=None,
                    text_sha256=hashlib.sha256(capped.encode()).hexdigest() if capped else None)
     finally:
         if os.path.exists(path):
