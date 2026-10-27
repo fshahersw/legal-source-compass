@@ -12,8 +12,12 @@ from corpus_records
 where dataset = 'sw_docket_entries_v1'
 group by 1 order by 1;
 
--- 2. No docket entry is published twice: one numbered entry per (MDL, entry number) across providers. Expect 0 rows,
---    except the CourtListener-internal duplicates that existed before this packet (compare with the pre-apply run).
+-- 2. Duplicate entry numbers per (MDL, entry number) across providers. The packet must not add a group: compare the group count with the
+--    pre-apply run. Baseline before the packet (2026-10-27): 1,007 groups / 2,687 rows, of which 277 groups come from the earlier DocketBird
+--    projection of 2800/2921 (one row per document: attachments "-NNNNN-NNN" and text entries "-NNNNN-tNNN" repeat the parent entry number)
+--    and 730 from CourtListener (several RECAP rows for one entry number). The de-dockets DocketBird rows are one row per entry (attachments
+--    folded in, text entries unnumbered with follows_entry), so they add none. (The query below shows the first 100 groups; count them with
+--    select count(*) from (<query without limit>) g.)
 select filters->>'mdl' as mdl, (item->'cells'->>'entry_number')::int as entry_number, count(*) as copies,
        string_agg(item->'cells'->>'provider' || ':' || (item->'cells'->>'native_entry_id'), ', ') as rows
 from corpus_records
@@ -32,6 +36,21 @@ left join (select filters->>'mdl' as mdl, count(*) as rows, count(*) filter (whe
            from corpus_records where dataset = 'sw_docket_entries_v1' group by 1) e on e.mdl = m.item->'cells'->>'mdl_number'
 where m.dataset = 'sw_matters_v1'
 order by m.id;
+
+-- 4b. Coverage carried into the matters: every capture this run wrote is partial and names its refresh run (expect one row per patched
+--     provider capture, complete = false, provider_total null; DocketBird captures list gaps and partial months).
+select m.id, x->>'provider' as provider, x->>'captured' as captured, x->>'complete' as complete, x->>'provider_total' as provider_total,
+       x->'coverage'->'gaps' as gaps, x->'coverage'->'partial_months' as partial_months, x->>'observed_at' as observed_at
+from corpus_records m, jsonb_array_elements(coalesce(m.detail->'registry'->'entries', '[]'::jsonb)) x
+where m.dataset = 'sw_matters_v1' and x->>'refresh_run' = '<run id from the packet manifest>'
+order by 1, 2;
+
+-- 4c. Availability is consistent with the document counts (expect 0).
+select count(*) from corpus_records
+where dataset = 'sw_docket_entries_v1' and filters->>'provider' = 'docketbird' and filters->>'native_id' !~ '-\d{3}$|-t\d{3}$'
+  and ((item->'cells'->>'availability' = 'no_documents' and (item->'cells'->>'documents')::int > 0)
+    or (item->'cells'->>'availability' = 'includes_sealed' and coalesce((item->'cells'->>'documents_sealed')::int, 0) = 0)
+    or (item->'cells'->>'availability' = 'provider_pdf' and (item->'cells'->>'documents')::int > 0 and (item->'cells'->>'documents_available')::int = 0));
 
 -- 5. No signed provider link or account id was published.
 select count(*) from corpus_records
