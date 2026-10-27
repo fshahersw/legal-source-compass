@@ -189,6 +189,10 @@ def main() -> int:
     if manifest["records"] != manifest["entities_read"]:
         raise SystemExit("record count differs from the entities read; nothing published")
     if args.publish:
+        # Lead decision 2026-10-27: this release duplicates fjc_idb_mdl_cases (release/fjc-idb-case-rows-staged, published
+        # 2026-10-27 from the same 405,176 corpus_ingest rows, with the stricter court+number docket rule and the
+        # superseded-copy handling this branch's review asked for). Publishing both would put every case in two datasets.
+        raise SystemExit("superseded by dataset fjc_idb_mdl_cases (release/fjc-idb-case-rows-staged); not published")
         writer.publish_jsonl(cl.DATASET, cl.LABEL, os.path.join(ROOT, manifest["file"]), listing_block=listing, summary=summary)
     return 0
 

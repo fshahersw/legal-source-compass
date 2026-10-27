@@ -1,5 +1,9 @@
 -- fjc_idb_civil_cases v1: case-level FJC Integrated Database civil records (release fjc-idb-case-level, 2026-10-27).
 --
+-- NOT PUBLISHED (lead decision 2026-10-27): duplicate of dataset fjc_idb_mdl_cases (release/fjc-idb-case-rows-staged), built
+-- from the same 405,176 corpus_ingest rows and published instead. Its review findings (superseded FJC-file copies, docket
+-- links on the stale copy, 'set local' outside a transaction) were fixed there. The --publish flag now refuses.
+--
 -- No DDL. The dataset is published by scripts/enrichment/fjc_idb/build_fjc_idb_cases.py --publish (corpus_writer.publish_jsonl),
 -- run by the lead. This file holds the read-only dry-run and verification queries; rollback is fjc-idb-civil-cases-v1.rollback.sql.
 --
