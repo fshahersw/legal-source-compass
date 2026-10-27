@@ -5,6 +5,7 @@ import {
   BookOpen,
   CalendarDays,
   Check,
+  Download,
   Printer,
   FileCheck2,
   RotateCcw,
@@ -29,7 +30,12 @@ import {
   type LimitationRule,
   type LimitationsSnapshot,
 } from "@/lib/limitations/types";
-import { assessDeadline, type DeadlineAssessment } from "@/lib/limitations/deadlineAssessment";
+import {
+  assessDeadline,
+  createAssessmentExport,
+  type DeadlineAssessment,
+} from "@/lib/limitations/deadlineAssessment";
+import { downloadText } from "@/lib/atlas/exports";
 import {
   buildReviewInventory,
   reviewContextKey,
@@ -309,6 +315,24 @@ export function ReviewedCalculator({
     const assessment = assessDeadline(snapshot, input, currentReview, { sourceRefreshFailed });
     setResultRecord({ contextKey, decisionsKey: JSON.stringify(decisions), assessment });
     requestAnimationFrame(() => window.print());
+  };
+  /** Explicit user export: re-evaluated on export, with the provenance of accepted public dates. */
+  const downloadRecord = () => {
+    const record = createAssessmentExport(
+      snapshot,
+      input,
+      currentReview,
+      new Date().toISOString(),
+      {
+        sourceRefreshFailed,
+        acceptedPublicDates: accepted,
+      },
+    );
+    downloadText(
+      "time-limits-assessment.json",
+      "application/json",
+      JSON.stringify(record, null, 2),
+    );
   };
   return (
     <div data-testid="guided-calculator" className="space-y-3">
@@ -941,6 +965,10 @@ export function ReviewedCalculator({
               <Button className="mt-4 w-full" variant="outline" size="sm" onClick={printReview}>
                 <Printer className="mr-2 h-4 w-4" aria-hidden="true" />
                 Print assessment
+              </Button>
+              <Button className="mt-2 w-full" variant="ghost" size="sm" onClick={downloadRecord}>
+                <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+                Download record (JSON)
               </Button>
             </div>
           )}

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { downloadText } from "@/lib/atlas/exports";
 import { STATES } from "@/lib/corpus/geo";
 import { baselineRule, periodLabel, sourceReviewDate } from "@/lib/limitations/engine";
 import {
@@ -242,6 +243,20 @@ export function GuidedCalculator({
       requestAnimationFrame(() => window.print());
     } catch {
       setUiError("The assessment could not be printed. Recheck the sources and try again.");
+    }
+  }
+  /** Explicit user export: the revalidated record, including the provenance of accepted public dates. */
+  function downloadRecord() {
+    if (!result) return;
+    try {
+      const record = assessmentExport(snapshot, input, review, result, accepted);
+      downloadText(
+        "time-limits-assessment.json",
+        "application/json",
+        JSON.stringify({ exportedAt: new Date().toISOString(), ...record }, null, 2),
+      );
+    } catch {
+      setUiError("The record could not be exported. Recheck the sources and try again.");
     }
   }
   const evidence = (
@@ -959,6 +974,9 @@ export function GuidedCalculator({
                   </details>
                   <div className="flex flex-wrap gap-2">
                     <Button onClick={printAssessment}>Print assessment</Button>
+                    <Button variant="outline" onClick={downloadRecord}>
+                      Download record (JSON)
+                    </Button>
                     <Button variant="outline" onClick={() => go(1)}>
                       Edit exceptions
                     </Button>
