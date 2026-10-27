@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import {
   getJudgeCourtListener,
+  serviceRunsPast,
   type Crosswalk,
   type CrosswalkTier,
   type JudgeActivity,
@@ -11,21 +12,22 @@ import { TrendGrid } from "@/components/trends/ProfileTrend";
 import { JudgeClYearCard } from "./JudgeTrendCards";
 
 const TIER_TEXT: Record<CrosswalkTier, string> = {
-  exact_id: "Exact identifier: the federal judicial id on this record equals the case-law person's federal judicial id",
+  exact_id:
+    "Exact identifier: the federal judicial id on this record equals the case-law person's federal judicial id",
   parent_profile_link:
     "Exact identifier through the FJC-backed directory record this profile belongs to",
   exact_name_same_court:
-    "Exact full name and a the source judicial position at a court on this record; the only such person",
+    "Exact full name and a judicial position in the case-law people database at a court on this record; the only such person",
   exact_name_same_state:
-    "Exact full name and a the source judicial position in this state; the only such person there",
+    "Exact full name and a judicial position in the case-law people database in this state; the only such person there",
   compatible_name_same_court:
     "Possible match: same first and last name at a court on this record, middle name written differently",
-  ambiguous: "Several the source people fit this name and court, so none is linked",
+  ambiguous: "Several people in the case-law database fit this name and court, so none is linked",
   fjc_conflict: "The FJC ids on the two sides disagree, so no person is linked",
   date_conflict: "The service dates on the two sides do not overlap, so no person is linked",
-  withheld_for_review: "The source bridge for this record is withheld for review",
+  withheld_for_review: "The link for this record is withheld for review",
   no_cl_person_for_fjc_id:
-    "the source has no person with this record's federal judicial id, and no exact name match was found",
+    "The case-law people database has no person with this record's federal judicial id, and no exact name match was found",
   not_found:
     "The judicial people database has no judicial position for this name at the recorded courts or state",
 };
@@ -40,6 +42,17 @@ const KPI_COLS: Record<number, string> = {
   5: "sm:grid-cols-3 lg:grid-cols-5",
   6: "sm:grid-cols-3 lg:grid-cols-6",
 };
+
+/** True when the last attributed opinion is older than last year. */
+const attributionStops = (yr: number | null): yr is number =>
+  yr !== null && yr < new Date().getUTCFullYear() - 1;
+
+/**
+ * True only when the series stops while the judge's recorded service (matched positions) runs past the following
+ * year: then the stop is a gap in attribution. A judge who left the bench gets a neutral "last attributed" line.
+ */
+const attributionGap = (c: Crosswalk, yr: number | null) =>
+  attributionStops(yr) && serviceRunsPast(c.positions, yr + 1);
 
 const fmt = (n: number | null | undefined) =>
   n === null || n === undefined ? "Not recorded" : n.toLocaleString("en-US");
@@ -105,7 +118,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
       "Opinions authored",
       fmt(o.authored),
       o.firstFiled && o.lastFiled
-        ? `${o.firstFiled.slice(0, 4)}–${o.lastFiled.slice(0, 4)}`
+        ? `${o.firstFiled.slice(0, 4)}–${o.lastFiled.slice(0, 4)}${attributionGap(c, o.lastAttributedYear) ? " (attribution ends)" : ""}`
         : undefined,
     ]);
     if (o.timesCitedTotal !== null)
@@ -173,6 +186,17 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
               />
             ) : null}
           </TrendGrid>
+          {o?.byYear.length && attributionGap(c, o.lastAttributedYear) ? (
+            <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
+              Attributed opinions end in {o.lastAttributedYear} although recorded service runs
+              later: the source does not credit later opinions to this judge, so no year after{" "}
+              {o.lastAttributedYear} is drawn. This is a gap in attribution, not a fall in output.
+            </p>
+          ) : o?.byYear.length && attributionStops(o.lastAttributedYear) ? (
+            <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
+              Last attributed opinion: {o.lastAttributedYear}.
+            </p>
+          ) : null}
         </div>
       ) : null}
       {d?.courts.length || o?.courts.length ? (
@@ -194,9 +218,9 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
         </p>
         {o?.timesCitedTotal !== null && o ? (
           <p>
-            Times cited is the citation_count of the clusters where this person wrote
- the lead, combined, unanimous, plurality or on-the-merits opinion; it is not a measure
- of quality or of good-law status.
+            Times cited is the citation_count of the clusters where this person wrote the lead,
+            combined, unanimous, plurality or on-the-merits opinion; it is not a measure of quality
+            or of good-law status.
           </p>
         ) : null}
         {o?.excludedOutsideLifespan ? (
@@ -206,8 +230,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
           </p>
         ) : null}
         <p>
-          Counts describe the source's collection (snapshot Sept 30, 2026), not a complete
-          caseload.{" "}
+          Counts describe the source's collection (snapshot Sept 30, 2026), not a complete caseload.{" "}
           {c.clDocketsRecord ? (
             <Link
               to="/records/$dataset/$id"
