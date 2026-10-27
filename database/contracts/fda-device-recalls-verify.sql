@@ -26,7 +26,10 @@ from public.corpus_records r
 where r.dataset = 'agency_safety_openfda_device_recalls';
 
 -- 3. Product recalls and recall events by initiation year (compare events, not rows, across years; the export year
---    is partial).
+--    is partial). Expected from the reviewed packet (year: product_recalls / recall_events):
+--    2026: 2,176 / 696 (partial, initiated to 2026-09-25); 2025: 2,838 / 945; 2024: 3,279 / 972; 2023: 2,612 / 917;
+--    2022: 2,276 / 839; 2021: 2,260 / 900; 2020: 2,602 / 916; 2019: 3,011 / 969; 2018: 3,013 / 1,074;
+--    2017: 3,313 / 1,091; 2016: 3,029 / 1,232; 2015: 2,907 / 1,153. 21 rows (12 events) have no usable initiation date.
 select left(r.filters->>'event_date_initiated', 4) as year,
   count(*) as product_recalls,
   count(distinct r.filters->>'event_id') as recall_events
