@@ -71,7 +71,7 @@ const axisNumber = (v: number) => compact(v);
 const tooltipNumber = (v: unknown) => n(Number(v));
 
 /** FAERS or MAUDE rows mean the page draws the product's reports by year as a trend card. */
-const hasAdverseCard = (rows: readonly { system: string }[]) =>
+export const hasAdverseCard = (rows: readonly { system: string }[]) =>
   rows.some((r) => r.system === "FAERS" || r.system === "MAUDE");
 
 /** Labels and notes wrap to two lines (full text on hover) so a narrow card never cuts them off. */
@@ -177,7 +177,7 @@ function Versus({
   );
 }
 
-function CourtCard({
+export function CourtCard({
   court,
   dist,
   className,
@@ -260,7 +260,7 @@ function CourtCard({
   );
 }
 
-function JudgeCard({
+export function JudgeCard({
   judge,
   mdl,
   className,

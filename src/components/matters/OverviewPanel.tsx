@@ -13,7 +13,6 @@ import {
 import { ProfileTrend, TrendGrid } from "@/components/trends/ProfileTrend";
 import { MEMBER_MONTHS_MAX } from "@/lib/trends/profile";
 import { evidenceKindLabel } from "@/lib/matters/cases";
-import { entryTypeLabel } from "@/lib/matters/entries";
 import { orNotRecorded } from "@/lib/matters/overview";
 import { formatUtc } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
@@ -26,7 +25,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 
 /** Source-backed member relationships and the recorded coverage for this matter. */
-function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
+export function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
   const reg = payload.registry;
   if (!reg) return null;
   const byBasis = Object.entries(reg.members.byBasis).sort((a, b) => b[1] - a[1]);
@@ -119,10 +118,14 @@ const asRows = (m: Record<string, number>) =>
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 
+/**
+ * The former Overview tab, kept for reuse. The MDL command page places its parts in its own sections (JPML,
+ * velocity, activity, counsel, sources). Demoted 2026-10-27: the "Docket entries by type" bar (mdl_docket_activity
+ * keyword tags, mostly "Other" and stale) gave way to the classifier's entries per kind in the key-orders section,
+ * and the monthly-pending trend card here duplicated the command page's pending chart.
+ */
 export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
-  const cases = o.cases;
-  const counsel = o.counsel;
   // The trend cards read by exact MDL number; a number that is not a plain 1-5 digit one gets no card.
   const trendId = /^[1-9]\d{0,4}$/.test(o.mdl) ? o.mdl : null;
   // Member actions are counted by month when the registry lists few enough to read; larger matters are counted by year.
@@ -131,12 +134,27 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
     memberActions !== null && memberActions <= MEMBER_MONTHS_MAX
       ? "matter-member-months"
       : "mdl-members-years";
-
   return (
     <div className="space-y-4">
       <RegistryCard payload={payload} />
+      <JpmlCountsPanel payload={payload} />
+      {trendId ? (
+        <TrendGrid>
+          <ProfileTrend kind="matter-docket-entries" id={trendId} />
+          <ProfileTrend kind={memberKind} id={trendId} />
+          <ProfileTrend kind="mdl-fy-pending" id={trendId} />
+        </TrendGrid>
+      ) : null}
+      <SampleCourtsCard payload={payload} />
+      <CoverageDetails payload={payload} />
+    </div>
+  );
+}
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+/** The JPML counts the MDL record lists, one row per dated report. */
+export function JpmlCountsPanel({ payload }: { payload: MatterOverviewPayload }) {
+  const o = payload.overview;
+  return (
         <Panel title="JPML action counts" note="Each dated report counts actions in this MDL.">
           {o.actions.snapshots.length ? (
             <DataTable caption="JPML action counts by report date" narrow>
@@ -169,40 +187,29 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
             </p>
           )}
         </Panel>
-        {trendId ? <ProfileTrend kind="mdl-monthly-pending" id={trendId} /> : null}
-      </div>
+  );
+}
 
-      {trendId ? (
-        <TrendGrid>
-          <ProfileTrend kind="matter-docket-entries" id={trendId} />
-          <ProfileTrend kind={memberKind} id={trendId} />
-          <ProfileTrend kind="mdl-fy-pending" id={trendId} />
-        </TrendGrid>
-      ) : null}
+/** Dockets of the matter's saved sample by court; nothing when the sample sits in one court. */
+export function SampleCourtsCard({ payload }: { payload: MatterOverviewPayload }) {
+  const cases = payload.overview.cases;
+  if (!cases || Object.keys(cases.byCourt).length <= 1) return null;
+  return (
+    <BarList
+      title="Sample cases by court"
+      rows={asRows(cases.byCourt)}
+      limit={8}
+      unit="dockets in this matter's saved sample"
+    />
+  );
+}
 
-      {cases && Object.keys(cases.byCourt).length > 1 ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <BarList
-            title="Sample cases by court"
-            rows={asRows(cases.byCourt)}
-            limit={8}
-            unit="dockets in this matter's saved sample"
-          />
-        </div>
-      ) : null}
-
-      {o.activity && Object.keys(o.activity.byEntryType).length ? (
-        <BarList
-          title="Docket entries by type"
-          rows={asRows(o.activity.byEntryType).map((r) => ({
-            ...r,
-            label: entryTypeLabel(r.label),
-          }))}
-          limit={9}
-          unit="docket entries in the saved sample"
-        />
-      ) : null}
-
+/** The source qualifications of the matter's lists and the master-docket selection snapshot. */
+export function CoverageDetails({ payload }: { payload: MatterOverviewPayload }) {
+  const o = payload.overview;
+  const cases = o.cases;
+  const counsel = o.counsel;
+  return (
       <details className="rounded-xl border border-border bg-card shadow-xs px-4 py-3 shadow-card">
         <summary className="cursor-pointer font-medium">
           Source & coverage details
@@ -253,6 +260,5 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
           ) : null}
         </div>
       </details>
-    </div>
   );
 }
