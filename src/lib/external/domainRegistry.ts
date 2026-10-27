@@ -19,7 +19,7 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   mdl_counsel: "Directory",
   settlements: "Analysis",
   verdict_reports: "Analysis",
-  expert_rulings: "Analysis",
+  expert_rulings: "Source data",
   federal_regulations_sections: "Directory",
   federal_regulations_parts: "Directory",
   federal_regulations_documents: "Documents",
@@ -108,7 +108,8 @@ const LABELS: Record<string, string> = {
   sw_matter_dockets_v1: "Seeger Weiss matter registry — dockets in matters",
   settlements: "Settlements",
   verdict_reports: "Reported verdicts",
-  expert_rulings: "Expert-admissibility docket entries (keyword scan)",
+  expert_rulings:
+    "Expert-admissibility docket entries (keyword scan of docket entries, not rulings)",
   state_proceedings: "State proceedings",
   counsel_directory: "Counsel directory",
   federal_regulations_sections: "CFR sections",
@@ -270,6 +271,11 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
     unit: "saved document records",
     description:
       "The source collection includes forms and supporting instructions. Source document-type labels and capture dates do not establish current applicability or effective dates.",
+  },
+  expert_rulings: {
+    unit: "docket entries found by keyword scan",
+    description:
+      "A keyword and category scan of docket entries that mention expert admissibility. These are entries, not rulings: the entry kind is often a filing, no grant or deny outcome is determined, and no judge is attributed.",
   },
 };
 
