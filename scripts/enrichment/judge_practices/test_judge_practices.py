@@ -5,7 +5,6 @@ title and date reading, redaction, document type detection and profile matching.
 """
 from __future__ import annotations
 
-import hashlib
 import os
 import re
 import sys
@@ -227,8 +226,7 @@ class Documents(unittest.TestCase):
         self.assertEqual(xt.detect_type(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1", "doc"), "doc")
         self.assertEqual(xt.detect_type(b"{\\rtf1\\ansi", None), "rtf")
 
-    def test_contact_text_the_court_prints_is_kept(self):
-        """Owner decision 2026-10-27: chambers e-mail, telephone and staff names are kept as the court publishes them."""
+    def test_redaction(self):
         text = "\n".join([
             "Send proposed orders to chambers@example.gov or call (212) 805-0000 ext. 12.",
             "Courtroom Deputy: Jane Q. Public, (212) 805-0001",
@@ -236,36 +234,11 @@ class Documents(unittest.TestCase):
             "Case No. 1:20-cv-01234 was filed on 12/01/2025.",
         ])
         out, n = xt.redact(text)
-        self.assertEqual(out, text)
-        self.assertEqual(n, {"access_codes": 0})
-
-    def test_access_credentials_are_removed_and_nothing_else(self):
-        text = "\n".join([
-            "Dial (833) 568-8864, Meeting ID: 160 2682 4193, Passcode: 419399.",
-            "Access Code: 2301 528 7233##",
-            "Enter the passcode when prompted; exhibits may be password protected.",
-            "Link: https://uscourts.zoomgov.com/j/1602682419?pwd=QWErty12345abc",
-            "The initial password will be assigned by the court.",
-        ])
-        out, n = xt.redact(text)
-        for gone in ("419399", "2301 528 7233", "QWErty12345abc"):
-            self.assertNotIn(gone, out)
-        for kept in ("(833) 568-8864", "160 2682 4193", "Enter the passcode when prompted; exhibits may be password protected.",
-                     "The initial password will be assigned by the court.", "https://uscourts.zoomgov.com/j/1602682419?pwd="):
-            self.assertIn(kept, out)
-        self.assertEqual(n, {"access_codes": 3})
-
-    def test_legacy_rules_are_unchanged_for_release_verification(self):
-        import legacy_redaction as lr
-
-        text = "\n".join([
-            "Send proposed orders to chambers@example.gov or call (212) 805-0000 ext. 12.",
-            "Courtroom Deputy: Jane Q. Public, (212) 805-0001",
-            "The law clerk will review the submission.",
-        ])
-        out, n = lr.redact(text)
-        self.assertEqual(out, "Send proposed orders to [email omitted] or call [phone omitted].\n[line naming courtroom staff omitted]\n"
-                              "The law clerk will review the submission.")
+        self.assertNotIn("@", out)
+        self.assertNotIn("805-0000", out)
+        self.assertNotIn("Jane", out)
+        self.assertIn("The law clerk will review the submission.", out)  # no name and no contact: kept
+        self.assertIn("1:20-cv-01234", out)
         self.assertEqual((n["emails"], n["phones"], n["staff_lines"]), (1, 1, 1))
 
     def test_cap_keeps_whole_lines_and_says_when_truncated(self):
@@ -367,24 +340,17 @@ class JudgePageText(unittest.TestCase):
         self.assertIsNone(xt.inline_practices(self.BIO))
         self.assertIsNone(xt.inline_practices(b"<html><body><main><h1>Judge Roe</h1><p>Page limits and proposed orders.</p></main></body></html>"))
 
-    def test_staff_blocks_in_the_header_are_kept_as_published(self):
+    def test_staff_blocks_in_the_header_are_left_out_of_the_text(self):
         ex = xt.inline_practices(self.PAGE)
         text, counts = xt.redact_page(ex.text)
-        for kept in ("Mary Smith", "John Doe", "mary_smith@example.gov", "(555) 123-4567", "Page limits: opening and opposition briefs"):
-            self.assertIn(kept, text)
-        self.assertNotIn("omitted]", text)
-        self.assertEqual(counts, {"access_codes": 0})
-
-    def test_legacy_staff_blocks_rule_for_release_verification(self):
-        import legacy_redaction as lr
-
-        ex = xt.inline_practices(self.PAGE)
-        text, counts = lr.redact_page(ex.text)
         for leaked in ("Mary Smith", "John Doe", "mary_smith", "555", "@"):
             self.assertNotIn(leaked, text)
         self.assertIn("[staff contact block omitted]", text)
-        self.assertGreaterEqual(counts["staff_blocks"], 1)
-        keep, _ = lr.drop_staff_blocks("Intro\nCourtroom deputies schedule hearings through the calendar clerk and they answer questions about filing by phone.\nEnd")
+        self.assertIn("Page limits: opening and opposition briefs", text)  # prose is never dropped
+        self.assertGreaterEqual(counts["staff_blocks"], 1)  # chained labels are one block
+
+    def test_prose_that_mentions_a_courtroom_deputy_is_kept_unless_it_names_one(self):
+        keep, _ = xt.drop_staff_blocks("Intro\nCourtroom deputies schedule hearings through the calendar clerk and they answer questions about filing by phone.\nEnd")
         self.assertIn("answer questions about filing", keep)
 
 
@@ -597,78 +563,6 @@ class ManualRoster(unittest.TestCase):
         ])
         self.assertEqual(res["judges"], [])
         self.assertEqual(len(res["problems"]), 3)
-
-
-class ContactTextRelease(unittest.TestCase):
-    """release_contact_text.py: a published row is released only when the legacy rules reproduce it, and is rebuilt in the builder's layout."""
-
-    EXTRACTED = "\n".join([
-        "Standing Order",
-        "Send proposed orders to chambers@example.gov or call (212) 805-0000.",
-        "Courtroom Deputy: Jane Q. Public, (212) 805-0001",
-        "Hearing line: (833) 568-8864, Meeting ID: 160 2682 4193, Passcode: 419399.",
-    ])
-
-    def published_row(self, extracted: str, kind: str = "standing_order") -> dict:
-        sys.path.insert(0, os.path.join(HERE, ".."))
-        import corpus_writer as writer
-        import legacy_redaction as lr
-
-        red, counts = lr.redact(extracted)
-        text = xt.cap(red)[0]
-        facts = [["Title as published", "Standing Order"], ["Text", f"{len(text):,} characters; pdftotext -layout (poppler), whitespace collapsed"],
-                 ["Redacted from the text", "; ".join(f"{k.replace('_', ' ')}: {v}" for k, v in counts.items() if v) or "None"]]
-        doc = {"kind": kind, "detected_type": "pdf", "stored": True, "sha256": "ab" * 32, "text_chars": len(text), "text_chars_total": len(red),
-               "text_truncated": False, "text_method": "pdftotext -layout (poppler), whitespace collapsed", "redactions": counts,
-               "text_sha256": hashlib.sha256(text.encode()).hexdigest(), "storage": {"key": "judge_practices/2026-10-23/" + "ab" * 32 + ".pdf"}}
-        return writer.record("judge_practice_documents", "jpd-0000000000000001", "Standing Order", source_url="https://example.uscourts.gov/so.pdf",
-                             subtitle="Standing order · PDF · nysd", cells={}, facts=facts, text=text, filters={}, extra={"practice_document": doc})
-
-    def test_legacy_reproduction_and_rebuilt_row(self):
-        import release_contact_text as rel
-
-        row = self.published_row(self.EXTRACTED)
-        published = rel.doc_text(row)
-        self.assertIsNotNone(published)
-        self.assertTrue(rel.has_marker(published))
-        self.assertEqual(hashlib.sha256(rel.legacy_text(self.EXTRACTED, False).encode()).hexdigest(), row["item"]["practice_document"]["text_sha256"])
-        new_text, truncated, total, counts = rel.current_text(self.EXTRACTED)
-        out = rel.rebuilt(row, new_text, truncated, total, counts)
-        released = rel.doc_text(out)
-        for kept in ("chambers@example.gov", "(212) 805-0000", "Jane Q. Public", "(833) 568-8864", "160 2682 4193"):
-            self.assertIn(kept, released)
-        self.assertNotIn("419399", released)
-        self.assertFalse(rel.has_marker(released))
-        pd = out["item"]["practice_document"]
-        self.assertEqual(pd["redactions"], {"access_codes": 1})
-        self.assertEqual(pd["text_sha256"], hashlib.sha256(released.encode()).hexdigest())
-        self.assertEqual(dict(out["detail"]["facts"])["Redacted from the text"], "access codes: 1")
-        self.assertTrue(out["text"].startswith("jpd-0000000000000001 Standing Order Standing order · PDF · nysd "))
-        self.assertEqual(row["item"]["practice_document"]["redactions"]["emails"], 1)  # the input row is not modified
-
-    def test_keep_access_codes_keeps_the_extraction_whole(self):
-        import release_contact_text as rel
-
-        new_text, _, _, counts = rel.current_text(self.EXTRACTED, keep_access_codes=True)
-        self.assertEqual(new_text, self.EXTRACTED)
-        self.assertEqual(counts, {"access_codes": 0})
-
-    def test_page_text_method_loses_the_staff_block_note(self):
-        import release_contact_text as rel
-
-        row = self.published_row(self.EXTRACTED, kind="page_text")
-        row["item"]["practice_document"]["text_method"] = "visible text of the main content (bs4), whitespace collapsed" + rel.PAGE_METHOD_SUFFIX
-        out = rel.rebuilt(row, *rel.current_text(self.EXTRACTED))
-        self.assertEqual(out["item"]["practice_document"]["text_method"], "visible text of the main content (bs4), whitespace collapsed")
-
-    def test_privacy_text_matches_the_builder(self):
-        import ast
-
-        import release_contact_text as rel
-
-        tree = ast.parse(open(os.path.join(HERE, "build_judge_practices.py"), encoding="utf-8").read())
-        value = next(ast.literal_eval(n.value) for n in tree.body if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") == "PRIVACY")
-        self.assertEqual(value, rel.PRIVACY)
 
 
 if __name__ == "__main__":

@@ -377,10 +377,12 @@ class CourtLeadership(unittest.TestCase):
         <table><tr><td><a href="/files/cmo2.pdf">Doc #35</a></td><td>03/08/2024</td><td>Case Management Order No. 2 (Plaintiff's Leadership)</td></tr></table></main>"""
         blocks = ec.leadership_blocks(BeautifulSoup(html, "lxml").find("main"))
         self.assertEqual([b["heading"] for b in blocks], ["Plaintiffs' Co-Lead Counsel:", "Plaintiffs' Lead Co-Counsel"])
-        self.assertEqual(blocks[0]["lines"][:3], ["Ann Doe", "DOE LLP", "100 Main Street, Suite 2"])  # the builder removes the contacts
+        self.assertEqual(blocks[0]["lines"][:3], ["Ann Doe", "DOE LLP", "100 Main Street, Suite 2"])
         lead = bcs.leadership_from_pages([{"url": "https://x.uscourts.gov/mdl", "leadership_blocks": blocks}])
-        self.assertEqual(lead[0]["lines"], ["Ann Doe", "DOE LLP", "Bo Roe", "ROE PC"])
-        self.assertTrue(lead[0]["contact_lines_removed"])
+        # lead decision 2026-10-27: counsel contact lines are shown as the court prints them
+        self.assertEqual(lead[0]["lines"], ["Ann Doe", "DOE LLP", "100 Main Street, Suite 2", "Cleveland, Ohio 44139", "(216) 555-0100",
+                                            "ann@example.com", "Bo Roe", "ROE PC", "12 Elm Road, #100", "Atlanta, Georgia 30319"])
+        self.assertFalse(lead[0]["contact_lines_removed"])
         self.assertEqual(lead[1]["lines"], ["Cy Poe", "Poe & Moe"])
 
     def test_quicktabs_role_tabs(self):
@@ -409,12 +411,14 @@ class CourtLeadership(unittest.TestCase):
         self.assertEqual(blocks[0]["lines"][:2], ["Ann Doe", "Doe, Roe & Poe, LLP"])
         self.assertIn("Bo Roe (Co-Lead Counsel)", blocks[0]["lines"])
         lead = bcs.leadership_from_pages([{"url": "https://www.laed.uscourts.gov/x-contacts", "leadership_blocks": blocks}])
-        self.assertEqual([b["lines"] for b in lead], [
-            ["Ann Doe", "Doe, Roe & Poe, LLP", "Bo Roe (Co-Lead Counsel)", "Roe Firm, PLC"],
+        self.assertEqual([b["lines"][:3] for b in lead], [
+            ["Ann Doe", "Doe, Roe & Poe, LLP", "701 Main Street"],
             ["Acme U.S. LLC", "Cy Poe", "POE & LEE"],
-            ["Beta Inc.", "Di Moe", "GREAT FIRM, LLP"],
+            ["Beta Inc.", "Di Moe", "GREAT FIRM, LLP Terminus 200"],
         ])
-        self.assertTrue(all(b["contact_lines_removed"] for b in lead))
+        self.assertIn("Email: ann@example.com", lead[0]["lines"])
+        self.assertIn("Bo Roe (Co-Lead Counsel)", lead[0]["lines"])
+        self.assertFalse(any(b["contact_lines_removed"] for b in lead))
 
     def test_clip_cuts_at_a_word_boundary_and_marks_it(self):
         self.assertEqual(ec.clip("short", 10), "short")
@@ -425,7 +429,7 @@ class CourtLeadership(unittest.TestCase):
 
 
 class CourtSummaryBuilder(unittest.TestCase):
-    def test_leadership_redacts_contacts_dedupes_and_counts(self):
+    def test_leadership_keeps_contacts_dedupes_and_counts(self):
         long_line = "Firm " + " ".join(f"Partner{i}" for i in range(80))
         page = {"url": "https://x.uscourts.gov/a", "leadership_blocks": [
             {"heading": "Plaintiffs' Lead Counsel", "group": "PLAINTIFFS' COUNSEL", "lines": ["Jane Doe", "Example LLP", "100 Main Street", "jdoe@example.com", long_line], "lines_total": 7},
@@ -434,11 +438,10 @@ class CourtSummaryBuilder(unittest.TestCase):
         out = bcs.leadership_from_pages([page, again])
         self.assertEqual(len(out), 1)  # the same block on a second page is kept once
         b = out[0]
-        self.assertEqual(b["lines"][:2], ["Jane Doe", "Example LLP"])
-        self.assertTrue(b["contact_lines_removed"])
-        self.assertNotIn("100 Main Street", b["lines"])
-        self.assertTrue(b["lines"][2].endswith(" …") and len(b["lines"][2]) <= bcs.LEAD_LINE_CHARS + 2)
-        self.assertRegex(b["lines"][2], r"Partner\d+ …$")  # whole words only
+        self.assertEqual(b["lines"][:4], ["Jane Doe", "Example LLP", "100 Main Street", "jdoe@example.com"])
+        self.assertFalse(b["contact_lines_removed"])
+        self.assertTrue(b["lines"][4].endswith(" …") and len(b["lines"][4]) <= bcs.LEAD_LINE_CHARS + 2)
+        self.assertRegex(b["lines"][4], r"Partner\d+ …$")  # whole words only
         self.assertEqual(b["lines_not_shown"], 2)  # beyond the extractor's cap
         self.assertEqual(b["group"], "PLAINTIFFS' COUNSEL")
 
@@ -457,25 +460,30 @@ class CourtSummaryBuilder(unittest.TestCase):
         ]}
         self.assertEqual(bcs.leadership_from_pages([page])[0]["updated"], "Last Updated: May 27, 2016")
 
-    def test_counsel_rule_reaches_counsel_text_only(self):
-        """Owner decisions 2026-10-03 (counsel without contact fields) and 2026-10-27 (nothing else withheld)."""
+    def test_court_page_text_is_shown_as_printed(self):
+        """Lead decision 2026-10-27: counsel contact details that courts publish are shown; nothing is removed, any category."""
         m = bcs.CONTACT_MARKER
         court = "Order | Open Court Conference November 10, 2016 at 1:00 p.m. Courtroom 16B, Carl B. Stokes U.S. Courthouse, 801 West Superior Avenue, Cleveland, OH 44113 | 10/20/2016"
         self.assertEqual(bcs.counsel_redact(court, marker=m), (cr.tidy(court), False))
-        self.assertIn("801 West Superior Avenue", bcs.counsel_redact(court, "bellwether", marker=m)[0])
-        admin = "Claims Administrator: | Hon. James J. Roe, 100 Main Street, Columbus, OH 43215"
-        self.assertEqual(bcs.counsel_redact(admin, "settlement", marker=m)[0], cr.tidy(admin))
         counsel = "Plaintiffs' liaison counsel Jane Doe, Doe LLP, 100 Main Street, Columbus, OH 43215, (614) 555-0100."
-        text, removed = bcs.counsel_redact(counsel, "settlement", marker=m)
-        self.assertTrue(removed)
-        self.assertNotIn("555-0100", text)
-        self.assertNotIn("100 Main Street", text)
-        firm = "Write to Roe Smith LLP at 100 Main Street, Columbus, OH 43215."
-        self.assertTrue(bcs.counsel_redact(firm, marker=m)[1])
-        dial = "To participate in the status conference, call (877) 336-1831 and enter access code 455209."
-        self.assertTrue(bcs.counsel_redact(dial, "leadership", marker=m)[1])  # leadership statements always follow the counsel rule
-        self.assertFalse(bcs.counsel_redact(dial, "bellwether", marker=m)[1])
-        self.assertEqual(cr.redact("Order of 10/14/2026 at 9:30 ."), (cr.tidy("Order of 10/14/2026 at 9:30 ."), False))
+        for category in (None, "leadership", "bellwether", "settlement"):
+            text, removed = bcs.counsel_redact(counsel, category, marker=m)
+            self.assertFalse(removed)
+            self.assertIn("555-0100", text)
+            self.assertIn("100 Main Street", text)
+        dial = "The dial-in number for the general status conference is (877) 336-1831, and the access code is 468092."
+        self.assertEqual(bcs.counsel_redact(dial, "leadership", marker=m), (cr.tidy(dial), False))
+        self.assertNotIn("redact", bcs.CONTACT_METHOD.lower())
+
+    def test_leadership_blocks_keep_contact_lines(self):
+        page = {"url": "https://x.uscourts.gov/a", "leadership_blocks": [
+            {"heading": "Plaintiffs' Co-Lead Counsel", "group": None, "lines_total": 4,
+             "lines": ["Jane Doe", "Doe LLP", "100 Main Street, Suite 200", "Columbus, OH 43215", "jdoe@doe.example"]},
+        ]}
+        b = bcs.leadership_from_pages([page])[0]
+        self.assertEqual(b["lines"], ["Jane Doe", "Doe LLP", "100 Main Street, Suite 200", "Columbus, OH 43215", "jdoe@doe.example"])
+        self.assertFalse(b["contact_lines_removed"])
+        self.assertIsNone(b["note"])
 
 
 class MassTortTermMerge(unittest.TestCase):

@@ -9,9 +9,7 @@ stage (fetch_docs.py).
   judge_court_coverage       one record per district or bankruptcy court: how its site lists judges (per-judge pages, one list, none, blocked), the
                              pages read, the counts, and why a court has no judges when it has none
 
-Document text keeps the chambers e-mail addresses, telephone numbers and courtroom staff names the court itself prints (owner decision
-2026-10-27; named people as the official publisher shows them, 2026-10-22 (3)); only access credentials (hearing passcodes, passwords,
-access codes, meeting-link pwd= values) are removed from the text. The judge-page roster does not extract contact fields as data.
+Chambers telephone numbers, e-mail addresses and courtroom deputy names are not extracted from pages and are redacted from document text.
 
     python3 -I -B scripts/enrichment/judge_practices/build_judge_practices.py
 """
@@ -37,9 +35,6 @@ import fetchlib as fl  # noqa: E402
 import parse_lib as pl  # noqa: E402
 import profile_match as pm  # noqa: E402
 
-PRIVACY = ("Document text is shown as the court publishes it, including the chambers e-mail addresses, telephone numbers and courtroom staff "
-           "the court prints (owner decision 2026-10-27). Only access credentials are removed from the text: hearing passcodes, passwords and access "
-           "codes, and the pwd= value of meeting links (counts recorded). The judge-page roster does not extract contact fields. Originals are stored unchanged.")
 COURTS = os.path.join(ROOT, "private", "build", "judge_practices", "courts")
 DOCS = os.path.join(ROOT, "private", "build", "judge_practices", "docs")
 OUT = os.path.join(ROOT, "private", "build", "judge_practices")
@@ -366,7 +361,7 @@ def main() -> None:
         "method": ("Listing pages found from each court's home page (or a stated override), judge pages fetched at most once each, documents downloaded unchanged "
                    "and stored in the private bucket corpus-originals under judge_practices/<retrieval date>/ with a whole-object SHA-256 readback. "
                    "robots.txt obeyed (including Crawl-delay); at most one request per second to a court site; no 403 or bot wall bypassed."),
-        "privacy": PRIVACY,
+        "privacy": "No chambers telephone number, e-mail address or courtroom deputy name is extracted from a page; document text has e-mail addresses, telephone numbers and staff-contact lines redacted (counts recorded). Originals are stored unchanged.",
         "profile_matching": ("A judge is linked to an existing profile only on a unique exact match of normalised name (case, accents, punctuation and suffixes removed, middle names "
                              "reduced to initials) plus court, using the judge directory and the FJC service lookup; no match, or more than one, leaves the judge unlinked."),
     }

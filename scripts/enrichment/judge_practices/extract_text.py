@@ -8,9 +8,9 @@ Methods (recorded on each document record as `text_method`):
   html  - the visible text of the page's main content (scripts, styles and site navigation removed).
 Whitespace is collapsed; no word is rewritten. The original bytes are stored unchanged in the bucket, so these renderings are search aids.
 
-Redactions (the stored text only, never the original file): access credentials only (hearing passcodes, passwords and access codes, and
-the pwd= parameter of meeting links). Since the owner decision of 2026-10-27 the e-mail addresses, telephone numbers and courtroom staff the
-court itself prints are kept as published; the earlier rules are in legacy_redaction.py. Counts are recorded on the record as `redactions`.
+Redactions (the stored text only, never the original file): e-mail addresses, telephone numbers, and lines that name courtroom staff
+(courtroom deputy, deputy clerk, courtroom clerk, case manager, judicial assistant, law clerk) together with a person's name or contact.
+Counts are recorded on the record as `redactions`.
 """
 from __future__ import annotations
 
@@ -176,35 +176,43 @@ def extract(path: str, kind: str) -> Extracted:
 # --------------------------------------------------------------------------------------------------------------------------
 # redaction
 
-# Owner decision 2026-10-27 ("dont withhold any data. If its accurate and valuable, USE IT"): the chambers e-mail addresses, telephone numbers
-# and courtroom staff that a court prints in its own practice documents and judge pages are kept exactly as the court publishes them (named
-# people as the official publisher shows them: AGENTS.md 2026-10-22 (3)). The rules that replaced them with "[email omitted]",
-# "[phone omitted]", "[line naming courtroom staff omitted]" and "[staff contact block omitted]" are kept verbatim in legacy_redaction.py,
-# used only to verify the re-extraction that released them (release_contact_text.py).
-#
-# What is still removed: access credentials, which are keys to a hearing line or meeting rather than data about the court. The value printed
-# after a passcode / password / access-code / participant-code label (when it contains a digit, so "enter the passcode when prompted" and
-# "password-protected exhibits" are untouched) and the pwd= parameter of a meeting link. Meeting IDs, dial-in numbers and links stay.
-
-ACCESS_LABEL = (r"(?:meeting\s+|conference\s+|hearing\s+)?(?:passcode|pass\s?code|password|access\s+code|participant\s+(?:code|passcode)|attendee\s+code|"
-                r"security\s+code|(?-i:PIN))")
-ACCESS_CODE = re.compile(
-    rf"(?i)(\b{ACCESS_LABEL}\b(?:\s+(?:is|number|no\.?))?\s*[:#\-–]?\s*)"
-    r"(\d[\d \-]{1,22}\d#*|(?=[A-Za-z0-9!@$%^&*]*\d)[A-Za-z0-9!@$%^&*]{4,24}(?![A-Za-z0-9]))")
-MEETING_PWD = re.compile(r"(?i)([?&]pwd=)[A-Za-z0-9._\-]+")
-ACCESS_MARK = "[access code omitted]"
+EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+")
+PHONE = re.compile(r"(?<![\d\-])(?:\+?1[\s.\-]?)?\(?\b\d{3}\)?[\s.\-]\s?\d{3}[\s.\-]\d{4}\b(?:\s*(?:x|ext\.?|extension)\s*\d{1,6})?")
+STAFF = re.compile(r"\b(courtroom deputy|deputy clerk|courtroom clerk|calendar clerk|case manager|judicial assistant|courtroom administrator|law clerk)\b", re.I)
+NAME_AFTER = re.compile(r"(?:\b[A-Z][a-z]+(?:[\-'][A-Z][a-z]+)?\b\s+(?:[A-Z]\.?\s+)?\b[A-Z][a-zA-Z'\-]{2,}\b)")
+STAFF_WORDS = {"Courtroom", "Deputy", "Clerk", "Calendar", "Case", "Manager", "Judicial", "Assistant", "Administrator", "Law", "United", "States",
+               "District", "Court", "Southern", "Northern", "Eastern", "Western", "Middle", "Central", "Federal", "Rule", "Local", "Civil", "Criminal",
+               "Chambers", "Judge", "Magistrate", "Bankruptcy", "Please", "Contact", "Email", "Phone", "Telephone", "Room", "Floor", "Suite", "Street",
+               "Avenue", "Building", "Courthouse", "Honorable", "Hon", "Mr", "Ms", "Mrs", "Dr"}
 
 
-def redact(text: str) -> tuple[str, dict]:
-    """Remove access credentials only (see above); every other word is kept as the court printed it."""
-    text, n1 = ACCESS_CODE.subn(lambda m: m.group(1) + ACCESS_MARK, text)
-    text, n2 = MEETING_PWD.subn(lambda m: m.group(1) + "[omitted]", text)
-    return text, {"access_codes": n1 + n2}
+STAFF_LABEL = re.compile(r"^(?:staff information|courtroom deputy|courtroom clerk|deputy clerk|judicial assistant|court reporter|law clerks?|case manager|"
+                         r"calendar clerk|secretary|chambers staff|courtroom technology)\b|^chambers:\s*$", re.I)
 
 
-def redact_page(text: str) -> tuple[str, dict]:
-    """The same rule for the text of a judge's web page (staff blocks in the page header are kept since 2026-10-27)."""
-    return redact(text)
+def drop_staff_blocks(text: str, header_lines: int = 90) -> tuple[str, int]:
+    """Judge pages print their staff as a label on one line and the person's name, telephone number and e-mail on the lines after it
+    ("Courtroom Deputy:" / "Jane Roe, Phone: ..."). In the header of the page a label line and the short lines that follow it (at most four,
+    chained when another label follows) are replaced by one marker; prose lines are never dropped."""
+    lines = text.split("\n")
+    out: list[str] = []
+    blocks = 0
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        if i < header_lines and STAFF_LABEL.match(ln) and len(ln) <= 70:
+            j, budget, steps = i + 1, 4, 0
+            while j < len(lines) and budget > 0 and steps < 24 and 0 < len(lines[j]) <= 80 and not lines[j].endswith((".", "?", "!")):
+                budget = 4 if STAFF_LABEL.match(lines[j]) else budget - 1
+                j += 1
+                steps += 1
+            out.append("[staff contact block omitted]")
+            blocks += 1
+            i = j
+            continue
+        out.append(ln)
+        i += 1
+    return "\n".join(out), blocks
 
 
 PRACTICE_PHRASES = [r"page limit", r"courtesy cop", r"chambers cop", r"proposed order", r"discovery dispute", r"motion practice", r"continuance",
@@ -221,6 +229,33 @@ def inline_practices(body: bytes) -> Extracted | None:
     if len(ex.text) < 1200 or sum(1 for p in PRACTICE_PHRASES if re.search(p, ex.text, re.I)) < 4:
         return None
     return ex
+
+
+def redact_page(text: str) -> tuple[str, dict]:
+    """redact() for the text of a web page: staff blocks of the header first, then the line rules."""
+    text, blocks = drop_staff_blocks(text)
+    out, counts = redact(text)
+    counts["staff_blocks"] = blocks
+    return out, counts
+
+
+def redact(text: str) -> tuple[str, dict]:
+    counts = {"emails": 0, "phones": 0, "staff_lines": 0}
+    out: list[str] = []
+    for line in text.split("\n"):
+        if STAFF.search(line):
+            has_contact = bool(EMAIL.search(line) or PHONE.search(line))
+            names = [m.group(0) for m in NAME_AFTER.finditer(line) if not set(m.group(0).replace(".", "").split()) & STAFF_WORDS]
+            if has_contact or names:
+                counts["staff_lines"] += 1
+                out.append("[line naming courtroom staff omitted]")
+                continue
+        line, n = EMAIL.subn("[email omitted]", line)
+        counts["emails"] += n
+        line, n = PHONE.subn("[phone omitted]", line)
+        counts["phones"] += n
+        out.append(line)
+    return "\n".join(out), counts
 
 
 def cap(text: str, limit: int = TEXT_CAP) -> tuple[str, bool, int]:
