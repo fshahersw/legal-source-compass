@@ -13,18 +13,26 @@ amount roles (from the amount's own sentence, nearest wording wins):
 The wording that decided the role is kept as `role_basis`, exactly as written on the page.
 
 A settlement's headline is its largest fund_total; with no fund_total there is no headline (a per-claimant amount is
-never shown as the settlement amount). An MDL number is read only from a case number in the federal MDL docket form
-"<office>:<yy>-md|ml|mn-<number>" (2:19-ml-02905 is MDL 2905); captions, product names and "MDL No." prose never link.
+never shown as the settlement amount). A figure of PER_CLAIMANT_MAX_USD or more is per_claimant only with explicit
+per-unit wording after it. When a row also types a penalty, a fund_total decided only by a payment verb ("Orders ... to
+Pay $12.8 Million") is the whole order: other/order_total. An MDL is linked only when a case number in the federal MDL
+docket form "<office>:<yy>-md|ml|mn-<number>" is that MDL's own master docket in the MDL registry (2:19-ml-02905 is
+MDL 2905) and, when the page names a court by id, the MDL's transferee court is that court; captions, product names and
+"MDL No." prose never link.
 """
 import re
 from datetime import date
 
 FUND_MIN_USD = 10_000
+# A figure this large is one claimant's amount only with explicit per-unit wording right after it ("$150,000 each",
+# "per class member"); a nearby "payment of" alone never makes "$2,750,000 gross (the Settlement Amount)" a share.
+PER_CLAIMANT_MAX_USD = 100_000
 ROLES = ("fund_total", "per_claimant", "cap", "other")
 ROLE_LABEL = {"fund_total": "Settlement fund total", "per_claimant": "Per claimant", "cap": "Aggregate cap", "other": "Other figure"}
 OTHER_DETAIL_LABEL = {
     "fees_costs": "Fees, costs or administration", "service_award": "Service award", "penalty": "Penalty or disgorgement",
     "distribution": "Distribution round", "estimate": "Estimate or alleged loss", "threshold": "Eligibility threshold",
+    "fund_addition": "Addition to a fund", "order_total": "Order total including a penalty",
     "unclear": "Role not stated near the figure",
 }
 
@@ -43,8 +51,10 @@ _CUES = [
     ("other", "distribution", 1, r"\s*in refunds\b", "after"),
     ("other", "estimate", 1, r"estimated by|total value of the settlement|compensable harm|\balleg(?:es|ed|ing)\b", "near"),
     ("other", "threshold", 0, r"\bpaid\b[^$.;]{0,80}?more than", "before"),
-    # per claimant
-    ("per_claimant", None, 2, r"\s*(?:each\b|to each\b|for each\b|per (?:\w+[ -]){0,3}?(?:share|security|person|member|claimant|household|product|vehicle|day|hour|month|year|transaction|subscriber|unit|account|purchase|claim|policy|patient|employee|worker|class member)s?\b)", "after"),
+    # "will add approximately $1.33 million to the money available for distribution": part of a fund, not its total
+    ("other", "fund_addition", 1, r"\badd(?:s|ed|ing)?(?: an additional| a further)? ?" + _MONEYISH, "before"),
+    # per claimant ("per_unit": explicit per-unit wording right after the figure)
+    ("per_claimant", "per_unit", 2, r"\s*(?:each\b|to each\b|for each\b|per (?:\w+[ -]){0,3}?(?:share|security|person|member|claimant|household|product|vehicle|day|hour|month|year|transaction|subscriber|unit|account|purchase|claim|policy|patient|employee|worker|class member)s?\b)", "after"),
     ("per_claimant", None, 2, r"\s*(?:cash )?(?:checks?|payments?|vouchers?)\b", "after"),
     ("per_claimant", None, 2, r"recovery per (?:\w+ ){0,3}?(?:share|security)\b|average (?:net |gross )?(?:recovery|distribution)\b", "near"),
     ("per_claimant", None, 3, r"(?:alternat(?:e|ive) )?(?:flat )?cash payments?|payments? (?:is|are|will be) (?:expected|estimated|anticipated)|residual distribution payments?|settlement (?:check|award)|\bchecks? of\b|\bvouchers?\b|reimbursement|unreimbursed|out-of-pocket|\bdocumented (?:losses|costs|expenses)|compensation for|pro rata share|\blosses\b|\bentitled to\b|eligible (?:to receive|for)|may (?:receive|claim|submit|be eligible)|\bwill receive\b|for (?:adults|minors)\b|a payment of|payments? of|\bpayments?\b", "near"),
@@ -57,7 +67,7 @@ _CUES = [
     ("fund_total", None, 2, r"(?:gross )?settlement amount(?: \([^)]*\))?(?: of)?|settlement in the amount of|total (?:aggregate )?(?:gross )?recovery of|(?:a )?total of|totall?ing ?" + _MONEYISH, "before"),
     ("fund_total", None, 2, r"(?:agreed to|will|shall|to|must) (?:pay|deposit|establish|provide|create) ?" + _MONEYISH + r"|\bpaid\b|settlement (?:of|making)|has settled[^$.;]{0,60}?for", "before"),
     ("fund_total", None, 2, r"(?:total |maximum |gross )*amount (?:to be )?paid[^$.;]{0,80}?\bis|to settle (?:the|this) (?:lawsuit|action|case|matter|claims?)(?: is)?", "before"),
-    ("fund_total", None, 2, r"\s*(?:\(\s*(?:the\s+)?[“\"]?\s*)?(?:settlement (?:fund|amount)|(?:gross|cash|qualified|common|non-reversionary|maximum|distribution) (?:settlement )?(?:fund|amount)|fund)\b", "after"),
+    ("fund_total", None, 2, r"\s*(?:(?:gross|net|in cash),?\s*)?(?:\(\s*(?:the\s+)?[“\"]?\s*)?(?:settlement (?:fund|amount)|(?:gross|cash|qualified|common|non-reversionary|maximum|distribution) (?:settlement )?(?:fund|amount)|fund)\b", "after"),
     ("fund_total", None, 2, r"\s*(?:in )?(?:class action |proposed |cash |total )?settlements?\b|\s*(?:in cash|into (?:a|an|the) [^$.;]{0,40}?(?:fund|escrow)|in (?:consumer )?redress|(?:was|were|has been|will be) (?:paid|deposited) (?:to|into))", "after"),
 ]
 _GAP = r"[\s:–—(“\"'-]*$"
@@ -133,16 +143,39 @@ def classify_amount(sentence, as_written, value_usd=None):
         for dist, _prio, role, detail, basis in found:
             if role == "fund_total" and value_usd is not None and value_usd < FUND_MIN_USD:
                 continue  # a fund is never a few dollars; read the next nearest wording
-            return {"role": role, "detail": detail, "role_basis": basis}
+            if role == "per_claimant" and detail != "per_unit" and value_usd is not None and value_usd >= PER_CLAIMANT_MAX_USD:
+                continue  # one claimant's share this large needs explicit per-unit wording; read the next nearest wording
+            if role == "per_claimant":
+                detail = None
+            out = {"role": role, "detail": detail, "role_basis": basis}
+            if role == "fund_total" and _BARE_PAY.match(basis or "") and not any(
+                    r == "fund_total" and not _BARE_PAY.match(b or "") for _d, _p, r, _x, b in found):
+                out["bare_pay"] = True  # "to pay $12.8 million" with no fund, redress or settlement wording
+            return out
     return {"role": "other", "detail": "unclear", "role_basis": None}
 
 
+# a fund_total decided only by a payment verb ("Orders ... to Pay $12.8 Million"), with no fund, redress or settlement wording
+_BARE_PAY = re.compile(r"^(?:agreed to|will|shall|to|must) (?:pay|provide)\b(?: ?(?:more than|over|nearly|at least|approximately|about|up to|a maximum of|a total of|a minimum of) ?){0,2}$|^paid$", re.I)
+
+
 def type_amounts(amounts):
-    """Each published amount with role, detail and role_basis added (input dicts are not changed)."""
-    out = []
+    """Each published amount with role, detail and role_basis added (input dicts are not changed).
+
+    Row rule: when the same row types a penalty figure, a fund_total decided only by a payment verb is the whole order
+    (redress plus penalty, as in "CFPB Orders ... to Pay $12.8 Million"), so it becomes other/order_total and the
+    redress figure stays the headline."""
+    typed = []
     for a in amounts or []:
-        typed = classify_amount(a.get("sentence"), a.get("page_as_written"), a.get("value_usd"))
-        out.append({**a, **typed})
+        t = classify_amount(a.get("sentence"), a.get("page_as_written"), a.get("value_usd"))
+        typed.append((a, t))
+    has_penalty = any(t["role"] == "other" and t.get("detail") == "penalty" for _a, t in typed)
+    out = []
+    for a, t in typed:
+        bare = t.pop("bare_pay", False)
+        if bare and has_penalty:
+            t = {**t, "role": "other", "detail": "order_total"}
+        out.append({**a, **t})
     return out
 
 
@@ -181,15 +214,43 @@ def mdl_docket_tokens(text):
     return out
 
 
-def mdl_links(case_numbers):
-    """[{'mdl', 'case_number', 'basis'}] for every case number in MDL docket form, one per MDL number."""
+def _docket_key(text):
+    """(office, yy, md|ml|mn, number) of a case number in MDL docket form, else None."""
+    m = _MDL_DOCKET.match(text or "")
+    return (int(m.group(1)), m.group(2), m.group(3).lower(), int(m.group(4))) if m else None
+
+
+def registry_index(registry_rows):
+    """{mdl_number: {'master_docket', 'cl_court_id', 'court_name'}} from the mdls registry export rows."""
+    return {int(r["mdl_number"]): r for r in registry_rows or [] if r.get("mdl_number") is not None}
+
+
+def verified_mdl(case_number, registry, court_ids=()):
+    """The MDL number when the case number in MDL docket form is that MDL's own master docket in the mdls registry
+    (same office, year, md|ml|mn and number), and, when the page names a court by exact id, the MDL's transferee court
+    is that court. Else None: a docket-form number alone never links."""
+    key = _docket_key(case_number)
+    if key is None:
+        return None
+    entry = (registry or {}).get(key[3])
+    if not entry or _docket_key(entry.get("master_docket")) != key:
+        return None
+    ids = {c for c in court_ids or () if c}
+    if ids and entry.get("cl_court_id") not in ids:
+        return None
+    return key[3]
+
+
+def mdl_links(case_numbers, registry, court_ids=()):
+    """[{'mdl', 'case_number', 'basis'}] for every case number that verified_mdl confirms, one per MDL number."""
     seen, out = set(), []
     for c in case_numbers or []:
         text = c.get("as_written") if isinstance(c, dict) else c
-        n = mdl_from_case_number(text)
+        n = verified_mdl(text, registry, court_ids)
         if n is not None and n not in seen:
             seen.add(n)
-            out.append({"mdl": n, "case_number": text, "basis": "case number on the official page in MDL docket form"})
+            out.append({"mdl": n, "case_number": text,
+                        "basis": "case number on the official page is the MDL's master docket in the MDL registry"})
     return out
 
 

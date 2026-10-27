@@ -60,6 +60,14 @@ CASES = [
     ("Springfield has agreed to pay up to a maximum of $825,000.00 (the “Settlement Amount”) to cover payments to approximately 147 class members", "$825,000.00", 825000, "fund_total", None),
     ("Blog: $505 million in refunds sent to payday loan customers", "$505 million", 505e6, "other", "distribution"),
     ("Here, consumers’ compensable harm is equal to the $ 53,885,244.", "$ 53,885,244", 53885244, "other", "estimate"),
+    # a fund amount with "gross" before its defined-term parenthetical is the fund, not one claimant's payment
+    ("If approved by the Court, the Settlement will provide for the payment of $2,750,000 gross (the “Settlement Amount”), plus interest as it accrues, minus attorneys’ fees, expenses, compensatory awards to Co-Lead Plaintiffs, Notice and Administration Expenses, and Taxes on interest, to persons and",
+     "$2,750,000", 2.75e6, "fund_total", None),
+    # money added to the class's distribution pool is part of a fund, never a per-claimant amount
+    ("Theranos, and the Theranos ABC has agreed to allocate a portion of the limited remaining Theranos assets to the Class, which will add approximately $1.33 million to the money available for distribution to the Class and increase the settlement payment amounts for Class Members.",
+     "$1.33 million", 1.33e6, "other", "fund_addition"),
+    # explicit per-unit wording still makes a large figure per claimant (constructed sentence, not from a page)
+    ("Each of the two estates will receive $150,000 each under the settlement.", "$150,000", 150000, "per_claimant", None),
 ]
 
 
@@ -91,6 +99,31 @@ class AmountRoleTests(unittest.TestCase):
         self.assertEqual(st.headline(typed)["value_usd"], 750000)
         self.assertEqual(typed[2]["role"], "other")
 
+    def test_a_large_figure_needs_per_unit_wording_to_be_per_claimant(self):
+        got = st.classify_amount("Class Members may receive a payment of $2,000,000.", "$2,000,000", 2e6)
+        self.assertNotEqual(got["role"], "per_claimant")
+        self.assertEqual(st.classify_amount("Class Members may receive a payment of $2,000.", "$2,000", 2000)["role"], "per_claimant")
+
+    def test_agency_order_total_with_a_penalty_is_not_the_fund(self):
+        redress = "The Bureau’s order requires Honda Finance to come into compliance with the law, pay $10.3 million in consumer redress, and pay a $2.5 million civil money penalty to the Bureau."
+        typed = st.type_amounts([
+            {"page_as_written": "$10.3 million", "value_usd": 10.3e6, "sentence": redress},
+            {"page_as_written": "$2.5 million", "value_usd": 2.5e6, "sentence": redress},
+            {"page_as_written": "$12.8 Million", "value_usd": 12.8e6, "sentence": "CFPB Orders Honda’s Auto Financing Arm to Pay $12.8 Million for COVID-19 and Other Credit Reporting Failures"},
+        ])
+        self.assertEqual([(a["role"], a["detail"]) for a in typed],
+                         [("fund_total", None), ("other", "penalty"), ("other", "order_total")])
+        self.assertEqual(st.headline(typed)["page_as_written"], "$10.3 million")
+        self.assertNotIn("bare_pay", typed[2])
+        # without a penalty on the row, "to pay $X" stays the fund total
+        alone = st.type_amounts([{"page_as_written": "$4.7 million", "value_usd": 4.7e6, "sentence": "Acme agreed to pay $4.7 million to resolve the claims."}])
+        self.assertEqual(alone[0]["role"], "fund_total")
+        # redress wording next to "to pay" is a named fund, kept even with a penalty on the row
+        td = "The order requires TD Bank to take steps to prevent future violations and to pay $7.76 million in redress to affected consumers and a $20 million civil money penalty."
+        typed = st.type_amounts([{"page_as_written": "$7.76 million", "value_usd": 7.76e6, "sentence": td},
+                                 {"page_as_written": "$20 million", "value_usd": 20e6, "sentence": td}])
+        self.assertEqual([a["role"] for a in typed], ["fund_total", "other"])
+
     def test_a_small_figure_is_never_a_fund(self):
         got = st.classify_amount("Fees totaling $79.85 were not paid.", "$79.85", 79.85)
         self.assertNotEqual(got["role"], "fund_total")
@@ -111,9 +144,23 @@ class MdlLinkTests(unittest.TestCase):
         for text in ("1:23-cv-03083", "MDL No. 2905", "No. 2905", "2:19-cv-02905-ml", "", None, "3:23-md-"):
             self.assertIsNone(st.mdl_from_case_number(text), text)
 
+    REG = st.registry_index([{"mdl_number": 2905, "master_docket": "2:19-ml-2905", "cl_court_id": "cacd"},
+                             {"mdl_number": 2406, "master_docket": "2:25-md-10000", "cl_court_id": "alnd"}])
+
     def test_links_dedupe_by_mdl(self):
-        links = st.mdl_links([{"as_written": "2:19-ml-02905-JAK-JPR"}, {"as_written": "2:19-ml-02905"}, {"as_written": "8:20-cv-01234"}])
+        links = st.mdl_links([{"as_written": "2:19-ml-02905-JAK-JPR"}, {"as_written": "2:19-ml-02905"}, {"as_written": "8:20-cv-01234"}], self.REG)
         self.assertEqual([l["mdl"] for l in links], [2905])
+
+    def test_link_only_when_the_case_number_is_the_registry_master_docket(self):
+        self.assertEqual(st.verified_mdl("2:19-ml-02905-JAK-JPR", self.REG), 2905)
+        self.assertEqual(st.verified_mdl("2:19-ml-02905", self.REG, ["cacd"]), 2905)
+        self.assertIsNone(st.verified_mdl("2:19-ml-02905", self.REG, ["mad"]))       # page names another court
+        self.assertIsNone(st.verified_mdl("8:19-ml-02905", self.REG))                # another office's docket
+        self.assertIsNone(st.verified_mdl("2:20-ml-02905", self.REG))                # another year's docket
+        self.assertIsNone(st.verified_mdl("2:19-md-02905", self.REG))                # md, not ml
+        self.assertIsNone(st.verified_mdl("1:24-md-03999", self.REG))                # not in the registry
+        self.assertIsNone(st.verified_mdl("2:25-md-10000", self.REG))                # docket number is not the MDL number
+        self.assertEqual(st.mdl_links([{"as_written": "2:19-ml-02905"}], {}), [])
 
 
 class DeadlineTests(unittest.TestCase):
