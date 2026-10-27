@@ -319,6 +319,155 @@ class JudgeTests(unittest.TestCase):
         self.assertEqual(J.display_name(P.parse_name("TAKASUGI, ROBERT M."), mixed), "Robert M. Takasugi")
 
 
+def fjc_row(nid, name, profiles, *services, status="Active"):
+    return {"nid": nid, "name": name, "status": status, "profiles": list(profiles),
+            "services": [{"court_id": c, "court_type": t, "commission": s, "termination": e} for c, t, s, e in services]}
+
+
+class FjcLookupTests(unittest.TestCase):
+    """Fixed lookup (de-judges-data): every FJC status, one profile per FJC nid, suffix and service-date guards."""
+
+    DC = "U.S. District Court"
+
+    def lookup(self, fjc, xwalk=()):
+        return J.lookup_from_snapshots(fjc, list(xwalk))
+
+    def match(self, lookup, court, printed, listed=None):
+        return J.FjcIndex(lookup).match(court, P.parse_name(printed), listed)
+
+    def test_senior_and_service_ended_judges_are_in_the_lookup(self):
+        lk = self.lookup([fjc_row("1", "Alvin K. Hellerstein", ["p-hell"], ("nysd", self.DC, "1998-10-21", None), status="Senior"),
+                          fjc_row("2", "Robert Porter Patterson, Jr.", ["p-pat"], ("nysd", self.DC, "1988-10-06", "2015-04-21"), status="Service ended")])
+        (profile, _), status = self.match(lk, "nysd", "HELLERSTEIN, ALVIN K.", ["2026-03-31"])
+        self.assertEqual((profile, status), ("p-hell", "unique"))
+        (profile, _), status = self.match(lk, "nysd", "PATTERSON, ROBERT P., JR.", ["2004-03-31", "2015-09-30"])
+        self.assertEqual((profile, status), ("p-pat", "unique"))
+
+    def test_only_district_court_services_count(self):
+        lk = self.lookup([fjc_row("3", "Jane Q. Roe", ["p-roe"], ("ca9", "U.S. Court of Appeals", "2010-01-01", None))])
+        self.assertEqual(self.match(lk, "ca9", "ROE, JANE Q."), (None, "none"))
+        self.assertEqual(lk["judges"], [])
+
+    def test_profile_comes_from_crosswalk_when_the_fjc_record_has_none(self):
+        lk = self.lookup([fjc_row("4", "Michelle Williams Court", [], ("cacd", self.DC, "2023-01-01", None))],
+                         [{"judges_id": "p-court", "fjc_nid": "4"}])
+        (profile, _), status = self.match(lk, "cacd", "COURT, MICHELLE WILLIAMS", ["2026-03-31"])
+        self.assertEqual((profile, status), ("p-court", "unique"))
+
+    def test_two_services_or_two_entries_of_one_nid_are_one_judge(self):
+        lk = self.lookup([fjc_row("5", "Robert Lewis Hinkle", ["p-hink"], ("flnd", self.DC, "1996-01-01", None), ("flnd", self.DC, "1996-01-01", None))],
+                         [{"judges_id": "p-hink", "fjc_nid": "5"}])
+        (profile, _), status = self.match(lk, "flnd", "HINKLE, ROBERT L.", ["2026-03-31"])
+        self.assertEqual((profile, status), ("p-hink", "unique"))
+
+    def test_conflicting_profiles_for_one_nid_are_never_linked(self):
+        lk = self.lookup([fjc_row("6", "J. Philip Calabrese", ["p-a"], ("ohnd", self.DC, "2020-12-01", None))],
+                         [{"judges_id": "p-b", "fjc_nid": "6"}])
+        self.assertEqual(lk["profile_conflicts"], ["6"])
+        self.assertEqual(self.match(lk, "ohnd", "CALABRESE, J. PHILIP", ["2026-03-31"]), (None, "no_profile"))
+
+    def test_judge_without_any_profile_is_no_profile(self):
+        lk = self.lookup([fjc_row("7", "Anna Elizabeth Wagner St. John", [], ("txsd", self.DC, "2026-05-01", None))])
+        self.assertEqual(self.match(lk, "txsd", "WAGNER ST. JOHN, ANNA E.", ["2026-03-31"]), (None, "no_profile"))
+        lk2 = self.lookup([fjc_row("8", "Ana Isabel de Alba", [], ("caed", self.DC, "2022-06-01", None))])
+        self.assertEqual(self.match(lk2, "caed", "DE ALBA, ANA I.", ["2026-03-31"]), (None, "no_profile"))
+
+    def father_and_son(self):
+        return self.lookup([fjc_row("10", "James Maxwell Moody", ["p-sr"], ("ared", self.DC, "1995-08-14", "2014-03-07"), status="Service ended"),
+                            fjc_row("11", "James Maxwell Moody, Jr.", ["p-jr"], ("ared", self.DC, "2014-03-10", None))])
+
+    def test_namesakes_are_told_apart_by_service_dates(self):
+        lk = self.father_and_son()
+        (profile, _), status = self.match(lk, "ared", "MOODY, JAMES MAXWELL", ["2004-03-31", "2013-09-30"])
+        self.assertEqual((profile, status), ("p-sr", "unique"))
+        (profile, _), status = self.match(lk, "ared", "MOODY, JAMES M., JR.", ["2014-03-31", "2026-03-31"])
+        self.assertEqual((profile, status), ("p-jr", "unique"))
+
+    def test_namesakes_without_dates_stay_ambiguous(self):
+        self.assertEqual(self.match(self.father_and_son(), "ared", "MOODY, JAMES MAXWELL"), (None, "ambiguous"))
+
+    def test_namesakes_both_serving_during_the_listings_stay_ambiguous(self):
+        lk = self.lookup([fjc_row("12", "John A. Doe", ["p-1"], ("ded", self.DC, "2000-01-01", None)),
+                          fjc_row("13", "John A. Doe, Jr.", ["p-2"], ("ded", self.DC, "2005-01-01", None))])
+        self.assertEqual(self.match(lk, "ded", "DOE, JOHN A.", ["2006-03-31", "2010-03-31"]), (None, "ambiguous"))
+
+    def test_contradicting_suffix_never_matches(self):
+        lk = self.lookup([fjc_row("14", "William Horsley Orrick, Jr.", ["p-jr"], ("cand", self.DC, "1974-07-08", "2003-08-14"), status="Service ended"),
+                          fjc_row("15", "William Horsley Orrick, III", ["p-3"], ("cand", self.DC, "2013-05-16", None))])
+        (profile, _), status = self.match(lk, "cand", "ORRICK, WILLIAM H., III")
+        self.assertEqual((profile, status), ("p-3", "unique"))
+
+    def test_service_ended_long_before_the_listings_never_matches(self):
+        lk = self.lookup([fjc_row("16", "Albert Vickers Bryan", ["p-old"], ("vaed", self.DC, "1947-06-05", "1961-08-24"), status="Service ended")])
+        self.assertEqual(self.match(lk, "vaed", "BRYAN, ALBERT V.", ["2004-03-31"]), (None, "none"))
+        lk2 = self.lookup([fjc_row("17", "Mary B. Grey", ["p-g"], ("ded", self.DC, "1990-01-01", "2004-01-15"), status="Service ended")])
+        (profile, _), status = self.match(lk2, "ded", "GREY, MARY B.", ["2004-03-31"])  # printed once more on the next report
+        self.assertEqual((profile, status), ("p-g", "unique"))
+
+    def test_footnote_digits_after_the_name_are_ignored_but_initials_stay_strict(self):
+        lk = self.lookup([fjc_row("18", "William Haskell Alsup", ["p-al"], ("cand", self.DC, "1999-01-01", None), status="Senior")])
+        (profile, _), status = self.match(lk, "cand", "ALSUP, WILLIAM HASKELL 1", ["2012-03-31"])
+        self.assertEqual((profile, status), ("p-al", "unique"))
+        self.assertEqual(self.match(lk, "cand", "ALSUP, WILLIAM", ["2012-03-31"]), (None, "none"))  # dropped middle name: never linked
+
+    def test_profile_link_text_covers_every_status(self):
+        for status in ("unique", "none", "ambiguous", "no_profile", "unparsed"):
+            self.assertTrue(J.PROFILE_LINK_TEXT[status])
+
+
+class RelinkTests(unittest.TestCase):
+    """relink_cjra_judges: packet rows and the patch contract text (synthetic snapshots; nothing is read or written)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import relink_cjra_judges as R
+        cls.R = R
+
+    def snap(self, rid, identity, listed, match=None, filt=None, role="district"):
+        court = identity.split("|")[0]
+        return {"id": rid, "title": rid, "identity": identity, "court_id": court, "roles": [role], "role": role, "active": "yes", "listed": listed,
+                "match": match or {"status": "none", "profile": None}, "filter_judge_profile": filt, "row_md5": "0" * 32}
+
+    def lookup(self):
+        return J.lookup_from_snapshots([fjc_row("1", "Alvin K. Hellerstein", ["p-h"], ("nysd", "U.S. District Court", "1998-10-21", None), status="Senior"),
+                                        fjc_row("2", "Paul J. Barbadoro", ["p-b"], ("nhd", "U.S. District Court", "1992-01-01", None))], [])
+
+    def test_name_from_identity(self):
+        self.assertEqual(self.R.name_from_identity("nysd|HELLERSTEIN|ALVIN K|"), {"format": "surname_first", "surname": "HELLERSTEIN", "given": "ALVIN K", "suffix": None})
+        self.assertEqual(self.R.name_from_identity("ohnd|KNEPP|JAMES R|II")["suffix"], "II")
+        self.assertIsNone(self.R.name_from_identity("nysd|raw|SOME LABEL"))
+
+    def test_changes_link_new_rows_and_add_the_filter_to_kept_links(self):
+        rows = [self.snap("nysd-hellerstein-alvin-k", "nysd|HELLERSTEIN|ALVIN K|", ["2004-03-31", "2026-03-31"]),
+                self.snap("nhd-barbadoro-paul-j", "nhd|BARBADORO|PAUL J|", ["2026-03-31"], {"status": "unique", "profile": "p-b"}),
+                self.snap("nhd-barbadoro-paul-j-2", "nhd|BARBADORO|PAUL J|", ["2026-03-31"], {"status": "unique", "profile": "p-b"}, ["p-b"]),
+                self.snap("nhd-nobody-a", "nhd|NOBODY|A|", ["2026-03-31"])]
+        results = self.R.relink(rows, self.lookup())
+        chs = {c["id"]: c for c in self.R.changes(results)}
+        self.assertEqual(chs["nysd-hellerstein-alvin-k"]["kind"], "linked")
+        self.assertEqual(chs["nysd-hellerstein-alvin-k"]["after"], {"status": "unique", "profile": "p-h"})
+        self.assertEqual(chs["nhd-barbadoro-paul-j"]["kind"], "filter_only")
+        self.assertNotIn("nhd-barbadoro-paul-j-2", chs)   # already carries filters.judge_profile
+        self.assertNotIn("nhd-nobody-a", chs)             # still unlinked, nothing to change
+        before, after = self.R.counts(results, "before"), self.R.counts(results, "after")
+        self.assertEqual((before["linked"], after["linked"]), (2, 3))
+
+    def test_contract_is_guarded_and_reversible(self):
+        rows = [self.snap("nysd-hellerstein-alvin-k", "nysd|HELLERSTEIN|ALVIN K|", ["2026-03-31"])]
+        results = self.R.relink(rows, self.lookup())
+        chs = self.R.changes(results)
+        sql = self.R.render_sql(chs, self.R.counts(results, "before"), self.R.counts(results, "after"), {"cjra_judges": "x"})
+        self.assertIn("md5(to_jsonb(r)::text) = c.original_record->>'row_md5'", sql)
+        self.assertIn("ROLLBACK (exact)", sql)
+        self.assertIn("'judge_profile', jsonb_build_array(x.profile)", sql)
+        self.assertIn("('nysd-hellerstein-alvin-k', '00000000000000000000000000000000', 'unique', 'p-h',", sql)
+        for forbidden in ("delete from", "drop ", "truncate"):
+            self.assertNotIn(forbidden, sql.lower())
+        preview = self.R.preview_sql(chs)
+        self.assertNotIn("insert into", preview.lower())
+        self.assertNotIn("update public", preview.lower())
+
+
 class BuilderHelperTests(unittest.TestCase):
     def test_pct_change_not_computed_for_zero_or_missing_base(self):
         self.assertEqual(B.pct_change(110, 100), 10.0)
