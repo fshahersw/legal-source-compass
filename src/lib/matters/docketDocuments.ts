@@ -61,7 +61,7 @@ export function parseDocketDocument(item: unknown, facts?: unknown): DocketDocum
   if (!cells) return null;
   const nativeDocumentId = str(cells["native_document_id"]);
   if (!nativeDocumentId) return null;
-  // Sealed, restricted, and unknown-seal rows are not listed. The projection omits them; this is the same rule.
+  // Provider-restricted rows are not listed (the projection omits them too). Unknown-seal rows are listed (owner decision 2026-10-27).
   if (cells["restricted"] === true) return null;
   const withheldRaw = str(cells["description_withheld"]);
   if (withheldRaw && withheldRaw !== CONTACT_WITHHELD) return null;
@@ -134,7 +134,16 @@ export function caseBelongsToMdl(
 export function casesFromMetadata(
   coverage: unknown,
   filters: unknown,
-): { caseId: string; rows: number; sheetDocuments: number | null; withheld: number | null }[] {
+): {
+  caseId: string;
+  rows: number;
+  sheetDocuments: number | null;
+  withheld: number | null;
+  /** Written by the projector into coverage.by_case since 2026-10-27; null for older entries. */
+  title?: string | null;
+  docketKey?: string | null;
+  mdl?: string | null;
+}[] {
   const byCase = isObj(coverage) && isObj(coverage["by_case"]) ? coverage["by_case"] : null;
   if (byCase && Object.keys(byCase).length)
     return Object.entries(byCase).map(([caseId, raw]) => {
@@ -144,6 +153,9 @@ export function casesFromMetadata(
         rows: safeUint(c["rows"]) ?? 0,
         sheetDocuments: safeUint(c["sheet_documents"]),
         withheld: safeUint(c["withheld_no_row"]),
+        title: typeof c["case_title"] === "string" ? c["case_title"] : null,
+        docketKey: typeof c["docket_key"] === "string" ? c["docket_key"] : null,
+        mdl: typeof c["mdl"] === "string" ? c["mdl"] : null,
       };
     });
   const list = Array.isArray(filters) ? filters : [];

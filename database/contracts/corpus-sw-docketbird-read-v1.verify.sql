@@ -15,9 +15,10 @@ select dataset, count(*) from public.corpus_records where dataset in ('sw_docket
 select id, ready, expected_records, imported_records, metadata->'withheld_counts' as withheld, metadata->'projection_validation'->>'verified' as verified
   from public.corpus_datasets where id in ('sw_docket_documents_v1', 'sw_matter_parties_v1') order by 1;
 
--- 3. Rows by source and case count (after: docketbird-rest 24,348 / 10 cases, docketbird-mcp 72,541 / 498 cases (3 cases shared with REST),
---    legacy 2,783 / 1 case; 507 distinct cases).
-set local statement_timeout = '120s';
+-- 3. Rows by source and case count (after: docketbird-rest 24,348 / 10 cases, docketbird-mcp 72,541 / 497 cases (shared cases with REST counted in both),
+--    legacy 2,783 / 1 case; 506 distinct cases. coverage.by_case carries 507 entries: azd-2:2008-md-01977 has 2 documents,
+--    both provider-restricted, so it has an entry but no rows).
+set statement_timeout = '120s';
 select coalesce(filters->>'source_system', 'docketbird-rest (legacy row)') as source, count(*), count(distinct filters->>'case_id') as cases
   from public.corpus_records where dataset = 'sw_docket_documents_v1' group by 1 order by 1;
 
@@ -35,6 +36,14 @@ select count(*) filter (where item->'cells'->'restricted' = 'null'::jsonb) as un
        count(*) filter (where item->'cells'->>'description' ~* '(seal|restricted|in[[:space:]-]*camera|ex[[:space:]-]*parte|redact)') as sealing_word_rows,
        count(*) filter (where item->'cells'->>'description_withheld' = 'contact_or_access_data') as contact_withheld_rows
   from public.corpus_records where dataset = 'sw_docket_documents_v1';
+
+-- Applied 2026-10-27 (lead): sw_docket_documents_v1 99,672 rows (mcp 72,541 / 497 cases, rest 24,348 / 10, legacy 2,783 / 1;
+-- 506 distinct cases, 507 coverage entries), ready, projection_validation verified; withheld_counts not_projected 1,410
+-- (1,344 provider-restricted + 66 legacy); restricted_rows 0; personalized_locators 0; unknown_seal_rows 0;
+-- sealing_word_rows 3,352; contact_withheld_rows 1,007 (60 legacy + 947: the access-data rule now also catches dial-in
+-- numbers, meeting IDs and passcodes); 0 descriptions with HTML entities.
+-- Parties: re-projected for the 22 MDLs whose lake counts matched the dry run (11,225 rows); MDLs 2606, 2846, 2973 and
+-- 3081 grew by 20 lake associations each after the dry run and were not re-projected (their 600 rows unchanged).
 
 -- 6. Parties: before 3 rows name_withheld=true (keyword rule); after 0. Counsel omitted for "Attorney in sealed group": 0 before and after.
 select count(*) filter (where item->'cells'->>'name_withheld' = 'true') as name_withheld,

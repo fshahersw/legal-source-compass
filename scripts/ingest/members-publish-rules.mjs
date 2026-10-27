@@ -14,7 +14,8 @@ export const sha256 = x => createHash('sha256').update(x).digest('hex');
 export const EXCLUDE_RE = /seal|restricted|in[\s-]*camera|ex[\s-]*parte|redact/i;
 export const excluded = s => EXCLUDE_RE.test(String(s ?? ''));
 // A published free-text value must not carry a contact field.
-export const CONTACT_RE = /[\w.+-]+@[\w-]+\.[\w.-]+|\(\d{3}\)\s?\d{3}[-.\s]?\d{4}|\b\d{3}[-.]\d{3}[-.]\d{4}\b/;
+// Email, US phone numbers (also space-separated dial-in form) and hearing access data (meeting id, passcode, access code): review 2026-10-27.
+export const CONTACT_RE = /[\w.+-]+@[\w-]+\.[\w.-]+|\(\d{3}\)\s?\d{3}[-.\s]?\d{4}|\b\d{3}[-.]\d{3}[-.]\d{4}\b|\+\s?1?[\s.]?\d{3}[\s.]\d{3}[\s.]\d{4}\b|\b\d{3}\s\d{3}\s\d{4}\b|\b(?:passcode|pass code|meeting id|access code)\b/i;
 export const hasContact = s => CONTACT_RE.test(String(s ?? ''));
 
 // Parties and counsel (sw_matter_parties_v1) under the owner decision of 2026-10-27 ("dont withhold any data. If its accurate and valuable,

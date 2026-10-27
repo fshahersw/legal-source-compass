@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildRows, crosswalkFromMdls, availabilityOf, datasetMetadata, DS, RULE, sourceHold, exactClDocket, mcpDocument, mergeDocuments, staleRows, verifiedTitle, sheetBody, documentOrdinal} from './project-docketbird-documents.mjs';
+import {decodeEntities, buildRows, crosswalkFromMdls, availabilityOf, datasetMetadata, DS, RULE, sourceHold, exactClDocket, mcpDocument, mergeDocuments, staleRows, verifiedTitle, sheetBody, documentOrdinal} from './project-docketbird-documents.mjs';
 import {canon, sha256} from '../members-publish-rules.mjs';
 
 const docRow = (n, extra = {}, caseId = 'njd-2:2024-md-03113') => ({native_id: `${caseId}-${n}`, data: {id: `${caseId}-${n}`, case_id: caseId, title: 'Letter from counsel', filing_date: '2024-06-20', restricted: false, docket_sheet_number: Number(n.slice(0, 5)) || 1,
@@ -112,4 +112,24 @@ test('a restriction from the lake or from the capture holds an MCP document; RES
   assert.equal(merged.length, 1); assert.equal(merged[0].source, 'docketbird-rest'); assert.equal(merged[0].data.restricted, true);
   const merged2 = mergeDocuments([rest], [mcpDocument(mcpRaw(), index)]);
   assert.equal(merged2[0].data.restricted, false); assert.equal(merged2[0].cl_docket.id, '4132492');
+});
+
+test('review 2026-10-27: HTML entities in titles are decoded; the case labels land in the metadata; the row hash ignores projected_at', () => {
+  assert.equal(decodeEntities('ORDER THAT PLAINTIFFS&#039; MOTION &amp; BRIEF &#x2013; &quot;X&quot; &bogus;'), 'ORDER THAT PLAINTIFFS\' MOTION & BRIEF \u2013 "X" &bogus;');
+  assert.equal(decodeEntities(null), null);
+  const {rows, stats} = run([docRow('00001', {title: 'PLAINTIFFS&#039; MOTION'})]);
+  assert.equal(rows[0].item.cells.description, "PLAINTIFFS' MOTION");
+  assert.deepEqual([stats.by_case['njd-2:2024-md-03113'].case_title, stats.by_case['njd-2:2024-md-03113'].docket_key, stats.by_case['njd-2:2024-md-03113'].mdl],
+    ['Apple Inc. Smartphone Antitrust Litigation', 'njd:2:2024-md-03113', '3113']);
+  const later = buildRows({caseRows, docRows: [docRow('00001', {title: 'PLAINTIFFS&#039; MOTION'})], registry: {}, crosswalk, matterIds: new Set(['3113']), partyCounts: new Map([['3113', 10]]), projectedAt: 'later'});
+  assert.equal(later.rows[0].detail.provenance.projection_row_sha256, rows[0].detail.provenance.projection_row_sha256);
+});
+
+test('review 2026-10-27: dial-in numbers and hearing passcodes are withheld as access data (row kept)', () => {
+  const {rows} = run([docRow('00001', {title: 'NOTICE of hearing. Meeting ID: 165 598 8603 Passcode: 316566 Dial in Numbers: + 1 669 254 5252'})]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].item.cells.description, null);
+  assert.equal(rows[0].item.cells.description_withheld, 'contact_or_access_data');
+  const plain = run([docRow('00001', {title: 'ORDER granting motion 123 of 2024'})]).rows[0];
+  assert.equal(plain.item.cells.description_withheld, null);
 });

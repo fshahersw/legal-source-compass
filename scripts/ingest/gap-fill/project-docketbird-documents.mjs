@@ -82,6 +82,21 @@ export function verifiedTitle(prov, captureIndex) {
   return {title: doc.title ?? null, restricted: doc.restricted, verified: true, reason: null};
 }
 
+const NAMED_ENTITIES = {amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '\u2013', mdash: '\u2014', lsquo: '\u2018', rsquo: '\u2019', ldquo: '\u201c', rdquo: '\u201d', sect: '\u00a7', para: '\u00b6', hellip: '\u2026'};
+/** Decodes HTML character references (numeric, hex and the common named ones) so a title reads as the court record does
+ * ("PLAINTIFFS&#039; MOTION" -> "PLAINTIFFS' MOTION"). Applied after hash verification, which stays on the raw capture object. */
+export function decodeEntities(s) {
+  if (s == null) return s;
+  return String(s).replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (m, g) => {
+    if (g[0] === '#') {
+      const n = g[1] === 'x' || g[1] === 'X' ? parseInt(g.slice(2), 16) : parseInt(g.slice(1), 10);
+      return Number.isFinite(n) && n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : m;
+    }
+    const v = NAMED_ENTITIES[g.toLowerCase()];
+    return v === undefined ? m : v;
+  });
+}
+
 /** Normalizes a docketbird-mcp document_metadata lake row to the docket-document shape of the REST rows. */
 export function mcpDocument(row, captureIndex) {
   const d = row.data ?? {};
@@ -90,7 +105,7 @@ export function mcpDocument(row, captureIndex) {
   const ind = d.source_provider_downloaded_indicator;
   return {
     native_id: row.native_id, source: 'docketbird-mcp', title_verification: t.verified ? 'verified' : t.reason,
-    data: {id: d.native_document_id ?? row.native_id, case_id: d.native_case_id, title: t.title, filing_date: d.source_filing_date ?? null,
+    data: {id: d.native_document_id ?? row.native_id, case_id: d.native_case_id, title: decodeEntities(t.title), filing_date: d.source_filing_date ?? null,
       // Either the lake flag or the capture's own flag restricts the document.
       restricted: d.source_restricted === true || t.restricted === true ? true : d.source_restricted === false ? false : null,
       docket_sheet_number: Number.isInteger(d.source_primary_docket_sheet_number) ? d.source_primary_docket_sheet_number : null,
@@ -127,7 +142,9 @@ export function buildRows({caseRows, docRows, registry, crosswalk, matterIds, pa
     const xw = key ? crosswalk.get(key) ?? null : null;
     const reg = new Map((registry[caseId] ?? []).map(x => [x.native_document_id, x]));
     const docs = byCase.get(caseId).sort((a, b) => (a.data.docket_sheet_number ?? 1e9) - (b.data.docket_sheet_number ?? 1e9) || a.native_id.localeCompare(b.native_id));
-    const caseStats = stats.by_case[caseId] = {sheet_documents: docs.length, rows: 0, withheld_no_row: 0, rule: RULE};
+    // Case title, docket key and MDL in the metadata so the overview never needs one query per case (review 2026-10-27).
+    const caseStats = stats.by_case[caseId] = {sheet_documents: docs.length, rows: 0, withheld_no_row: 0, rule: RULE,
+      case_title: c.title ?? docs.find(r => r.cl_docket?.case_name)?.cl_docket?.case_name ?? null, docket_key: key, mdl: xw?.mdl ?? null};
     for (const r of docs) {
       const d = r.data;
       const source = r.source ?? 'docketbird-rest';
@@ -135,7 +152,7 @@ export function buildRows({caseRows, docRows, registry, crosswalk, matterIds, pa
       const x = reg.get(d.id) ?? null;
       const stored = Boolean(x?.sha256);
       const availability = availabilityOf({stored, downloaded: d.downloaded_by_provider, registryAvailability: x?.availability});
-      const raw = ws(d.title);
+      const raw = ws(decodeEntities(d.title));
       const contact = hasContact(raw);
       const clip = clipDescription(raw, 500);
       const description = contact || !raw ? null : clip.text;
@@ -186,8 +203,9 @@ export function buildRows({caseRows, docRows, registry, crosswalk, matterIds, pa
         text: [description ?? '', entryNumber ?? '', caseTitle ?? '', fileName ?? '', mdl ? `MDL ${mdl}` : '', d.filing_date ?? ''].join(' ').replace(/\s+/g, ' ').trim(),
         filters: {_listing: 'true', native_id: d.id, case_id: caseId, court_id: courtId ?? '', mdl: mdl ?? '', year, availability, has_pdf: stored ? 'true' : 'false', native_docket_id: clId ?? '', source_system: source},
       };
-      rec.detail.provenance.projected_at = projectedAt;
+      // The row hash leaves out projected_at, so an unchanged row hashes the same on every run (recovery reruns show changed_existing 0).
       rec.detail.provenance.projection_row_sha256 = sha256(canon([rec.id, rec.title, rec.item, rec.detail, rec.filters, rec.text, rec.source_url]));
+      rec.detail.provenance.projected_at = projectedAt;
       rows.push(rec); stats.rows++; caseStats.rows++; stats[availability]++; stats.by_source[source] = (stats.by_source[source] ?? 0) + 1;
     }
   }
@@ -211,7 +229,8 @@ export function datasetMetadata(allFilters, stats, priorCoverage = {}) {
   return {
     grain: 'One docket-sheet document of a DocketBird case', aliases: [DS, 'sw-docket-documents'], source_system: 'docketbird', schema_version: SCHEMA, source_runs: [RUN_ID], publication_rule: RULE,
     qualification: 'Documents of DocketBird cases (the account\'s tracked cases and the firm-portfolio docket sheets), as the provider docket sheet shows them. Documents the provider flags restricted are counted, not shown; documents whose seal status the provider does not record are shown with that status. File names are the provider\'s stored object names; PDFs live in the private store and are read through the PDF read API. The provider supplies no document category. Not legal advice.',
-    privacy_policy: 'Show as published (owner decisions 2026-10-03 and 2026-10-27): held back only when the provider flags the document restricted. No contact fields. No signed or personalized storage links.',
+    privacy_policy: 'Show as published (owner decisions 2026-10-03 and 2026-10-27): held back only when the provider flags the document restricted. No contact fields or hearing access data (dial-in numbers, meeting IDs, passcodes). No signed or personalized storage links.',
+    ordinal_note: 'Rows projected from 2026-10-27 order by filing day then entry number. The earlier ilnd-1:2023-cv-00818 rows keep their case-index ordinals (10,000,010-10,028,490) until that case is captured and projected again, so in ordinal order they sort ahead of the other cases.',
     withheld_counts: {sheet_documents: sum('sheet_documents'), not_projected: sum('withheld_no_row'), source_restricted: sum('withheld_no_row') - legacy, legacy_rule_not_projected: legacy},
     coverage: {rows: allFilters.length, stored: avail.stored ?? 0, provider_not_downloaded: avail.provider_not_downloaded ?? 0, held_by_registry: avail.held_by_registry ?? 0, not_stored: avail.not_stored ?? 0, by_case: byCase,
       // Rows projected before the source_system filter existed all came from the DocketBird documents API (docketbird-rest stage files).
@@ -333,6 +352,8 @@ export async function main(argv) {
     await fs.writeFile(args.ledger, images.map(r => JSON.stringify({captured_at: projectedAt, action: stale.some(s => s.id === r.id) ? 'removed' : 'replaced', before: r})).join('\n') + '\n', {flag: 'a'});
   }
   const existing = (await rest(`corpus_datasets?select=id,ready,metadata&id=eq.${DS}`)).data[0] ?? null;
+  // Not ready while rows change: a crash mid-run must not leave a partial dataset marked ready (review 2026-10-27).
+  if (existing) await rest(`corpus_datasets?id=eq.${DS}`, {method: 'PATCH', prefer: 'return=minimal', body: {ready: false}});
   await rest('corpus_datasets?on_conflict=id', {method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: [{id: DS, label: 'Seeger Weiss matter registry — documents of DocketBird dockets', ...(existing ? {} : {ready: false}), updated_at: projectedAt}]});
   for (let i = 0; i < stale.length; i += 100) await rest(`corpus_records?dataset=eq.${DS}&id=in.(${stale.slice(i, i + 100).map(r => `"${r.id}"`).map(enc).join(',')})`, {method: 'DELETE', prefer: 'return=minimal'});
   for (let i = 0; i < todo.length; i += 150) await rest('corpus_records?on_conflict=dataset,id', {method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: todo.slice(i, i + 150)});
@@ -342,7 +363,8 @@ export async function main(argv) {
   const mismatched = rows.filter(r => { const x = afterById.get(r.id); return !x || x.h !== r.detail.provenance.projection_row_sha256 || Number(x.ordinal) !== r.ordinal; }).length;
   const sample = rows.filter((_, i) => i % Math.max(1, Math.floor(rows.length / 500)) === 0);
   const back = await remoteRowsByIds(sample.map(r => r.id));
-  const digest = recs => sha256(canon([...recs].sort((a, b) => a.id.localeCompare(b.id)).map(r => [r.id, r.title, r.item, r.detail, r.filters, Number(r.ordinal)])));
+  const noStamp = detail => ({...detail, provenance: {...(detail?.provenance ?? {}), projected_at: undefined}});
+  const digest = recs => sha256(canon([...recs].sort((a, b) => a.id.localeCompare(b.id)).map(r => [r.id, r.title, r.item, noStamp(r.detail), r.filters, Number(r.ordinal)])));
   const verified = mismatched === 0 && after.length === summary.remote_after_expected && digest(back) === digest(sample);
   const projection_validation = {projected_records: rows.length, remote_records: after.length, expected_remote_records: summary.remote_after_expected, mismatched, sample_rows: sample.length, verified, validated_at: new Date().toISOString(), contract_version: SCHEMA,
     rows_sha256: sha256(rows.map(r => `${r.id}:${r.detail.provenance.projection_row_sha256}`).sort().join('\n')), method: 'PostgREST read-back of every projected row hash and ordinal, exact dataset count, full-field digest of a fixed sample'};

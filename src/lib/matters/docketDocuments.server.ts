@@ -20,7 +20,11 @@ const cell = (name: string) => enc(`item->cells->>${name}`);
 
 let overviewCache: { at: number; value: DocketDocumentsOverview | null } | null = null;
 
-/** Counts from the dataset's own metadata plus one row per case for its docket key, title and MDL label; null while held. */
+/** Max per-case lookups for cases whose metadata entry predates the case title / docket key fields. */
+const MAX_CASE_LOOKUPS = 20;
+
+/** Counts and per-case labels from the dataset's own metadata; a row lookup (indexed filters containment) only for older
+ * entries without labels, capped. Null while held. */
 export async function loadDocketDocumentsOverview(): Promise<DocketDocumentsOverview | null> {
   if (overviewCache && Date.now() - overviewCache.at < 5 * 60_000) return overviewCache.value;
   const meta = await restGet<
@@ -38,10 +42,20 @@ export async function loadDocketDocumentsOverview(): Promise<DocketDocumentsOver
   let value: DocketDocumentsOverview | null = null;
   if (row?.ready === true) {
     const coverage = isObj(row.coverage) ? row.coverage : {};
+    const listed = casesFromMetadata(row.coverage, row.filters);
+    const needLookup = new Set(
+      listed
+        .filter((c) => c.title == null && c.docketKey == null)
+        .sort((a, b) => b.rows - a.rows)
+        .slice(0, MAX_CASE_LOOKUPS)
+        .map((c) => c.caseId),
+    );
     const cases: DocketDocumentsCase[] = await Promise.all(
-      casesFromMetadata(row.coverage, row.filters).map(async (c) => {
+      listed.map(async (c) => {
+        if (!needLookup.has(c.caseId))
+          return { ...c, docketKey: c.docketKey ?? null, mdl: c.mdl ?? null, title: c.title ?? null };
         const first = await restGet<{ item: unknown }[]>(
-          `corpus_records?select=item&dataset=eq.${DOCKET_DOCUMENTS_DATASET}&${cell("native_case_id")}=eq.${enc(c.caseId)}&limit=1`,
+          `corpus_records?select=item&dataset=eq.${DOCKET_DOCUMENTS_DATASET}&filters=cs.${enc(JSON.stringify({ case_id: c.caseId }))}&limit=1`,
         ).catch(() => null);
         const item = first?.rows[0]?.item;
         const cells = isObj(item) && isObj(item["cells"]) ? item["cells"] : {};
@@ -78,8 +92,9 @@ async function liveCount(path: string): Promise<number | null> {
 
 const NOT_RECORDED: ExactCount = { value: null, gap: "not-recorded" };
 
-/** Listable rows: restricted and seal-coded descriptions are not part of the count or the list. */
-const listable = `&${cell("restricted")}=eq.false&or=${enc("(item->cells->>description_withheld.is.null,item->cells->>description_withheld.eq.contact_or_access_data)")}`;
+/** Listable rows: provider-restricted rows and seal-coded descriptions are not part of the count or the list. Rows whose seal status
+ * the provider does not record (restricted null) are listed, as parseDocketDocument does (owner decision 2026-10-27). */
+const listable = `&and=${enc("(or(item->cells->>restricted.is.null,item->cells->>restricted.eq.false),or(item->cells->>description_withheld.is.null,item->cells->>description_withheld.eq.contact_or_access_data))")}`;
 
 async function countEntriesByMdl(mdl: string): Promise<ExactCount> {
   const value = await liveCount(

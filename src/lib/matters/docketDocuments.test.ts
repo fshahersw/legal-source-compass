@@ -116,7 +116,19 @@ describe("docket documents", () => {
         { by_case: { "a-1:2024-md-00001": { rows: 5, sheet_documents: 6, withheld_no_row: 1 } } },
         [],
       ),
-    ).toEqual([{ caseId: "a-1:2024-md-00001", rows: 5, sheetDocuments: 6, withheld: 1 }]);
+    ).toEqual([
+      { caseId: "a-1:2024-md-00001", rows: 5, sheetDocuments: 6, withheld: 1, title: null, docketKey: null, mdl: null },
+    ]);
+    expect(
+      casesFromMetadata(
+        {
+          by_case: {
+            "njd-2:2024-md-03113": { rows: 2, sheet_documents: 2, withheld_no_row: 0, case_title: "In re Apple", docket_key: "njd:2:2024-md-03113", mdl: "3113" },
+          },
+        },
+        [],
+      )[0],
+    ).toMatchObject({ title: "In re Apple", docketKey: "njd:2:2024-md-03113", mdl: "3113" });
     expect(
       casesFromMetadata({}, [
         { name: "case_id", options: [{ value: "b-2:2025-md-00002", count: 7 }, { value: "" }] },

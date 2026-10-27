@@ -60,6 +60,8 @@ begin
                  (select jsonb_build_object('id', d.native_id, 'court_id', d.data->'court_id', 'docket_number', d.data->'docket_number', 'case_name', d.data->'case_name')
                     from corpus_ingest.entities d
                    where d.source_system = 'courtlistener' and d.entity_type = 'dockets' and d.review_status <> 'quarantined'
+                     -- CourtListener-blocked dockets lend no caption or link (their own privacy restriction; lead 2026-10-27)
+                     and lower(coalesce(d.data->>'blocked', 'false')) in ('false', 'f', '0') and nullif(d.data->>'date_blocked', '') is null
                      and jsonb_typeof(e.data->'source_qualified_courtlistener_docket_ids') = 'array'
                      and jsonb_array_length(e.data->'source_qualified_courtlistener_docket_ids') = 1
                      and d.native_id = e.data->'source_qualified_courtlistener_docket_ids'->>0) as cl_docket
