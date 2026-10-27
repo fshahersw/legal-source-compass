@@ -1,7 +1,7 @@
 /**
  * County block: the CDC PLACES estimates for MDL-linked conditions in one county, each against the spread of the
  * state's counties (smallest, median, largest) and the national value. Renders nothing when the dataset is not
- * published or CDC published no estimate for the county. Not mounted yet: see the de-exposure report.
+ * published or CDC published no estimate for the county. Mounted on /places/$state/$county after the county analysis.
  */
 import { useQuery } from "@tanstack/react-query";
 import { ChartCard } from "@/components/charts/ChartCard";
