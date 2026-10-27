@@ -26,6 +26,7 @@ import {
   type FederalWatchBill,
   type WatchBill,
 } from "@/lib/law/legislationWatch";
+import { ordinal } from "@/lib/analytics/trend";
 import { legislationWatchQuery } from "./legislationWatchQuery";
 
 const OPEN_STATES = { label: "Open States bulk data (public domain)", url: "https://open.pluralpolicy.com/data/" };
@@ -53,7 +54,7 @@ export function CivilJusticeWatch() {
   const funding = topics.find((t) => t.topic.id === "funding");
   const states = byState(bills);
   const federalPending = (d?.federal ?? []).filter((b) => !b.becameLaw);
-  const congress = d ? `${d.congress}th Congress` : "current Congress";
+  const congress = d ? `${ordinal(d.congress)} Congress` : "current Congress";
 
   const context = d
     ? buildSectionContext({
