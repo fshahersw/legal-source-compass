@@ -47,7 +47,8 @@ const https = (v: unknown) => {
   return s && /^https:\/\/[^\s]+$/.test(s) ? s : null;
 };
 const num = (v: unknown): number | null => {
-  const n = typeof v === "number" ? v : typeof v === "string" && /^\d+(\.\d+)?$/.test(v) ? Number(v) : NaN;
+  const n =
+    typeof v === "number" ? v : typeof v === "string" && /^\d+(\.\d+)?$/.test(v) ? Number(v) : NaN;
   return Number.isFinite(n) ? n : null;
 };
 
@@ -91,7 +92,8 @@ export function measureOf(r: RuleInsight): PracticeMeasure | null {
   if (r.category === "reply_deadline" && r.unit === "days" && motion && reply) return "reply_days";
   if (r.category === "page_limit" && r.unit === "pages" && /\b(brief|memorand\w*)\b/.test(a)) {
     if (reply) return "reply_pages";
-    if (/\b(opening|initial|support\w*|oppos\w*|any party|motions?)\b/.test(a)) return "brief_pages";
+    if (/\b(opening|initial|support\w*|oppos\w*|any party|motions?)\b/.test(a))
+      return "brief_pages";
   }
   return null;
 }
@@ -110,7 +112,10 @@ export type PracticeMatrix = {
   matched: (RuleInsight & { measure: PracticeMeasure })[];
 };
 
-export function practiceMatrix(rules: readonly RuleInsight[], courts: readonly string[]): PracticeMatrix {
+export function practiceMatrix(
+  rules: readonly RuleInsight[],
+  courts: readonly string[],
+): PracticeMatrix {
   const want = new Set(courts);
   const cells: PracticeMatrix["cells"] = {};
   for (const c of courts) {

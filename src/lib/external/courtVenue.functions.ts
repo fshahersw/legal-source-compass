@@ -36,7 +36,8 @@ const str = (v: unknown, max = 200) =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
 const num = (v: unknown): number | null => {
   if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && /^-?[\d,]+(\.\d+)?$/.test(v.trim())) return Number(v.replace(/,/g, ""));
+  if (typeof v === "string" && /^-?[\d,]+(\.\d+)?$/.test(v.trim()))
+    return Number(v.replace(/,/g, ""));
   return null;
 };
 const cs = (v: Record<string, string[]>) => encodeURIComponent(JSON.stringify(v));
@@ -130,14 +131,21 @@ const readFcmsCourt = memoBy(async (id: string): Promise<FcmsDistrict | null> =>
 /** One district's latest FCMS edition with its history; null for a court FCMS does not profile as a district. */
 export const getFcmsCourt = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().regex(COURT_ID) }).parse(d))
-  .handler(
-    async ({ data }): Promise<FcmsDistrict | null> =>
-      readFcmsCourt(data.id).catch(failed("fcms court")),
+  .handler(async ({ data }): Promise<FcmsDistrict | null> =>
+    readFcmsCourt(data.id).catch(failed("fcms court")),
   );
 
 // ------------------------------------------------------------------------------------------------ MDL load by district
 
-export type DistrictLoad = DistrictLoadInput & { mdls: { mdl: number; title: string; judge: string | null; pending: number | null; type: string | null }[] };
+export type DistrictLoad = DistrictLoadInput & {
+  mdls: {
+    mdl: number;
+    title: string;
+    judge: string | null;
+    pending: number | null;
+    type: string | null;
+  }[];
+};
 
 export function parseDistrictLoad(raw: unknown): DistrictLoad | null {
   const d = obj(obj(raw)?.["d"]);
@@ -281,7 +289,12 @@ export const getVacancyMdlBoard = createServerFn({ method: "GET" }).handler(
       ]),
     );
     const board = buildBoard(vacancies, loads, months, judges);
-    const asOf = loads.map((l) => l.asOf).filter((x): x is string => !!x).sort().at(-1) ?? null;
+    const asOf =
+      loads
+        .map((l) => l.asOf)
+        .filter((x): x is string => !!x)
+        .sort()
+        .at(-1) ?? null;
     return { ...board, jpmlAsOf: asOf, fcmsPeriod: fcms.period, vacancyAsOf: "2026-10-22" };
   },
 );
@@ -320,9 +333,18 @@ export const getVenuePractice = createServerFn({ method: "GET" })
       failed("venue practice rules"),
     );
     return {
-      courts: top.map((l) => ({ courtId: l.courtId, name: l.name, pendingActions: l.pendingActions ?? 0 })),
+      courts: top.map((l) => ({
+        courtId: l.courtId,
+        name: l.name,
+        pendingActions: l.pendingActions ?? 0,
+      })),
       rules: rules.flat(),
-      jpmlAsOf: loads.map((l) => l.asOf).filter((x): x is string => !!x).sort().at(-1) ?? null,
+      jpmlAsOf:
+        loads
+          .map((l) => l.asOf)
+          .filter((x): x is string => !!x)
+          .sort()
+          .at(-1) ?? null,
     };
   });
 
@@ -388,7 +410,10 @@ export const getVenueScorecard = createServerFn({ method: "GET" }).handler(
       d?.june[k].at(-1)?.value ?? null;
     const rows = loads
       .filter((l) => (l.pendingActions ?? 0) > 0)
-      .sort((a, b) => (b.pendingActions ?? 0) - (a.pendingActions ?? 0) || a.courtId.localeCompare(b.courtId))
+      .sort(
+        (a, b) =>
+          (b.pendingActions ?? 0) - (a.pendingActions ?? 0) || a.courtId.localeCompare(b.courtId),
+      )
       .map((l) => {
         const f = fc.get(l.courtId);
         return {
@@ -396,7 +421,9 @@ export const getVenueScorecard = createServerFn({ method: "GET" }).handler(
           name: l.name,
           pendingActions: l.pendingActions ?? 0,
           pendingMdls: l.pendingMdls,
-          massTortTitles: l.mdls.filter((m) => m.type === "Products Liability").map((m) => `MDL ${m.mdl}`),
+          massTortTitles: l.mdls
+            .filter((m) => m.type === "Products Liability")
+            .map((m) => `MDL ${m.mdl}`),
           weightedFilings: last(f, "pj_weighted_filings"),
           over3yPct: last(f, "civil_over_3y_pct"),
           monthsToTrial: last(f, "median_months_civil_to_trial"),
@@ -406,7 +433,12 @@ export const getVenueScorecard = createServerFn({ method: "GET" }).handler(
       });
     return {
       rows,
-      jpmlAsOf: loads.map((l) => l.asOf).filter((x): x is string => !!x).sort().at(-1) ?? null,
+      jpmlAsOf:
+        loads
+          .map((l) => l.asOf)
+          .filter((x): x is string => !!x)
+          .sort()
+          .at(-1) ?? null,
       fcmsPeriod: fcms.period,
       cvapYear: "2024",
       countiesWithoutDistrict: cvap.countiesWithoutDistrict,
@@ -435,15 +467,18 @@ export type DistrictEnforcementPayload = {
   readAt: string;
 };
 
-const dojPartitions = memoAsync(READ_TTL_MS, async (): Promise<{ dataset: string; year: string }[]> => {
-  const r = await restGet<{ id: string }[]>(
-    "corpus_datasets?select=id&id=like.doj_press_releases_*&order=id.asc&limit=100",
-  );
-  return r.rows.flatMap((x) => {
-    const m = /^doj_press_releases_(\d{4})$/.exec(x.id);
-    return m ? [{ dataset: x.id, year: m[1]! }] : [];
-  });
-});
+const dojPartitions = memoAsync(
+  READ_TTL_MS,
+  async (): Promise<{ dataset: string; year: string }[]> => {
+    const r = await restGet<{ id: string }[]>(
+      "corpus_datasets?select=id&id=like.doj_press_releases_*&order=id.asc&limit=100",
+    );
+    return r.rows.flatMap((x) => {
+      const m = /^doj_press_releases_(\d{4})$/.exec(x.id);
+      return m ? [{ dataset: x.id, year: m[1]! }] : [];
+    });
+  },
+);
 
 const readEnforcement = memoBy(async (court: string): Promise<DistrictEnforcementPayload> => {
   const [secRaw, parts] = await Promise.all([
@@ -476,7 +511,6 @@ const readEnforcement = memoBy(async (court: string): Promise<DistrictEnforcemen
 
 export const getDistrictEnforcement = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => z.object({ id: z.string().regex(COURT_ID) }).parse(d))
-  .handler(
-    async ({ data }): Promise<DistrictEnforcementPayload> =>
-      readEnforcement(data.id).catch(failed("district enforcement")),
+  .handler(async ({ data }): Promise<DistrictEnforcementPayload> =>
+    readEnforcement(data.id).catch(failed("district enforcement")),
   );

@@ -7,7 +7,15 @@ import {
   reconciliationNotes,
   valueAt,
 } from "./mdlHubs";
-import { juneRows, latestValue, median, medianDistrict, parseFcmsDistrict, span } from "./fcmsHistory";
+import {
+  juneRows,
+  latestValue,
+  median,
+  medianByPeriod,
+  medianDistrict,
+  parseFcmsDistrict,
+  span,
+} from "./fcmsHistory";
 import { aoDisplayName, buildBoard, type VacancyInput } from "./vacancyMdl";
 import { measureOf, parseRuleInsight, practiceMatrix, type RuleInsight } from "./venuePractice";
 import { ageShares, districtCvap, parseCountyDistrict, parseCvapCounty } from "./venueScorecard";
@@ -82,7 +90,8 @@ describe("mdlHubs", () => {
 const fcmsRow = (court: string, trial: (number | null)[], over3y: (number | null)[]) => ({
   court,
   name: "D. New Jersey",
-  source_url: "https://www.uscourts.gov/sites/default/files/document/fcms_na_distprofile0630.2026.pdf#page=15",
+  source_url:
+    "https://www.uscourts.gov/sites/default/files/document/fcms_na_distprofile0630.2026.pdf#page=15",
   rank: { median_months_civil_to_trial: [5, 48], civil_over_3y_pct: [4, 94] },
   history: {
     periods: ["2024-06-30", "2024-09-30", "2025-06-30", "2025-09-30", "2026-03-31", "2026-06-30"],
@@ -94,21 +103,43 @@ const fcmsRow = (court: string, trial: (number | null)[], over3y: (number | null
 });
 
 describe("fcmsHistory", () => {
-  const d = parseFcmsDistrict(fcmsRow("njd", [57.8, 60.4, 63.4, 62.4, 59.2, 56.9], [59.5, 62.5, 58.1, 57, 56.3, 55.2]))!;
+  const d = parseFcmsDistrict(
+    fcmsRow("njd", [57.8, 60.4, 63.4, 62.4, 59.2, 56.9], [59.5, 62.5, 58.1, 57, 56.3, 55.2]),
+  )!;
   it("keeps only the June periods, so fiscal-year and mid-year windows never mix", () => {
-    expect(d.june.median_months_civil_to_trial.map((p) => p.label)).toEqual(["Jun 2024", "Jun 2025", "Jun 2026"]);
+    expect(d.june.median_months_civil_to_trial.map((p) => p.label)).toEqual([
+      "Jun 2024",
+      "Jun 2025",
+      "Jun 2026",
+    ]);
     expect(latestValue(d, "civil_over_3y_pct")?.value).toBe(55.2);
     expect(d.rank.median_months_civil_to_trial).toEqual({ rank: 5, of: 48 });
     expect(d.latest).toBe("2026-06-30");
   });
   it("keeps a null as Not recorded and takes the median of districts, not a pooled figure", () => {
-    const mn = parseFcmsDistrict(fcmsRow("mnd", [null, null, null, null, null, null], [40, 41, 42, 43, 44, 43.6]))!;
+    const mn = parseFcmsDistrict(
+      fcmsRow("mnd", [null, null, null, null, null, null], [40, 41, 42, 43, 44, 43.6]),
+    )!;
     expect(latestValue(mn, "median_months_civil_to_trial")?.value).toBeNull();
-    expect(medianDistrict([d, mn], "median_months_civil_to_trial")).toEqual({ value: 56.9, recorded: 1, of: 2 });
+    expect(medianDistrict([d, mn], "median_months_civil_to_trial")).toEqual({
+      value: 56.9,
+      recorded: 1,
+      of: 2,
+    });
     expect(median([1, 3, null, 2])).toBe(2);
     expect(median([1, 2, 3, 4])).toBe(2.5);
-    expect(juneRows(mn, ["civil_over_3y_pct"]).at(-1)).toEqual({ period: "Jun 2026", civil_over_3y_pct: 43.6 });
+    expect(juneRows(mn, ["civil_over_3y_pct"]).at(-1)).toEqual({
+      period: "Jun 2026",
+      civil_over_3y_pct: 43.6,
+    });
     expect(span(d, "civil_over_3y_pct")).toMatchObject({ years: 2 });
+    const byPeriod = medianByPeriod([d, mn], "civil_over_3y_pct", 2);
+    expect(byPeriod.get("Jun 2026")?.recorded).toBe(2);
+    expect(byPeriod.get("Jun 2026")?.value).toBeCloseTo(49.4, 9);
+    expect(medianByPeriod([d, mn], "median_months_civil_to_trial", 2).get("Jun 2026")).toEqual({
+      value: null,
+      recorded: 1,
+    });
   });
   it("rejects a row without history or with a malformed court id", () => {
     expect(parseFcmsDistrict({ court: "njd" })).toBeNull();
@@ -134,21 +165,70 @@ describe("vacancyMdl", () => {
   const board = buildBoard(
     [
       vac({ id: "a" }),
-      vac({ id: "b", courtId: "scd", status: "announced", fjcNid: null, linkBasis: "missing_key", daysOpen: null }),
+      vac({
+        id: "b",
+        courtId: "scd",
+        status: "announced",
+        fjcNid: null,
+        linkBasis: "missing_key",
+        daysOpen: null,
+      }),
       vac({ id: "c", courtId: "gand", fjcNid: "999", daysOpen: 517 }),
     ],
     [
-      { courtId: "scd", name: "District of South Carolina", asOf: "2026-10-01", active: 9, judgeships: 10, pendingMdls: 2, pendingActions: 15290 },
-      { courtId: "cacd", name: "Central District of California", asOf: "2026-10-01", active: 20, judgeships: 28, pendingMdls: 3, pendingActions: 400 },
-      { courtId: "gand", name: "Northern District of Georgia", asOf: "2026-10-01", active: 10, judgeships: 11, pendingMdls: 2, pendingActions: 4271 },
-      { courtId: "akd", name: "District of Alaska", asOf: "2026-10-01", active: 3, judgeships: 3, pendingMdls: 0, pendingActions: 0 },
+      {
+        courtId: "scd",
+        name: "District of South Carolina",
+        asOf: "2026-10-01",
+        active: 9,
+        judgeships: 10,
+        pendingMdls: 2,
+        pendingActions: 15290,
+      },
+      {
+        courtId: "cacd",
+        name: "Central District of California",
+        asOf: "2026-10-01",
+        active: 20,
+        judgeships: 28,
+        pendingMdls: 3,
+        pendingActions: 400,
+      },
+      {
+        courtId: "gand",
+        name: "Northern District of Georgia",
+        asOf: "2026-10-01",
+        active: 10,
+        judgeships: 11,
+        pendingMdls: 2,
+        pendingActions: 4271,
+      },
+      {
+        courtId: "akd",
+        name: "District of Alaska",
+        asOf: "2026-10-01",
+        active: 3,
+        judgeships: 3,
+        pendingMdls: 0,
+        pendingActions: 0,
+      },
     ],
     new Map([["gand", { value: 12, rank: { rank: 5, of: 94 } }]]),
-    [{ nid: "1393266", name: "Josephine L. Staton", pending: [{ mdl: 3181, title: "SCS", pending: 41 }] }],
+    [
+      {
+        nid: "1393266",
+        name: "Josephine L. Staton",
+        pending: [{ mdl: 3181, title: "SCS", pending: 41 }],
+      },
+    ],
   );
   it("keeps only districts holding MDL actions and joins vacancies by court id", () => {
     expect(board.rows.map((r) => r.courtId)).toEqual(["scd", "gand", "cacd"]);
-    expect(board.rows[1]).toMatchObject({ open: 1, longestDaysOpen: 517, vacantJudgeshipMonths: 12 });
+    expect(board.rows[1]).toMatchObject({
+      open: 1,
+      longestDaysOpen: 517,
+      vacantJudgeshipMonths: 12,
+    });
     expect(board.rows[0]?.vacantJudgeshipMonths).toBeNull();
   });
   it("links departing judges only through an exact FJC id; unlinked vacancies are counted, not guessed", () => {
@@ -205,21 +285,91 @@ describe("venuePractice", () => {
     expect(measureOf(r!)).toBe("opposition_days");
   });
   it("normalises only general civil motion practice and leaves special proceedings out", () => {
-    expect(measureOf(rule({ category: "response_deadline", appliesTo: "Opposition brief and papers to a motion" }))).toBe("opposition_days");
-    expect(measureOf(rule({ category: "response_deadline", appliesTo: "Respondent's response in capital habeas case" }))).toBeNull();
-    expect(measureOf(rule({ category: "response_deadline", appliesTo: "Answering brief to criminal motion" }))).toBeNull();
-    expect(measureOf(rule({ category: "reply_deadline", appliesTo: "Reply in support of a motion", doc: "scd-civil" }))).toBe("reply_days");
-    expect(measureOf(rule({ category: "reply_deadline", appliesTo: "Reply in support of a motion", doc: "scd-criminal" }))).toBeNull();
-    expect(measureOf(rule({ category: "page_limit", unit: "pages", appliesTo: "Brief (opening or opposition)", number: 40 }))).toBe("brief_pages");
-    expect(measureOf(rule({ category: "page_limit", unit: "pages", appliesTo: "Reply brief and reconsideration briefs", number: 15 }))).toBeNull();
-    expect(measureOf(rule({ category: "page_limit", unit: "pages", appliesTo: "Reply memorandum", number: 15 }))).toBe("reply_pages");
+    expect(
+      measureOf(
+        rule({
+          category: "response_deadline",
+          appliesTo: "Opposition brief and papers to a motion",
+        }),
+      ),
+    ).toBe("opposition_days");
+    expect(
+      measureOf(
+        rule({
+          category: "response_deadline",
+          appliesTo: "Respondent's response in capital habeas case",
+        }),
+      ),
+    ).toBeNull();
+    expect(
+      measureOf(
+        rule({ category: "response_deadline", appliesTo: "Answering brief to criminal motion" }),
+      ),
+    ).toBeNull();
+    expect(
+      measureOf(
+        rule({
+          category: "reply_deadline",
+          appliesTo: "Reply in support of a motion",
+          doc: "scd-civil",
+        }),
+      ),
+    ).toBe("reply_days");
+    expect(
+      measureOf(
+        rule({
+          category: "reply_deadline",
+          appliesTo: "Reply in support of a motion",
+          doc: "scd-criminal",
+        }),
+      ),
+    ).toBeNull();
+    expect(
+      measureOf(
+        rule({
+          category: "page_limit",
+          unit: "pages",
+          appliesTo: "Brief (opening or opposition)",
+          number: 40,
+        }),
+      ),
+    ).toBe("brief_pages");
+    expect(
+      measureOf(
+        rule({
+          category: "page_limit",
+          unit: "pages",
+          appliesTo: "Reply brief and reconsideration briefs",
+          number: 15,
+        }),
+      ),
+    ).toBeNull();
+    expect(
+      measureOf(
+        rule({ category: "page_limit", unit: "pages", appliesTo: "Reply memorandum", number: 15 }),
+      ),
+    ).toBe("reply_pages");
   });
   it("fills a cell only when the matching rules agree", () => {
     const m = practiceMatrix(
       [
-        rule({ category: "response_deadline", appliesTo: "Opposition brief and papers to a motion" }),
-        rule({ courtId: "scd", doc: "scd-civil", category: "response_deadline", appliesTo: "Response or opposition to a motion" }),
-        rule({ courtId: "scd", doc: "scd-civil", category: "response_deadline", appliesTo: "Response to a motion to compel", number: 7 }),
+        rule({
+          category: "response_deadline",
+          appliesTo: "Opposition brief and papers to a motion",
+        }),
+        rule({
+          courtId: "scd",
+          doc: "scd-civil",
+          category: "response_deadline",
+          appliesTo: "Response or opposition to a motion",
+        }),
+        rule({
+          courtId: "scd",
+          doc: "scd-civil",
+          category: "response_deadline",
+          appliesTo: "Response to a motion to compel",
+          number: 7,
+        }),
       ],
       ["njd", "scd", "ilnd"],
     );
@@ -245,7 +395,13 @@ describe("venueScorecard", () => {
       id: "34013",
       years: {
         "2024": {
-          estimate: { cvap: 544911, age_18_29: 108683, age_30_44: 136188, age_45_64: 184669, age_65_plus: 115371 },
+          estimate: {
+            cvap: 544911,
+            age_18_29: 108683,
+            age_30_44: 136188,
+            age_45_64: 184669,
+            age_65_plus: 115371,
+          },
           moe: { cvap: 4026 },
         },
       },
@@ -254,7 +410,13 @@ describe("venueScorecard", () => {
       id: "34003",
       years: {
         "2024": {
-          estimate: { cvap: 600000, age_18_29: 100000, age_30_44: 150000, age_45_64: 200000, age_65_plus: 150000 },
+          estimate: {
+            cvap: 600000,
+            age_18_29: 100000,
+            age_30_44: 150000,
+            age_45_64: 200000,
+            age_65_plus: 150000,
+          },
           moe: { cvap: 3000 },
         },
       },
@@ -292,10 +454,19 @@ describe("districtEnforcement", () => {
       const s = parseSecRow(r);
       return s ? [s] : [];
     });
-    const rows = enforcementYears(sec, new Map([["2024", 5], ["2025", 0], ["2026", 2]]), 2026, {
-      first: 2024,
-      last: 2026,
-    });
+    const rows = enforcementYears(
+      sec,
+      new Map([
+        ["2024", 5],
+        ["2025", 0],
+        ["2026", 2],
+      ]),
+      2026,
+      {
+        first: 2024,
+        last: 2026,
+      },
+    );
     expect(rows).toEqual([
       { year: "2024", sec: 2, secLitigation: 1, doj: 5, partial: false },
       { year: "2025", sec: 0, secLitigation: 0, doj: 0, partial: false },

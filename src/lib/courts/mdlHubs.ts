@@ -63,8 +63,8 @@ export function parseHubDistrict(raw: unknown): HubDistrict | null {
   if (!r || !item) return null;
   const courtId = typeof item["court_id"] === "string" ? item["court_id"] : r["id"];
   if (typeof courtId !== "string" || !COURT.test(courtId)) return null;
-  const years = (Array.isArray(item["years"]) ? item["years"] : []).filter(
-    (y): y is number => Number.isInteger(y),
+  const years = (Array.isArray(item["years"]) ? item["years"] : []).filter((y): y is number =>
+    Number.isInteger(y),
   );
   if (!years.length) return null;
   const rawSeries = obj(item["series"]) ?? {};
@@ -114,7 +114,9 @@ export function reconciliationNotes(
       );
   for (const x of d.dashes)
     if (set.has(x.series))
-      notes.push(`${label(x.series)}: ${x.years.map(fy).join(", ")} printed as a dash (Not recorded)`);
+      notes.push(
+        `${label(x.series)}: ${x.years.map(fy).join(", ")} printed as a dash (Not recorded)`,
+      );
   return { shown: notes, otherSeries: d.unreconciled.filter((u) => !set.has(u.series)).length };
 }
 
@@ -140,7 +142,9 @@ export function rankHubs(districts: readonly HubDistrict[], year: number) {
       pending: valueAt(d, "mdl_pending", year),
       share: valueAt(d, "mdl_pending_share_of_national_pct", year),
     }))
-    .filter((x): x is { d: HubDistrict; pending: number; share: number | null } => x.pending !== null)
+    .filter(
+      (x): x is { d: HubDistrict; pending: number; share: number | null } => x.pending !== null,
+    )
     .sort((a, b) => b.pending - a.pending || a.d.courtId.localeCompare(b.d.courtId));
 }
 

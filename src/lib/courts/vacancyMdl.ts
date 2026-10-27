@@ -84,7 +84,10 @@ const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFin
 export function buildBoard(
   vacancies: readonly VacancyInput[],
   districts: readonly DistrictLoadInput[],
-  vacantMonths: ReadonlyMap<string, { value: number | null; rank: { rank: number; of: number } | null }>,
+  vacantMonths: ReadonlyMap<
+    string,
+    { value: number | null; rank: { rank: number; of: number } | null }
+  >,
   judges: readonly MdlJudgeInput[],
 ): Board {
   const byCourt = new Map<string, VacancyInput[]>();
@@ -136,7 +139,9 @@ export function buildBoard(
       pendingActions: mdls.reduce((a, m) => a + (m.pending ?? 0), 0),
     });
   }
-  departing.sort((a, b) => b.pendingActions - a.pendingActions || a.vacancyId.localeCompare(b.vacancyId));
+  departing.sort(
+    (a, b) => b.pendingActions - a.pendingActions || a.vacancyId.localeCompare(b.vacancyId),
+  );
 
   const withVacancy = rows.filter((r) => r.open + r.announced > 0);
   let longestOpen: Board["kpis"]["longestOpen"] = null;
@@ -146,7 +151,8 @@ export function buildBoard(
       .map((v) => v.daysOpen)
       .filter(isNum);
     for (const d of open)
-      if (!longestOpen || d > longestOpen.days) longestOpen = { courtId: r.courtId, name: r.name, days: d };
+      if (!longestOpen || d > longestOpen.days)
+        longestOpen = { courtId: r.courtId, name: r.name, days: d };
   }
   return {
     rows,

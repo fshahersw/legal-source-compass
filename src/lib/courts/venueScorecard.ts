@@ -75,7 +75,10 @@ export function districtCvap(
   cvap: readonly CvapCounty[],
 ): Map<string, DistrictCvap> {
   const byFips = new Map(cvap.map((c) => [c.fips, c]));
-  const out = new Map<string, DistrictCvap & { moeSq: number; moeMissing: boolean; agesOk: boolean }>();
+  const out = new Map<
+    string,
+    DistrictCvap & { moeSq: number; moeMissing: boolean; agesOk: boolean }
+  >();
   for (const c of counties) {
     if (!c.courtId) continue;
     let d = out.get(c.courtId);

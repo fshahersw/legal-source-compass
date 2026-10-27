@@ -19,8 +19,7 @@ const YEAR = /^(19|20)\d{2}$/;
 
 /** A sec_enforcement_actions row read as {f: filters}. */
 export function parseSecRow(raw: unknown): SecRow | null {
-  const f =
-    raw && typeof raw === "object" ? (raw as Record<string, unknown>)["f"] : null;
+  const f = raw && typeof raw === "object" ? (raw as Record<string, unknown>)["f"] : null;
   if (!f || typeof f !== "object") return null;
   const o = f as Record<string, unknown>;
   const first = (k: string) => {

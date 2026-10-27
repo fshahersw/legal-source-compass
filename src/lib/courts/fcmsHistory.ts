@@ -25,7 +25,11 @@ export const FCMS_METRIC: Record<FcmsMetric, { label: string; unit: string; deci
   civil_over_3y_count: { label: "Civil cases pending over 3 years", unit: "cases", decimals: 0 },
   vacant_judgeship_months: { label: "Vacant judgeship months", unit: "months", decimals: 1 },
   pj_weighted_filings: { label: "Weighted filings per judgeship", unit: "filings", decimals: 0 },
-  median_months_civil: { label: "Median months, civil filing to disposition", unit: "months", decimals: 1 },
+  median_months_civil: {
+    label: "Median months, civil filing to disposition",
+    unit: "months",
+    decimals: 1,
+  },
   filings: { label: "Total filings", unit: "cases", decimals: 0 },
   pending: { label: "Pending cases", unit: "cases", decimals: 0 },
 };
@@ -86,7 +90,10 @@ export function parseFcmsDistrict(raw: unknown): FcmsDistrict | null {
     if (Array.isArray(pair) && isNum(pair[0]) && isNum(pair[1]))
       rank[m] = { rank: pair[0], of: pair[1] };
   }
-  const latest = periods.filter((p): p is string => !!p).sort().at(-1)!;
+  const latest = periods
+    .filter((p): p is string => !!p)
+    .sort()
+    .at(-1)!;
   const name = typeof r["name"] === "string" && r["name"].trim() ? r["name"].trim() : courtId;
   return {
     courtId,
@@ -121,6 +128,26 @@ export function medianDistrict(
 ): { value: number | null; recorded: number; of: number } {
   const vals = districts.map((d) => latestValue(d, m)?.value ?? null);
   return { value: median(vals), recorded: vals.filter(isNum).length, of: districts.length };
+}
+
+/**
+ * Median district value of a metric for each June period, keyed by period label, with how many districts it rests
+ * on. A period with fewer than `min` recorded districts is left out (null), so a thin early year is not a baseline.
+ */
+export function medianByPeriod(
+  districts: readonly FcmsDistrict[],
+  m: FcmsMetric,
+  min = 20,
+): Map<string, { value: number | null; recorded: number }> {
+  const by = new Map<string, (number | null)[]>();
+  for (const d of districts)
+    for (const p of d.june[m]) by.set(p.label, [...(by.get(p.label) ?? []), p.value]);
+  const out = new Map<string, { value: number | null; recorded: number }>();
+  for (const [label, vals] of by) {
+    const recorded = vals.filter(isNum).length;
+    out.set(label, { value: recorded >= min ? median(vals) : null, recorded });
+  }
+  return out;
 }
 
 /** Rows for a period chart: { period label, value } for the June periods of one district. */
