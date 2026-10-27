@@ -254,6 +254,13 @@ export const MATTERS = {
     pages: [{ id: 'pawd-2862-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.pawd.uscourts.gov/mdl-2862-re-diisocyanates-antitrust-litigation' }],
     index_pages: ['pawd-mdl-index'],
   },
+  // N.D. Ala. MDL 2406 (Drupal body field; direct PDFs under /sites/alnd/files/).
+  '2406': {
+    name: 'In re Blue Cross Blue Shield Antitrust Litigation', court_id: 'alnd', host: 'www.alnd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2406',
+    pages: [{ id: 'alnd-2406-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.alnd.uscourts.gov/blue-crossblue-shield-mdl-2406' }],
+    index_pages: ['alnd-mdl-cases'],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
@@ -267,6 +274,7 @@ export const INDEX_PAGES = {
   // JPML lists only the CURRENT hearing session's orders here (older PDFs stay on the site under predictable file names, see build-jpml-queue.mjs).
   'jpml-panel-orders': { id: 'jpml-panel-orders', role: 'jpml_panel_orders', family: 'jpml-panel-orders', url: 'https://www.jpml.uscourts.gov/panel-orders' },
   'pawd-mdl-index': { id: 'pawd-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.pawd.uscourts.gov/mdl' },
+  'alnd-mdl-cases': { id: 'alnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.alnd.uscourts.gov/mdl-cases' },
 };
 
 export function pagesFor(mdls, { includeIndex = true } = {}) {
