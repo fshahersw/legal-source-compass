@@ -63,6 +63,18 @@ describe("document rows", () => {
     expect(odd).toMatchObject({ docType: null, filedDate: null, courtId: null, sourceUrl: null });
   });
 
+  it("reads a filing with no MDL listing, and never one that mixes the two", () => {
+    const docket = {
+      ...ROW,
+      mdl: null,
+      listed_by: "docket_case",
+      native_case_id: "ilnd-1:2024-cv-06795",
+    };
+    expect(parseDocSummary(docket)).toMatchObject({ mdl: null, listedBy: "docket_case" });
+    expect(parseDocSummary({ ...docket, mdl: "2738" })).toBeNull();
+    expect(parseDocSummary({ ...ROW, mdl: null })).toBeNull();
+  });
+
   it("only lets http(s) links out", () => {
     expect(safeUrl("https://ecf.njd.uscourts.gov/doc1/1")).toBe(
       "https://ecf.njd.uscourts.gov/doc1/1",
@@ -112,6 +124,7 @@ describe("document rows", () => {
           ["2024", 6],
           ["not_recorded", 1],
         ],
+        no_mdl: 2,
       },
       query: "'word'",
       sort: "relevance",
@@ -135,6 +148,7 @@ describe("document rows", () => {
       { key: "order", count: 3 },
       { key: "not_recorded", count: 4 },
     ]);
+    expect(r.facets.noMdl).toBe(2);
     expect(r).toMatchObject({
       mode: "text",
       total: 7,
@@ -229,6 +243,8 @@ describe("search URL state", () => {
     expect(
       normalizeDocumentSearch({ court: "N J", mdl: "0", type: "memo", sort: "relevance", page: 1 }),
     ).toEqual({});
+    expect(normalizeDocumentSearch({ mdl: "none" })).toEqual({ mdl: "none" });
+    expect(normalizeDocumentSearch({ mdl: "None" })).toEqual({});
     expect(normalizeDocumentSearch({ from: "2025-01-01", to: "2024-01-01" })).toEqual({
       from: "2024-01-01",
       to: "2025-01-01",

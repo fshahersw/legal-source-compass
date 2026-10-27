@@ -13,6 +13,7 @@ import { formatBytes } from "@/lib/matters/documents";
 import {
   COLLECTION_LABEL,
   LISTED_BY_LABEL,
+  NO_MDL_LABEL,
   NOT_RECORDED,
   SOURCE_LABEL,
   TEXT_STATUS_NOTE,
@@ -71,9 +72,13 @@ function Details({ doc }: { doc: DocSummary }) {
       <dt className="text-muted-foreground">Listed</dt>
       <dd>
         {LISTED_BY_LABEL[d.listedBy]} ·{" "}
-        <TargetLink link={{ toType: "mdl", toId: d.mdl }}>
-          {q.data.mdlName ?? `MDL No. ${d.mdl}`}
-        </TargetLink>
+        {d.mdl ? (
+          <TargetLink link={{ toType: "mdl", toId: d.mdl }}>
+            {q.data.mdlName ?? `MDL No. ${d.mdl}`}
+          </TargetLink>
+        ) : (
+          <span className="text-muted-foreground">{NO_MDL_LABEL}</span>
+        )}
       </dd>
       <dt className="text-muted-foreground">Court</dt>
       <dd>

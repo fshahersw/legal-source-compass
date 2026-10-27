@@ -747,3 +747,29 @@ test("with the citation index v2 installed, citations come from its resolved edg
   ).rows[0].mentions;
   assert.equal(viaView, 5, "the published view would have counted 5 (2 mentions on two pages, plus 1)");
 });
+
+test("a filing with no MDL listing (documents/2 'docket_case') is counted under no MDL", async () => {
+  const x = await setup();
+  try {
+    await x.exec(`
+      insert into documents.documents values ('d_000000000000000000000009', 'courtlistener', 'nomdl', 'c', 'sha-nomdl', null,
+        'nysd', '2026-09-09', 'text_layer');
+      insert into documents.links values ('d_000000000000000000000009', 'record', 'caselaw/111', 'cites', 'exact_id', 7, 1, '{1}');
+    `);
+    const counts = (await x.query("select public.litviz_refresh_v1($1::date) as v", [TODAY]))
+      .rows[0].v;
+    assert.ok(counts.citations > 0, JSON.stringify(counts));
+    const rows = (
+      await x.query(
+        "select mdl, filings, mentions from litviz.citations where to_id = 'caselaw/111' order by mdl",
+      )
+    ).rows;
+    assert.deepEqual(
+      rows.map((r) => [r.mdl, Number(r.filings), Number(r.mentions)]),
+      [["2001", 2, 4]],
+      "the no-MDL filing adds nothing to any MDL",
+    );
+  } finally {
+    await x.close();
+  }
+});

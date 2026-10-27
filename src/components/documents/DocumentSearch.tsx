@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import {
   DOC_TYPES,
   MAX_PAGE,
+  NO_MDL_FILTER,
+  NO_MDL_LABEL,
   SOURCE_LABEL,
   TYPE_LABEL,
   documentTitle,
@@ -58,8 +60,11 @@ function StatusLine() {
   const d = q.data;
   return (
     <p className="text-[12px] text-muted-foreground">
-      {fmtCount(d.documents)} filings from {fmtCount(d.mdls)} MDLs in {fmtCount(d.courts)} courts ·{" "}
-      {fmtCount(d.pagesIndexed)} pages of text searchable
+      {fmtCount(d.documents)} filings from {fmtCount(d.mdls)} MDLs
+      {d.withoutMdl
+        ? ` and other tracked dockets (${fmtCount(d.withoutMdl)} with no MDL listing)`
+        : ""}{" "}
+      in {fmtCount(d.courts)} courts · {fmtCount(d.pagesIndexed)} pages of text searchable
     </p>
   );
 }
@@ -94,13 +99,17 @@ function Hit({
       <p className="text-[11px] leading-4 text-muted-foreground">
         {typeLabel(r.docType)} · {r.filedDate ? fmtDay(r.filedDate) : "Date not recorded"} ·{" "}
         {courtName ?? r.courtId ?? "Court not recorded"} ·{" "}
-        <Link
-          to="/matters/$id"
-          params={{ id: r.mdl }}
-          className="underline-offset-2 hover:underline"
-        >
-          {mdlName ? `MDL ${r.mdl}: ${mdlName}` : `MDL No. ${r.mdl}`}
-        </Link>
+        {r.mdl ? (
+          <Link
+            to="/matters/$id"
+            params={{ id: r.mdl }}
+            className="underline-offset-2 hover:underline"
+          >
+            {mdlName ? `MDL ${r.mdl}: ${mdlName}` : `MDL No. ${r.mdl}`}
+          </Link>
+        ) : (
+          NO_MDL_LABEL
+        )}
         {r.docketNumber ? (
           <>
             {" "}
@@ -187,7 +196,7 @@ function Results({
               r={r}
               page={d}
               courtName={r.courtId ? (d.courtNames[r.courtId] ?? null) : null}
-              mdlName={d.mdlNames[r.mdl] ?? null}
+              mdlName={r.mdl ? (d.mdlNames[r.mdl] ?? null) : null}
               open={open}
             />
           ))}
@@ -236,6 +245,11 @@ function Filters({ s, nav }: { s: DocSearchState; nav: Nav }) {
     mdls.set(
       f.key,
       `MDL ${f.key}${d?.mdlNames[f.key] ? `: ${d.mdlNames[f.key]}` : ""} (${fmtCount(f.count)})`,
+    );
+  if (d?.facets.noMdl || s.mdl === NO_MDL_FILTER)
+    mdls.set(
+      NO_MDL_FILTER,
+      `${NO_MDL_LABEL}${d?.facets.noMdl ? ` (${fmtCount(d.facets.noMdl)})` : ""}`,
     );
   if (s.mdl && !mdls.has(s.mdl)) mdls.set(s.mdl, `MDL ${s.mdl}`);
   const typeCounts = new Map((d?.facets.type ?? []).map((f) => [f.key, f.count]));
@@ -366,7 +380,7 @@ export function DocumentSearch({ s, nav }: { s: DocSearchState; nav: Nav }) {
         </Button>
       </form>
       <p className="text-[11px] leading-4 text-muted-foreground">
-        Searches the text of the court filings the matter pages list and that are open to view
+        Searches the text of the stored court filings of the tracked dockets that are open to view
         (English word forms; “quoted phrases”, or, -word). Filings the docket source marks as held
         or sealed are listed but not searched or quoted; scanned filings are searched once their
         text is recognised.
