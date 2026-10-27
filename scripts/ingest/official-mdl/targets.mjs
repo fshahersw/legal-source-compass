@@ -183,6 +183,31 @@ export const MATTERS = {
     pages: [{ id: 'kyed-2809-orders', role: 'orders_table', family: 'njd-body', url: 'https://www.kyed.uscourts.gov/518-md-02809-kkc-orders' }],
     index_pages: [],
   },
+  // N.D. Ill. MDL detail pages (Firecrawl map of ilnd.uscourts.gov, 2026-10-06; 3060 already tier-1).
+  '3026': {
+    name: 'MDL 3026 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 3026',
+    pages: [{ id: 'ilnd-3026-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?Lbz1nwUsE4JWF/IQJN6GpA==' }],
+    index_pages: ['ilnd-mdl-index'],
+  },
+  '2545': { name: 'MDL No. 2545 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2545', pages: [{ id: 'ilnd-2545-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?UGlDS1bLxpRHyfdf3l5DJQ==' }], index_pages: [] },
+  '3079': { name: 'MDL No. 3079 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3079', pages: [{ id: 'ilnd-3079-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?fnu/YDnD0O7Y8SjpUhHmZA==' }], index_pages: [] },
+  '2817': { name: 'MDL No. 2817 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2817', pages: [{ id: 'ilnd-2817-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?ezwhUXOtzntNkzYvqtYcbw==' }], index_pages: [] },
+  '2590': { name: 'MDL No. 2590 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2590', pages: [{ id: 'ilnd-2590-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?q/P7IHfEgHbGqjDhhyfVMQ==' }], index_pages: [] },
+  '1715': { name: 'MDL No. 1715 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 1715', pages: [{ id: 'ilnd-1715-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?fw+ahVTiqBOHSZVwUazwkw==' }], index_pages: [] },
+  '2948': { name: 'MDL No. 2948 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2948', pages: [{ id: 'ilnd-2948-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?i3mxb9gEBxL2sL90OMEQ2A==' }], index_pages: [] },
+  '2492': {
+    name: 'MDL No. 2492 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2492',
+    pages: [
+      { id: 'ilnd-2492-nationwide', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?yiHo4wGm56zocvFjUmv2sQ==' },
+      { id: 'ilnd-2492-single', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?yiHo4wGm56ytS3xx5DcbTw==' },
+    ],
+    index_pages: [],
+  },
+  '2416': { name: 'MDL No. 2416 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2416', pages: [{ id: 'ilnd-2416-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?NJtobMcq3xFbXsKWm4wHXQ==' }], index_pages: [] },
+  '3030': { name: 'MDL No. 3030 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3030', pages: [{ id: 'ilnd-3030-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?uTU+z1lws6Mhwc03FEqvrg==' }], index_pages: [] },
+  '2967': { name: 'MDL No. 2967 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2967', pages: [{ id: 'ilnd-2967-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?oPAvB95Dk3B80hctYPQzdQ==' }], index_pages: [] },
+  '3037': { name: 'MDL No. 3037 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3037', pages: [{ id: 'ilnd-3037-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?Y/EMwl0+f9LcVNqgbUFRDw==' }], index_pages: [] },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
