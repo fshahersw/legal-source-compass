@@ -212,8 +212,8 @@ class DisclosureTiers(unittest.TestCase):
             self.assertIsNone(dm.non_company_reason(name), name)
 
 
-def xw(judges_id, nid):
-    return {"id": judges_id, "item": {"profile": {"fjc_nid": nid}}}
+def xw(judges_id, nid, tier="exact_id"):
+    return {"id": judges_id, "item": {"profile": {"fjc_nid": nid, "tier": tier}}}
 
 
 class ProfileIdsByNid(unittest.TestCase):
@@ -233,6 +233,14 @@ class ProfileIdsByNid(unittest.TestCase):
 
     def test_one_profile_claimed_by_two_nids_is_dropped(self):
         self.assertEqual(c.profile_ids_by_nid({"1": "p1", "2": None}, [xw("p1", "2")]), {})
+
+    def test_not_linked_bridge_tiers_are_ignored(self):
+        # a bridge the crosswalk publishes as withheld for review (or as an FJC-id / service-date conflict) is no evidence
+        for tier in ("withheld_for_review", "fjc_conflict", "date_conflict"):
+            self.assertEqual(c.profile_ids_by_nid({"1391836": None}, [xw("dc18", "1391836", tier)]), {}, tier)
+        # the FJC record's own stored id still counts, and a native bridge of another tier still fills
+        self.assertEqual(c.profile_ids_by_nid({"1": "p1"}, [xw("p1", "1", "withheld_for_review")]), {"1": "p1"})
+        self.assertEqual(c.profile_ids_by_nid({"2": None}, [xw("p2", "2", "no_cl_person_for_fjc_id")]), {"2": "p2"})
 
 
 class RelinkJudgeCross(unittest.TestCase):

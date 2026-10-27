@@ -354,6 +354,17 @@ class FjcLookupTests(unittest.TestCase):
         (profile, _), status = self.match(lk, "cacd", "COURT, MICHELLE WILLIAMS", ["2026-03-31"])
         self.assertEqual((profile, status), ("p-court", "unique"))
 
+    def test_bridge_the_crosswalk_publishes_as_not_linked_is_ignored(self):
+        # e.g. Minaldi (lawd): the only nid source is a crosswalk row the source withheld for review -> no profile, never linked
+        for tier in ("withheld_for_review", "fjc_conflict", "date_conflict"):
+            lk = self.lookup([fjc_row("1391836", "Patricia Head Minaldi", [], ("lawd", self.DC, "2003-08-01", "2017-12-01"), status="Service ended")],
+                             [{"judges_id": "p-min", "fjc_nid": "1391836", "tier": tier}])
+            self.assertEqual(self.match(lk, "lawd", "MINALDI, PATRICIA H.", ["2004-03-31", "2017-09-30"]), (None, "no_profile"), tier)
+        lk = self.lookup([fjc_row("1391836", "Patricia Head Minaldi", [], ("lawd", self.DC, "2003-08-01", "2017-12-01"), status="Service ended")],
+                         [{"judges_id": "p-min", "fjc_nid": "1391836", "tier": "no_cl_person_for_fjc_id"}])
+        (profile, _), status = self.match(lk, "lawd", "MINALDI, PATRICIA H.", ["2004-03-31", "2017-09-30"])
+        self.assertEqual((profile, status), ("p-min", "unique"))
+
     def test_two_services_or_two_entries_of_one_nid_are_one_judge(self):
         lk = self.lookup([fjc_row("5", "Robert Lewis Hinkle", ["p-hink"], ("flnd", self.DC, "1996-01-01", None), ("flnd", self.DC, "1996-01-01", None))],
                          [{"judges_id": "p-hink", "fjc_nid": "5"}])
@@ -440,7 +451,7 @@ class RelinkTests(unittest.TestCase):
     def test_changes_link_new_rows_and_add_the_filter_to_kept_links(self):
         rows = [self.snap("nysd-hellerstein-alvin-k", "nysd|HELLERSTEIN|ALVIN K|", ["2004-03-31", "2026-03-31"]),
                 self.snap("nhd-barbadoro-paul-j", "nhd|BARBADORO|PAUL J|", ["2026-03-31"], {"status": "unique", "profile": "p-b"}),
-                self.snap("nhd-barbadoro-paul-j-2", "nhd|BARBADORO|PAUL J|", ["2026-03-31"], {"status": "unique", "profile": "p-b"}, ["p-b"]),
+                dict(self.snap("nhd-barbadoro-paul-j-2", "nhd|BARBADORO|PAUL J|", ["2026-03-31"], {"status": "unique", "profile": "p-b"}, ["p-b"]), title="Paul J. Barbadoro"),
                 self.snap("nhd-nobody-a", "nhd|NOBODY|A|", ["2026-03-31"])]
         results = self.R.relink(rows, self.lookup())
         chs = {c["id"]: c for c in self.R.changes(results)}
@@ -466,6 +477,42 @@ class RelinkTests(unittest.TestCase):
         preview = self.R.preview_sql(chs)
         self.assertNotIn("insert into", preview.lower())
         self.assertNotIn("update public", preview.lower())
+        # the display name travels with the link: title, text, item.title, item.cells.judge and detail.title
+        self.assertIn("'title', x.new_title, 'cells'", sql)
+        self.assertIn("replace(x.text, x.title, x.new_title)", sql)
+        self.assertIn(", title = c.replacement->>'title', text = c.replacement->>'text'", sql)
+        self.assertIn(", title = c.original_record->>'title', text = c.original_record->>'text'", sql)  # rollback
+
+    def test_relinked_father_and_son_take_the_new_judges_name(self):
+        lk = J.lookup_from_snapshots([fjc_row("10", "James Maxwell Moody", ["p-sr"], ("ared", "U.S. District Court", "1995-08-14", "2014-03-07"), status="Service ended"),
+                                      fjc_row("11", "James Maxwell Moody, Jr.", ["p-jr"], ("ared", "U.S. District Court", "2014-03-10", None))], [])
+        old = {"status": "unique", "profile": "p-jr"}
+        row = dict(self.snap("ared-moody-james-maxwell", "ared|MOODY|JAMES MAXWELL|", ["2004-03-31", "2013-09-30"], old, ["p-jr"]), title="James Maxwell Moody, Jr.")
+        jr = dict(self.snap("ared-moody-james-m-jr", "ared|MOODY|JAMES M|JR", ["2014-03-31", "2026-03-31"], old, ["p-jr"]), title="James Maxwell Moody, Jr.")
+        chs = {c["id"]: c for c in self.R.changes(self.R.relink([row, jr], lk))}
+        self.assertEqual(chs["ared-moody-james-maxwell"]["kind"], "relinked")
+        self.assertEqual(chs["ared-moody-james-maxwell"]["title_after"], "James Maxwell Moody")
+        self.assertNotIn("ared-moody-james-m-jr", chs)  # link, filter and name already right
+
+    def test_display_only_change_when_the_stored_name_is_stale(self):
+        row = dict(self.snap("nhd-barbadoro-paul-j", "nhd|BARBADORO|PAUL J|", ["2026-03-31"], {"status": "unique", "profile": "p-b"}, ["p-b"]), title="Paul J. Barbadoro Jr.")
+        chs = self.R.changes(self.R.relink([row], self.lookup()))
+        self.assertEqual([(c["kind"], c["title_after"]) for c in chs], [("display_only", "Paul J. Barbadoro")])
+
+    def test_unlinked_record_keeps_its_printed_name_and_a_lost_link_needs_printed_labels(self):
+        stay = dict(self.snap("nhd-nobody-a", "nhd|NOBODY|A|", ["2026-03-31"]), title="A. Nobody")
+        self.assertEqual(self.R.display_after(stay, None, None), "A. Nobody")
+        lost = dict(self.snap("nhd-gone-b", "nhd|GONE|B|", ["2026-03-31"], {"status": "unique", "profile": "p-x"}), title="Bob Gone")
+        with self.assertRaises(SystemExit):
+            self.R.display_after(lost, None, None)
+        lost.update(printed_first="GONE, B.", printed_mixed="Gone, B.")
+        self.assertEqual(self.R.display_after(lost, None, None), "B. Gone")
+
+    def test_suffix_contradiction(self):
+        self.assertTrue(self.R.suffix_contradiction("ncmd|OSTEEN|WILLIAM L|SR", "William Lindsay Osteen, Jr."))
+        self.assertFalse(self.R.suffix_contradiction("ncmd|OSTEEN|WILLIAM L|SR", "William Lindsay Osteen, Sr."))
+        self.assertFalse(self.R.suffix_contradiction("akd|SINGLETON|JAMES K|", "James Keith Singleton, Jr."))
+        self.assertFalse(self.R.suffix_contradiction("almd|ALBRITTON|WILLIAM H|III", "William Harold Albritton, III"))
 
 
 class BuilderHelperTests(unittest.TestCase):

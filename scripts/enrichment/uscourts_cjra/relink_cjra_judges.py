@@ -37,6 +37,7 @@ RUN = Q.run_id(CONTRACT)
 OUT = SN.ACQ / "cjra_relink"
 SQL_PATH = HERE.parents[2] / "database" / "contracts" / "court-cjra-judges-relink-20261027-v1.sql"
 LATEST = "2026-03-31"
+SCALARS = ("title", "text")  # row columns the patch rewrites besides item, detail and filters (the display name)
 
 
 def name_from_identity(identity):
@@ -59,6 +60,34 @@ def relink(rows, lookup):
     return out
 
 
+def display_after(r, profile, fjc_name):
+    """The record's display name (title, item.title, item.cells.judge, detail.title) as build_uscourts_cjra.py would print it after the
+    relink: the FJC name of the linked judge, else the printed name (J.display_name of the first printed label and the latest mixed-case
+    one). A record that stays unlinked keeps its stored title, which the builder already derived from the printed name; a record that
+    loses its link needs the printed labels in the snapshot (printed_first, printed_mixed), and is refused without them."""
+    if profile:
+        return fjc_name
+    if not (r.get("match") or {}).get("profile"):
+        return r["title"]
+    if "printed_first" not in r:
+        raise SystemExit(f"{r['id']} loses its profile link: re-capture the cjra_judges snapshot with printed_first and printed_mixed")
+    name = J.P.parse_name(r["printed_first"])
+    if name.get("format") != "surname_first":
+        return r["title"]
+    mixed = J.P.parse_name(r["printed_mixed"]) if r.get("printed_mixed") else None
+    if mixed and mixed.get("format") != "surname_first":
+        mixed = None
+    return J.display_name(name, mixed, None)
+
+
+def suffix_contradiction(identity, shown):
+    """True when the display name ends in a suffix (Jr., Sr., III ...) that differs from the suffix of the record's own identity."""
+    parts = (identity or "").split("|")
+    own = (parts[3] if len(parts) == 4 else "").upper().replace(".", "")
+    shown_suffix = J.name_suffix(J.fold_words(shown or ""))[1]
+    return bool(own and shown_suffix and own != shown_suffix)
+
+
 def counts(results, which):
     """Linked records: all, latest-report district judges (role district, listed in the latest report), and distinct profiles."""
     def linked(r, status, profile):
@@ -77,25 +106,38 @@ def counts(results, which):
 
 
 def changes(results):
-    """Records whose stored match or filters must change: a different status or profile, or a linked record without filters.judge_profile."""
+    """Records whose stored match, filters or display name must change: a different status or profile, a linked record without
+    filters.judge_profile, or a display name that differs from the one the builder derives from the (new) link."""
     out = []
     for r, status, profile, fjc_name in results:
         old = r["match"]
         filt = r.get("filter_judge_profile")
         want = [profile] if profile else None
-        if old.get("status") == status and old.get("profile") == profile and filt == want:
+        shown = display_after(r, profile, fjc_name)
+        if old.get("status") == status and old.get("profile") == profile and filt == want and shown == r["title"]:
             continue
-        kind = ("filter_only" if old.get("profile") == profile else "linked" if not old.get("profile") else "unlinked" if not profile else "relinked")
-        out.append({"id": r["id"], "title": r["title"], "court_id": r["court_id"], "row_md5": r["row_md5"], "kind": kind,
-                    "before": {"status": old.get("status"), "profile": old.get("profile")}, "after": {"status": status, "profile": profile},
+        if old.get("profile") == profile:
+            kind = "filter_only" if filt != want else "status_only" if old.get("status") != status else "display_only"
+        else:
+            kind = "linked" if not old.get("profile") else "unlinked" if not profile else "relinked"
+        out.append({"id": r["id"], "title": r["title"], "title_after": shown, "identity": r["identity"], "court_id": r["court_id"], "row_md5": r["row_md5"],
+                    "kind": kind, "before": {"status": old.get("status"), "profile": old.get("profile")}, "after": {"status": status, "profile": profile},
                     "fjc_name": fjc_name, "listed": [(r.get("listed") or [None])[0], (r.get("listed") or [None])[-1]], "role": r["role"]})
+    bad = [c["id"] for c in out if suffix_contradiction(c["identity"], c["title_after"])]
+    if bad:
+        raise SystemExit(f"display names contradict the identity suffix: {bad[:10]}")
     return out
 
 
+def value_rows(chs):
+    return [(c["id"], c["row_md5"], c["after"]["status"], c["after"]["profile"], J.PROFILE_LINK_TEXT[c["after"]["status"]], c["title_after"]) for c in chs]
+
+
 def render_sql(chs, before, after, inputs):
-    vals = Q.values([(c["id"], c["row_md5"], c["after"]["status"], c["after"]["profile"], J.PROFILE_LINK_TEXT[c["after"]["status"]]) for c in chs])
+    vals = Q.values(value_rows(chs))
     scope = {"dataset": DATASET, "issue": ISSUE, "inputs": inputs, "method": J.PROFILE_LINKS_SUMMARY}
-    tally = {"targets": len(chs), "by_kind": dict(Counter(c["kind"] for c in chs)), "before": before, "after": after}
+    renamed = sum(1 for c in chs if c["title_after"] != c["title"])
+    tally = {"targets": len(chs), "by_kind": dict(Counter(c["kind"] for c in chs)), "display_renamed": renamed, "before": before, "after": after}
     head = f"""-- {CONTRACT}  (de-judges-data workstream; built by scripts/enrichment/uscourts_cjra/relink_cjra_judges.py; DO NOT EDIT BY HAND)
 -- In-place relink of public.corpus_records dataset '{DATASET}' to /judges profiles with the fixed FJC lookup:
 --   * every FJC judge of the court counts, whatever the current status (senior and service-ended judges were missing from the lookup);
@@ -103,7 +145,10 @@ def render_sql(chs, before, after, inputs):
 --     directory record's own FJC bridge name; stub profiles without an nid are never targets);
 --   * suffixes (Jr., Sr., III) must not contradict, digits printed after a name are footnote markers, and namesakes of one court are told apart
 --     only by service dates overlapping the listings; anything else stays unlinked;
---   * filters.judge_profile = [profile] is added to every linked record (indexed filter key for /judges/<id> pages).
+--   * filters.judge_profile = [profile] is added to every linked record (indexed filter key for /judges/<id> pages);
+--   * the display name (title, text, item.title, item.cells.judge, detail.title) is the one build_uscourts_cjra.py derives from the new link
+--     (the linked FJC judge's name; a record that stays unlinked keeps its printed name), so a relinked record never shows the old judge's
+--     name ({renamed} records renamed; text replaces the old display name with the new one).
 -- Before: {json.dumps(before, sort_keys=True)}
 -- After:  {json.dumps(after, sort_keys=True)}
 -- Targets: {len(chs)} records {json.dumps(tally['by_kind'], sort_keys=True)}; every other record is untouched.
@@ -112,12 +157,12 @@ def render_sql(chs, before, after, inputs):
 -- Execute statements 0, 1, 2, 3 in order, then the verification SELECTs.
 --
 -- ROLLBACK (exact):
-{Q.rollback_text(DATASET, ISSUE, RUN)}--   update public.corpus_datasets d set metadata = d.metadata - 'relink_2026_10_27' || jsonb_build_object('summary', c.original_record->'summary'), updated_at = now()
+{Q.rollback_text(DATASET, ISSUE, RUN, SCALARS)}--   update public.corpus_datasets d set metadata = d.metadata - 'relink_2026_10_27' || jsonb_build_object('summary', c.original_record->'summary'), updated_at = now()
 --     from corpus_ingest.cleanup_decisions c where c.dataset = 'corpus_datasets' and c.issue = '{ISSUE}' and c.run_id = '{RUN}'::uuid and d.id = c.record_id;
 """
     s0 = "-- ===== statement 0: register the run =====\n" + Q.run_statement(RUN, CONTRACT, scope, tally)
     s1 = "-- ===== statement 1: audit (before-images and replacements of the target records) =====\n" + core_cte(vals) + audit_tail()
-    s2 = "-- ===== statement 2: apply from the audited before-images =====\n" + Q.apply_statement(DATASET, ISSUE, RUN)
+    s2 = "-- ===== statement 2: apply from the audited before-images =====\n" + Q.apply_statement(DATASET, ISSUE, RUN, SCALARS)
     s3 = f"""-- ===== statement 3: dataset summary (audit + apply in one statement; runs once) =====
 with old as (select d.id, d.metadata from public.corpus_datasets d where d.id = '{DATASET}' and not (d.metadata ? 'relink_2026_10_27')),
 ins as (
@@ -143,9 +188,10 @@ def preview_sql(chs, per_kind=4):
     pick = []
     for kind in sorted({c["kind"] for c in chs}):
         pick += [c for c in chs if c["kind"] == kind][:per_kind]
-    vals = Q.values([(c["id"], c["row_md5"], c["after"]["status"], c["after"]["profile"], J.PROFILE_LINK_TEXT[c["after"]["status"]]) for c in pick])
+    vals = Q.values(value_rows(pick))
     return ("-- read-only preview of statement 1 (no writes)\n" + core_cte(vals) + """
 select y.id, y.unchanged, y.item->'match' as old_match, y.new_item->'match' as new_match, y.new_filters, y.new_item->'links' as new_links,
+       y.title as old_title, y.new_title, y.new_item->'cells'->>'judge' as new_cells_judge, y.new_detail->>'title' as new_detail_title, y.new_text,
        y.new_item->'badges' as new_badges, (select f from jsonb_array_elements(y.new_detail->'facts') f where f->>0 = 'Profile link') as profile_fact,
        (y.new_detail->'links') = (y.new_item->'links') as links_equal
 from y order by y.id;
@@ -153,11 +199,11 @@ from y order by y.id;
 
 
 def core_cte(vals):
-    return f"""with v(id, row_md5, status, profile, fact) as (values
+    return f"""with v(id, row_md5, status, profile, fact, new_title) as (values
     {vals}
   ),
 t as materialized (
- select r.id, r.item, r.detail, r.filters, v.row_md5, v.status, v.profile, v.fact,
+ select r.id, r.item, r.detail, r.filters, r.title, r.text, v.row_md5, v.status, v.profile, v.fact, v.new_title,
         (md5(to_jsonb(r)::text) = v.row_md5) as unchanged
  from v join public.corpus_records r on r.dataset = '{DATASET}' and r.id = v.id),
 n as (
@@ -176,8 +222,10 @@ x as (
  from n),
 y as (
  select x.*,
-  x.item || jsonb_build_object('match', jsonb_build_object('status', x.status, 'profile', x.profile), 'links', x.new_links, 'badges', x.new_badges) as new_item,
-  x.detail || jsonb_build_object('links', x.new_links, 'facts', x.new_facts) as new_detail,
+  x.item || jsonb_build_object('match', jsonb_build_object('status', x.status, 'profile', x.profile), 'links', x.new_links, 'badges', x.new_badges,
+                               'title', x.new_title, 'cells', coalesce(x.item->'cells', '{{}}'::jsonb) || jsonb_build_object('judge', x.new_title)) as new_item,
+  x.detail || jsonb_build_object('links', x.new_links, 'facts', x.new_facts, 'title', x.new_title) as new_detail,
+  case when x.title = x.new_title then x.text else replace(x.text, x.title, x.new_title) end as new_text,
   case when x.profile is null then (x.filters - 'judge_profile') || jsonb_build_object('profile', jsonb_build_array('unlinked'))
        else x.filters || jsonb_build_object('profile', jsonb_build_array('linked'), 'judge_profile', jsonb_build_array(x.profile)) end as new_filters
  from x)"""
@@ -188,10 +236,10 @@ def audit_tail():
 ins as (
  insert into corpus_ingest.cleanup_decisions (dataset, record_id, issue, disposition, reason, evidence, original_record, replacement, run_id)
  select '{DATASET}', y.id, '{ISSUE}', 'label_override',
-  'Judge profile link recomputed with the fixed FJC lookup (all FJC statuses, one profile per FJC nid, suffix and service-date guards); filters.judge_profile added for linked records.',
-  jsonb_build_object('contract', '{CONTRACT}', 'status', y.status, 'profile', y.profile, 'previous', y.item->'match'),
-  jsonb_build_object('id', y.id, 'item', y.item, 'detail', y.detail, 'filters', y.filters, 'row_md5', y.row_md5),
-  jsonb_build_object('item', y.new_item, 'detail', y.new_detail, 'filters', y.new_filters),
+  'Judge profile link recomputed with the fixed FJC lookup (all FJC statuses, one profile per FJC nid, suffix and service-date guards); filters.judge_profile added for linked records; display name derived from the new link.',
+  jsonb_build_object('contract', '{CONTRACT}', 'status', y.status, 'profile', y.profile, 'previous', y.item->'match', 'title_before', y.title, 'title_after', y.new_title),
+  jsonb_build_object('id', y.id, 'item', y.item, 'detail', y.detail, 'filters', y.filters, 'title', y.title, 'text', y.text, 'row_md5', y.row_md5),
+  jsonb_build_object('item', y.new_item, 'detail', y.new_detail, 'filters', y.new_filters, 'title', y.new_title, 'text', y.new_text),
   '{RUN}'::uuid
  from y where y.unchanged
  on conflict (dataset, record_id, issue) do nothing
@@ -223,7 +271,29 @@ select c.id, c.item->'match'->>'profile' from public.corpus_records c
 select id from public.corpus_records where dataset = '{DATASET}' and filters @> '{{"judge_profile":["cc3aef8ffa937a319a7fe82bd970a25b"]}}';
 -- V5 audit rows written by this contract (expected {n_targets} record rows + 1 dataset row)
 select dataset, count(*) from corpus_ingest.cleanup_decisions where issue = '{ISSUE}' and run_id = '{RUN}'::uuid group by 1;
+-- V6 display name (expected 0 rows): title = item.title = item.cells.judge = detail.title, text carries the title, and no display name ends in a
+--    suffix (Jr., Sr., II, III, IV, V) that differs from the suffix of the record's own identity
+select id, title, item->>'identity' as identity from public.corpus_records where dataset = '{DATASET}' and (
+  title is distinct from item->>'title' or title is distinct from item->'cells'->>'judge' or title is distinct from detail->>'title'
+  or strpos(coalesce(text, ''), title) = 0
+  or (split_part(item->>'identity', '|', 4) <> ''
+      and (regexp_match(upper(title), '[ ,](JR|SR|II|III|IV|V)\\.?$'))[1] is not null
+      and (regexp_match(upper(title), '[ ,](JR|SR|II|III|IV|V)\\.?$'))[1] <> upper(replace(split_part(item->>'identity', '|', 4), '.', ''))));
+-- V7 the two father/son records (expected: ared-moody-james-maxwell 'James Maxwell Moody' -> 5403a2501f825b4c90d5d6f3960d4c45;
+--    ncmd-osteen-william-l-sr 'William Lindsay Osteen, Sr.' -> c75231eaa903ddb2a92f6c13fb2ab2b9), title equal to cells.judge
+select id, title, item->'cells'->>'judge' as cells_judge, item->'match'->>'profile' as profile, strpos(text, 'Jr.') > 0 as text_mentions_jr
+from public.corpus_records where dataset = '{DATASET}' and id in ('ared-moody-james-maxwell', 'ncmd-osteen-william-l-sr') order by id;
 """
+
+
+def merge_printed(rows, printed):
+    """Add printed_first / printed_mixed from the cjra_printed supplement to the snapshot rows (same id and same row md5 only)."""
+    by_id = {r["id"]: r for r in rows}
+    for p in printed:
+        r = by_id.get(p["id"])
+        if r is None or r["row_md5"] != p["row_md5"]:
+            raise SystemExit(f"cjra_printed row {p['id']} does not match the cjra_judges snapshot (re-capture both)")
+        r["printed_first"], r["printed_mixed"] = p.get("printed_first"), p.get("printed_mixed")
 
 
 def main(argv):
@@ -231,7 +301,11 @@ def main(argv):
     fjc = SN.load("fjc_profiles")
     xw = SN.load("crosswalk")
     manifest = json.loads((SN.SNAP / "_manifest.json").read_text(encoding="utf-8"))
-    inputs = {k: manifest[k]["sha256"] for k in ("cjra_judges", "fjc_profiles", "crosswalk")}
+    names = ["cjra_judges", "fjc_profiles", "crosswalk"]
+    if "cjra_printed" in manifest:
+        merge_printed(rows, SN.load("cjra_printed"))
+        names.append("cjra_printed")
+    inputs = {k: manifest[k]["sha256"] for k in names}
     lookup = J.lookup_from_snapshots(fjc, xw)
     results = relink(rows, lookup)
     before, after = counts(results, "before"), counts(results, "after")

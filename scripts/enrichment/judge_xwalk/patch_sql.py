@@ -6,7 +6,7 @@ A patch contract updates rows of public.corpus_records in place, the way the rou
                filters, row md5) and the replacement, but only when the live row still has the md5 the packet was built from;
   statement 2  applies the replacement from the audit rows, again guarded by the md5;
   statement 3  (optional) records the change in corpus_datasets.metadata.
-Rollback restores item, detail and filters from the audit rows. Values come only from a packet built offline from snapshots.
+Rollback restores item, detail and filters (and any text columns the contract names, e.g. title and text) from the audit rows. Values come only from a packet built offline from snapshots.
 """
 import uuid
 
@@ -49,10 +49,15 @@ def run_statement(rid, contract, scope, counts):
             f"on conflict (id) do nothing;\n")
 
 
-def apply_statement(dataset, issue, rid):
+def _scalar_sets(scalars, source):
+    """', title = c.<source>->>'title', ...' for text columns the patch also rewrites (each audit row carries them)."""
+    return "".join(f", {col} = c.{source}->>{lit(col)}" for col in scalars)
+
+
+def apply_statement(dataset, issue, rid, scalars=()):
     return f"""with u as (
  update public.corpus_records r
-    set item = c.replacement->'item', detail = c.replacement->'detail', filters = c.replacement->'filters'
+    set item = c.replacement->'item', detail = c.replacement->'detail', filters = c.replacement->'filters'{_scalar_sets(scalars, 'replacement')}
    from corpus_ingest.cleanup_decisions c
   where c.dataset = {lit(dataset)} and c.issue = {lit(issue)} and c.run_id = '{rid}'::uuid
     and r.dataset = {lit(dataset)} and r.id = c.record_id and md5(to_jsonb(r)::text) = c.original_record->>'row_md5'
@@ -61,7 +66,8 @@ select count(*) as updated from u;
 """
 
 
-def rollback_text(dataset, issue, rid):
-    return (f"--   update public.corpus_records r set item = c.original_record->'item', detail = c.original_record->'detail', filters = c.original_record->'filters'\n"
+def rollback_text(dataset, issue, rid, scalars=()):
+    return (f"--   update public.corpus_records r set item = c.original_record->'item', detail = c.original_record->'detail', filters = c.original_record->'filters'"
+            f"{_scalar_sets(scalars, 'original_record')}\n"
             f"--     from corpus_ingest.cleanup_decisions c\n"
             f"--    where c.dataset = {lit(dataset)} and c.issue = {lit(issue)} and c.run_id = '{rid}'::uuid and r.dataset = {lit(dataset)} and r.id = c.record_id;\n")

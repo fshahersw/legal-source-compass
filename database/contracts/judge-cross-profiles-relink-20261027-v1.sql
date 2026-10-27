@@ -7,7 +7,7 @@
 --   judge_profile_id / photo.
 -- Targets: {"by_kind": {"filled": 238, "filter_only": 0}, "conflicts_reported": 0, "judge_records": 238, "summary_entries": 238}
 -- Inputs (read-only snapshots, sha256): {"crosswalk": "720a5bced0fb8bca89021ce2747b54a46cf94dd6d0d2350668232b6e2bad3ec7", "fjc_profiles": "63ca6344873abfd25235c06a8b4215f4586d09f1f5072109d367e196deaef796", "judge_cross_profiles": "3474820be8a97ac0207e4f57b064fde899f25af209602d3ee9e05b63d76d23f3"}
--- Row guard everywhere: md5(to_jsonb(row)) equals the snapshot value. Execute statements 0, 1, 2, 3, 4 in order, then the verification SELECTs.
+-- Row guard everywhere: md5(to_jsonb(row)) equals the snapshot value. Execute statements 0, 1, 2, 3 in order, then the verification SELECTs.
 --
 -- ROLLBACK (exact; restores both the judge records and the summary record):
 --   update public.corpus_records r set item = c.original_record->'item', detail = c.original_record->'detail', filters = c.original_record->'filters'

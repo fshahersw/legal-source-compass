@@ -34,7 +34,7 @@ SQL_PATH = HERE.parents[2] / "database" / "contracts" / "judge-cross-profiles-re
 def resolve(snapshot, fjc_rows, crosswalk_rows):
     """(fills, conflicts, summary_fill): judge records to fill, records whose stored id disagrees, and the summary scatter entries to fill."""
     stored = {f["nid"]: (f.get("profiles") or [None])[0] if len(f.get("profiles") or []) == 1 else None for f in fjc_rows}
-    xw = [{"id": x["judges_id"], "item": {"profile": {"fjc_nid": x.get("fjc_nid")}}} for x in crosswalk_rows]
+    xw = [{"id": x["judges_id"], "item": {"profile": {"fjc_nid": x.get("fjc_nid"), "tier": x.get("tier")}}} for x in crosswalk_rows]
     profile_of = C.profile_ids_by_nid(stored, xw)
     photos = snapshot.get("photos") or {}
     fills, conflicts = [], []

@@ -22,6 +22,8 @@ import cjra_parse as P
 
 SUFFIX_WORDS = P.SUFFIXES
 ROMAN = {"II", "III", "IV", "V"}
+# judge_cl_crosswalk tiers that publish the directory record's FJC bridge as not linked (same set as judges_cross/common.py)
+UNLINKED_BRIDGE_TIERS = frozenset({"withheld_for_review", "fjc_conflict", "date_conflict"})
 PROFILE_LINK_TEXT = {
     "unique": "Exact unique match to an FJC judge profile in the same court",
     "none": "No FJC profile in this court matched the name exactly",
@@ -110,7 +112,8 @@ def lookup_from_snapshots(fjc_rows, crosswalk_rows):
     """FJC lookup for the CJRA matcher, built from read-only corpus snapshots.
 
     fjc_rows: judge_profiles_fjc rows {nid, name, status, profiles: [/judges id], services: [{court_id, court_type, commission, termination}]}
-    crosswalk_rows: judge_cl_crosswalk rows {judges_id, fjc_nid} (the directory record's own FJC bridge, native ids only)
+    crosswalk_rows: judge_cl_crosswalk rows {judges_id, fjc_nid, tier} (the directory record's own FJC bridge, native ids only); a row whose
+    tier publishes the bridge as not linked (withheld_for_review, fjc_conflict, date_conflict) is ignored
 
     Every FJC judge is included whatever the current status (active, chief, senior, service ended), with one entry per U.S. District
     Court service. The /judges profile of an FJC nid is the profile the two sources name; a nid named with two different profiles, or a
@@ -132,6 +135,8 @@ def lookup_from_snapshots(fjc_rows, crosswalk_rows):
         for p in profiles:
             claim(f["nid"], p)
     for x in crosswalk_rows:
+        if x.get("tier") in UNLINKED_BRIDGE_TIERS:
+            continue  # the crosswalk publishes this bridge as not linked: never evidence that the nid and the profile are one judge
         claim(x.get("fjc_nid"), x.get("judges_id"))
     owners = {}
     for nid, p in by_nid.items():
