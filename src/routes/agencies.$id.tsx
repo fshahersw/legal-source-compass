@@ -7,6 +7,7 @@ import { Stat } from "@/components/corpus/BarList";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
 import { LoadingBlock } from "@/components/enforcement/parts";
 import { AgencyProfileView } from "@/components/agencies/AgencyProfileView";
+import { AgencyMassTortPanel } from "@/components/agencies/AgencyMassTortPanel";
 import {
   AGENCY_TYPES,
   getAgencyCounts,
@@ -249,6 +250,7 @@ function AgencyPage() {
           <div className="mt-3">
             {tab === "Overview" ? (
               <div className="space-y-2 text-[13px]">
+                <AgencyMassTortPanel frId={id} />
                 {profile && prof.data ? (
                   <AgencyProfileView
                     data={prof.data}

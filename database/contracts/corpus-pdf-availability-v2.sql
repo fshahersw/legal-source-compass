@@ -23,11 +23,12 @@ language sql
 immutable
 set search_path to ''
 as $function$
+  -- Fail closed on any hold flag that is present and not exactly false or null (1, "true", "yes" ... all hold).
   select case
-    when p_provider_flags -> 'withheld_by_policy' = 'true'::jsonb then 'held'
-    when p_provider_flags -> 'is_sealed' = 'true'::jsonb then 'held'
-    when p_provider_flags -> 'restricted' = 'true'::jsonb then 'held'
-    when p_provider_flags -> 'sealing_related_locator_held' = 'true'::jsonb then 'held'
+    when exists (
+      select 1 from unnest(array['withheld_by_policy', 'is_sealed', 'restricted', 'sealing_related_locator_held']) k
+      where coalesce(p_provider_flags -> k, 'null'::jsonb) not in ('false'::jsonb, 'null'::jsonb)
+    ) then 'held'
     when p_source_system in ('docketbird', 'courtlistener', 'courtlistener-public-locator', 'official-court', 'govinfo') then 'open'
     else 'held'
   end

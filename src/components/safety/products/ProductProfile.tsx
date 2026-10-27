@@ -35,6 +35,8 @@ import {
 import { subjectQuery, termPeriodsQuery } from "./queries";
 import { RecordList } from "./RecordList";
 import { ViewTabs } from "./ViewTabs";
+import { ReportingContext } from "./ReportingContext";
+import { RisingReactions } from "./RisingReactions";
 
 export type ProfileTab = "overview" | "terms" | "records" | "sources";
 const COUNT = metricFormatter("count");
@@ -141,9 +143,17 @@ function Profile({
         className="min-w-0 space-y-3"
       >
         {active === "overview" ? (
-          <Timeline p={p} grain={grain} group={group} onChange={onChange} />
+          <>
+            <Timeline p={p} grain={grain} group={group} onChange={onChange} />
+            {p.mdls.length ? <ReportingContext p={p} /> : null}
+          </>
         ) : null}
-        {active === "terms" && dim ? <Terms p={p} dim={dim} /> : null}
+        {active === "terms" && dim ? (
+          <>
+            {dim === "meddra_pt" ? <RisingReactions p={p} /> : null}
+            <Terms p={p} dim={dim} />
+          </>
+        ) : null}
         {active === "records" && records ? (
           <RecordList source={records} subject={p.subject.id} total={p.records[records]} />
         ) : null}

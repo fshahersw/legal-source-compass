@@ -103,6 +103,21 @@ function renderAfterRefresh(next: LimitationsSnapshot, previous = fixture()) {
       selectionKey: JSON.stringify(["IL", "personal_injury", "general"]),
       sourceKey: reviewContextKey(previous, rule, unconfirmedClaimInput("IL", "personal_injury")),
     },
+    11: {
+      accrualDate: {
+        field: "accrualDate",
+        date: "2024-01-01",
+        eventType: "jpml_transfer_order",
+        event: "JPML transfer order",
+        identifier: "MDL 2973",
+        sourceDataset: "mdl_intel_hearing_orders",
+        recordId: "order:x",
+        publisher: "JPML",
+        officialUrl: null,
+        urlKind: null,
+        acceptedBy: "user",
+      },
+    },
   };
   return renderToStaticMarkup(
     createElement(GuidedCalculator, {
@@ -169,7 +184,8 @@ describe("statutory calculator evidence binding", () => {
     expect(html).not.toContain("January 1, 2025");
     expect(html).not.toContain('data-testid="guided-result"');
     expect(html).toContain("The rule or source evidence changed");
-    const rerender = hooks.rendered.slice(11, 22);
+    // 12 component states per render; the render-time reset rerenders before any child.
+    const rerender = hooks.rendered.slice(12, 24);
     expect(rerender[0]).toMatchObject({
       accrualDate: "2024-01-01",
       injuryDate: "2023-12-30",
@@ -188,5 +204,7 @@ describe("statutory calculator evidence binding", () => {
       conditionsConfirmed: false,
     });
     expect(rerender[6]).toBeNull();
+    // Accepted public-date provenance is cleared with the other approvals.
+    expect(rerender[11]).toEqual({});
   });
 });

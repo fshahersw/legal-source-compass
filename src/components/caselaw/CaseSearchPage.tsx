@@ -15,6 +15,7 @@ import {
 } from "./caseQueries";
 import { fmtDay, fmtInt, NOT_RECORDED, stateLabel, yearOf } from "./caseFormat";
 import {
+  coverageLines,
   MODE_LABEL,
   SORT_LABEL,
   STATUSES,
@@ -223,14 +224,56 @@ function coverageText(tiers: { tier: Tier; scope: string; prefixWords: number | 
     .join("; ");
 }
 
+/** Full-text coverage by court level, stated plainly: every word, the first N words, or not indexed. */
+function CoverageNote({
+  tiers,
+}: {
+  tiers: { tier: Tier; scope: "full" | "prefix"; opinions: number; prefixWords: number | null }[];
+}) {
+  const lines = coverageLines(tiers, TIERS);
+  return (
+    <details className="rounded-md border border-border px-3 py-2 text-[12px]">
+      <summary className="cursor-pointer text-muted-foreground">
+        What the full text covers: {lines.filter((l) => l.level === "full").length} level
+        {lines.filter((l) => l.level === "full").length === 1 ? "" : "s"} every word,{" "}
+        {lines.filter((l) => l.level === "prefix").length} the opening words only,{" "}
+        {lines.filter((l) => l.level === "none").length} not indexed
+      </summary>
+      <ul className="mt-2 space-y-0.5">
+        {lines.map((l) => (
+          <li key={l.tier} className="flex flex-wrap gap-x-2">
+            <span className="min-w-[16rem] text-foreground">{TIER_PLURAL[l.tier]}</span>
+            <span className={cn(l.level === "none" ? "text-muted-foreground" : "text-foreground")}>
+              {l.text}
+            </span>
+            {l.opinions != null ? (
+              <span className="text-muted-foreground">({fmtInt(l.opinions)} opinions)</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-muted-foreground">
+        A level that is not indexed returns no full-text match here even when its opinions mention
+        the words; use the CourtListener full text for those courts.
+      </p>
+    </details>
+  );
+}
+
 function FulltextResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
   const q = useQuery(fulltextQuery(s));
   const cov = useQuery(coverageQuery);
+  const note = cov.data ? <CoverageNote tiers={cov.data.tiers} /> : null;
   const indexed = (cov.data?.tiers ?? []).filter((t) => t.opinions > 0 || t.tier === 1);
   const scope = coverageText(indexed);
   const tierIndexed = !s.tier || indexed.some((t) => t.tier === s.tier);
   if (!s.q)
-    return <Problem>Type words or a phrase in quotes to search opinion text of {scope}.</Problem>;
+    return (
+      <div className="space-y-2">
+        <Problem>Type words or a phrase in quotes to search opinion text of {scope}.</Problem>
+        {note}
+      </div>
+    );
   if (cov.isSuccess && !tierIndexed)
     return (
       <Problem>
@@ -258,6 +301,7 @@ function FulltextResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
         Opinions whose indexed text matches (English stemming; "quoted phrases", OR and -word work).
         Indexed here: {scope}. Cases are ranked by how densely the words occur, then by citations.
       </p>
+      {note}
       {d.rows.length ? (
         <HitTable rows={d.rows} showMatched />
       ) : (

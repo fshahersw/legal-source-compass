@@ -11,9 +11,11 @@
 import type { CrossPoint, EntityType, Fact, Freshness, MetricDef } from "@/lib/insights/contract";
 import { STATES } from "@/lib/corpus/geo";
 import { getStateMetrics, type StateMetricsBundle } from "@/lib/external/stateMetrics.functions";
+import { curateMetrics } from "@/components/states/metricCuration";
 import { getMdlAnalytics, type MdlAnalytics } from "@/lib/external/mdlAnalytics.functions";
 import { comparePeriods, densePeriods } from "@/components/charts/format";
 import { getDailyInsights } from "@/lib/insights/insights.functions";
+import { curateCatalog } from "@/lib/insights/catalogCuration";
 import { InsightsLayerNotReady, liveLayer } from "./layerClient";
 import { INSIGHTS_FIXTURES } from "./fixtureMode";
 import {
@@ -52,7 +54,9 @@ function memo<T>(load: () => Promise<T>): () => Promise<T> {
   };
 }
 
-export const stateBundle = memo<StateMetricsBundle>(() => getStateMetrics());
+export const stateBundle = memo<StateMetricsBundle>(async () =>
+  curateMetrics(await getStateMetrics()),
+);
 export const mdlData = memo<MdlAnalytics | null>(() => getMdlAnalytics());
 
 export const isBridgeMetric = (id: string) => id.includes(".");
@@ -73,7 +77,8 @@ export async function loadCatalog(): Promise<CatalogResult> {
   const bridgeFailures: string[] = [];
   let layerState: CatalogResult["layer"] = "ready";
   if (layerRes.status === "fulfilled") {
-    for (const m of layerRes.value) {
+    // Metrics whose last refresh wrote no facts are not offered; the DOJ series break is noted (catalogCuration).
+    for (const m of curateCatalog(layerRes.value)) {
       metrics.push(m);
       origin[m.id] = INSIGHTS_FIXTURES ? "fixture" : "layer";
     }

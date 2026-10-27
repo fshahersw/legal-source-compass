@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { LimitationsWorkbench } from "@/components/limitations/LimitationsWorkbench";
+import { LegislativeWatchSection } from "@/components/limitations/LegislativeWatchSection";
 import { pageHead } from "@/lib/corpus/head";
 import { CLAIM_TYPES, type ClaimType } from "@/lib/limitations/types";
 import { STATES } from "@/lib/corpus/geo";
@@ -69,6 +70,9 @@ function Page() {
           })
         }
       />
+      <div className="mt-10 border-t border-border pt-8">
+        <LegislativeWatchSection />
+      </div>
     </AppShell>
   );
 }

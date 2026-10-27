@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { FileCheck2, Handshake } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
+import { SectionIndex } from "@/components/kit";
 import { OfficialSettlements } from "@/components/enforcement/actions/OfficialSettlements";
 import { officialSettlementsQuery } from "@/components/enforcement/actions/actionsView";
 import {
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/litigation/settlements")({
   head: () =>
     pageHead(
       "Settlements",
-      "Settlements confirmed on official pages, with claim deadlines, amounts and courts as published, and settlement notices with their official sources.",
+      "Open claim deadlines first, with settlement fund totals kept apart from per-claimant amounts, as confirmed on official settlement pages; plus settlement notices with their official sources.",
     ),
   component: Page,
 });
@@ -50,9 +51,17 @@ function Page() {
   return (
     <AppShell
       title="Settlements"
-      description="Settlements whose deadline, amount, court or case number is confirmed on an official settlement or court page, and published settlement notices with the official source each cites. Figures are as stated by the publisher, never summed."
+      description="Open claim deadlines and typed amounts from official settlement pages."
       breadcrumbs={search.view ? [{ label: current.label }] : []}
     >
+      {current.id === "notices" ? null : (
+        <SectionIndex
+          items={[
+            { id: "settlement-deadlines", label: "Claim deadlines" },
+            { id: "settlement-amounts", label: "Settlement amounts" },
+          ]}
+        />
+      )}
       <div className="space-y-3">
         <nav
           aria-label="Settlement views"

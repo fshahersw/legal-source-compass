@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, BarChart3 } from "lucide-react";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
+import { curateMetrics } from "./metricCuration";
 import {
   getStateMetricsPanel,
   type LatestStat,
@@ -70,7 +71,7 @@ export function StateMetricsPanel({
   const fn = useServerFn(getStateMetricsPanel);
   const q = useQuery({
     queryKey: ["state-metrics-panel", usps],
-    queryFn: () => fn({ data: { usps } }),
+    queryFn: async () => curateMetrics(await fn({ data: { usps } })),
     staleTime: 10 * 60 * 1000,
   });
   const defs = new Map((q.data?.metrics ?? []).map((m) => [m.key, m]));

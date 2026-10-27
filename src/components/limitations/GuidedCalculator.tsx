@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { downloadText } from "@/lib/atlas/exports";
 import { STATES } from "@/lib/corpus/geo";
 import { baselineRule, periodLabel, sourceReviewDate } from "@/lib/limitations/engine";
 import {
@@ -36,6 +37,23 @@ import {
   switchedVersionInput,
   versionWindowLabel,
 } from "./calculatorGuidance";
+import { DateSources, PublicDatePicker } from "./PublicDatePicker";
+import { TollingReviewNotes } from "./TollingReviewNotes";
+import type { TollingNoteCategory } from "./tollingNotes";
+import {
+  acceptCandidate,
+  pickerApplies,
+  currentAccepted,
+  type AcceptedPublicDates,
+  type PublicDateCandidate,
+  type SuggestibleField,
+} from "@/lib/limitations/publicDates";
+
+const NOTE_QUESTIONS: Partial<Record<ScreeningId, TollingNoteCategory>> = {
+  incapacity: "incapacity",
+  concealment: "concealment",
+  class_action: "class_action",
+};
 
 const control =
   "mt-1.5 min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary sm:min-h-9";
@@ -114,6 +132,8 @@ export function GuidedCalculator({
   const selectionKey = JSON.stringify([state, claim ?? "", input.subtype ?? "general"]);
   const [boundEvidence, setBoundEvidence] = useState({ selectionKey, sourceKey: sourceContextKey });
   const [sourceChanged, setSourceChanged] = useState(false);
+  // Provenance of accepted public dates: in memory only, dropped when the field no longer holds the date.
+  const [acceptedDates, setAcceptedDates] = useState<AcceptedPublicDates>({});
   // Bind approvals to the complete source evidence, including same-release source corrections.
   // Reset during rendering so neither an old result nor re-stamped approvals reach the next frame.
   if (boundEvidence.selectionKey !== selectionKey || boundEvidence.sourceKey !== sourceContextKey) {
@@ -134,6 +154,7 @@ export function GuidedCalculator({
     setStep(0);
     setGroupIndex(0);
     setUiError("");
+    setAcceptedDates({});
   }
   const filteredNotes = inventory.filter(
     (n) =>
@@ -196,6 +217,12 @@ export function GuidedCalculator({
     setResult(null);
     setUiError("");
   }
+  const accepted = currentAccepted(acceptedDates, input);
+  // Accepting goes through changeFacts(): it resets the confirmations and the exception screening.
+  function acceptPublicDate(field: SuggestibleField, candidate: PublicDateCandidate) {
+    changeFacts({ [field]: candidate.date });
+    setAcceptedDates((old) => ({ ...old, [field]: acceptCandidate(field, candidate) }));
+  }
   function answer(id: ScreeningId, value: "yes" | "no" | "unsure") {
     setAnswers((old) => ({ ...old, [id]: value }));
     setQualificationsReviewed(false);
@@ -211,11 +238,25 @@ export function GuidedCalculator({
   function printAssessment() {
     if (!result) return;
     try {
-      assessmentExport(snapshot, input, review, result); // Revalidate retained evidence before printing.
+      assessmentExport(snapshot, input, review, result, accepted); // Revalidate retained evidence before printing.
       setResult(calculateGuided(snapshot, input, review));
       requestAnimationFrame(() => window.print());
     } catch {
       setUiError("The assessment could not be printed. Recheck the sources and try again.");
+    }
+  }
+  /** Explicit user export: the revalidated record, including the provenance of accepted public dates. */
+  function downloadRecord() {
+    if (!result) return;
+    try {
+      const record = assessmentExport(snapshot, input, review, result, accepted);
+      downloadText(
+        "time-limits-assessment.json",
+        "application/json",
+        JSON.stringify({ exportedAt: new Date().toISOString(), ...record }, null, 2),
+      );
+    } catch {
+      setUiError("The record could not be exported. Recheck the sources and try again.");
     }
   }
   const evidence = (
@@ -452,6 +493,16 @@ export function GuidedCalculator({
                           </label>
                         ))}
                       </div>
+                      {pickerApplies(claim) && (
+                        <PublicDatePicker
+                          rule={rule}
+                          dateFields={dates}
+                          cutoff={cutoff}
+                          values={input}
+                          accepted={acceptedDates}
+                          onAccept={acceptPublicDate}
+                        />
+                      )}
                       {rule.calculation?.deathCapYears && (
                         <div className="grid gap-3 sm:grid-cols-2">
                           <label className="text-sm">
@@ -666,6 +717,13 @@ export function GuidedCalculator({
                               )}
                             </div>
                           )}
+                          {NOTE_QUESTIONS[q.id] && (
+                            <TollingReviewNotes
+                              snapshot={snapshot}
+                              rule={rule}
+                              category={NOTE_QUESTIONS[q.id]!}
+                            />
+                          )}
                           {q.id === "minority" && answers.minority === "yes" && policy && (
                             <div className="mt-3 space-y-3 rounded-md border border-border p-4">
                               <label className="block text-sm font-medium">
@@ -873,6 +931,10 @@ export function GuidedCalculator({
                       </div>
                     </div>
                   )}
+                  <DateSources
+                    list={accepted}
+                    labels={Object.fromEntries(dates.map((d) => [d.key, d.label]))}
+                  />
                   {result.suggestedSubtype && claim && (
                     <Button
                       variant="outline"
@@ -912,6 +974,9 @@ export function GuidedCalculator({
                   </details>
                   <div className="flex flex-wrap gap-2">
                     <Button onClick={printAssessment}>Print assessment</Button>
+                    <Button variant="outline" onClick={downloadRecord}>
+                      Download record (JSON)
+                    </Button>
                     <Button variant="outline" onClick={() => go(1)}>
                       Edit exceptions
                     </Button>
