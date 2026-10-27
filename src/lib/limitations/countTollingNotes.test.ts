@@ -104,5 +104,6 @@ describe("count-tolling-notes.mjs", () => {
     const missing = spawnSync(process.execPath, [script], { env, encoding: "utf8" });
     expect(missing.status).toBe(2);
     expect(missing.stderr).toMatch(/LIM_BUNDLE_DIR is not set/);
-  });
+    // Two Node child processes: allow for a loaded machine (the default 5 s timed out under load).
+  }, 60_000);
 });
