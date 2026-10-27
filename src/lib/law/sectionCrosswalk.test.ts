@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   crosswalkFor,
   deviceSummary,
+  fmvssCoverageNote,
   recallYears,
   toDeviceType,
   toVehicleRecall,
@@ -77,5 +78,19 @@ describe("vehicle recalls", () => {
     expect(ys.find((y) => y.year === "2012")?.units).toBeNull();
     expect(ys.at(-1)).toEqual({ year: "2026", recalls: 1, units: 10, partial: true });
     expect(recallYears([], "2026-10-27")).toEqual([]);
+  });
+});
+
+describe("fmvssCoverageNote", () => {
+  it("states the share of recalls naming no standard and the first year, from the counts read", () => {
+    expect(fmvssCoverageNote({ total: 15_319, untagged: 12_091, firstYear: "2010" })).toBe(
+      "79% of NHTSA recall records name no standard; recalls held from 2010.",
+    );
+    expect(fmvssCoverageNote({ total: 10, untagged: 5, firstYear: null })).toBe(
+      "50% of NHTSA recall records name no standard.",
+    );
+    expect(fmvssCoverageNote(null)).toBeNull();
+    expect(fmvssCoverageNote({ total: 0, untagged: 0, firstYear: null })).toBeNull();
+    expect(fmvssCoverageNote({ total: 5, untagged: 9, firstYear: null })).toBeNull();
   });
 });

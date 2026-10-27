@@ -18,7 +18,7 @@ import {
   Section,
   buildSectionContext,
 } from "@/components/kit";
-import { partCitation, type SectionChange } from "@/lib/law/cfrRadar";
+import { partCitation, type CfrRadar, type SectionChange } from "@/lib/law/cfrRadar";
 import { cfrRadarQuery } from "./lawQueries";
 
 const SOURCE = {
@@ -28,6 +28,9 @@ const SOURCE = {
 const fmt = (v: number) => v.toLocaleString("en-US");
 const ID = "cfr-radar";
 const TITLE = "Changes to mass-tort regulations since 2017";
+/** The data runs through the history's last refresh, not through today. */
+const through = (r: CfrRadar) =>
+  r.dataAsOf ? `the ${r.dataAsOf} refresh` : "the last refresh (date not recorded)";
 
 export function CfrChangeRadar() {
   const q = useQuery(cfrRadarQuery);
@@ -62,7 +65,7 @@ export function CfrChangeRadar() {
         id: ID,
         title: TITLE,
         scope: r.parts.map((p) => partCitation(p)).join(", "),
-        period: `Since 2017-01-03, through ${r.today}`,
+        period: `Since 2017-01-03, through ${through(r)}`,
         source: SOURCE.label,
         figures: [
           {
@@ -117,7 +120,7 @@ export function CfrChangeRadar() {
           meta={
             r ? `${fmt(r.last12.changes)} substantive changes since ${r.last12.since}` : undefined
           }
-          source={{ source: SOURCE, asOf: r?.today }}
+          source={{ source: SOURCE, asOf: r?.dataAsOf ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -125,7 +128,7 @@ export function CfrChangeRadar() {
           state={state}
           value={r ? fmt(partsRecent.length) : null}
           meta={r ? `of ${fmt(r.parts.length)} watched parts` : undefined}
-          source={{ source: SOURCE, asOf: r?.today }}
+          source={{ source: SOURCE, asOf: r?.dataAsOf ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -145,7 +148,7 @@ export function CfrChangeRadar() {
               ? `${latestPart.title} CFR ${latest.section} · ${latestPart.label}`
               : undefined
           }
-          source={{ source: SOURCE, asOf: r?.today }}
+          source={{ source: SOURCE, asOf: r?.dataAsOf ?? undefined }}
         />
       </KpiGrid>
 
@@ -161,8 +164,8 @@ export function CfrChangeRadar() {
           status={status}
           sources={[SOURCE]}
           period={period}
-          asOf={r?.today}
-          partial={r ? `${r.partialYear} runs through ${r.today}.` : undefined}
+          asOf={r?.dataAsOf ?? undefined}
+          partial={r ? `${r.partialYear} runs through ${through(r)}.` : undefined}
           about={
             <ul className="list-disc space-y-1 pl-4">
               <li>
@@ -194,7 +197,7 @@ export function CfrChangeRadar() {
                 }
               : undefined
           }
-          actions={r ? <ChangesDrawer changes={r.changes} today={r.today} /> : undefined}
+          actions={r ? <ChangesDrawer changes={r.changes} asOf={r.dataAsOf} /> : undefined}
         >
           {r ? (
             <Heatmap
@@ -230,7 +233,7 @@ export function CfrChangeRadar() {
           status={status}
           sources={[SOURCE]}
           period={period}
-          partial={r ? `${r.partialYear} runs through ${r.today}.` : undefined}
+          partial={r ? `${r.partialYear} runs through ${through(r)}.` : undefined}
           table={periodTable(totals, "year", [{ key: "changes", label: "Changes" }], fmt, {
             caption: "Substantive changes per year, watched parts",
             xLabel: "Year",
@@ -253,7 +256,7 @@ export function CfrChangeRadar() {
   );
 }
 
-function ChangesDrawer({ changes, today }: { changes: SectionChange[]; today: string }) {
+function ChangesDrawer({ changes, asOf }: { changes: SectionChange[]; asOf: string | null }) {
   return (
     <DataDrawer
       title="Changes to watched parts"
@@ -264,7 +267,7 @@ function ChangesDrawer({ changes, today }: { changes: SectionChange[]; today: st
       rowKey={(c, i) => `${c.id}:${c.date}:${i}`}
       searchable
       searchLabel="Filter by section or heading"
-      source={{ source: SOURCE, asOf: today }}
+      source={{ source: SOURCE, asOf: asOf ?? undefined }}
       columns={[
         { key: "date", label: "Version date", value: (c) => c.date },
         {

@@ -17,6 +17,7 @@ import {
 import {
   crosswalkFor,
   deviceSummary,
+  fmvssCoverageNote,
   recallYears,
   type SectionCrosswalk,
 } from "@/lib/law/sectionCrosswalk";
@@ -186,13 +187,19 @@ function VehiclePanel({
     .filter((r) => r.date)
     .sort((a, b) => b.date!.localeCompare(a.date!))[0];
   const period = years.length ? `${years[0]!.year}–${years.at(-1)!.year}` : undefined;
+  const coverage = fmvssCoverageNote(x.coverage);
+  const lowerBound = `Only recalls whose record names the standard are counted${coverage ? `; ${coverage}` : "."}`;
   const context = buildSectionContext({
     id: ID,
     title: `Recalls citing FMVSS ${x.key} (${citation})`,
     period: period ?? null,
     source: NHTSA_SOURCE.label,
     figures: [
-      { label: "Recall campaigns citing the standard", value: x.recalls.length },
+      {
+        label: "Recall campaigns citing the standard",
+        value: x.recalls.length,
+        note: `Lower bound. ${lowerBound}`,
+      },
       {
         label: "Vehicles or items potentially affected",
         value: unitsKnown,
@@ -225,8 +232,8 @@ function VehiclePanel({
           size="sm"
           label="Recall campaigns"
           value={fmt(x.recalls.length)}
-          meta={period}
-          source={{ source: NHTSA_SOURCE, asOf: x.today }}
+          meta={`At least · only recalls naming the standard${period ? ` · ${period}` : ""}`}
+          source={{ source: NHTSA_SOURCE, asOf: x.dataAsOf ?? undefined }}
         />
         <KpiCard
           as="li"
@@ -270,11 +277,11 @@ function VehiclePanel({
           subtitle={`Recall campaigns per report year · ${years.at(-1)?.year ?? ""} partial`}
           sources={[NHTSA_SOURCE]}
           period={period}
-          asOf={x.today}
+          asOf={x.dataAsOf ?? undefined}
           about={
             <p>
-              Recalls whose record names FMVSS No. {x.key}, matched on that number only. Units are
-              as the manufacturer reported them.
+              Recalls whose record names FMVSS No. {x.key}, matched on that number only, so the
+              count is a lower bound. {lowerBound} Units are as the manufacturer reported them.
             </p>
           }
           table={periodTable(
@@ -299,7 +306,7 @@ function VehiclePanel({
               rows={[...x.recalls].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""))}
               rowKey={(r) => r.campaign}
               searchable
-              source={{ source: NHTSA_SOURCE, asOf: x.today }}
+              source={{ source: NHTSA_SOURCE, asOf: x.dataAsOf ?? undefined }}
               columns={[
                 { key: "date", label: "Report date", value: (r) => r.date },
                 {

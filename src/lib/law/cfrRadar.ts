@@ -64,7 +64,10 @@ export type PartRadar = WatchedPart & {
 };
 
 export type CfrRadar = {
+  /** Reference date for the 12-month window and the partial year (Eastern time). */
   today: string;
+  /** When the eCFR version history was last refreshed (the section's as-of date); null when not recorded. */
+  dataAsOf: string | null;
   years: string[];
   partialYear: string;
   parts: PartRadar[];
@@ -163,6 +166,7 @@ export function buildRadar(
   const recent = all.filter((c) => c.date > since && c.date <= today);
   return {
     today,
+    dataAsOf: null,
     years,
     partialYear,
     parts: out,

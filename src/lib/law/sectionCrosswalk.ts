@@ -142,4 +142,24 @@ export type SectionCrosswalk =
       exportDate: string | null;
       devices: DeviceType[];
     }
-  | { kind: "vehicle"; key: string; recalls: VehicleRecall[]; today: string };
+  | {
+      kind: "vehicle";
+      key: string;
+      recalls: VehicleRecall[];
+      /** Reference date for the year chart's partial year (Eastern time). */
+      today: string;
+      /** When the NHTSA recall dataset was last refreshed; null when not recorded. */
+      dataAsOf: string | null;
+      /** How much of the recall dataset names any FMVSS number at all (the count here is a lower bound). */
+      coverage: FmvssCoverage | null;
+    };
+
+/** Recall records held, how many name no FMVSS number, and the first report year held. */
+export type FmvssCoverage = { total: number; untagged: number; firstYear: string | null };
+
+/** "79% of NHTSA recall records name no standard; recalls held from 2010." Null when the counts are unusable. */
+export function fmvssCoverageNote(c: FmvssCoverage | null): string | null {
+  if (!c || !(c.total > 0) || c.untagged < 0 || c.untagged > c.total) return null;
+  const pct = Math.round((c.untagged / c.total) * 100);
+  return `${pct}% of NHTSA recall records name no standard${c.firstYear ? `; recalls held from ${c.firstYear}` : ""}.`;
+}

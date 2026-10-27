@@ -6,13 +6,15 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { restGet } from "@/lib/external/rest.server";
-import { readAllRows } from "@/lib/analytics/tally.server";
+import { countRows, readAllRows } from "@/lib/analytics/tally.server";
 import { memoAsync } from "@/lib/insights/readers/cache";
+import { datasetRefreshDates } from "./dataAsOf.server";
 import { easternToday } from "./rulemakingTracker";
 import {
   crosswalkFor,
   toDeviceType,
   toVehicleRecall,
+  type FmvssCoverage,
   type SectionCrosswalk,
 } from "./sectionCrosswalk";
 
@@ -24,6 +26,30 @@ const deviceDataset = memoAsync(60 * 60 * 1000, async (): Promise<string | null>
     `corpus_datasets?select=id&id=like.${DEVICE_PREFIX}*&order=id.desc&limit=1`,
   );
   return r.rows[0]?.id ?? null;
+});
+
+const RECALLS = "agency_safety_nhtsa_recalls";
+
+/**
+ * Dataset-wide FMVSS coverage of the recall records (two exact counts and the earliest report date), so the page can
+ * say the per-standard count is a lower bound. Shared by every 49 CFR 571 section; memoized for an hour.
+ */
+const recallCoverage = memoAsync(60 * 60 * 1000, async (): Promise<FmvssCoverage> => {
+  const base = `corpus_records?dataset=eq.${RECALLS}`;
+  const [total, untagged, first] = await Promise.all([
+    countRows(base),
+    countRows(`${base}&or=(item->recall->>fmvss.is.null,item->recall->>fmvss.eq.%22%22)`),
+    restGet<{ d: string | null }[]>(
+      `corpus_records?select=d:item->recall->>report_date&dataset=eq.${RECALLS}` +
+        `&item->recall->>report_date=not.is.null&order=item->recall->>report_date.asc&limit=1`,
+    ),
+  ]);
+  const d = first.rows[0]?.d;
+  return {
+    total,
+    untagged,
+    firstYear: typeof d === "string" && /^\d{4}/.test(d) ? d.slice(0, 4) : null,
+  };
 });
 
 const cache = new Map<string, { at: number; v: SectionCrosswalk | null }>();
@@ -57,11 +83,20 @@ async function read(title: string, section: string): Promise<SectionCrosswalk | 
       `&order=ordinal.asc,id.asc`,
     { max: 5_000 },
   );
+  const [refreshed, coverage] = await Promise.all([
+    datasetRefreshDates([RECALLS] as const),
+    recallCoverage().catch((e: unknown) => {
+      console.error("recall fmvss coverage", e);
+      return null;
+    }),
+  ]);
   return {
     kind: "vehicle",
     key: x.fmvss,
     recalls: rows.flatMap((r) => toVehicleRecall(r) ?? []),
     today: easternToday(),
+    dataAsOf: refreshed[RECALLS],
+    coverage,
   };
 }
 

@@ -6,6 +6,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { mapLimit, readAllRows } from "@/lib/analytics/tally.server";
 import { memoAsync } from "@/lib/insights/readers/cache";
+import { datasetRefreshDates } from "./dataAsOf.server";
 import { easternToday } from "./rulemakingTracker";
 import { WATCHED_PARTS, buildRadar, partKey, type CfrRadar } from "./cfrRadar";
 
@@ -19,7 +20,8 @@ const read = memoAsync(30 * 60 * 1000, async (): Promise<CfrRadar> => {
     ),
   );
   const byPart = new Map(WATCHED_PARTS.map((p, i) => [partKey(p), rows[i] ?? []]));
-  return buildRadar(byPart, easternToday());
+  const refreshed = await datasetRefreshDates(["ecfr_section_versions"] as const);
+  return { ...buildRadar(byPart, easternToday()), dataAsOf: refreshed.ecfr_section_versions };
 });
 
 export const getCfrRadar = createServerFn({ method: "GET" }).handler(async (): Promise<CfrRadar> =>
