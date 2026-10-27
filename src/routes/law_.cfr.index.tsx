@@ -9,8 +9,13 @@ import { parseCitation } from "@/lib/external/ecfrFull";
 import { getCfrCollection } from "@/lib/external/ecfrFull.functions";
 import { CfrAgencyIndex } from "@/components/authorities/AgencyPanels";
 import { LawAtlas } from "@/components/lawviz/LawAtlas";
+import { CfrChangeRadar, cfrRadarQuery } from "@/components/law/CfrChangeRadar";
+import { SectionIndex } from "@/components/kit";
 
 export const Route = createFileRoute("/law_/cfr/")({
+  loader: ({ context }) => {
+    void context.queryClient.prefetchQuery(cfrRadarQuery);
+  },
   head: () =>
     pageHead(
       "Code of Federal Regulations",
@@ -54,6 +59,19 @@ function CfrIndexPage() {
       title="Code of Federal Regulations"
       description="Full current text from the eCFR, section by section, with each section's change history since 2017 and the text as of any past date."
     >
+      <SectionIndex
+        items={[
+          { id: "cfr-radar", label: "Change radar" },
+          { id: "cfr-browse", label: "Browse titles" },
+          { id: "cfr-atlas", label: "Atlas and agencies" },
+        ]}
+      />
+      <div className="stack-block">
+        <CfrChangeRadar />
+      </div>
+      <h2 id="cfr-browse" className="mb-3 mt-8 scroll-mt-16 text-heading text-foreground">
+        Browse the CFR
+      </h2>
       <form
         role="search"
         className="mb-4 flex flex-wrap items-center gap-2"
@@ -130,7 +148,7 @@ function CfrIndexPage() {
           </p>
         </>
       )}
-      <div className="mt-6">
+      <div id="cfr-atlas" className="mt-6 scroll-mt-16">
         <LawAtlas corpus="cfr" />
       </div>
       <div className="mt-4">

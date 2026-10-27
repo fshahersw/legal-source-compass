@@ -9,6 +9,7 @@ import { BodyLines, Fact, Footnotes, StatusBadge } from "@/components/uscode/UsC
 import { RegulationsUnderSectionPanel } from "@/components/authorities/RegulationsUnderSectionPanel";
 import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
+import { CitedInFilings } from "@/components/law/CitedInFilings";
 import { pageHead } from "@/lib/corpus/head";
 import { cn } from "@/lib/utils";
 import {
@@ -193,6 +194,13 @@ function SectionBody({ s }: { s: UscSection }) {
         ) : null}
         {s.kind === "section" && USC_UNIT.test(`usc:${s.title}:${s.key}`) ? (
           <DocumentsPanel type="law_unit" id={`usc:${s.title}:${s.key}`} quiet />
+        ) : null}
+        {s.kind === "section" ? (
+          <CitedInFilings
+            dataset="us_code_sections"
+            id={`${s.title}:${s.key}`}
+            citation={s.citation}
+          />
         ) : null}
       </div>
       <aside className="space-y-3 self-start xl:sticky xl:top-2">

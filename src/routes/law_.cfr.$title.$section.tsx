@@ -8,6 +8,8 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { CfrBlocks, CfrNotes } from "@/components/regulatory/CfrText";
 import { AsOfPicker, CfrVersionList } from "@/components/regulatory/CfrHistory";
 import { RelatedPanel } from "@/components/semantic/RelatedPanel";
+import { CitedInFilings } from "@/components/law/CitedInFilings";
+import { SectionProductsPanel } from "@/components/law/SectionProductsPanel";
 import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/corpus/head";
 import {
@@ -295,6 +297,12 @@ function SectionBody({
           {!s.reserved ? <RelatedPanel dataset="ecfr_sections_full" recordId={s.id} quiet /> : null}
         </aside>
       </div>
+      <SectionProductsPanel title={s.titleNumber} section={s.identifier} />
+      <CitedInFilings
+        dataset="ecfr_sections_full"
+        id={s.id}
+        citation={s.citation}
+      />
     </div>
   );
 }
