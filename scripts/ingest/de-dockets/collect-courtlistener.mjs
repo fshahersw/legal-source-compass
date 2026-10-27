@@ -4,11 +4,13 @@
 // <acq>/courtlistener-entries.jsonl ({native_id, data, payload_sha256, retrieved_at, source_url}, the lake-row shape makeEntryRecord reads).
 // Quota: the live usage API is authoritative (the account is shared). The run stops when the daily remaining count reaches --reserve or after
 // --max-requests requests. Credentials: COURTLISTENER_API_KEY from the environment only; never logged.
-//   node --use-system-ca scripts/ingest/de-dockets/collect-courtlistener.mjs --acq=<dir> --mdls=2741,2804,2873 [--max-requests=25] [--reserve=40] [--execute]
+//   node --use-system-ca scripts/ingest/de-dockets/collect-courtlistener.mjs --acq=<dir> --mdls=2741,2804,2873 [--max-requests=25] [--reserve=40]
+//        [--shared-ledger=<courtlistener-client cache>/rate-ledger.json] [--execute]
 import fs from "node:fs";
 import path from "node:path";
 import { CourtListener, Stop } from "../gap-fill/clients.mjs";
 import { sha256 } from "./docketbird-capture.mjs";
+import { appendSharedLedger } from "./shared-ledger.mjs";
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -58,6 +60,12 @@ const cl = new CourtListener({
 });
 const out = path.join(acq, "courtlistener-entries.jsonl");
 const ledger = path.join(acq, "courtlistener-ledger.jsonl");
+// --shared-ledger=<cache>/rate-ledger.json also records each request in the shared ledger of courtlistener-client.mjs.
+const sharedLedger = args["shared-ledger"] ? path.resolve(args["shared-ledger"]) : null;
+if (sharedLedger && fs.existsSync(path.join(path.dirname(sharedLedger), "api-collector.lock")))
+  throw new Error(
+    "another CourtListener collector holds the shared lock; run when it has finished",
+  );
 const seen = new Set(
   fs.existsSync(out)
     ? fs
@@ -84,6 +92,7 @@ try {
     summary.push(s);
     while (next) {
       const { data, receipt } = await cl.get(next);
+      if (sharedLedger) appendSharedLedger(sharedLedger, receipt.retrieved_at);
       fs.appendFileSync(
         ledger,
         JSON.stringify({
