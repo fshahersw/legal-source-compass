@@ -721,6 +721,8 @@ export const getSecActions = createServerFn({ method: "GET" })
 // ---------------------------------------------------------------- official settlements
 
 export type ConfirmedFact = "deadline" | "amount" | "court" | "case number";
+export type SettlementAmountRole = "fund_total" | "per_claimant" | "cap" | "other";
+const AMOUNT_ROLES: SettlementAmountRole[] = ["fund_total", "per_claimant", "cap", "other"];
 export type OfficialSettlement = {
   id: string;
   name: string;
@@ -737,6 +739,12 @@ export type OfficialSettlement = {
     valueUsd: number | null;
     sentence: string | null;
     status: string;
+    /** Role typed from the amount's own sentence (retype_claims.py); null until the dataset is retyped. */
+    role: SettlementAmountRole | null;
+    /** For role "other": fees_costs, service_award, penalty, distribution, estimate, threshold or unclear. */
+    detail: string | null;
+    /** The wording that decided the role, as written on the page. */
+    roleBasis: string | null;
   }[];
   courts: CourtRef[];
   caseNumbers: string[];
@@ -780,6 +788,7 @@ export function parseOfficialSettlement(row: {
       const o = obj(x);
       const asWritten = str(o?.["page_as_written"], 60);
       const status = str(o?.["status"], 40);
+      const role = str(o?.["role"], 20);
       return asWritten && status
         ? [
             {
@@ -787,6 +796,11 @@ export function parseOfficialSettlement(row: {
               valueUsd: num(o?.["value_usd"]),
               sentence: str(o?.["sentence"], 400),
               status,
+              role: AMOUNT_ROLES.includes(role as SettlementAmountRole)
+                ? (role as SettlementAmountRole)
+                : null,
+              detail: str(o?.["detail"], 40),
+              roleBasis: str(o?.["role_basis"], 200),
             },
           ]
         : [];

@@ -395,6 +395,21 @@ describe("parseOfficialSettlement", () => {
     expect(s.deadline).toBeNull();
     expect(parseOfficialSettlement({ ...base, s: { ...base.s, facts_confirmed: [] } })).toBeNull();
   });
+  it("reads the typed amount role and leaves an untyped or unknown role null", () => {
+    const typed = parseOfficialSettlement({
+      ...base,
+      s: {
+        ...base.s,
+        amounts: [
+          { page_as_written: "$350", value_usd: 350, status: "confirmed", role: "per_claimant", role_basis: "payments" },
+          { page_as_written: "$5", value_usd: 5, status: "confirmed", role: "invented" },
+        ],
+      },
+    })!;
+    expect(typed.amounts[0]).toMatchObject({ role: "per_claimant", roleBasis: "payments", detail: null });
+    expect(typed.amounts[1]!.role).toBeNull();
+    expect(parseOfficialSettlement(base)!.amounts[0]!.role).toBeNull();
+  });
 });
 
 describe("parseFacts", () => {
