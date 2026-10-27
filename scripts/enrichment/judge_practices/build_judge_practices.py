@@ -9,7 +9,9 @@ stage (fetch_docs.py).
   judge_court_coverage       one record per district or bankruptcy court: how its site lists judges (per-judge pages, one list, none, blocked), the
                              pages read, the counts, and why a court has no judges when it has none
 
-Chambers telephone numbers, e-mail addresses and courtroom deputy names are not extracted from pages and are redacted from document text.
+Document text is kept as the court published it, chambers e-mail addresses, telephone numbers and staff names included (owner decision
+2026-10-27); judge page records do not parse contact details into fields. A document record that still carries the legacy redaction markers
+(text stored before 2026-10-27) stops the build: run release_contact_text.py --update-doc-records first.
 
     python3 -I -B scripts/enrichment/judge_practices/build_judge_practices.py
 """
@@ -31,6 +33,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "scripts", "enrichment"))
 
 import corpus_writer as writer  # noqa: E402
+import extract_text as xt  # noqa: E402
 import fetchlib as fl  # noqa: E402
 import parse_lib as pl  # noqa: E402
 import profile_match as pm  # noqa: E402
@@ -207,7 +210,7 @@ def main() -> None:
                                                                     if j.get("data_url") else (r["page_sha256"] or "Not recorded"))],
             ["Documents linked", len(docs_list)],
             ["Profile link", ("Linked: " + m["basis"]) if m["status"] == "linked" else f"Not linked: {m['reason']}" + (f" ({m['candidates']} candidates)" if m["candidates"] else "")],
-            ["Source", "The court's own website; chambers telephone numbers, e-mail addresses and staff names are not copied. Read the judge's page for contact details."],
+            ["Source", "The court's own website. Contact details printed on the judge's page are not parsed into fields here; they appear in the page's own text and its documents."],
         ]
         sections = []
         if docs_list:
@@ -253,6 +256,11 @@ def main() -> None:
     # ---- judge_practice_documents rows
     docs_out = []
     doc_stats = Counter()
+    legacy = [url for url, d in docs.items() if url in doc_judges
+              and (xt.has_legacy_marker(d.get("text") or "") or any((d.get("redactions") or {}).values()))]
+    if legacy:
+        raise SystemExit(f"{len(legacy)} document records still carry text redacted before 2026-10-27 (e.g. {sorted(legacy)[0]}); "
+                         "run release_contact_text.py --update-doc-records first")
     for url, d in sorted(docs.items()):
         if url not in doc_judges:
             continue  # a stored record whose judge page is no longer part of the roster
@@ -273,7 +281,7 @@ def main() -> None:
             "storage": {"bucket": st.get("bucket"), "key": st.get("key"), "sha256": st.get("sha256"), "bytes": st.get("bytes"), "readback_sha256": st.get("readback_sha256"),
                         "readback_bytes": st.get("readback_bytes"), "readback_ok": bool(st.get("readback_ok")), "verified_at": st.get("verified_at")} if st else None,
             "wrapper": d.get("wrapper"), "file_url": d.get("file_url"), "pages": d.get("pages"), "text_chars": len(text), "text_chars_total": d.get("text_chars_total"),
-            "text_truncated": bool(d.get("text_truncated")), "text_method": d.get("text_method"), "text_error": d.get("text_error"), "redactions": d.get("redactions"),
+            "text_truncated": bool(d.get("text_truncated")), "text_method": d.get("text_method"), "text_error": d.get("text_error"), "redactions": None,
             "text_sha256": hashlib.sha256(text.encode()).hexdigest() if text else None, "error": d.get("error"), "kind": kind, "kind_label": KIND_LABEL[kind],
             "judges": [{"id": o["id"], "name": o["name"], "court_id": o["court_id"], "judge_id": o["judge_id"], "title": o["title"], "date_text": o["date_text"], "date": o["date"]}
                        for o in owners],
@@ -290,7 +298,6 @@ def main() -> None:
             ["Pages", d.get("pages") if d.get("pages") else "Not recorded"],
             ["Text", f"{len(text):,} characters" + (f" of {d['text_chars_total']:,} (capped)" if d.get("text_truncated") else "") + f"; {d.get('text_method') or 'no extraction'}" if text
              else f"No text: {d.get('text_error') or d.get('error') or 'not extracted'}"],
-            ["Redacted from the text", "; ".join(f"{k.replace('_', ' ')}: {v}" for k, v in (d.get("redactions") or {}).items() if v) or "None"],
         ]
         links = [{"url": url, "label": "Open on the court's website"}] + [
             {"url": f"/records/{PAGES_ID}/{o['id']}", "label": f"{o['name']} — judge's page record"} for o in owners[:6]] + [
@@ -317,8 +324,6 @@ def main() -> None:
         doc_stats[f"kind_{kind}"] += 1
         if d.get("status") != 200:
             doc_stats["failed"] += 1
-        for k, v in (d.get("redactions") or {}).items():
-            doc_stats[f"redacted_{k}"] += v
 
     # ---- judge_court_coverage rows
     cover_out = []
@@ -361,7 +366,7 @@ def main() -> None:
         "method": ("Listing pages found from each court's home page (or a stated override), judge pages fetched at most once each, documents downloaded unchanged "
                    "and stored in the private bucket corpus-originals under judge_practices/<retrieval date>/ with a whole-object SHA-256 readback. "
                    "robots.txt obeyed (including Crawl-delay); at most one request per second to a court site; no 403 or bot wall bypassed."),
-        "privacy": "No chambers telephone number, e-mail address or courtroom deputy name is extracted from a page; document text has e-mail addresses, telephone numbers and staff-contact lines redacted (counts recorded). Originals are stored unchanged.",
+        "privacy": xt.PRIVACY,
         "profile_matching": ("A judge is linked to an existing profile only on a unique exact match of normalised name (case, accents, punctuation and suffixes removed, middle names "
                              "reduced to initials) plus court, using the judge directory and the FJC service lookup; no match, or more than one, leaves the judge unlinked."),
     }
