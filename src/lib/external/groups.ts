@@ -164,6 +164,7 @@ const EXPLICIT: Record<string, SectionId> = {
   coverage_labels: "sources",
   coverage_topics: "sources",
   large_text_assets: "sources",
+  large_text_official: "sources",
   focused: "sources",
 };
 
