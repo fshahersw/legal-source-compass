@@ -113,3 +113,21 @@ test('refresh fails when a staged row would be rejected, unless review is reques
   assert.equal(kept.rejected.length, 1);
   assert.equal(kept.rejected[0].id, '00-23477-Filed');
 });
+
+test('live mode starts on the newest held day and never restages a held publication', async () => {
+  const out = temp(); const api = fakeApi();
+  const acquire = (o) => acquireFederalRegister({ ...o, fetchImpl: api.fetchImpl, minIntervalMs: 0, diskReserveBytes: 0, log: quiet });
+  const calls = [];
+  const readWindow = async (from) => {
+    calls.push(from);
+    return { latest_published: '2026-10-05', held: from ? [{ id: '2026-30001', source_url: DOCS[0].html_url, published: '2026-10-05' }, { id: '2026-30002', source_url: DOCS[1].html_url, published: '2026-10-05' }] : [] };
+  };
+  const log = console.log; console.log = quiet;
+  let run;
+  try { run = await refresh({ out, through: '2026-11-02', live: true, acquire, readWindow, now: '2026-11-02' }); } finally { console.log = log; }
+  assert.deepEqual(calls, [null, '2026-10-05']);
+  assert.equal(run.window.from, '2026-10-05');
+  assert.equal(run.window.held_skipped, 2);
+  assert.deepEqual(run.records_by_type, { fr_document: 2 });
+  assert.deepEqual(run.published, { first: '2026-11-02', last: '2026-11-02' });
+});

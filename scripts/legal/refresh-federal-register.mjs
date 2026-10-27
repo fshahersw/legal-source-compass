@@ -58,16 +58,18 @@ async function liveHeld(from) {
   return result;
 }
 
-export async function refresh({ out, from, through = today(), held = [], live = false, allowRejected = false, acquire = acquireFederalRegister, now = today() }) {
+export async function refresh({ out, from, through = today(), held = [], live = false, allowRejected = false, acquire = acquireFederalRegister, readWindow = liveHeld, now = today() }) {
   if (!out) throw Error('--out is required');
   let window = { from, through, held };
   if (live) {
-    const first = await liveHeld(from);
-    if (!first.latest_published && !from) throw Error('No held Federal Register publication; pass --from');
-    const start = from ?? first.latest_published;
+    // Without --from the window starts on the newest day already held (re-read, held rows skipped).
+    let start = from;
+    if (!start) {
+      start = (await readWindow(null)).latest_published;
+      if (!start) throw Error('No held Federal Register publication; pass --from');
+    }
     // Held publications from the first day of the window on, by exact publisher URL.
-    const state = from && from !== first.latest_published ? await liveHeld(start) : first;
-    window = { from: start, through, held: state.held };
+    window = { from: start, through, held: (await readWindow(start)).held };
   }
   if (!isIsoDay(window.from) || !isIsoDay(window.through) || window.from > window.through) throw Error('Use --from (or --live-held) and --through as ISO dates with from <= through');
   if (window.through > now) throw Error('The window cannot end after today (UTC)');

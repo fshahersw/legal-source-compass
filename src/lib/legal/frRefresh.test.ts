@@ -53,8 +53,10 @@ describe("Federal Register refresh windows", () => {
 });
 
 describe("legal-atlas-v3-fr-refresh.sql", () => {
-  const generated = fs.readFileSync("database/contracts/legal-atlas-v3.generated.sql", "utf8");
-  const sql = fs.readFileSync(FR_REFRESH_SQL, "utf8");
+  // Windows checkouts may convert line endings; compare text, not bytes.
+  const lf = (s: string) => s.replace(/\r\n/g, "\n");
+  const generated = lf(fs.readFileSync("database/contracts/legal-atlas-v3.generated.sql", "utf8"));
+  const sql = lf(fs.readFileSync(FR_REFRESH_SQL, "utf8"));
   it("is regenerated from the current generated contract", () => {
     expect(sql).toBe(frRefreshSql(generated));
   });

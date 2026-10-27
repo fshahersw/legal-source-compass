@@ -1,0 +1,76 @@
+name: Legal atlas Federal Register refresh
+
+# Refreshes legal_atlas fr_document / rule_proceeding records from the official Federal Register API
+# (public domain, no key). Manual only until the lead has applied
+# database/contracts/legal-atlas-v3-fr-refresh.sql and verified a first upload; then uncomment the
+# schedule (after the 16:00 UTC federal-register-daily run) to keep the atlas current.
+on:
+  # schedule:
+  #   - cron: "30 16 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Optional first publication day, YYYY-MM-DD. Default: the newest day already held (held rows are skipped)."
+        required: false
+        type: string
+      upload:
+        description: "Upload the staged packet to legal_atlas (review_status stays pending). Off = dry run."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: legal-atlas-fr-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
+      EXTERNAL_SUPABASE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Require repository secrets
+        run: |
+          missing=0
+          for name in EXTERNAL_SUPABASE_URL EXTERNAL_SUPABASE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Repository secret for $name is not set"; missing=1; fi
+          done
+          exit $missing
+      - name: Offline tests
+        run: node --test scripts/legal/refresh-federal-register.test.mjs
+      - name: Acquire, normalize and stage (dry run; fails on any row the intake would reject)
+        env:
+          INPUT_FROM: ${{ inputs.from }}
+        run: |
+          set -euo pipefail
+          args=(--out "$RUNNER_TEMP/legal-fr" --live-held)
+          if [ -n "$INPUT_FROM" ]; then
+            if [[ ! "$INPUT_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then echo "::error::from must be YYYY-MM-DD"; exit 1; fi
+            args+=(--from "$INPUT_FROM")
+          fi
+          node scripts/legal/refresh-federal-register.mjs "${args[@]}"
+      - name: Upload records, then edges (review_status pending)
+        if: ${{ inputs.upload }}
+        run: |
+          set -euo pipefail
+          cfg="$RUNNER_TEMP/legal-fr/staging/config.json"
+          node scripts/legal/upload-stage.mjs "$cfg" | tee "$RUNNER_TEMP/upload-stage.log"
+          run_id=$(tail -n 1 "$RUNNER_TEMP/upload-stage.log" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>process.stdout.write(JSON.parse(s).run_id))")
+          node scripts/legal/upload-edges.mjs "$cfg" "$run_id"
+      - name: Keep the packet summary (no credentials, no document bodies)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legal-atlas-fr-packet
+          path: ${{ runner.temp }}/legal-fr/packet-summary.json
+          if-no-files-found: ignore
+          retention-days: 30

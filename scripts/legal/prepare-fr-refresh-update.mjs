@@ -69,9 +69,10 @@ grant select on legal_atlas.fr_documents_current to service_role;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const sql = frRefreshSql(fs.readFileSync('database/contracts/legal-atlas-v3.generated.sql', 'utf8'));
+  const lf = s => s.replace(/\r\n/g, '\n');
+  const sql = frRefreshSql(lf(fs.readFileSync('database/contracts/legal-atlas-v3.generated.sql', 'utf8')));
   if (process.argv.includes('--check')) {
-    if (!fs.existsSync(FR_REFRESH_SQL) || fs.readFileSync(FR_REFRESH_SQL, 'utf8') !== sql) throw new Error(`${FR_REFRESH_SQL} differs from the generated contract; rerun this script`);
+    if (!fs.existsSync(FR_REFRESH_SQL) || lf(fs.readFileSync(FR_REFRESH_SQL, 'utf8')) !== sql) throw new Error(`${FR_REFRESH_SQL} differs from the generated contract; rerun this script`);
   } else fs.writeFileSync(FR_REFRESH_SQL, sql);
   console.log(JSON.stringify({ written: FR_REFRESH_SQL, check: process.argv.includes('--check') }));
 }
