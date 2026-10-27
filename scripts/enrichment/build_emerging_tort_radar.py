@@ -569,7 +569,9 @@ class Radar:
                                    "factor": round(factor, 4), "death_factor": round(death_factor, 4),
                                    "serious_factor": round(serious_factor, 4),
                                    "serious_share": round(serious_share, 4) if serious_share else None,
-                                   "window": window_label(end, 12), "baseline_window": window_label(month_add(end, -12), 36)}}
+                                   "window": window_label(end, 12), "baseline_window": window_label(month_add(end, -12), 36),
+                                   "series": {"unit": "FAERS reports per month (all products)", "values": nr.get("tail") or [],
+                                              "start": ym(month_add(end, -(len(nr.get("tail") or []) - 1)))}}}
         subjects = {s["id"]: s for s in self.inp.subjects if s["id"].startswith("faers:")}
         with_series = sorted(sid for sid in win if sid.startswith("faers:") and "faers_reports" in win[sid])
         self.coverage_faers = {"indexed": len(subjects), "with_series": len(with_series)}
@@ -646,7 +648,9 @@ class Radar:
         self.national["nhtsa"] = {"recent": nat["recent"], "prior": nat["prior"], "factor": round(factor, 4),
                                   "severe_factor": round(sev_factor, 4), "death_factor": round(death_factor, 4),
                                   "window": window_label(end, 12), "baseline_window": window_label(month_add(end, -12), 12),
-                                  "latest_received": str(self.inp.nhtsa_max_received)}
+                                  "latest_received": str(self.inp.nhtsa_max_received),
+                                  "series": {"unit": "NHTSA complaints per month (all vehicles)", "values": nat.get("months") or [],
+                                             "start": ym(month_add(end, -(len(nat.get("months") or []) - 1)))}}
         window = window_label(end, 12)
         since = month_add(end, -23)
         invs, recalls = self.inp.investigations, self.inp.recalls
