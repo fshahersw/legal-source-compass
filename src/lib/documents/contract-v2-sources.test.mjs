@@ -190,16 +190,24 @@ test("documents/1 v2 sources: public-locator RECAP filings", { timeout: 180000 }
       ]),
     );
   const v2 = await fs.readFile("database/contracts/documents-v2-sources.sql", "utf8");
+  const scope = await fs.readFile("database/contracts/documents-v2-scope.sql", "utf8");
+  // the body of documents_refresh_v1 in documents-v2-scope.sql, as pg_proc.prosrc stores it
+  const scopeLf = scope.split(String.fromCharCode(13)).join("");
+  const head = scopeLf.indexOf("create or replace function public.documents_refresh_v1(");
+  const open = scopeLf.indexOf("as $$", head) + "as $$".length;
+  const scopeRefresh = scopeLf.slice(open, scopeLf.indexOf("$$;", open));
+  const before = 1; // 900106: the one non-locator filing of the seed that is open and unflagged
   const rollback = await fs.readFile("database/contracts/documents-v2-sources.rollback.sql", "utf8");
   try {
     await db.exec(MOCK);
     await db.exec(await fs.readFile("database/contracts/caselaw-read-v1.sql", "utf8"));
     await seed(db);
     await db.exec(await fs.readFile("database/contracts/documents-v1.sql", "utf8"));
+    await db.exec(scope);
 
-    await t.test("before: documents-v1 leaves every locator filing out", async () => {
+    await t.test("before: the documents/2 scope leaves every locator filing out", async () => {
       const r = await rpc("documents_refresh_v1", ["before"]);
-      assert.deepEqual(r.by_collection, { docket_filings: 1 });
+      assert.equal(r.by_collection.docket_filings, before);
       assert.equal((await one("select count(*)::int n from documents.documents where source_system = $1", [LOC])).n, 0);
       await assert.rejects(
         db.query(
@@ -221,12 +229,16 @@ test("documents/1 v2 sources: public-locator RECAP filings", { timeout: 180000 }
         recap(120, 0), // the locator association itself reports a seal: held by availability
         recap(121, 0), // the same bytes carry a restriction elsewhere
         recap(122, 0), // locally flagged sealed bytes
-        recap(130, 0), // no published page lists the docket
         recap(106, 0), // the CourtListener listing of the same bytes serves it
       ])
         assert.ok(!(absent in by), absent);
       assert.ok("900106" in by);
-      const locs = Object.values(by).filter((d) => d.source_system === LOC);
+      // a docket no published page lists: the locator file enters on its docket, with no MDL (documents/2 scope)
+      assert.deepEqual(
+        [by[recap(130, 0)].listed_by, by[recap(130, 0)].mdl, by[recap(130, 0)].record_id],
+        ["docket_case", null, "99999"],
+      );
+      const locs = Object.values(by).filter((d) => d.source_system === LOC && d.native_case_id === DOCKET);
       assert.equal(locs.length, 9);
       assert.ok(locs.every((d) => d.collection === "docket_filings" && d.listed_by === "registry_pdf_case_id"));
       assert.ok(locs.every((d) => d.mdl === "2738" && d.court_id === "njd" && d.docket_number === "3:16-md-02738"));
@@ -318,12 +330,16 @@ test("documents/1 v2 sources: public-locator RECAP filings", { timeout: 180000 }
         0,
       );
       const r = await rpc("documents_refresh_v1", ["rolled"]);
-      assert.deepEqual(r.by_collection, { docket_filings: 1 });
+      assert.equal(r.by_collection.docket_filings, before);
       assert.equal((await one("select count(*)::int n from documents.pages where sha256 = $1", [S.main101])).n, 0);
       const src = (await one("select prosrc from pg_proc where oid = 'public.documents_refresh_v1(text)'::regprocedure")).prosrc;
-      assert.equal(createHash("md5").update(src).digest("hex"), "e96f6c35586d24c7a4917988decc38c1", "the deployed v1 text");
+      assert.equal(
+        createHash("md5").update(src).digest("hex"),
+        createHash("md5").update(scopeRefresh).digest("hex"),
+        "the documents-v2-scope.sql refresh text",
+      );
       await db.exec(v2);
-      assert.equal((await rpc("documents_refresh_v1", ["again"])).by_source[LOC], 9);
+      assert.equal((await rpc("documents_refresh_v1", ["again"])).by_source[LOC], 10);
     });
   } finally {
     await db.close();
