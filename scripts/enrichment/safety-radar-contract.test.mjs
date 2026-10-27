@@ -45,7 +45,7 @@ test("applies twice, owns no DROP/DELETE/TRUNCATE and is service_role only", asy
         has_function_privilege('authenticated', p.oid, 'execute') auth,
         has_function_privilege('service_role', p.oid, 'execute') svc
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname in ('safety_series_window_v1', 'safety_nhtsa_complaint_windows_v1')`)
+      where n.nspname = 'public' and p.proname in ('safety_series_window_v1', 'safety_radar_nhtsa_windows_v1')`)
   ).rows;
   assert.equal(rows.length, 2);
   for (const r of rows) {
@@ -108,7 +108,7 @@ test("NHTSA windows: one count per complaint and make/model/component, national 
     await db.query(`insert into safety.nhtsa_complaints values ($1, $2, $3::jsonb, $4, $5, $6, $7)`, [
       r[0], r[1], JSON.stringify(r[2]), r[3], r[4], r[5], r[6],
     ]);
-  const out = (await db.query(`select * from public.safety_nhtsa_complaint_windows_v1(date '2026-09-01', 12, 2)`)).rows;
+  const out = (await db.query(`select * from public.safety_radar_nhtsa_windows_v1(date '2026-09-01', 12, 2)`)).rows;
   const nat = out.find((r) => r.scope === "national");
   assert.equal(Number(nat.recent), 4);
   assert.equal(Number(nat.prior), 1);
