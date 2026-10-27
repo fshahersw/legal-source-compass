@@ -1,4 +1,5 @@
 import { STATES, stateByUsps } from "@/lib/corpus/geo";
+import { memoAsync } from "@/lib/insights/readers/cache";
 import { ilikeTerm, restGet, rpcPost, rpcPostOptional } from "@/lib/external/rest.server";
 import { STATE_DATASETS } from "@/lib/external/lawTree";
 import { listSnapshotNames, readPrivateSnapshot } from "@/lib/private-data/snapshot.server";
@@ -1003,7 +1004,19 @@ export type StateCodeCoverageRow = {
   contract: string | null;
 };
 
-export async function stateCodeCoverage(): Promise<StateCodeCoverageRow[]> {
+/** How long the publisher coverage is reused: its RPC averages about 3.4 s and changes only when an edition lands. */
+export const COVERAGE_TTL_MS = 20 * 60 * 1000;
+
+/**
+ * Publisher code coverage per state, memoized for COVERAGE_TTL_MS (concurrent callers share one read; a failure is
+ * never cached, so the next request tries again).
+ */
+export const stateCodeCoverage: () => Promise<StateCodeCoverageRow[]> = memoAsync(
+  COVERAGE_TTL_MS,
+  readStateCodeCoverage,
+);
+
+async function readStateCodeCoverage(): Promise<StateCodeCoverageRow[]> {
   const payload = await rpcPost<{ states?: unknown }>("corpus_publisher_code_coverage_v2", {
     p_recount: false,
   });

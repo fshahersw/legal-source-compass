@@ -77,7 +77,7 @@ export function AgencyProfileView({ data, after }: { data: AgencyProfileData; af
       },
       { label: "Significant final rules since 1994", value: s.significantRules, unit: "rules" },
       {
-        label: "Open comment periods",
+        label: "Open comment periods (Federal Register documents)",
         value: s.openComments,
         unit: "documents",
         period: trends ? `as of ${trends.openComments.asOf}` : undefined,
@@ -158,14 +158,18 @@ export function AgencyProfileView({ data, after }: { data: AgencyProfileData; af
           note="Published since 1994 (EO 12866)"
         />
         <Kpi
-          label="Open comment periods"
+          label="Open comment periods (Federal Register)"
           value={fmt(s.openComments)}
-          note={trends ? `As of ${trends.openComments.asOf}` : undefined}
+          note={
+            trends
+              ? `Federal Register documents, as of ${trends.openComments.asOf}; the Rulemaking page counts Regulations.gov documents and can differ`
+              : undefined
+          }
         />
         <Kpi
           label="Unified Agenda actions"
           value={fmt(s.agendaActions)}
-          note={`${fmt(s.agendaEconomicallySignificant)} economically significant`}
+          note={`${fmt(s.agendaEconomicallySignificant)} economically significant · one agenda edition held`}
         />
         <Kpi
           label={`Obligations FY${s.latestFy}`}
@@ -308,7 +312,8 @@ export function AgencyProfileView({ data, after }: { data: AgencyProfileData; af
                   footnote={
                     <>
                       Stages and priorities as the agency reported them to reginfo.gov. Department
-                      figures include their components' entries.{" "}
+                      figures include their components' entries. Only this one edition is held, so
+                      projected dates are as printed then and many have since passed.{" "}
                       <SourceLink href={UA_INDEX}>Unified Agenda XML</SourceLink>
                     </>
                   }
