@@ -18,11 +18,13 @@ with scripts/safety_v2/load.py.
     faers     count every drug/event partition (resumable; one aggregate file per partition under <acq>/faers/parts)
     maude     count every device/event partition (product codes and the MDL device groups of mdl_map.py)
     reduce-faers / reduce-maude   merge the partition aggregates into loader chunks under <acq>/load/<stream>
-              (reduce-faers --refresh-loaded: optional series-only recount of the already-loaded products, <acq>/load/faers_refresh)
+              (reduce-faers --refresh-loaded: optional series-only recount of the already-loaded products, <acq>/load/faers_refresh;
+              reduce-faers --faers-universe F: list in the manifest the products whose stored reports_total drifted)
     accept-groups   compare each MDL device group's offline series with the count API's (<acq>/api); reduce-maude
               then writes bulk breakdowns only for the groups that matched every month
     ndc       NDC directory (drug/ndc bulk file) → subjects rows carrying pharm_class_epc and application_numbers keys
-              (--faers-universe [[rank, reports_total, name]] supplies the stored reports_total)
+              (--faers-universe [[rank, reports_total, name]] supplies the stored reports_total; --as-of YYYY-MM-DD, the
+              stored as_of, is required); keys only from listings whose active ingredients are the named substance(s)
     validate  re-ask the count API for a sample of built rows (--validate-stream faers|maude --n-series --n-breakdowns
               --max-requests); writes <acq>/<stream>/validation-<time>.json
     --workers N (default 4)  --limit N (first N partitions only: a validation sample)  --keep-zips
@@ -55,7 +57,6 @@ import time
 import urllib.request
 import zipfile
 from collections import defaultdict
-from datetime import date
 from multiprocessing import Pool
 from pathlib import Path
 
@@ -303,8 +304,8 @@ def count_faers(records, targets, bd_grain):
             grain = bd_grain.get(i)
             if grain is None:
                 continue
-            if pts is None:
-                pts = {x.get("reactionmeddrapt") for x in patient.get("reaction") or []
+            if pts is None:  # upper-cased here, so 'Nausea' and 'NAUSEA' in one report count that report once
+                pts = {x["reactionmeddrapt"].upper() for x in patient.get("reaction") or []
                        if isinstance(x.get("reactionmeddrapt"), str)}
             periods = ["all"]
             if valid:
@@ -615,34 +616,51 @@ def reduce_faers(args):
     through = args.through or last_complete_month(max_date)
     bd_rows = []
     refresh = getattr(args, "refresh_loaded", False)
+    case_bound = {"rows": 0, "terms": 0, "max_reports": 0, "sum_reports": 0}
     for shard in range(0 if refresh else BD_SHARDS):  # a refresh writes series only
         bd = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [0, 0])))
+        bound = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
         for name in names_done:
             for i, per in read_json_gz(acq / "faers" / "parts" / f"{name}.bd{shard}.json.gz").items():
                 for p, terms in per.items():
                     cell = bd[int(i)][p]
+                    seen = defaultdict(list)
                     for t, (n, s) in terms.items():
                         v = cell[t.upper()]  # the API's reactionmeddrapt.exact terms are upper case
                         v[0] += n
                         v[1] += s
+                        seen[t.upper()].append(n)
+                    # partitions counted before count_faers upper-cased terms keep case variants apart: a report that
+                    # lists 'Nausea' and 'NAUSEA' is then counted twice here. At most sum - max reports per partition.
+                    for t, ns in seen.items():
+                        if len(ns) > 1:
+                            bound[int(i)][p][t] += sum(ns) - max(ns)
         for i in sorted(j for j, q in prods.items() if q.get("bd_grain") and j % BD_SHARDS == shard):
             p = prods[i]
             months = series.get(i, {})
             first = first_month(months, ob.FAERS_FLOOR, through)
+            if not first:  # no report in the series window today: no breakdown row at all (Not recorded), never an empty
+                continue   # 'complete' answer beside a stored reports_total of thousands
             sid = p["id"]
             per = bd.get(i, {})
-            bd_rows.append(breakdown_row(sid, "meddra_pt", "all", per.get("all", {}), args.alltime_limit,
-                                         faers_url(p["generic_name"], extra="", count="patient.reaction.reactionmeddrapt.exact",
-                                                   limit=args.alltime_limit), retrieved, True))
-            if not first:
-                continue
+            rows = [breakdown_row(sid, "meddra_pt", "all", per.get("all", {}), args.alltime_limit,
+                                  faers_url(p["generic_name"], extra="", count="patient.reaction.reactionmeddrapt.exact",
+                                            limit=args.alltime_limit), retrieved, True)]
             for period in periods_for(months, max(first, ob.FAERS_FLOOR), through, p["bd_grain"]):
                 a, b = ob.period_bounds(period)
-                bd_rows.append(breakdown_row(sid, "meddra_pt", period, per.get(period, {}), args.reaction_limit,
-                                             faers_url(p["generic_name"], extra=f"receivedate:[{a}+TO+{b}]",
-                                                       count="patient.reaction.reactionmeddrapt.exact", limit=args.reaction_limit),
-                                             retrieved, True))
-        del bd
+                rows.append(breakdown_row(sid, "meddra_pt", period, per.get(period, {}), args.reaction_limit,
+                                          faers_url(p["generic_name"], extra=f"receivedate:[{a}+TO+{b}]",
+                                                    count="patient.reaction.reactionmeddrapt.exact", limit=args.reaction_limit),
+                                          retrieved, True))
+            for row in rows:
+                hits = [h for h in (bound[i][row["period"]].get(t, 0) for t in row["terms"]) if h]
+                if hits:
+                    case_bound["rows"] += 1
+                    case_bound["terms"] += len(hits)
+                    case_bound["max_reports"] = max(case_bound["max_reports"], max(hits))
+                    case_bound["sum_reports"] += sum(hits)
+            bd_rows += rows
+        del bd, bound
     export = partitions(acq, "drug/event")[1]
     method = (f"Counted from the openFDA bulk export of drug/event (export {export}; {len(files)} files listed at {INDEX_URL}, each "
               f"file's sha256 in the build manifest): reports per receivedate summed by calendar month, from the subject's first "
@@ -679,15 +697,53 @@ def reduce_faers(args):
     universe = [[r, n, g] for r, (n, g) in enumerate(ranked, 1)]
     (acq / "faers" / "universe_bulk.json").write_text(json.dumps(universe, ensure_ascii=False), encoding="utf-8")
     universe_sha = c.sha256_bytes("\n".join(f"{r}|{n}|{g}" for r, n, g in universe).encode("utf-8"))
+    notes = {"records": records, "max_receivedate": max_date, "through": through, "no_reports_in_window": skipped,
+             "universe_sha256_rank_count_name": universe_sha}
+    if not refresh:
+        notes["no_breakdowns_no_reports_in_window"] = sorted(
+            p["id"] for i, p in prods.items() if p.get("bd_grain") and not first_month(series.get(i, {}), ob.FAERS_FLOOR, through))
+        notes["case_variant_overcount_bound"] = {
+            **case_bound, "note": ("partitions counted before count_faers upper-cased MedDRA terms: a report listing two case "
+                                   "variants of one term may be counted twice; at most `max_reports` reports for one term "
+                                   "of one row, `sum_reports` over all rows")}
+    if getattr(args, "faers_universe", None):
+        stored = json.loads(Path(args.faers_universe).read_text(encoding="utf-8"))
+        notes["reports_total_drift"] = {
+            "stored_universe_sha256": c.sha256_file(args.faers_universe),
+            "rule": ("stored safety.subjects reports_total (count API, 2026-10-23) against today's bulk all-time count "
+                     "(more than 5% apart) or the sum of today's monthly series (more than 10% apart)"),
+            "products": reports_total_drift(prods, totals, check, stored)}
     outputs = write_chunks(acq / "load" / ("faers_refresh" if refresh else "faers"),
                            "openfda_bulk/faers_refresh" if refresh else "openfda_bulk/faers",
                            {"series": s_rows} if refresh else {"series": s_rows, "breakdowns": bd_rows}, "openfda_faers",
                            {"index": {"url": INDEX_URL, "sha256": c.sha256_file(acq / "download.json")}, "export_date": export,
                             "files": files, "targets_sha256": c.sha256_file(acq / "targets.json")},
-                           {"records": records, "max_receivedate": max_date, "through": through, "no_reports_in_window": skipped,
-                            "universe_sha256_rank_count_name": universe_sha})
+                           notes)
     print(json.dumps({"through": through, "records": records, "files": len(files), "universe_sha256_rank_count_name": universe_sha,
-                      "rows": {o["target"]: o["rows"] for o in outputs}, "no_reports_in_window": len(skipped)}))
+                      "rows": {o["target"]: o["rows"] for o in outputs}, "no_reports_in_window": len(skipped),
+                      "drift": len((notes.get("reports_total_drift") or {}).get("products", [])),
+                      "case_variant_overcount_bound": notes.get("case_variant_overcount_bound")}))
+
+
+def reports_total_drift(prods, totals, check, stored, bulk_tol=0.05, series_tol=0.10):
+    """The products whose stored reports_total (stored [[rank, reports_total, name]], the safety.subjects list) differs
+    from today's bulk all-time count by more than bulk_tol, or from the sum of today's monthly series (check.json
+    totals) by more than series_tol; largest difference first. A product whose stored name at its rank differs is
+    skipped (the list is matched by rank and exact name)."""
+    by_rank = {r: (n, g) for r, n, g in stored}
+    out = []
+    for i, p in sorted(prods.items()):
+        st = by_rank.get(p["rank"])
+        if not st or st[1] != p["generic_name"] or not st[0]:
+            continue
+        s, bulk = st[0], totals.get(i, 0)
+        ssum = ((check.get(p["id"]) or {}).get("totals") or [0])[0]
+        rb, rs = bulk / s, ssum / s
+        if abs(rb - 1) > bulk_tol or abs(rs - 1) > series_tol:
+            out.append({"id": p["id"], "rank": p["rank"], "stored_reports_total": s, "bulk_reports_total": bulk,
+                        "series_reports_sum": ssum, "bulk_ratio": round(rb, 3), "series_ratio": round(rs, 3),
+                        "series_in_this_build": bool(p.get("series"))})
+    return sorted(out, key=lambda d: -max(abs(d["bulk_ratio"] - 1), abs(d["series_ratio"] - 1)))
 
 
 # ------------------------------------------------------------------------------------------------ reduce: MAUDE
@@ -768,18 +824,123 @@ def reduce_maude(args):
 
 
 # ------------------------------------------------------------------------------------------------ NDC keys
+APP_KEYS = ("application_numbers", "monograph_ids", "other_application_ids")
+NAME_SEPS = (", AND ", " AND ", ", ")
+
+
+def norm_name(s):
+    """Upper case, trimmed, inner whitespace collapsed (the form names are compared in)."""
+    return " ".join(str(s or "").upper().split())
+
+
+def application_kind(value, category=None):
+    """Which key an NDC application_number goes to: 'application_numbers' for an FDA application (NDA, ANDA, BLA
+    followed by digits), 'monograph_ids' for an OTC monograph citation (M013, part341, 505G(a)(3), or any value on an
+    OTC MONOGRAPH listing), 'other_application_ids' for anything else the directory prints (e.g. BN, EUA numbers)."""
+    v = value.strip()
+    if re.fullmatch(r"(NDA|ANDA|BLA)\d+", v):
+        return "application_numbers"
+    if re.fullmatch(r"(?i)(m[\w.()]*|part\s*\d+\w*|505g\S*)", v) or norm_name(category).startswith("OTC MONOGRAPH"):
+        return "monograph_ids"
+    return "other_application_ids"
+
+
+def listing_ingredients(record):
+    """The distinct active ingredient names of an NDC listing (normalised); when the listing prints none, the
+    substance names of its openFDA annotation."""
+    names = {norm_name(x.get("name")) for x in record.get("active_ingredients") or [] if isinstance(x, dict)}
+    names.discard("")
+    if not names:
+        names = {norm_name(x) for x in (record.get("openfda") or {}).get("substance_name") or [] if isinstance(x, str)}
+        names.discard("")
+    return names
+
+
+# Salt, ester and hydrate words that do not change the active moiety: the only mapping the ingredient check makes, so
+# 'ABACAVIR' matches a listing of 'ABACAVIR SULFATE' and 'DILTIAZEM HCL' one of 'DILTIAZEM HYDROCHLORIDE'.
+SALT_WORDS = frozenset("""HYDROCHLORIDE HCL DIHYDROCHLORIDE HYDROBROMIDE HBR HYDRIODIDE SULFATE BISULFATE MESYLATE
+    DIMESYLATE BESYLATE TOSYLATE MALEATE FUMARATE HEMIFUMARATE TARTRATE BITARTRATE CITRATE SUCCINATE ACETATE PHOSPHATE
+    DIPHOSPHATE NITRATE CHLORIDE BROMIDE IODIDE SODIUM DISODIUM POTASSIUM DIPOTASSIUM CALCIUM MAGNESIUM ZINC LITHIUM
+    MEGLUMINE TROMETHAMINE OXALATE PAMOATE LACTATE GLUCONATE HYCLATE MONOHYDRATE DIHYDRATE TRIHYDRATE SESQUIHYDRATE
+    HEMIHYDRATE HEMIPENTAHYDRATE HYDRATE ANHYDROUS MEDOXOMIL ERBUMINE BENZOATE PROPIONATE DIPROPIONATE VALERATE
+    BUTYRATE FUROATE XINAFOATE DECANOATE PALMITATE CYPIONATE ENANTHATE UNDECANOATE OLAMINE CHOLINE CILEXETIL
+    PIDOLATE""".split())
+
+
+def moiety(s):
+    """The active moiety a substance name names, for the ingredient check only: normalised, without a trailing
+    strength ('81 MG'), ', UNSPECIFIED (FORM)' or stereo descriptor (', (R)-', ', DL-'), an FDA biosimilar suffix
+    ('-ADBM') or trailing salt, ester and hydrate words (SALT_WORDS). A mineral salt whose words are all SALT_WORDS
+    ('MAGNESIUM CITRATE') keeps its full name, so it never equals another salt of the same ion. Never used to link
+    records: keys are still joined on the exact generic name."""
+    s = norm_name(s)
+    s = re.sub(r",\s*(UNSPECIFIED(\s+FORM)?|\([RS+\-±,]+\)-?|DL-|D-|L-)$", "", s)
+    s = re.sub(r"\s+\d[\d.,]*\s*(MG|MCG|G|ML|%)$", "", s)
+    s = re.sub(r"(?<=\w)-[A-Z]{4}$", "", s)
+    words = s.split()
+    if all(w in SALT_WORDS for w in words):
+        return s
+    while len(words) > 1 and words[-1] in SALT_WORDS:
+        words.pop()
+    return " ".join(words)
+
+
+def ingredients_match(name, names):
+    """True when a listing whose generic_name is `name` holds exactly the substance(s) the name names: one ingredient
+    with the name's moiety (salt, hydrate and biosimilar-suffix forms allowed, nothing else: 'ESTRADIOL' is not
+    'ESTRIOL'), or two or more ingredients whose names spell the name exactly, each used once in any order and joined
+    by ', ', ' AND ' or ', AND ', or whose moieties equal, one for one, the moieties of the name's components. A
+    combination listing that prints a single-substance generic name, or a listing with no ingredient names, does not
+    match."""
+    name = norm_name(name)
+    if len(names) == 1:
+        return moiety(next(iter(names))) == moiety(name)
+    if len(names) < 2:
+        return False
+    parts = [p for p in re.split(r",\s*AND\s+|\s+AND\s+|,\s*", name) if p]
+    if len(parts) == len(names) and sorted(map(moiety, parts)) == sorted(map(moiety, names)):
+        return True
+
+    def spell(pos, left):
+        for ing in left:
+            if not name.startswith(ing, pos):
+                continue
+            end, rest = pos + len(ing), left - {ing}
+            if not rest:
+                if end == len(name):
+                    return True
+                continue
+            if any(name.startswith(s, end) and spell(end + len(s), rest) for s in NAME_SEPS):
+                return True
+        return False
+
+    return spell(0, frozenset(names))
+
+
 def ndc_keys(records):
-    """{GENERIC NAME (upper case, trimmed): {pharm_class_epc: set, application_numbers: set, products: n}} from the NDC
-    directory. pharm_class_epc holds the FDA Established Pharmacologic Class terms ("... [EPC]") the directory lists for
-    the product, in openfda.pharm_class_epc (the field FAERS searches use) or in its own pharm_class list; application
-    numbers are published as the directory prints them (NDA/ANDA/BLA numbers, OTC monograph ids)."""
+    """{GENERIC NAME (normalised): {pharm_class_epc, application_numbers, monograph_ids, other_application_ids,
+    ingredients: set, products: listings with that generic_name, used: listings the keys come from}} from the NDC
+    directory.
+
+    Keys come only from listings that hold no substance the name does not name (ingredients_match): the directory
+    prints a single-substance generic_name on many combination products (e.g.
+    'Acetaminophen' on acetaminophen + guaifenesin + phenylephrine), whose other ingredients' classes and applications
+    must not be attached to the single substance. pharm_class_epc holds the FDA Established Pharmacologic Class terms
+    ("... [EPC]") of those listings, from openfda.pharm_class_epc (the field FAERS searches use) or the listing's own
+    pharm_class list; application numbers are split by application_kind."""
     out = {}
     for r in records:
-        g = r.get("generic_name")
-        if not isinstance(g, str) or not g.strip():
+        g = norm_name(r.get("generic_name"))
+        if not g:
             continue
-        e = out.setdefault(g.strip().upper(), {"pharm_class_epc": set(), "application_numbers": set(), "products": 0})
+        e = out.setdefault(g, {"pharm_class_epc": set(), **{k: set() for k in APP_KEYS}, "ingredients": set(),
+                               "products": 0, "used": 0})
         e["products"] += 1
+        ings = listing_ingredients(r)
+        if not ingredients_match(g, ings):
+            continue
+        e["used"] += 1
+        e["ingredients"] |= ings
         for x in ((r.get("openfda") or {}).get("pharm_class_epc") or []):
             if isinstance(x, str) and x.strip():
                 e["pharm_class_epc"].add(x.strip())
@@ -788,25 +949,33 @@ def ndc_keys(records):
                 e["pharm_class_epc"].add(x.strip())
         a = r.get("application_number")
         if isinstance(a, str) and a.strip():
-            e["application_numbers"].add(a.strip())
+            e[application_kind(a, r.get("marketing_category"))].add(a.strip())
     return out
 
 
 def subject_key_rows(products, keys, export_date, as_of):
     """Full safety.subjects rows (the loader replaces a row) for the FAERS products whose name the NDC directory lists:
     the stored fields unchanged, keys extended with pharm_class_epc, application_numbers and ndc_directory."""
+    if not as_of:
+        raise ValueError("as_of is required: the stored subjects' as_of date, kept unchanged")
     rows = []
     for p in products:
-        e = keys.get(p["generic_name"].strip().upper())
-        if not e or not (e["pharm_class_epc"] or e["application_numbers"]):
+        e = keys.get(norm_name(p["generic_name"]))
+        if not e or not any(e[f] for f in ("pharm_class_epc", *APP_KEYS)):
             continue
         k = {"generic_name": p["generic_name"]}
-        if e["pharm_class_epc"]:
-            k["pharm_class_epc"] = sorted(e["pharm_class_epc"])
-        if e["application_numbers"]:
-            k["application_numbers"] = sorted(e["application_numbers"])
-        k["ndc_directory"] = {"products": e["products"], "export_date": export_date,
-                              "match": "NDC directory generic_name equals the openFDA generic name (case-insensitive, exact)",
+        for f in ("pharm_class_epc", *APP_KEYS):
+            if e[f]:
+                k[f] = sorted(e[f])
+        k["ndc_directory"] = {"products": e["products"], "listings_used": e["used"],
+                              "listings_excluded": e["products"] - e["used"], "export_date": export_date,
+                              "active_ingredients": sorted(e["ingredients"]),
+                              "match": ("NDC directory generic_name equals the openFDA generic name (case-insensitive, exact); "
+                                        "keys only from listings whose active ingredients are the named substance(s): one "
+                                        "ingredient of the same moiety (salt, hydrate or biosimilar-suffix form), or the "
+                                        "named components one for one"),
+                              "application_numbers": ("NDA/ANDA/BLA numbers only; OTC monograph citations (M###, part###, 505G) "
+                                                      "are in monograph_ids, other published ids in other_application_ids"),
                               "source_url": "https://download.open.fda.gov/drug/ndc/drug-ndc-0001-of-0001.json.zip"}
         rows.append({"id": p["id"], "subject_type": "product", "kind": "drug", "label": ob.display_label(p["generic_name"]),
                      "keys": k, "search": {"faers": f'patient.drug.openfda.generic_name.exact:"{p["generic_name"]}"'},
@@ -816,6 +985,8 @@ def subject_key_rows(products, keys, export_date, as_of):
 
 
 def build_ndc(args):
+    if not args.as_of:
+        raise SystemExit("--as-of YYYY-MM-DD is required: the stored safety.subjects as_of, kept unchanged")
     acq = Path(args.acq)
     targets = json.loads((acq / "targets.json").read_text(encoding="utf-8"))
     parts, export = partitions(acq, "drug/ndc")
@@ -838,9 +1009,13 @@ def build_ndc(args):
     outputs = write_chunks(acq / "load" / "subjects_keys", "openfda_bulk/ndc", {"subjects": rows}, "openfda_faers",
                            {"ndc": {"url": parts[0]["file"], "sha256": c.sha256_file(zpath), "records": parts[0].get("records")},
                             "export_date": export, "targets_sha256": c.sha256_file(acq / "targets.json")},
-                           {"products": len(targets["faers"]), "with_keys": len(rows),
+                           {"products": len(targets["faers"]), "with_keys": len(rows), "as_of": args.as_of,
                             "with_epc": sum(1 for r in rows if "pharm_class_epc" in r["keys"]),
                             "with_application_numbers": sum(1 for r in rows if "application_numbers" in r["keys"]),
+                            "with_monograph_ids": sum(1 for r in rows if "monograph_ids" in r["keys"]),
+                            "with_other_application_ids": sum(1 for r in rows if "other_application_ids" in r["keys"]),
+                            "listings_matching_names": sum(e["products"] for e in keys.values()),
+                            "listings_excluded_ingredients": sum(e["products"] - e["used"] for e in keys.values()),
                             "generic_names_in_directory": len(keys)})
     print(json.dumps({"products": len(targets["faers"]), "rows": {o["target"]: o["rows"] for o in outputs}}))
 
@@ -1064,7 +1239,7 @@ def main():
                     help="reduce-faers: series only, for the products whose series are already loaded (<acq>/load/faers_refresh)")
     ap.add_argument("--reaction-limit", type=int, default=25)
     ap.add_argument("--alltime-limit", type=int, default=1000)
-    ap.add_argument("--as-of", default=date.today().isoformat(), help="the stored subjects' as_of date (kept unchanged)")
+    ap.add_argument("--as-of", default=None, help="ndc (required): the stored subjects' as_of date, kept unchanged")
     args = ap.parse_args()
     {"index": build_index, "universe": build_universe, "api-plan": build_api_plan, "accept-groups": accept_groups,
      "targets": build_targets, "validate": validate, "faers": lambda a: run_stream(a, "faers"), "maude": lambda a: run_stream(a, "maude"),

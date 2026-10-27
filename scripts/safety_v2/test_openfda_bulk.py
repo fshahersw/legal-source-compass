@@ -121,8 +121,15 @@ class CountTests(unittest.TestCase):
         self.assertEqual(s["2024-02"][:3], [1, 0, 0])  # serious "2" and seriousnessdeath "2" are not "1"
         self.assertNotIn("1", agg["bd"])  # IBUPROFEN has no breakdown grain
         bd = agg["bd"]["0"]
-        self.assertEqual(bd["all"], {"Nausea": [1, 1], "Death": [1, 1], "Rash": [2, 1]})
-        self.assertEqual(bd["2024"], {"Nausea": [1, 1], "Death": [1, 1], "Rash": [1, 0]})
+        self.assertEqual(bd["all"], {"NAUSEA": [1, 1], "DEATH": [1, 1], "RASH": [2, 1]})
+        self.assertEqual(bd["2024"], {"NAUSEA": [1, 1], "DEATH": [1, 1], "RASH": [1, 0]})
+
+    def test_a_term_listed_in_two_cases_counts_its_report_once(self):
+        recs = [faers("20240105", [["X"]], ["Nausea", "NAUSEA", "nausea"], serious="1"),
+                faers("20240106", [["X"]], ["NAUSEA"])]
+        bd = b.count_faers(recs, {"X": 0}, {0: "year"})["bd"]["0"]
+        self.assertEqual(bd["all"], {"NAUSEA": [2, 1]})  # the count API's answer: two reports, one serious
+        self.assertEqual(bd["2024"], {"NAUSEA": [2, 1]})
 
     def test_maude_counts_codes_groups_and_event_types(self):
         groups = {2: b.parse_search('device.brand_name:"bair hugger"')}
@@ -151,7 +158,7 @@ class CountTests(unittest.TestCase):
         agg = b.count_maude(recs, {"DWJ": 0}, {})
         self.assertEqual(agg["bd"]["0"]["manufacturer"], {"": 1})  # a blank name is a term; a missing field is not
         f = b.count_faers([faers("20240101", [["X"]], ["", "Rash"])], {"X": 0}, {0: "year"})
-        self.assertEqual(f["bd"]["0"]["all"], {"": [1, 0], "Rash": [1, 0]})
+        self.assertEqual(f["bd"]["0"]["all"], {"": [1, 0], "RASH": [1, 0]})
 
 
 class ReduceTests(unittest.TestCase):
@@ -223,7 +230,11 @@ class ReduceFaersEndToEndTests(unittest.TestCase):
             (acq / "targets.json").write_text(json.dumps({"faers": [
                 {"index": 0, "id": "faers:x", "rank": 500, "reports_total": 3, "generic_name": "X",
                  "series": [n for n, _e, _u in ob.FAERS_SERIES], "bd_grain": "year"},
-                {"index": 1, "id": "faers:y", "rank": 2, "reports_total": 1, "generic_name": "Y"}]}))
+                {"index": 1, "id": "faers:y", "rank": 2, "reports_total": 1, "generic_name": "Y"},
+                {"index": 2, "id": "faers:z", "rank": 501, "reports_total": None, "generic_name": "Z",
+                 "series": [n for n, _e, _u in ob.FAERS_SERIES], "bd_grain": "year"}]}))
+            stored = acq / "stored_universe.json"  # the safety.subjects list: Y stored 2 reports, today's export has 1
+            stored.write_text(json.dumps([[2, 2, "Y"], [500, 3, "X"], [501, 26525, "Z"]]))
             parts = [
                 [faers("20240105", [["X"]], ["Nausea"], serious="1"), faers("20250630", [["X", "Y"]], ["NAUSEA", "Rash"])],
                 [faers("20250701", [["X"]], ["Rash"])],
@@ -237,7 +248,19 @@ class ReduceFaersEndToEndTests(unittest.TestCase):
                     b.write_json_gz(acq / "faers" / "parts" / f"p{k}.bd{s}.json.gz",
                                     {i: v for i, v in bd.items() if int(i) % b.BD_SHARDS == s})
                 b.write_json_gz(acq / "faers" / "parts" / f"p{k}.json.gz", agg)
-            b.reduce_faers(argparse.Namespace(acq=str(acq), through=None, reaction_limit=25, alltime_limit=1000))
+            b.reduce_faers(argparse.Namespace(acq=str(acq), through=None, reaction_limit=25, alltime_limit=1000,
+                                              faers_universe=str(stored)))
+            notes = json.loads((acq / "load" / "faers" / "manifest.json").read_text())["notes"]
+            # Z has no report in today's export: no series and no breakdown row (Not recorded), not an empty 'complete' one
+            self.assertEqual(notes["no_reports_in_window"], ["faers:z"])
+            self.assertEqual(notes["no_breakdowns_no_reports_in_window"], ["faers:z"])
+            drift = {d["id"]: d for d in notes["reports_total_drift"]["products"]}
+            self.assertEqual(sorted(drift), ["faers:x", "faers:y", "faers:z"])
+            # X's stored 3 equals today's all-time 3, but its series stop at the last complete month (2 of 3 reports)
+            self.assertEqual((drift["faers:x"]["bulk_ratio"], drift["faers:x"]["series_ratio"]), (1.0, 0.667))
+            self.assertEqual((drift["faers:y"]["bulk_reports_total"], drift["faers:y"]["series_in_this_build"]), (1, False))
+            self.assertEqual((drift["faers:z"]["stored_reports_total"], drift["faers:z"]["series_reports_sum"]), (26525, 0))
+            self.assertEqual(notes["case_variant_overcount_bound"]["rows"], 0)
             series = b.load_rows(acq, "faers", "series")
             bds = {(r["subject_id"], r["period"]): r for r in b.load_rows(acq, "faers", "breakdowns")}
             self.assertEqual({r["subject_id"] for r in series}, {"faers:x"})  # Y has no `series` request: already loaded
@@ -250,8 +273,9 @@ class ReduceFaersEndToEndTests(unittest.TestCase):
             self.assertEqual(bds[("faers:x", "all")]["vals"], [2, 2])
             self.assertEqual(bds[("faers:x", "all")]["serious"], [1, 0])
             self.assertEqual(sorted(p for s, p in bds), ["2024", "all"])  # 2025 is not a complete year before 2025-06
+            self.assertEqual({s for s, _p in bds}, {"faers:x"})
             uni = json.loads((acq / "faers" / "universe_bulk.json").read_text())
-            self.assertEqual(uni, [[1, 3, "X"], [2, 1, "Y"]])
+            self.assertEqual(uni, [[1, 3, "X"], [2, 1, "Y"], [3, 0, "Z"]])
             b.reduce_faers(argparse.Namespace(acq=str(acq), through=None, reaction_limit=25, alltime_limit=1000,
                                               refresh_loaded=True))
             refresh = b.load_rows(acq, "faers_refresh", "series")
@@ -259,16 +283,42 @@ class ReduceFaersEndToEndTests(unittest.TestCase):
             self.assertEqual(len(refresh), len(ob.FAERS_SERIES))
             self.assertEqual(len(b.load_rows(acq, "faers", "series")), len(series))  # the main build is untouched
 
+    def test_case_variants_of_older_partitions_are_merged_and_bounded(self):
+        with tempfile.TemporaryDirectory() as d:
+            acq = Path(d)
+            (acq / "faers" / "parts").mkdir(parents=True)
+            (acq / "download.json").write_text(json.dumps({"results": {"drug": {"event": {"export_date": "x", "partitions": []}}}}))
+            (acq / "targets.json").write_text(json.dumps({"faers": [
+                {"index": 0, "id": "faers:x", "rank": 500, "reports_total": 3, "generic_name": "X",
+                 "series": [n for n, _e, _u in ob.FAERS_SERIES], "bd_grain": "year"}]}))
+            # an aggregate written before count_faers upper-cased terms: 'Nausea' 2 reports, 'NAUSEA' 1 report
+            agg = {"records": 3, "max_date": "20250630", "totals": {"0": 3}, "series": {"0": {"2024-03": [3, 1, 0, 0, 0, 0, 0, 0]}},
+                   "file": "https://download.open.fda.gov/p.json.zip", "bytes": 1, "sha256": "0" * 64, "retrieved_at": "t"}
+            bd = {"0": {"all": {"Nausea": [2, 1], "NAUSEA": [1, 0], "Rash": [1, 0]},
+                        "2024": {"Nausea": [2, 1], "NAUSEA": [1, 0], "Rash": [1, 0]}}}
+            for s in range(b.BD_SHARDS):
+                b.write_json_gz(acq / "faers" / "parts" / f"p.bd{s}.json.gz", bd if s == 0 else {})
+            b.write_json_gz(acq / "faers" / "parts" / "p.json.gz", agg)
+            b.reduce_faers(argparse.Namespace(acq=str(acq), through=None, reaction_limit=25, alltime_limit=1000))
+            rows = {r["period"]: r for r in b.load_rows(acq, "faers", "breakdowns")}
+            self.assertEqual((rows["all"]["terms"], rows["all"]["vals"]), (["NAUSEA", "RASH"], [3, 1]))
+            bound = json.loads((acq / "load" / "faers" / "manifest.json").read_text())["notes"]["case_variant_overcount_bound"]
+            self.assertEqual((bound["rows"], bound["terms"], bound["max_reports"], bound["sum_reports"]), (2, 2, 1, 2))
+
 
 class NdcTests(unittest.TestCase):
     def test_keys_join_on_the_exact_name_and_keep_the_stored_fields(self):
+        def ai(*names):
+            return [{"name": n, "strength": "1 mg/1"} for n in names]
+
         recs = [
-            {"generic_name": "Tirzepatide", "application_number": "NDA215866",
+            {"generic_name": "Tirzepatide", "application_number": "NDA215866", "active_ingredients": ai("TIRZEPATIDE"),
              "openfda": {"pharm_class_epc": ["GLP-1 Receptor Agonist [EPC]"]}},
-            {"generic_name": "tirzepatide ", "application_number": "NDA217806", "openfda": {}},
-            {"generic_name": "Tirzepatide Injection", "application_number": "NDA999999"},
-            {"generic_name": "Copper", "application_number": "NDA018680"},
-            {"generic_name": "Pantoprazole", "application_number": "ANDA077619",
+            {"generic_name": "tirzepatide ", "application_number": "NDA217806", "active_ingredients": ai("TIRZEPATIDE"),
+             "openfda": {}},
+            {"generic_name": "Tirzepatide Injection", "application_number": "NDA999999", "active_ingredients": ai("TIRZEPATIDE")},
+            {"generic_name": "Copper", "application_number": "NDA018680", "active_ingredients": ai("COPPER")},
+            {"generic_name": "Pantoprazole", "application_number": "ANDA077619", "active_ingredients": ai("PANTOPRAZOLE SODIUM"),
              "pharm_class": ["Proton Pump Inhibitor [EPC]", "Proton Pump Inhibitors [MoA]"]},
             {"generic_name": "", "application_number": "X"},
         ]
@@ -283,10 +333,74 @@ class NdcTests(unittest.TestCase):
         self.assertEqual(t["keys"]["application_numbers"], ["NDA215866", "NDA217806"])
         self.assertEqual(t["keys"]["pharm_class_epc"], ["GLP-1 Receptor Agonist [EPC]"])
         self.assertEqual(t["keys"]["generic_name"], "TIRZEPATIDE")
+        self.assertEqual((t["keys"]["ndc_directory"]["listings_used"], t["keys"]["ndc_directory"]["listings_excluded"]), (2, 0))
         self.assertEqual(t["search"], {"faers": 'patient.drug.openfda.generic_name.exact:"TIRZEPATIDE"'})
         self.assertEqual((t["rank"], t["reports_total"], t["as_of"], t["label"]), (72, 160663, "2026-10-23", "TIRZEPATIDE"))
         self.assertNotIn("pharm_class_epc", rows[1]["keys"])
-        self.assertEqual(keys["PANTOPRAZOLE"]["pharm_class_epc"], {"Proton Pump Inhibitor [EPC]"})
+        self.assertEqual(keys["PANTOPRAZOLE"]["pharm_class_epc"], {"Proton Pump Inhibitor [EPC]"})  # a salt form is the drug
+        with self.assertRaises(ValueError):  # the stored as_of is kept, never defaulted to today
+            b.subject_key_rows(prods, keys, "2026-10-27", None)
+
+    def test_combination_listings_never_lend_their_other_ingredients_to_a_single_substance(self):
+        def listing(generic, ingredients, epc, app="M013", category="OTC MONOGRAPH DRUG"):
+            return {"generic_name": generic, "active_ingredients": [{"name": n} for n in ingredients],
+                    "openfda": {"pharm_class_epc": epc}, "application_number": app, "marketing_category": category}
+
+        recs = [
+            listing("Acetaminophen", ["ACETAMINOPHEN"], []),
+            listing("Acetaminophen", ["ACETAMINOPHEN", "GUAIFENESIN", "PHENYLEPHRINE HYDROCHLORIDE"],
+                    ["Expectorant [EPC]", "alpha-1 Adrenergic Agonist [EPC]"], app="M012"),
+            listing("ACETAMINOPHEN AND HYDROCODONE BITARTRATE", ["HYDROCODONE BITARTRATE", "ACETAMINOPHEN"],
+                    ["Opioid Agonist [EPC]"], app="ANDA040148", category="ANDA"),
+            listing("Acetaminophen and Codeine", ["ACETAMINOPHEN", "CODEINE PHOSPHATE"], ["Opioid Agonist [EPC]"],
+                    app="ANDA040779", category="ANDA"),
+            listing("Lidocaine Hydrochloride", ["LIDOCAINE HYDROCHLORIDE ANHYDROUS", "EPINEPHRINE BITARTRATE"],
+                    ["Catecholamine [EPC]"], app="NDA021382", category="NDA"),
+            listing("Lidocaine Hydrochloride", ["LIDOCAINE HYDROCHLORIDE"], ["Amide Local Anesthetic [EPC]"],
+                    app="ANDA040433", category="ANDA"),
+            listing("Estradiol", ["ESTRIOL"], ["Estrogen [EPC]"], app="ANDA000001", category="ANDA"),  # a mislabelled listing
+            {"generic_name": "Adalimumab", "active_ingredients": [], "application_number": "BLA125057", "openfda": {}},
+            listing("Adalimumab", ["ADALIMUMAB-ADBM"], ["Tumor Necrosis Factor Blocker [EPC]"], app="BLA761058", category="BLA"),
+        ]
+        keys = b.ndc_keys(recs)
+        apap = keys["ACETAMINOPHEN"]
+        self.assertEqual(apap["pharm_class_epc"], set())  # no Expectorant or alpha-1 class from the cold medicine
+        self.assertEqual(apap["monograph_ids"], {"M013"})
+        self.assertEqual((apap["products"], apap["used"]), (2, 1))
+        self.assertEqual(keys["ACETAMINOPHEN AND HYDROCODONE BITARTRATE"]["pharm_class_epc"], {"Opioid Agonist [EPC]"})
+        self.assertEqual(keys["ACETAMINOPHEN AND CODEINE"]["application_numbers"], {"ANDA040779"})  # components one for one
+        lido = keys["LIDOCAINE HYDROCHLORIDE"]
+        self.assertEqual((lido["pharm_class_epc"], lido["application_numbers"]), ({"Amide Local Anesthetic [EPC]"}, {"ANDA040433"}))
+        self.assertEqual(keys["ESTRADIOL"]["used"], 0)  # estriol is not estradiol
+        ada = keys["ADALIMUMAB"]  # a listing with no ingredient names cannot be checked: excluded
+        self.assertEqual((ada["application_numbers"], ada["used"]), ({"BLA761058"}, 1))
+        rows = b.subject_key_rows([{"id": "faers:acetaminophen", "generic_name": "ACETAMINOPHEN", "rank": 9, "reports_total": 1}],
+                                  keys, "2026-10-26", "2026-10-23")
+        k = rows[0]["keys"]
+        self.assertNotIn("pharm_class_epc", k)
+        self.assertNotIn("application_numbers", k)
+        self.assertEqual(k["monograph_ids"], ["M013"])
+        self.assertEqual((k["ndc_directory"]["listings_used"], k["ndc_directory"]["listings_excluded"]), (1, 1))
+
+    def test_application_numbers_are_typed(self):
+        kinds = {v: b.application_kind(v, cat) for v, cat in [
+            ("NDA215866", "NDA"), ("ANDA077619", "ANDA"), ("BLA125057", "BLA"), ("M013", "OTC MONOGRAPH DRUG"),
+            ("part341", "OTC MONOGRAPH NOT FINAL"), ("505G(a)(3)", "OTC MONOGRAPH DRUG"), ("M", None), ("BN123456", "BULK INGREDIENT"),
+            ("OKM013", "OTC MONOGRAPH DRUG"), ("EUA000123", "EMERGENCY USE AUTHORIZATION")]}
+        self.assertEqual({v for v, k in kinds.items() if k == "application_numbers"}, {"NDA215866", "ANDA077619", "BLA125057"})
+        self.assertEqual({v for v, k in kinds.items() if k == "monograph_ids"}, {"M013", "part341", "505G(a)(3)", "M", "OKM013"})
+        self.assertEqual({v for v, k in kinds.items() if k == "other_application_ids"}, {"BN123456", "EUA000123"})
+
+    def test_moiety_allows_salts_and_suffixes_only(self):
+        self.assertEqual(b.moiety("Abacavir Sulfate"), "ABACAVIR")
+        self.assertEqual(b.moiety("DILTIAZEM HCL"), b.moiety("DILTIAZEM HYDROCHLORIDE"))
+        self.assertEqual(b.moiety("ADALIMUMAB-ADBM"), "ADALIMUMAB")
+        self.assertEqual(b.moiety("AZITHROMYCIN, UNSPECIFIED FORM"), "AZITHROMYCIN")
+        self.assertEqual(b.moiety("ASPIRIN 81 MG"), "ASPIRIN")
+        self.assertNotEqual(b.moiety("MAGNESIUM CITRATE"), b.moiety("MAGNESIUM SULFATE"))
+        self.assertNotEqual(b.moiety("ESTRADIOL"), b.moiety("ESTRIOL"))
+        self.assertFalse(b.ingredients_match("ACETAMINOPHEN CAFFEINE", {"CAFFEINE"}))
+        self.assertTrue(b.ingredients_match("ALOE, MENTHOL, UNSPECIFIED FORM", {"ALOE", "MENTHOL, UNSPECIFIED FORM"}))
 
 
 class KeylessTests(unittest.TestCase):
