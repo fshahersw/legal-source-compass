@@ -19,16 +19,19 @@ Score (points; families A-D; see METHOD for the wording the page shows)
   B severity   FAERS: 1 if the death-report lower bound ratio > 1 (deaths), 1 if the serious share >= the national share
                and serious reports rose (lower bound ratio > 1). NHTSA: 1 if crash/fire/injury complaints rose (lower
                bound ratio > 1), 1 if deaths rose (lower bound ratio > 1, prior deaths > 0).
-  C regulator  last 24 months, exact keys only: NHTSA open EA 2, open PE/RQ/DP 1, recall campaign 1 (make + model +
-               component in NHTSA's own vocabulary); reviewed recalls for JPML matters (FDA Class I 2, other 1,
-               CPSC 1). Capped at 3. FDA recalls carry no exact product key in the corpus, so drugs score 0 here.
+  C regulator  exact keys only: NHTSA investigations open now (any open date) EA 2, PE/RQ/DP 1; recall campaigns in
+               the last 24 months 1 (make + model + component in NHTSA's own vocabulary); reviewed recalls for JPML
+               matters in the last 24 months (FDA Class I 2, other 1, CPSC 1). Capped at 3. FDA recalls carry no exact
+               product key in the corpus, so drugs score 0 here.
   D litigation JPML motion pending 3, centralization denied within 36 months 2 (reviewed links only for products);
-               a 10-K paragraph that names the product AND a products-liability term 1.
+               a 10-K filed in the last 24 months with a paragraph naming the product AND a products-liability term 1.
   Ranking: families with points (0-4), then points, then excess reports (O - E).
 
 Exclusion ("No MDL linked" errs toward "in an MDL"): the union of safety.mdl_subjects links; the MDL title's names
-matched exactly to the openFDA generic name (or the name followed by a salt/form word); Drugs@FDA brand -> active
-ingredient (exact strings) for names the title prints; openFDA NDC pharm_class_epc equal to the class a class-MDL
+matched exactly to the openFDA generic name (or the name followed by a salt/form word) for the mdl_map entries AND for
+every products-liability title in `mdls`, `mdl_terminated_history` and the hearing-session captions of existing MDLs
+(names inside the title's parentheses, salt/form words stripped, and an ingredient printed as whole words); Drugs@FDA
+brand -> active ingredient (exact strings) for names the title prints; openFDA NDC pharm_class_epc equal to the class a class-MDL
 title names; the reviewed class-member list in radar_reviewed_links.json; MDLs centralized after the last pending
 report (JPML transfer orders in mdl_intel_hearing_orders); NHTSA vehicle MDL rules (scripts/safety_v2/mdl_map.py).
 A unit linked to a pending MDL is `pending_mdl` (kept in the dataset, left out of the emerging list); one linked only
@@ -198,7 +201,8 @@ def rate_component(family, metric, observed, baseline, baseline_months, *, recen
         expected = baseline * factor
     c["expected"] = round(expected, 1)
     if observed < min_observed:
-        c["note"] = "Too few reports to rate" if min_observed > 1 else "Not recorded"
+        # A recorded 0 is a count, not a gap: "Not recorded" is kept for a missing value (None, above).
+        c["note"] = "Too few reports to rate" if min_observed > 1 else "None reported in the window: not rated"
         return c
     if expected <= 0:
         c["note"] = "No reports in the baseline: not rated"
@@ -241,6 +245,62 @@ def name_matches(generic, name):
     if not n:
         return False
     return any(p == n or p.startswith(n + " ") for p in [norm(generic)] + generic_parts(generic))
+
+
+# Salt and dosage-form words: a title naming "Metformin Hydrochloride" or "Depot Medroxyprogesterone Acetate" names the
+# same ingredient as the openFDA generics METFORMIN / MEDROXYPROGESTERONE ACETATE, so they are stripped from the ends of
+# a title name before the exact match (never from the middle, never down to nothing).
+SALT_FORM_WORDS = {
+    "ACETATE", "BESYLATE", "BITARTRATE", "BROMIDE", "CALCIUM", "CAPSULES", "CHLORIDE", "CITRATE", "CREAM", "DELAYED-RELEASE",
+    "DEPOT", "DR", "ER", "EXTENDED", "EXTENDED-RELEASE", "FILM", "FUMARATE", "GEL", "HCL", "HYDROBROMIDE", "HYDROCHLORIDE",
+    "INJECTABLE", "INJECTION", "MAGNESIUM", "MALEATE", "MESYLATE", "ORAL", "PATCH", "PHOSPHATE", "POTASSIUM", "RELEASE",
+    "SODIUM", "SR", "SUCCINATE", "SULFATE", "TABLET", "TABLETS", "TARTRATE", "TOPICAL", "TRANSDERMAL", "XR",
+}
+# Title words that are not product names (never matched on their own).
+TITLE_STOP = {"IN", "RE", "THE", "AND", "OF", "FOR", "NO", "II", "III", "IV", "PRODUCTS", "PRODUCT", "LIABILITY", "LITIGATION",
+              "MARKETING", "SALES", "PRACTICES", "INJURY", "INJURIES", "ACTION", "CASES", "SETTLING", "CO", "INC", "CORP", "LLC"}
+PL_TITLE = re.compile(r"PRODUCTS?[\s-]+LIABILITY", re.I)
+
+
+def strip_salt(name):
+    """'DEPOT MEDROXYPROGESTERONE ACETATE' -> 'MEDROXYPROGESTERONE'; '' when only salt/form words remain."""
+    words = norm(name).split(" ")
+    while words and words[0] in SALT_FORM_WORDS:
+        words.pop(0)
+    while words and words[-1] in SALT_FORM_WORDS:
+        words.pop()
+    return " ".join(words)
+
+
+def title_names(title):
+    """The product names a products-liability MDL title prints: every name inside its parentheses (split on '/', ',' and
+    'and'; 'Buprenorphine/Naloxone' -> BUPRENORPHINE, NALOXONE), each also without salt/form words, and the one or two
+    words just before a parenthesis (the brand: 'Xarelto (Rivaroxaban)' -> XARELTO). Exact strings, upper case."""
+    t = norm(title)
+    names, brands = set(), set()
+    for m in re.finditer(r"\(([^()]*)\)", t):
+        for part in re.split(r"\s*/\s*|,\s*|\s+AND\s+", m.group(1)):
+            part = part.strip(" '\"")
+            for cand in (part, strip_salt(part)):
+                words = re.findall(r"[A-Z]+", cand)
+                if len("".join(words)) >= 4 and not all(w in TITLE_STOP for w in words):
+                    names.add(cand)
+        before = re.findall(r"[A-Z][A-Z0-9-]*", t[:m.start()])
+        for k in (1, 2):
+            if len(before) >= k:
+                cand = " ".join(before[-k:])
+                if len(cand) >= 4 and not set(cand.split(" ")) & TITLE_STOP:
+                    brands.add(cand)
+    return sorted(names), sorted(brands)
+
+
+def ingredient_in_title(generic, title):
+    """An ingredient of the generic (salt/form words stripped, at least 5 letters) printed as whole words in the title."""
+    for p in {norm(generic)} | set(generic_parts(generic)):
+        base = strip_salt(p)
+        if len(re.sub(r"[^A-Z]", "", base)) >= 5 and base not in TITLE_STOP and word_pattern(base).search(title or ""):
+            return base
+    return None
 
 
 def norm_component(s):
@@ -345,6 +405,27 @@ class Context:
             if e["mdl"] not in self.mdl:
                 self.mdl[e["mdl"]] = {"status": "pending", "title": ev.get("title"), "source": ev.get("dataset"),
                                       "url": ev.get("order_url"), "date": ev.get("order_date"), "after_report": True}
+        # Every products-liability title an MDL has (pending report, terminated history, hearing-session captions of an
+        # MDL that exists): the names it prints are matched exactly to the openFDA generic below, whether or not
+        # mdl_map lists the MDL. A denied or pending motion is not an MDL and never links here.
+        self.pl_titles = []
+        seen = set()
+
+        def add_title(mdl, title):
+            if isinstance(mdl, int) and title and PL_TITLE.search(title) and (mdl, norm(title)) not in seen:
+                seen.add((mdl, norm(title)))
+                names, brands = title_names(title)
+                self.pl_titles.append({"mdl": mdl, "title": title, "norm": norm(title), "names": names, "brands": brands})
+
+        for r in inp.mdls:
+            if str(r.get("id", "")).isdigit():
+                add_title(int(r["id"]), r.get("title"))
+        for r in inp.terminated:
+            add_title(((r.get("item") or {}).get("history") or {}).get("mdl"), r.get("title"))
+        for r in self.matters:
+            m = r["item"].get("matter") or {}
+            if m.get("mdl") in self.mdl and is_pl(r):
+                add_title(m["mdl"], re.sub(r"^MDL\s+\d+\s+—\s+", "", r.get("title") or "") or m.get("title"))
         self.links_by_subject = {}
         for l in inp.mdl_links:
             self.links_by_subject.setdefault(l["subject_id"], []).append(l)
@@ -407,6 +488,22 @@ class Context:
                             add(e["mdl"], "brand_active_ingredient",
                                 f"Drugs@FDA {app['application_number']}: brand {app['brands'][0]} (the title names '{n}') has active ingredient '{ing}'.")
                             break
+        for t in self.pl_titles:
+            for g in generics:
+                hit = next((n for n in t["names"] if name_matches(g, n) or name_matches(strip_salt(g) or g, n)), None) \
+                    or ingredient_in_title(g, t["norm"])
+                if hit:
+                    add(t["mdl"], "title_names_ingredient", f"The MDL title '{t['title']}' prints '{hit.title()}'; the openFDA generic name is '{g}'.")
+                    continue
+                parts = ({norm(g)} | set(generic_parts(g)) | {strip_salt(p) for p in generic_parts(g)}) - {""}
+                for b in t["brands"]:
+                    hit_app = next(((ing, app) for ing, app in self.brand_ingredients(b).items()
+                                    if ing in parts or strip_salt(ing) in parts), None)
+                    if hit_app:
+                        ing, app = hit_app
+                        add(t["mdl"], "title_brand_active_ingredient",
+                            f"Drugs@FDA {app['application_number']}: brand {b} (printed in the MDL title '{t['title']}') has active ingredient '{ing}'.")
+                        break
         for x in self.reviewed.get("class_members", []):
             for g in generics:
                 hit = next((n for n in x["generic_names"] if name_matches(g, n)), None)
@@ -441,6 +538,27 @@ class Context:
             elif makes and not comps and not models:
                 notes.append({"mdl": e["mdl"], "status": info["status"], "rule": rule})
         return links, notes
+
+
+def pending_review(entry):
+    """True while a reviewed-list entry has not been confirmed by the lead (reviewed_by says 'pending')."""
+    return "pending" in str(entry.get("reviewed_by") or "pending").lower()
+
+
+def review_label(entry):
+    """How a reviewed link is shown: the reviewer and date as recorded, and 'pending lead review' until confirmed."""
+    who = entry.get("reviewed_by") or "reviewer not recorded"
+    return f"Link reviewed by {who} on {entry.get('reviewed_on') or 'date not recorded'}"
+
+
+def unconfirmed_reviews(reviewed):
+    """Reviewed-list entries (class members and JPML links) that are still pending lead review."""
+    out = []
+    for key in ("class_members", "jpml_links"):
+        for x in reviewed.get(key, []):
+            if pending_review(x):
+                out.append(f"{key}: MDL {x.get('mdl')}")
+    return out
 
 
 def is_pl(matter_row):
@@ -479,13 +597,21 @@ def group_duplicates(subject_ids, windows):
     return list(groups.values())
 
 
-def term_trends(quarter_rows, recent_quarters, prior_quarters):
-    """Rising MedDRA preferred terms from the stored top-N per quarter. A term missing from a quarter's stored list is
-    'Not recorded' for that window (never 0)."""
+def term_trends(quarter_rows, recent_quarters, prior_quarters, n=8):
+    """MedDRA preferred terms from the stored top-N per quarter, in two lists:
+      rising   terms with a measured prior count and recent > prior, by the rise (recent - prior);
+      entered  terms in every recent quarter's stored list whose prior count is not recorded (the term was outside the
+               stored top N in a prior quarter), by recent count. Their rise cannot be measured, so they never feed
+               the quality_driver flag. A term missing from a quarter's stored list is 'Not recorded' (never 0)."""
+    rising, entered, limit = term_lists(quarter_rows, recent_quarters, prior_quarters)
+    return rising[:n], entered[:n], limit
+
+
+def term_lists(quarter_rows, recent_quarters, prior_quarters):
     by = {r["period"]: {t: v for t, v in (r.get("rows") or [])} for r in quarter_rows}
     limit = max([r.get("limit_n") or 0 for r in quarter_rows] or [0])
     if not all(q in by for q in recent_quarters):
-        return [], limit
+        return [], [], limit
 
     def window_sum(term, quarters):
         if not all(q in by for q in quarters):
@@ -494,13 +620,18 @@ def term_trends(quarter_rows, recent_quarters, prior_quarters):
         return None if any(v is None for v in vals) else sum(vals)
 
     terms = set.intersection(*[set(by[q]) for q in recent_quarters])
-    out = []
+    rising, entered = [], []
     for t in terms:
         rec = window_sum(t, recent_quarters)
         pri = window_sum(t, prior_quarters)
-        out.append({"term": t, "recent": rec, "prior": pri, "quality": bool(QUALITY_TERMS.search(t))})
-    out.sort(key=lambda x: (-(x["recent"] - x["prior"]) if x["prior"] is not None else -x["recent"], x["term"]))
-    return out[:8], limit
+        row = {"term": t, "recent": rec, "prior": pri, "quality": bool(QUALITY_TERMS.search(t))}
+        if pri is None:
+            entered.append(row)
+        elif rec > pri:
+            rising.append(row)
+    rising.sort(key=lambda x: (-(x["recent"] - x["prior"]), x["term"]))
+    entered.sort(key=lambda x: (-x["recent"], x["term"]))
+    return rising, entered, limit
 
 
 def quarters_of(end, months):
@@ -514,11 +645,15 @@ def quarters_of(end, months):
 
 
 # ---------------------------------------------------------------------------------------------------- SEC
-def sec_hits(names, filings):
-    """10-K paragraphs naming the product AND a products-liability term (patent/ANDA-only paragraphs never count)."""
+def sec_hits(names, filings, since=None):
+    """10-K paragraphs naming the product AND a products-liability term (patent/ANDA-only paragraphs never count), in
+    filings filed on or after `since` (ISO date; a filing with no recorded date is left out when a window is set)."""
     pats = [(n, word_pattern(n)) for n in names if len(n) >= 4]
     hits = []
     for f in filings:
+        filed = str((f.get("filing") or {}).get("filed") or "")
+        if since and not (filed and filed[:10] >= since):
+            continue
         for p in f.get("paragraphs") or []:
             text = p.get("text") or ""
             if not PL_TERMS.search(text):
@@ -579,6 +714,7 @@ class Radar:
         for r in self.inp.term_quarters:
             quarters.setdefault(r["subject_id"], []).append(r)
         recent_q, prior_q = quarters_of(end, 12), quarters_of(month_add(end, -12), 12)
+        sec_since = month_add(dt.date(self.as_of.year, self.as_of.month, 1), -24)  # 10-Ks filed in the last 24 months
         for group in group_duplicates(with_series, win):
             group.sort(key=lambda sid: (-(subjects.get(sid, {}).get("reports_total") or 0), sid))
             sid = group[0]
@@ -610,26 +746,31 @@ class Radar:
             # Brand names only (exact Drugs@FDA NDA/BLA brands of this ingredient): a generic name is printed in many
             # companies' filings (generic makers, distributors) and would credit the wrong product.
             names = [b for b in ids["brand_names"] if b not in set(generics) and re.match(r"^[A-Z][A-Z0-9-]{3,}", b)]
-            hits = sec_hits(sorted(set(names)), self.inp.sec)
+            hits = sec_hits(sorted(set(names)), self.inp.sec, since=sec_since.isoformat())
             comps.append(fixed_component("C", "FDA recalls (exact product key)", 0, max_points=3, window="last 24 months",
                                          source="openFDA drug enforcement", source_url="https://open.fda.gov/apis/drug/enforcement/",
                                          note="Not recorded: FDA recall records in the corpus carry no exact product key"))
             comps.append(fixed_component("D", "10-K paragraph names the product with a products-liability term", 1 if hits else 0,
-                                         max_points=1, observed=len(hits), source="SEC EDGAR 10-K legal proceedings", source_url=SEC_URL))
+                                         max_points=1, observed=len(hits), window=f"filed since {sec_since.isoformat()}",
+                                         source="SEC EDGAR 10-K legal proceedings", source_url=SEC_URL))
             term_sid = next((g for g in group if quarters.get(g)), sid)
-            terms, limit = term_trends(quarters.get(term_sid, []), recent_q, prior_q)
+            terms, entered, limit = term_trends(quarters.get(term_sid, []), recent_q, prior_q)
             flags = []
-            if terms and sum(1 for t in terms[:3] if t["quality"]) >= 2:
+            if len(terms) >= 3 and sum(1 for t in terms[:3] if t["quality"]) >= 2:
                 flags.append({"key": "quality_driver", "label": "Product-quality terms lead the rise",
-                              "detail": "Two of the three fastest-rising MedDRA terms describe product or use problems, not injuries: " +
+                              "detail": "Two of the three fastest-rising MedDRA terms (measured in both windows) describe product or use problems, not injuries: " +
                                         ", ".join(t["term"] for t in terms[:3] if t["quality"])})
-            unit = self.unit("drug", f"drug:faers:{sid.split(':', 1)[1]}", s.get("label") or sid, comps, links,
+            # The unit id is the smallest subject id of the group (stable across builds, unlike the most-reported
+            # spelling, which can change); the label is the most-reported spelling.
+            key_sid = min(group)
+            unit = self.unit("drug", f"drug:faers:{key_sid.split(':', 1)[1]}", s.get("label") or sid, comps, links,
                              identifiers={"faers_subjects": group, "generic_names": generics,
                                           "spellings": sorted({(subjects.get(g) or {}).get("label") or g for g in group}), **ids},
                              series={"unit": "FAERS reports per month", "start": ym(month_add(end, -(len(r.get("tail") or []) - 1))),
                                      "values": r.get("tail") or [], "source": "FDA FAERS via openFDA", "source_url": FAERS_URL},
                              evidence=hits, flags=flags, window={"recent": window, "baseline": window_label(month_add(end, -12), 36)})
             unit["top_rising_terms"] = terms
+            unit["entered_terms"] = entered
             unit["terms_window"] = {"recent": f"{recent_q[0]} to {recent_q[-1]}", "prior": f"{prior_q[0]} to {prior_q[-1]}", "top_n": limit}
             self.post_filing(unit, links, end)
             self.units.append(unit)
@@ -700,7 +841,8 @@ class Radar:
                                  "label": f"Recall {rec.get('campaign') or rc['id']} ({cells.get('component')})",
                                  "basis": "Vehicle and component match exactly", "points": 1})
             comps.append(fixed_component("C", "NHTSA investigations and recalls (exact make, model, component)", min(3, c_points), max_points=3,
-                                         observed=len(evidence), window=f"since {ym(since)}", source="NHTSA", source_url=NHTSA_URL,
+                                         observed=len(evidence), window=f"recalls since {ym(since)}; open investigations of any age",
+                                         source="NHTSA", source_url=NHTSA_URL,
                                          note=None if evidence else "None found"))
             comps.append(fixed_component("D", "JPML motion (reviewed link)", 0, max_points=3, note="None linked"))
             links, overlaps = self.ctx.vehicle_links(make, model, comp)
@@ -770,7 +912,7 @@ class Radar:
                 if x["date"] >= month_add(dt.date(self.as_of.year, self.as_of.month, 1), -24).isoformat():
                     c_points += pts
                 evidence.append({**{k: x[k] for k in ("dataset", "id", "url", "date", "label")},
-                                 "basis": f"Reviewed link ({rv.get('reviewed_on')}): {rv.get('note')}", "points": pts})
+                                 "basis": f"{review_label(rv)}: {rv.get('note')}", "points": pts})
             comps.append(fixed_component("C", "Recalls (reviewed link)", min(3, c_points), max_points=3, observed=len(rv.get("recalls", [])),
                                          window="last 24 months", source="CPSC / FDA / NHTSA", note=None if rv else "No reviewed link"))
             pts = 3 if outcome == "scheduled" else 2
@@ -848,23 +990,48 @@ class Radar:
                        "pending_mdl": sum(u["mdl_status"]["status"] == "pending_mdl" for u in units),
                        "terminated_mdl": sum(u["mdl_status"]["status"] == "terminated_mdl" for u in units),
                        "none_linked": sum(u["mdl_status"]["status"] == "none_linked" for u in units)},
+            # KPIs over the ranked units (no open MDL linked: none linked, or linked only to closed MDLs). Split by kind
+            # because each kind has its own source and window; investigations are counted once per investigation id,
+            # however many vehicle units it touches.
             "kpis": {"three_plus_families": sum(u["families_present"] >= 3 for u in el),
+                     "three_plus_families_by_kind": by_kind(u for u in el if u["families_present"] >= 3),
                      "pending_motions_no_mdl": sum(1 for l in lanes if l["status"] == "pending"),
                      "denied_36m": sum(1 for l in lanes if l["status"] == "denied" and l["session"] >= cutoff36),
                      "rising_no_mdl": sum(1 for u in el if u["kind"] != "jpml" and (lb(u) or 0) > 1.5),
-                     "open_investigations_no_mdl": sum(1 for u in el for e in u["evidence"] if e["dataset"] == "agency_safety_nhtsa_investigations" and e.get("points"))},
+                     "rising_no_mdl_by_kind": by_kind(u for u in el if u["kind"] != "jpml" and (lb(u) or 0) > 1.5),
+                     "open_investigations_no_mdl": open_investigation_ids(el)[0],
+                     "open_investigation_units": open_investigation_ids(el)[1],
+                     "terminated_mdl_ranked": sum(1 for u in el if u["mdl_status"]["status"] == "terminated_mdl")},
             "jpml_lanes": lanes,
             "method": METHOD, "caveat": CAVEAT,
         }
 
 
+def by_kind(units):
+    out = {}
+    for u in units:
+        out[u["kind"]] = out.get(u["kind"], 0) + 1
+    return dict(sorted(out.items()))
+
+
+def open_investigation_ids(units):
+    """(distinct open NHTSA investigations that scored, vehicle units they score on): one investigation that names
+    several makes, models or components is counted once."""
+    ids, touched = set(), 0
+    for u in units:
+        mine = {e["id"] for e in u["evidence"] if e["dataset"] == "agency_safety_nhtsa_investigations" and e.get("points")}
+        ids |= mine
+        touched += bool(mine)
+    return len(ids), touched
+
+
 METHOD = {
     "reports": "Reports in the last 12 complete months (O) against the prior period scaled to 12 months and by the national change (E). Rated only when O is at least 50; the exact Poisson 95% lower bound of O divided by E gives 0 points at 1 or below, 1 point up to 1.5, 2 points above 1.5.",
     "severity": "FAERS: 1 point when death reports rose (lower bound above 1), 1 point when serious reports rose and their share is at least the national share. NHTSA: 1 point when crash, fire or injury complaints rose, 1 point when deaths rose.",
-    "regulator": "Last 24 months, exact keys only: NHTSA open engineering analysis 2, open preliminary evaluation, recall query or defect petition 1, recall campaign 1; reviewed recall links for JPML matters. At most 3. FDA recalls carry no exact product key in the corpus, so drugs score 0 here.",
-    "litigation": "JPML motion to create an MDL pending 3, denied within 36 months 2 (reviewed links only for products); a 10-K paragraph naming the product with a products-liability term 1.",
-    "ranking": "Families with points (0-4), then total points, then excess reports (O minus E).",
-    "exclusion": "Linked to an MDL by any of: the safety product-MDL links, the title's own names matched exactly to the openFDA generic name, Drugs@FDA brand to active ingredient, the openFDA NDC pharmacologic class the title names, the reviewed class-member list, JPML transfer orders after the last pending report, NHTSA vehicle MDL rules. 'No MDL linked' is not 'no MDL exists'.",
+    "regulator": "Exact keys only: NHTSA investigations that are open now, whatever their open date (engineering analysis 2; preliminary evaluation, recall query or defect petition 1); NHTSA recall campaigns in the last 24 months 1 each; reviewed recall links for JPML matters in the last 24 months. At most 3. Closed investigations are listed for context and score 0. FDA recalls carry no exact product key in the corpus, so drugs score 0 here.",
+    "litigation": "JPML motion to create an MDL pending 3, denied within 36 months 2 (reviewed links only for products); a 10-K filed in the last 24 months with a paragraph naming the product and a products-liability term 1.",
+    "ranking": "Units with no open MDL linked (none linked, or linked only to MDLs the JPML lists as closed, which are marked) are ranked by families with points (0-4), then total points, then excess reports (O minus E).",
+    "exclusion": "Linked to an MDL by any of: the safety product-MDL links; a products-liability MDL title (pending report, terminated history or hearing-session caption) that prints the ingredient exactly, salt and form words aside; Drugs@FDA brand to active ingredient for a brand the title prints; the openFDA NDC pharmacologic class the title names; the reviewed class-member list; JPML transfer orders after the last pending report; NHTSA vehicle MDL rules. A unit linked to an open MDL is left out of the ranking. 'No MDL linked' is not 'no MDL exists'.",
 }
 
 
@@ -1070,6 +1237,12 @@ def window_from_values(subject_id, series, vals, coverage_from, coverage_to, end
             "values_hash": hashlib.md5(",".join(str(v) for v in win).encode()).hexdigest(), "tail": sl(max(1, e - tail + 1), e)}
 
 
+def sql_key(s):
+    """The unit key exactly as safety_nhtsa_complaint_windows_v1 builds it: upper(btrim(x)), where btrim removes
+    spaces only and inner whitespace is kept (the RPC path and this fallback must give the same units)."""
+    return (s or "").strip(" ").upper()
+
+
 def nhtsa_windows_from_records(records, end, months, min_recent):
     """Python twin of safety_nhtsa_complaint_windows_v1 over safety_records_v1 rows."""
     split = month_add(end, -(months - 1))
@@ -1091,7 +1264,7 @@ def nhtsa_windows_from_records(records, end, months, min_recent):
         nat[f"{pre}_deaths"] += r.get("deaths") or 0
         nat[f"{pre}_injured"] += r.get("injured") or 0
         nat["months"][mi] += 1
-        keys = {(norm(i.get("make")), norm(i.get("model")), norm(i.get("component"))) for i in r.get("items") or []}
+        keys = {(sql_key(i.get("make")), sql_key(i.get("model")), sql_key(i.get("component"))) for i in r.get("items") or []}
         for k in keys:
             if not all(k):
                 continue
@@ -1146,8 +1319,13 @@ def main(argv=None):
     args = ap.parse_args(argv)
     if args.cmd == "ndc-classes":
         return ndc_classes(args.zip, args.out)
-    inp = SnapshotInputs(args.inputs, args.ndc) if args.inputs else LiveInputs(args.ndc, use_rpc=not args.no_rpc)
     reviewed = load_json(REVIEWED)
+    pending = unconfirmed_reviews(reviewed)
+    if pending and not args.dry_run:
+        # A reviewed link can change a unit's MDL status and its points; the build agent's entries are shown to readers
+        # as reviewed only after the lead confirms them (reviewed_by in radar_reviewed_links.json).
+        raise SystemExit("Refusing to publish: radar_reviewed_links.json entries are pending lead review: " + "; ".join(pending))
+    inp = SnapshotInputs(args.inputs, args.ndc) if args.inputs else LiveInputs(args.ndc, use_rpc=not args.no_rpc)
     radar = Radar(inp, reviewed, args.as_of)
     units = radar.build()
     summary = radar.summary()

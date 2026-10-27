@@ -158,6 +158,43 @@ class ExclusionTest(unittest.TestCase):
         self.assertIn("No MDL linked", r.CAVEAT)
         self.assertEqual({u["mdl_status"]["status"] for u in units.values()} - {"pending_mdl", "terminated_mdl", "none_linked"}, set())
 
+    def test_every_products_liability_title_excludes_the_ingredient_it_prints(self):
+        inp = Inputs()
+        inp.mdls += [{"id": "2592", "title": "IN RE: Xarelto (Rivaroxaban) Products Liability Litigation", "item": {"date_transferred": "2014-12-12"}},
+                     {"id": "3092", "title": "IN RE: Suboxone (Buprenorphine/Naloxone) Film Products Liability Litigation", "item": {"date_transferred": "2024-02-02"}},
+                     {"id": "3017", "title": "IN RE: Xarelto (Rivaroxaban) ('310) Patent Litigation", "item": {}}]
+        inp.terminated = [{"id": "2809:643", "title": "Onglyza (Saxagliptin) and Kombiglyze XR (Saxagliptin and Metformin) Products Liability",
+                           "item": {"history": {"mdl": 2809, "termination_year": 2023}}},
+                          {"id": "2445:313", "title": "Suboxone (Buprenorphine Hydrochloride and Naloxone) Antitrust Litigation",
+                           "item": {"history": {"mdl": 2445}}}]
+        for slug, g in [("rivaroxaban", "RIVAROXABAN"), ("buprenorphine", "BUPRENORPHINE"), ("buprenorphine-hydrochloride", "BUPRENORPHINE HYDROCHLORIDE"),
+                        ("metformin", "METFORMIN"), ("metformin-hydrochloride", "METFORMIN HYDROCHLORIDE"), ("metformin-hcl", "METFORMIN HCL"),
+                        ("guselkumab", "GUSELKUMAB")]:
+            inp.add_drug(slug, g, 74_000, 3 * 28_000, tag=slug)
+        units, _ = build(inp)
+        for slug, mdl in [("rivaroxaban", 2592), ("buprenorphine", 3092), ("buprenorphine-hydrochloride", 3092)]:
+            u = units[f"drug:faers:{slug}"]
+            self.assertEqual(u["mdl_status"]["status"], "pending_mdl", slug)
+            self.assertIn((mdl, "title_names_ingredient"), {(l["mdl"], l["basis"]) for l in u["mdl_status"]["links"]}, slug)
+            self.assertIsNone(u["rank"], slug)
+        for slug in ("metformin", "metformin-hydrochloride", "metformin-hcl"):  # every salt/form spelling, same status
+            u = units[f"drug:faers:{slug}"]
+            self.assertEqual(u["mdl_status"]["status"], "terminated_mdl", slug)
+            self.assertEqual({l["mdl"] for l in u["mdl_status"]["links"]}, {2809}, slug)
+        # A patent or antitrust title links nothing; an ingredient no title prints stays "No MDL linked".
+        self.assertNotIn(3017, {l["mdl"] for l in units["drug:faers:rivaroxaban"]["mdl_status"]["links"]})
+        self.assertNotIn(2445, {l["mdl"] for l in units["drug:faers:buprenorphine"]["mdl_status"]["links"]})
+        self.assertEqual(units["drug:faers:guselkumab"]["mdl_status"]["status"], "none_linked")
+
+    def test_title_names_strip_salt_and_form_words(self):
+        names, brands = r.title_names("IN RE: Depo-Provera (Depot Medroxyprogesterone Acetate) Products Liability Litigation")
+        self.assertIn("MEDROXYPROGESTERONE", names)
+        self.assertIn("DEPOT MEDROXYPROGESTERONE ACETATE", names)
+        self.assertIn("DEPO-PROVERA", brands)
+        names, _ = r.title_names("IN RE: Proton-Pump Inhibitor Products Liability Litigation (No. II)")
+        self.assertEqual(names, [])
+        self.assertEqual(r.strip_salt("SODIUM CHLORIDE"), "")
+
     def test_mdl_centralized_after_the_pending_report_counts_as_pending(self):
         inp = Inputs(hearing_orders=[{"id": "matter:2026-09-24:3194:A", "title": "MDL 3194 — In re: Abbott Laboratories Spinal Cord Stimulator Products Liability Litigation",
                                       "source_url": "https://www.jpml.uscourts.gov/n.pdf",
@@ -207,18 +244,66 @@ class UnitTest(unittest.TestCase):
         self.assertEqual(u["mdl_status"]["status"], "pending_mdl")
         self.assertIn("post_filing_surge", {f["key"] for f in u["flags"]})
 
-    def test_quality_terms_flag_and_missing_terms_stay_not_recorded(self):
+    @staticmethod
+    def quarters(sid, recent_rows, prior_rows):
+        q = lambda p, rows: {"subject_id": sid, "period": p, "limit_n": 25, "returned": 25, "rows": rows}  # noqa: E731
+        return [q(p, recent_rows) for p in ("2025-Q3", "2025-Q4", "2026-Q1", "2026-Q2")] + \
+            [q(p, prior_rows) for p in ("2024-Q3", "2024-Q4", "2025-Q1", "2025-Q2")]
+
+    def test_rising_terms_are_measured_risers_and_unknown_priors_are_listed_apart(self):
         inp = Inputs()
         sid = inp.add_drug("estradiol", "ESTRADIOL", 8784, 3 * 5446)
-        q = lambda p, rows: {"subject_id": sid, "period": p, "limit_n": 25, "returned": 25, "rows": rows}  # noqa: E731
-        inp.term_quarters = [q(p, [["DEVICE ADHESION ISSUE", 200], ["PRODUCT ADHESION ISSUE", 300], ["NAUSEA", 50]]) for p in ("2025-Q3", "2025-Q4", "2026-Q1", "2026-Q2")] + \
-            [q(p, [["PRODUCT ADHESION ISSUE", 180], ["NAUSEA", 60]]) for p in ("2024-Q3", "2024-Q4", "2025-Q1", "2025-Q2")]
+        inp.term_quarters = self.quarters(
+            sid, [["DEVICE ADHESION ISSUE", 200], ["PRODUCT ADHESION ISSUE", 300], ["NAUSEA", 50], ["HEADACHE", 40]],
+            [["PRODUCT ADHESION ISSUE", 180], ["NAUSEA", 60], ["HEADACHE", 20]])
         units, _ = build(inp)
         u = units["drug:faers:estradiol"]
-        terms = {t["term"]: t for t in u["top_rising_terms"]}
-        self.assertIsNone(terms["DEVICE ADHESION ISSUE"]["prior"])  # outside the stored top N: Not recorded, never 0
-        self.assertEqual(terms["PRODUCT ADHESION ISSUE"]["prior"], 720)
-        self.assertIn("quality_driver", {f["key"] for f in u["flags"]})
+        rising = {t["term"]: t for t in u["top_rising_terms"]}
+        entered = {t["term"]: t for t in u["entered_terms"]}
+        self.assertEqual(set(rising), {"PRODUCT ADHESION ISSUE", "HEADACHE"})  # NAUSEA fell (200 vs 240): not rising
+        self.assertEqual(rising["PRODUCT ADHESION ISSUE"]["prior"], 720)
+        self.assertEqual(set(entered), {"DEVICE ADHESION ISSUE"})
+        self.assertIsNone(entered["DEVICE ADHESION ISSUE"]["prior"])  # outside the stored top N: Not recorded, never 0
+        for t in u["top_rising_terms"]:
+            self.assertGreater(t["recent"], t["prior"])
+
+    def test_quality_flag_uses_measured_risers_only(self):
+        inp = Inputs()
+        sid = inp.add_drug("estradiol", "ESTRADIOL", 8784, 3 * 5446)
+        # Two of the three largest measured risers are product problems: flagged.
+        inp.term_quarters = self.quarters(
+            sid, [["PRODUCT ADHESION ISSUE", 300], ["PRODUCT SUBSTITUTION ISSUE", 250], ["NAUSEA", 100]],
+            [["PRODUCT ADHESION ISSUE", 100], ["PRODUCT SUBSTITUTION ISSUE", 100], ["NAUSEA", 90]])
+        units, _ = build(inp)
+        self.assertIn("quality_driver", {f["key"] for f in units["drug:faers:estradiol"]["flags"]})
+        # The same product terms with no recorded prior count: their rise is not measured, so no flag.
+        inp.term_quarters = self.quarters(
+            sid, [["DEVICE ADHESION ISSUE", 300], ["PRODUCT SUBSTITUTION ISSUE", 250], ["NAUSEA", 100], ["HEADACHE", 80], ["RASH", 70]],
+            [["NAUSEA", 90], ["HEADACHE", 20], ["RASH", 10]])
+        units, _ = build(inp)
+        u = units["drug:faers:estradiol"]
+        self.assertNotIn("quality_driver", {f["key"] for f in u["flags"]})
+        self.assertEqual({t["term"] for t in u["entered_terms"]}, {"DEVICE ADHESION ISSUE", "PRODUCT SUBSTITUTION ISSUE"})
+
+    def test_group_id_is_the_smallest_subject_id_whatever_the_report_ranking(self):
+        ids = []
+        for big in ("estradiol-transdermal", "estradiol-gel"):
+            inp = Inputs()
+            for slug in ("estradiol-transdermal", "estradiol-gel", "estradiol-51571e"):
+                inp.add_drug(slug, "ESTRADIOL", 6261, 3 * 3624, tag="same")
+            next(s for s in inp.subjects if s["id"] == f"faers:{big}")["reports_total"] = 10**9
+            units, _ = build(inp)
+            ids.append([k for k in units if k.startswith("drug:")])
+        self.assertEqual(ids[0], ["drug:faers:estradiol-51571e"])
+        self.assertEqual(ids[0], ids[1])
+
+    def test_sec_point_needs_a_filing_in_the_last_24_months(self):
+        para = [{"section": "Item 3", "text": "Product liability lawsuits allege that Propecia caused injuries."}]
+        old = [{"id": "10k:old", "source_url": "https://www.sec.gov/o.htm", "filing": {"company": "X", "filed": "2024-02-26"}, "paragraphs": para}]
+        new = [{"id": "10k:new", "source_url": "https://www.sec.gov/n.htm", "filing": {"company": "X", "filed": "2025-02-26"}, "paragraphs": para}]
+        self.assertEqual(r.sec_hits(["PROPECIA"], old, since="2024-10-01"), [])
+        self.assertEqual(len(r.sec_hits(["PROPECIA"], new, since="2024-10-01")), 1)
+        self.assertEqual(len(r.sec_hits(["PROPECIA"], old)), 1)  # no window: unchanged behaviour
 
 
 class SecTest(unittest.TestCase):
@@ -257,6 +342,47 @@ class VehicleTest(unittest.TestCase):
         deaths = next(c for c in u["components"] if c["metric"].startswith("Deaths"))
         self.assertEqual(deaths["points"], 0)  # no deaths in the baseline: not rated, never a ratio against zero
 
+    @staticmethod
+    def unit_row(make, model, component, recent=200, prior=100, deaths=(0, 0)):
+        return {"scope": "unit", "make": make, "model": model, "component": component, "recent": recent, "prior": prior,
+                "recent_severe": 0, "prior_severe": 0, "recent_deaths": deaths[0], "prior_deaths": deaths[1], "recent_injured": 0,
+                "prior_injured": 0, "months": [5] * 24}
+
+    def test_one_investigation_on_two_units_counts_once(self):
+        inp = Inputs()
+        inp.nhtsa_windows += [self.unit_row("JEEP", "WRANGLER", "ELECTRICAL SYSTEM"), self.unit_row("JEEP", "WRANGLER 4XE", "ELECTRICAL SYSTEM")]
+        inp.investigations = [{"id": "PE25014", "source_url": "https://www.nhtsa.gov/?nhtsaId=PE25014",
+                               "item": {"investigation": {"action": "PE25014", "opened": "2025-06-01", "closed": None,
+                                                          "vehicles": ["JEEP WRANGLER 2021–2024", "JEEP WRANGLER 4XE 2021–2024"],
+                                                          "components": ["ELECTRICAL SYSTEM"]}}}]
+        units, radar = build(inp)
+        for uid in ("vehicle:jeep-wrangler-electrical-system", "vehicle:jeep-wrangler-4xe-electrical-system"):
+            self.assertEqual(next(c for c in units[uid]["components"] if c["family"] == "C")["points"], 1)
+        k = radar.summary()["kpis"]
+        self.assertEqual(k["open_investigations_no_mdl"], 1)
+        self.assertEqual(k["open_investigation_units"], 2)
+
+    def test_a_recorded_zero_is_not_shown_as_not_recorded(self):
+        inp = Inputs()
+        inp.nhtsa_windows.append(self.unit_row("FORD", "ESCAPE", "BACK OVER PREVENTION", deaths=(0, 0)))
+        units, _ = build(inp)
+        d = next(c for c in units["vehicle:ford-escape-back-over-prevention"]["components"] if c["metric"].startswith("Deaths"))
+        self.assertEqual(d["observed"], 0)
+        self.assertEqual(d["points"], 0)
+        self.assertNotEqual(d["note"], "Not recorded")
+        self.assertIn("None reported", d["note"])
+        self.assertEqual(r.rate_component("B", "x", None, 3, 12)["note"], "Not recorded")  # a missing value stays a gap
+
+    def test_fallback_keys_match_the_sql_btrim_upper(self):
+        recs = [{"date": "2026-09-10", "crash": False, "fire": False, "injured": 0, "deaths": 0,
+                 "items": [{"make": " jeep ", "model": "GRAND  CHEROKEE", "component": "ENGINE"}]}] * 3
+        out = r.nhtsa_windows_from_records(recs, dt.date(2026, 9, 1), 12, 1)
+        unit = next(x for x in out if x["scope"] == "unit")
+        # upper(btrim(x)): ends trimmed, inner whitespace kept, exactly as safety_nhtsa_complaint_windows_v1 keys it
+        self.assertEqual((unit["make"], unit["model"], unit["component"]), ("JEEP", "GRAND  CHEROKEE", "ENGINE"))
+        self.assertEqual(unit["recent"], 3)
+        self.assertEqual(unit["months"][23], 3)
+
     def test_vehicle_keys_and_components_match_exactly(self):
         self.assertEqual(r.vehicle_key("TESLA MODEL Y 2021–2023"), "TESLA MODEL Y")
         self.assertEqual(r.vehicle_key("MAZDA CX-90 PLUG-IN HYBRID 2024"), "MAZDA CX-90 PLUG-IN HYBRID")
@@ -286,10 +412,9 @@ class MdlMapTest(unittest.TestCase):
             self.assertEqual(mdl_map.check_tokens(e, mdl_map.JPML_ORDERS[e["mdl"]]["title"]), [], e["mdl"])
             self.assertNotIn(e["mdl"], {x["mdl"] for x in mdl_map.MDLS})
         self.assertIn(3199, mdl_map.NOT_MAPPED)
-        talc = next(e for e in mdl_map.MDLS if e["mdl"] == 2738)
-        title = "IN RE: Johnson & Johnson Talcum Powder Products Marketing, Sales Practices and Products Liability Litigation"
-        self.assertEqual(mdl_map.check_tokens(talc, title), [])
-        self.assertNotIn(2738, mdl_map.NOT_MAPPED)
+        # Talc stays unmapped until the owner decides: CAERS cannot isolate the Johnson & Johnson product.
+        self.assertIn(2738, mdl_map.NOT_MAPPED)
+        self.assertNotIn(2738, {e["mdl"] for e in mdl_map.all_entries()})
 
     def test_mass_tort_rows_for_new_mdls_use_jpml_evidence_and_never_a_zero_count(self):
         import json
@@ -312,8 +437,31 @@ class MdlMapTest(unittest.TestCase):
         self.assertEqual(by["3199"]["item"]["signal"]["product_kind"], "consumer")
         self.assertIsNone(by["3199"]["item"]["signal"]["event_total"])
         self.assertEqual(by["3199"]["item"]["signal"]["product"], "Apple AirTag")
+        self.assertNotIn(2738, {int(e["mdl"]) for e in mapping})
         with self.assertRaises(SystemExit):
             m.main(["--only", "3194"])  # a publish replaces the whole dataset: --only is dry-run only
+
+    def test_mass_tort_publish_refuses_to_drop_rows(self):
+        import build_mass_tort_signals as m
+        mapping = [{"mdl": 1, "kind": "drug"}, {"mdl": 2, "kind": "vehicle"}]
+        rows = [{"id": "1"}, {"id": "2"}]
+        self.assertEqual(m.publish_problems(rows, [], ["1", "2"], mapping=mapping, nhtsa_present=True), [])
+        self.assertTrue(m.publish_problems(rows, ["3"], ["1", "2"], mapping=mapping, nhtsa_present=True))  # missing input
+        self.assertTrue(m.publish_problems(rows, [], ["1", "2", "4"], mapping=mapping, nhtsa_present=True))  # live row lost
+        self.assertTrue(m.publish_problems(rows, [], ["1", "2"], mapping=mapping, nhtsa_present=False))  # vehicle file absent
+
+
+class PublishGuardTest(unittest.TestCase):
+    def test_pending_reviews_block_a_publish_but_not_a_dry_run(self):
+        pending = r.unconfirmed_reviews(REVIEWED)
+        if not pending:
+            self.skipTest("every reviewed entry is confirmed")
+        with self.assertRaises(SystemExit) as e:
+            r.main(["build", "--inputs", "does-not-matter"])
+        self.assertIn("pending lead review", str(e.exception))
+        self.assertTrue(r.pending_review({"reviewed_by": "radar build agent, pending lead review"}))
+        self.assertFalse(r.pending_review({"reviewed_by": "lead, 2026-10-28"}))
+        self.assertIn("pending lead review", r.review_label(REVIEWED["jpml_links"][0]))
 
     def test_titles_with_orders_never_overrides_the_snapshot(self):
         t = mdl_map.titles_with_orders({"3194": {"title": "pending report title"}})
