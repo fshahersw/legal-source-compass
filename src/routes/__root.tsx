@@ -20,7 +20,7 @@ import { CorpusAccessGate } from "@/components/auth/CorpusAccessGate";
 import { isPublicAuthPath } from "@/lib/auth/gateState";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { BRAND_ASSETS, PRODUCT_NAME } from "@/lib/branding";
+import { BRAND_ASSETS } from "@/lib/branding";
 
 function NotFoundComponent() {
   return (
