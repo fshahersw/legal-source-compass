@@ -106,6 +106,49 @@ def publish(dataset, label, rows, *, listing_block, summary, replace=True):
     return stored
 
 
+def _validate_rows(dataset, rows):
+    ids = [row.get("id") for row in rows]
+    if len(ids) != len(set(ids)):
+        raise ValueError(f"{dataset}: duplicate record ids")
+    for row in rows:
+        row.setdefault("dataset", dataset)
+        if row["dataset"] != dataset or not isinstance(row.get("id"), str) or not row["id"]:
+            raise ValueError(f"{dataset}: row {row.get('id')!r} has dataset {row.get('dataset')!r} or no id; nothing written")
+
+
+def append(dataset, rows, *, metadata, expected_before, first_ordinal, manifest_sha256, resume=False, batch=BATCH):
+    """Add rows to a live dataset without touching the rows already there, then patch its catalog entry.
+
+    Unlike publish(), nothing is deleted or replaced: rows other workstreams corrected after import keep their state.
+    Guards, all checked before the first write: the live row count equals expected_before; no new id is already
+    live (with resume=True, ids already live from an interrupted run are skipped and counted); the live ordinals end
+    before first_ordinal. Rows are inserted with ignore-duplicates, so an existing row is never overwritten. The
+    catalog entry (counts, manifest digest, metadata) is patched only after the stored count equals
+    expected_before + len(rows).
+    """
+    _validate_rows(dataset, rows)
+    live_ids = {row["id"] for row in fetch_all(dataset, select="id")}
+    overlap = live_ids.intersection(row["id"] for row in rows)
+    if overlap and not resume:
+        raise RuntimeError(f"{dataset}: {len(overlap)} of the new ids are already live (e.g. {sorted(overlap)[:3]}); nothing written")
+    if len(live_ids) - len(overlap) != expected_before:
+        raise RuntimeError(f"{dataset}: {len(live_ids)} live rows ({len(overlap)} from this release), expected {expected_before} before it; nothing written")
+    last = _call("GET", f"corpus_records?select=ordinal&dataset=eq.{dataset}&order=ordinal.desc&limit=1") or []
+    if not overlap and last and last[0].get("ordinal") is not None and int(last[0]["ordinal"]) >= first_ordinal:
+        raise RuntimeError(f"{dataset}: live ordinals reach {last[0]['ordinal']}, at or past first_ordinal {first_ordinal}; nothing written")
+    for offset, row in enumerate(rows):
+        row["ordinal"] = first_ordinal + offset
+    pending = [row for row in rows if row["id"] not in overlap]
+    for start in range(0, len(pending), batch):
+        _call("POST", "corpus_records", pending[start:start + batch], prefer="return=minimal,resolution=ignore-duplicates")
+    count = _count(dataset)
+    if count != expected_before + len(rows):
+        raise RuntimeError(f"{dataset}: {count} rows stored, expected {expected_before} + {len(rows)}; catalog entry not patched")
+    _call("PATCH", f"corpus_datasets?id=eq.{dataset}", {"imported_records": count, "expected_records": count, "manifest_sha256": manifest_sha256, "metadata": metadata})
+    print(json.dumps({"dataset": dataset, "appended": len(rows), "skipped_already_live": len(overlap), "records": count}))
+    return count
+
+
 def fetch_all(dataset, select="id,title,state,item", page=1000):
     """Read every record of a dataset (ordered by id) for joins in builders."""
     rows, start = [], 0

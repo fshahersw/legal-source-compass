@@ -75,7 +75,7 @@ function EntryDocuments({
   onView: (d: MatterDocument) => void;
 }) {
   const [all, setAll] = useState(false);
-  if (entry.withheld === "sealed_document") return null;
+  // Source-sealed documents never reach this list: the parser drops them and the archive join skips them.
   const match: EntryArchive | undefined =
     archive && archive.connected ? archive.byEntry[entry.id] : undefined;
   const docs = match?.documents ?? [];
@@ -342,6 +342,7 @@ function EntryRow({
           </p>
         )}
         <EntryDocuments entry={entry} archive={archive} onView={onView} />
+        {/* docket-sheet rows carry no per-document seal flag, so a source-sealed entry shows none of them */}
         {docketDocs && entry.withheld !== "sealed_document" ? (
           <DocketSheetDocuments
             docs={docketDocs}
@@ -487,8 +488,9 @@ function CoverageNote({ payload }: { payload: MatterOverviewPayload }) {
             <p>
               {rec.entriesWithheld.toLocaleString()} of{" "}
               {rec.entriesPublished?.toLocaleString() ?? "an unknown number of"} published entries
-              have no text under the withholding rule. The rule is intentionally broad and can also
-              match words such as “unsealed” or “motion to seal.”
+              are published without their docket text. Text stays withheld only where the docket
+              source flags the entry as sealed; text held under a retired keyword rule is being
+              republished.
             </p>
           ) : null}
         </div>

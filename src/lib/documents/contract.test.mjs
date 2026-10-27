@@ -67,6 +67,8 @@ const S = {
   I: sha("bytes I: CMO on court page"),
   J: sha("bytes J: ambiguous case id"),
   K: sha("bytes K: not listed"),
+  L: sha("bytes L: no case id"),
+  M: sha("bytes M: two associations"),
 };
 const PAGE_A1 =
   "Case 3:16-md-02738-MAS-RLS Document 101 Filed 10/05/16 Page 1 of 2 PageID: 55\nORDER\nPlaintiffs rely on 42 U.S.C. § 1983 and Obergefell v. Hodges, 576 U.S. 644 (2015). See also 21 C.F.R. § 314.50 and MDL No. 2738.";
@@ -197,6 +199,15 @@ async function seed(db) {
   await asset("docketbird", "njd-3:2016-md-02738-00005", "njd-3:2016-md-02738", S.G, open);
   await asset("docketbird", "njd-3:2016-md-02738-00006", "njd-3:2016-md-02738", S.H, open);
   await asset("docketbird", "paed-2:2012-md-02323-00001", "paed-2:2012-md-02323", S.J, open);
+  await asset("official-court", "https://www.paed.uscourts.gov/no-case.pdf", null, S.L, {
+    sealing_related_locator_held: false,
+  }); // open, but no case id
+  // one document, two associations: the later-verified one names a case no matter page requests
+  await asset("docketbird", "njd-3:2016-md-02738-00007", "njd-3:2016-md-02738", S.M, open);
+  await db.query(
+    "insert into corpus_ingest.pdf_document_assets(source_system,native_document_id,native_case_id,sha256,provider_flags,verified_at) values ('docketbird','njd-3:2016-md-02738-00007','njd-3:2016-cv-09999',$1,$2,now() + interval '1 day')",
+    [S.M, open],
+  );
   await db.query(
     "insert into corpus_ingest.local_pdf_asset_occurrences(local_occurrence_id,sha256,source_system,source_seal_status,private_quarantine_required) values ('l1',$1,'local-matter-bundle-pdf','locally_flagged_sealed',true)",
     [S.F],
@@ -267,28 +278,52 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
     await caselaw(db);
     await seed(db);
     const contract = await fs.readFile("database/contracts/documents-v1.sql", "utf8");
+    const scope = await fs.readFile("database/contracts/documents-v2-scope.sql", "utf8");
     await db.exec(contract);
-    await db.exec(contract); // idempotent
+    await db.exec(scope);
+    await db.exec(contract); // idempotent (v1 re-applied leaves the v2 constraints; v2 re-applied restores its functions)
+    await db.exec(scope);
 
-    await t.test("eligibility: open associations of listed case ids only", async () => {
+    await t.test("eligibility: every open, unflagged association with a case id", async () => {
       const r = await rpc("documents_refresh_v1", ["b1"]);
-      assert.equal(r.documents, 9);
+      assert.equal(r.documents, 12);
+      assert.equal(r.without_mdl, 2);
       assert.deepEqual(r.excluded_bytes_flags, { local_seal_flag: 1 });
       const rows = (
         await db.query(
-          "select source_system, native_document_id, listed_by, mdl, text_status from documents.documents order by 1,2",
+          "select source_system, native_document_id, native_case_id, listed_by, mdl, dataset, record_id, court_id, text_status from documents.documents order by 1,2",
         )
       ).rows;
       const ids = rows.map((x) => x.native_document_id);
       for (const absent of [
         "njd-3:2016-md-02738-00003", // held: not downloaded
-        "ilnd-1:2024-cv-06795-00001", // open, but no published page lists its case
-        "777", // courtlistener-public-locator is never open
-        "njd-3:2016-md-02738-00004", // locally flagged sealed bytes
-        "paed-2:2012-md-02323-00001", // case id listed for two MDLs
+        "777", // courtlistener-public-locator is not a source of this layer
+        "njd-3:2016-md-02738-00004", // locally flagged sealed bytes (explicit evidence)
+        "https://www.paed.uscourts.gov/no-case.pdf", // no case id to file it under
       ])
         assert.ok(!ids.includes(absent), absent);
       const by = Object.fromEntries(rows.map((x) => [x.native_document_id, x]));
+      // a tracked docket no matter page requests: in the layer, with no MDL
+      assert.deepEqual(
+        [
+          by["ilnd-1:2024-cv-06795-00001"].listed_by,
+          by["ilnd-1:2024-cv-06795-00001"].mdl,
+          by["ilnd-1:2024-cv-06795-00001"].dataset,
+          by["ilnd-1:2024-cv-06795-00001"].record_id,
+          by["ilnd-1:2024-cv-06795-00001"].court_id,
+        ],
+        ["docket_case", null, "pdf_document_assets", "ilnd-1:2024-cv-06795", "ilnd"],
+      );
+      // a case id two matter pages request for different MDLs: in the layer, MDL not guessed
+      assert.deepEqual(
+        [by["paed-2:2012-md-02323-00001"].listed_by, by["paed-2:2012-md-02323-00001"].mdl],
+        ["docket_case", null],
+      );
+      // two associations: the one with an MDL listing wins over a later-verified one without
+      assert.deepEqual(
+        [by["njd-3:2016-md-02738-00007"].listed_by, by["njd-3:2016-md-02738-00007"].mdl],
+        ["registry_pdf_case_id", "2738"],
+      );
       assert.equal(by["cand-3:2025-md-03166-00030"].listed_by, "derived_master_docket");
       assert.equal(by["cand-3:2025-md-03166-00030"].mdl, "3166");
       assert.equal(by["https://www.njd.uscourts.gov/cmo1.pdf"].listed_by, "court_mdl_label");
@@ -343,7 +378,11 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
           "select status, policy_page from documents.page_sets where sha256 = $1",
           [S.B],
         );
-        assert.deepEqual(b, { status: "indexed", policy_page: null }, "no keyword withholding (owner 2026-10-23)");
+        assert.deepEqual(
+          b,
+          { status: "indexed", policy_page: null },
+          "no keyword withholding (owner 2026-10-23)",
+        );
         assert.equal(
           (await one("select count(*)::int n from documents.pages where sha256 = $1", [S.B])).n,
           2,
@@ -441,12 +480,26 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
         assert.equal(s.mode, "text");
         const ids = s.rows.map((r) => r.native_document_id);
         assert.deepEqual(
-          ids,
-          ["900001"],
-          "withheld (900002), not listed (K) and indexed-elsewhere bytes are not hits",
+          [...ids].sort(),
+          ["900001", "ilnd-1:2024-cv-06795-00001"],
+          "withheld (900002) is not a hit; a filing with no MDL listing (K) is",
         );
-        assert.equal(s.rows[0].snippets[0].page, 1);
-        assert.match(s.rows[0].snippets[0].text, /\[\[dismiss\]\]/);
+        const hit = s.rows.find((r) => r.native_document_id === "900001");
+        assert.equal(hit.snippets[0].page, 1);
+        assert.match(hit.snippets[0].text, /\[\[dismiss\]\]/);
+        const k = s.rows.find((r) => r.native_document_id === "ilnd-1:2024-cv-06795-00001");
+        assert.deepEqual([k.mdl, k.listed_by], [null, "docket_case"]);
+        assert.ok(
+          s.facets.mdl.every(([key]) => /^[1-9][0-9]{0,5}$/.test(key)),
+          "the MDL facet holds MDL numbers only",
+        );
+        assert.equal(s.facets.no_mdl, 1);
+        const none = await rpc("documents_search_v1", [null, null, "none"]);
+        assert.deepEqual(none.rows.map((r) => r.native_document_id).sort(), [
+          "ilnd-1:2024-cv-06795-00001",
+          "paed-2:2012-md-02323-00001",
+        ]);
+        await assert.rejects(rpc("documents_search_v1", [null, null, "nothing"]), /Invalid MDL/);
         const m = await rpc("documents_search_v1", ["order", null, "3166"]);
         assert.deepEqual(
           m.rows.map((r) => r.mdl),
@@ -501,7 +554,10 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
           "update corpus_ingest.pdf_document_assets set provider_flags = provider_flags || '{\"withheld_by_policy\": true}' where native_document_id = '900001'",
         );
         const again = await rpc("documents_search_v1", ["dismiss"]);
-        assert.equal(again.rows.length, 0);
+        assert.deepEqual(
+          again.rows.map((r) => r.native_document_id),
+          ["ilnd-1:2024-cv-06795-00001"],
+        );
         assert.equal(again.dropped_unavailable, 1);
         assert.equal(
           await rpc("documents_document_v1", [
@@ -522,7 +578,11 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
         const shas = new Set(ex.pages.map((p) => p.sha256));
         assert.ok(shas.has(S.A) && shas.has(S.C) && shas.has(S.D) && shas.has(S.I));
         assert.ok(shas.has(S.B), "text mentioning a seal is exported like any other filing");
-        for (const no of [S.E, S.F, S.J, S.K]) assert.ok(!shas.has(no));
+        for (const no of [S.E, S.F, S.L]) assert.ok(!shas.has(no));
+        assert.ok(
+          shas.has(S.J) && shas.has(S.K),
+          "filings with no MDL listing are exported like any other",
+        );
         const at = (text, needle) => {
           const i = [...text].join("").indexOf(needle);
           return {
@@ -636,7 +696,24 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
         "2bd1f904b1639f16cc7e65e218c52997",
         5,
       ]);
-      assert.equal(judge.total, 8);
+      assert.equal(judge.total, 9);
+      const ilnd = await rpc("documents_for_entity_v1", ["court", "ilnd", 5]);
+      assert.deepEqual(
+        ilnd.recent.map((r) => [r.native_document_id, r.mdl]),
+        [["ilnd-1:2024-cv-06795-00001", null]],
+        "a court's filings include those with no MDL listing",
+      );
+      const kId = (
+        await one(
+          "select id from documents.documents where native_document_id='ilnd-1:2024-cv-06795-00001'",
+        )
+      ).id;
+      const kLinks = await rpc("documents_links_v1", ["record", `documents/${kId}`]);
+      assert.deepEqual(
+        kLinks.map((x) => `${x.relation}:${x.to.type}:${x.to.id}`),
+        ["filed_in:court:ilnd"],
+        "no listed_in link without an MDL listing",
+      );
       const mdl = await rpc("documents_for_entity_v1", ["mdl", "3166", 5]);
       assert.deepEqual(mdl.by_year, [[2025, 1]]);
       await assert.rejects(
@@ -689,13 +766,67 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
     });
 
     await t.test(
-      "a document whose listing disappears leaves the layer with its links and text",
+      "a document whose MDL listing disappears stays, with its text and citations, without the MDL",
       async () => {
+        const docId = (
+          await one(
+            "select id from documents.documents where native_document_id='njd-3:2016-md-02738-00001'",
+          )
+        ).id;
+        const before = (await one("select count(*)::int n from documents.links")).n;
         await db.query(
           "update public.corpus_records set detail = jsonb_set(detail, '{registry,pdf_case_ids}', '[\"6245245\"]') where id = 'sw-matter:2738'",
         );
         const r = await rpc("documents_refresh_v1", ["b3"]);
-        assert.ok(r.removed >= 5);
+        assert.equal(r.removed, 0);
+        // the mdls record still names njd 3:16-md-2738 as the JPML master docket: that exact key keeps MDL 2738
+        assert.deepEqual(
+          await one(
+            "select listed_by, mdl, dataset, record_id from documents.documents where native_document_id='njd-3:2016-md-02738-00001'",
+          ),
+          { listed_by: "derived_master_docket", mdl: "2738", dataset: "mdls", record_id: "2738" },
+        );
+        // without that evidence the filing stays, with no MDL
+        await db.query(
+          "update public.corpus_records set detail = detail - 'master_docket' where dataset = 'mdls' and id = '2738'",
+        );
+        assert.equal((await rpc("documents_refresh_v1", ["b3b"])).removed, 0);
+        const d = await one(
+          "select id, listed_by, mdl, dataset, record_id, text_status from documents.documents where native_document_id='njd-3:2016-md-02738-00001'",
+        );
+        assert.deepEqual(d, {
+          id: docId,
+          listed_by: "docket_case",
+          mdl: null,
+          dataset: "pdf_document_assets",
+          record_id: "njd-3:2016-md-02738",
+          text_status: "text_layer",
+        });
+        assert.equal((await one("select count(*)::int n from documents.links")).n, before);
+        const out = await rpc("documents_links_v1", ["record", `documents/${docId}`]);
+        assert.ok(!out.some((x) => x.relation === "listed_in"));
+        assert.ok(out.some((x) => x.relation === "cites" && x.to.id === "usc:42:1983"));
+        // paed-2:2012-md-02323 is now requested by one matter page only: it gains that MDL
+        assert.equal(
+          (
+            await one(
+              "select mdl from documents.documents where native_document_id='paed-2:2012-md-02323-00001'",
+            )
+          ).mdl,
+          "3060",
+        );
+      },
+    );
+
+    await t.test(
+      "a document that stops being open leaves the layer with its links and text",
+      async () => {
+        await db.query(
+          "update corpus_ingest.pdf_document_assets set provider_flags = provider_flags || '{\"downloaded\": 0}' where sha256 = $1",
+          [S.A],
+        );
+        const r = await rpc("documents_refresh_v1", ["b4"]);
+        assert.equal(r.removed, 2);
         assert.equal(
           (
             await one(
@@ -725,6 +856,60 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
       },
     );
 
+    await t.test("exact master-docket evidence in the mdls records links a docket filing to its MDL", async () => {
+      const rec = (id, detail) =>
+        db.query("insert into public.corpus_records(dataset,id,detail) values ('mdls',$1,$2)", [id, detail]);
+      const sm = (id) => ({ cases: { sample: [{ id: `cl_docket:${id}`, status: "supporting_master" }] } });
+      await rec("4001", { cl_court_id: "cand", master_docket: "3:19-md-2913", ...sm("5550001") });
+      await rec("4002", { cl_court_id: "nysd", master_docket: "1:20-md-2000", ...sm("5550002") });
+      await rec("4003", { cl_court_id: "nysd", master_docket: "1:20-md-2001", ...sm("5550002") }); // one docket, two MDLs
+      await rec("4004", { cl_court_id: "mad", master_docket: "1:23-md-3083" });
+      const open = { restricted: false, downloaded: 1 };
+      const cl = { is_available: true, is_sealed: false };
+      const page = (court) => [{ retrieved_at: "2026-10-01T00:00:00Z", listing: { court_id: court } }];
+      const ins = (source, doc, kase, s, flags, origins = []) =>
+        db.query(
+          "insert into corpus_ingest.pdf_document_assets(source_system,native_document_id,native_case_id,sha256,provider_flags,origins) values ($1,$2,$3,$4,$5,$6)",
+          [source, doc, kase, s, flags, origins],
+        );
+      const X = Object.fromEntries(["a", "b", "c", "d", "e"].map((k) => [k, sha(`mx ${k}`)]));
+      for (const s of Object.values(X))
+        await db.query(
+          "insert into corpus_ingest.pdf_objects(sha256,bytes,bucket,storage_key) values ($1,1000,'corpus-originals',$2)",
+          [s, `pdf/${s}`],
+        );
+      // MDL 3060 is covered by the matter registry, which does not list its master docket ilnd 1:23-cv-818
+      await ins("docketbird", "ilnd-1:2023-cv-00818-00001", "ilnd-1:2023-cv-00818", X.a, open);
+      await ins("courtlistener", "910001", "5550001", X.b, cl);
+      await ins("courtlistener", "910002", "5550002", X.c, cl);
+      await ins("official-court", "https://www.mad.uscourts.gov/x.pdf", "1:23-md-3083", X.d, { sealing_related_locator_held: false }, page("mad"));
+      await ins("official-court", "https://www.njd.uscourts.gov/y.pdf", "1:23-md-3083", X.e, { sealing_related_locator_held: false }, page("njd"));
+      await rpc("documents_refresh_v1", ["bmx"]);
+      const got = Object.fromEntries(
+        (
+          await db.query(
+            "select native_document_id, listed_by, mdl, dataset, record_id from documents.documents where sha256 = any($1)",
+            [Object.values(X)],
+          )
+        ).rows.map((x) => [x.native_document_id, [x.listed_by, x.mdl, x.dataset, x.record_id]]),
+      );
+      assert.deepEqual(got["ilnd-1:2023-cv-00818-00001"], ["derived_master_docket", "3060", "mdls", "3060"]);
+      assert.deepEqual(got["910001"], ["derived_master_docket", "4001", "mdls", "4001"]);
+      assert.deepEqual(got["910002"], ["docket_case", null, "pdf_document_assets", "5550002"], "a docket two MDLs name is not used");
+      assert.deepEqual(got["https://www.mad.uscourts.gov/x.pdf"], ["derived_master_docket", "4004", "mdls", "4004"]);
+      assert.deepEqual(got["https://www.njd.uscourts.gov/y.pdf"][0], "docket_case", "another court's page is not the master docket");
+      // existing filings keep their listing
+      assert.deepEqual(
+        await one("select listed_by, mdl from documents.documents where native_document_id = 'cand-3:2025-md-03166-00030'"),
+        { listed_by: "derived_master_docket", mdl: "3166" },
+      );
+      await db.query("delete from corpus_ingest.pdf_document_assets where sha256 = any($1)", [Object.values(X)]);
+      await db.query("delete from corpus_ingest.pdf_objects where sha256 = any($1)", [Object.values(X)]);
+      await db.query("delete from public.corpus_records where dataset = 'mdls' and id in ('4001','4002','4003','4004')");
+      await rpc("documents_refresh_v1", ["bmx2"]);
+      assert.equal((await one("select count(*)::int n from documents.documents where sha256 = any($1)", [Object.values(X)])).n, 0);
+    });
+
     await t.test("grants and function posture", async () => {
       const fns = (
         await db.query(
@@ -749,11 +934,57 @@ test("documents/1 contract", { timeout: 180000 }, async (t) => {
         );
         if (f.f.startsWith("documents_")) assert.equal(f.prosecdef, true, f.f);
       }
+      await assert.rejects(
+        db.query("update documents.documents set mdl = '2738' where listed_by = 'docket_case'"),
+        /documents_mdl_listing_check/,
+        "a filing without an MDL listing never carries an MDL",
+      );
+      await assert.rejects(
+        db.query("update documents.documents set mdl = null where listed_by <> 'docket_case'"),
+        /documents_mdl_listing_check/,
+      );
       for (const tbl of ["documents", "pages", "page_sets", "extractions", "links", "builds"])
         assert.equal(
           (await one("select has_table_privilege('anon', $1, 'select') r", [`documents.${tbl}`])).r,
           false,
         );
+    });
+
+    await t.test("rollback returns to the documents/1 scope; v2 applies again", async () => {
+      assert.ok(
+        (
+          await one(
+            "select count(*)::int n from documents.documents where listed_by = 'docket_case'",
+          )
+        ).n > 0,
+      );
+      await db.exec(
+        await fs.readFile("database/contracts/documents-v2-scope.rollback.sql", "utf8"),
+      );
+      assert.equal(
+        (await one("select count(*)::int n from documents.documents where mdl is null")).n,
+        0,
+      );
+      assert.equal(
+        (
+          await one(
+            "select is_nullable from information_schema.columns where table_schema='documents' and table_name='documents' and column_name='mdl'",
+          )
+        ).is_nullable,
+        "NO",
+      );
+      const r = await rpc("documents_refresh_v1", ["b5"]);
+      assert.equal(r.without_mdl, undefined, "v1 refresh body restored");
+      assert.ok(
+        (
+          await one(
+            "select count(*)::int n from documents.pages p where not exists (select 1 from documents.documents d where d.sha256 = p.sha256)",
+          )
+        ).n === 0,
+      );
+      await db.exec(scope);
+      // B, G, H and M (their case id is no longer requested) and K (never requested)
+      assert.equal((await rpc("documents_refresh_v1", ["b6"])).without_mdl, 5);
     });
   } finally {
     await db.close();

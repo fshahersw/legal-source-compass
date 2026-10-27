@@ -27,6 +27,41 @@ import {
 const REDACTED = "Redacted in the report";
 const asFiled = (s: string | null) => s ?? NOT_RECORDED;
 
+/** A line the filer partly redacted: the marker first, then the text the source read around the redaction (muted, as it
+ * is often unreadable scan noise). Fields with no remaining text show only the marker or nothing. */
+function Redacted({ text, marker }: { text: string | null; marker: boolean }) {
+  if (!text)
+    return marker ? <span className="italic text-muted-foreground">{REDACTED}</span> : null;
+  return (
+    <span>
+      {marker ? <span className="block italic text-muted-foreground">{REDACTED}</span> : null}
+      <span
+        className="block text-muted-foreground"
+        title="Text the source extracted around the redaction; it may be unreadable"
+      >
+        {text}
+      </span>
+    </span>
+  );
+}
+
+/** The item's year, with a tag when its report's file name could not be read (no surname check made). */
+function ItemYear({ year, attribution }: { year: number | null; attribution: string }) {
+  return (
+    <span>
+      {year == null ? NOT_RECORDED : String(year)}
+      {attribution === "not_checked" ? (
+        <span
+          className="ml-1 whitespace-nowrap rounded border border-border px-1 text-[10px] text-muted-foreground"
+          title="The report's original file name could not be read, so the surname check could not be made. Listed on the source's own link of the report to this person."
+        >
+          attribution not checked
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /**
  * A judge's financial disclosure reports in CourtListener (dataset clb_judge_disclosures), reached through the judge
  * crosswalk. Renders nothing when the page is not linked to exactly one CourtListener person or that person has no report.
@@ -61,8 +96,12 @@ function Body({ d }: { d: JudgeDisclosures }) {
         ? String(d.firstYear)
         : `${d.firstYear}–${d.lastYear}`
       : null;
-  const withheld =
-    d.itemsWithheld.gifts + d.itemsWithheld.reimbursements + d.itemsWithheld.agreements;
+  const sum = (w: { gifts: number; reimbursements: number; agreements: number }) =>
+    w.gifts + w.reimbursements + w.agreements;
+  const withheld = sum(d.itemsWithheld);
+  const byReason = d.itemsWithheldByReason;
+  const listedInConflict = conflict && d.reportList.some((r) => r.conflictHold === false);
+  const listedCount = d.gifts.length + d.reimbursements.length + d.agreements.length;
   return (
     <PanelShell
       title="Financial disclosure reports"
@@ -88,9 +127,12 @@ function Body({ d }: { d: JudgeDisclosures }) {
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning-foreground" aria-hidden />
           <span>
             The source attributes to this person reports filed under more than one circuit code (
-            {d.attribution.circuits.map((c) => `${c.code}: ${c.reports}`).join(", ")}). They may
-            belong to more than one judge, so no gifts, reimbursements or agreements are listed
-            here; the counts below include every attributed report.
+            {d.attribution.circuits.map((c) => `${c.code}: ${c.reports}`).join(", ")}) and more than
+            one district.{" "}
+            {listedInConflict
+              ? "Gifts, reimbursements and agreements are listed only from the reports coded for the district of this judge's recorded court; the other reports may belong to another judge and are not listed."
+              : "They may belong to more than one judge, so no gifts, reimbursements or agreements are listed here."}{" "}
+            The counts below include every attributed report.
           </span>
         </p>
       ) : null}
@@ -154,105 +196,135 @@ function Body({ d }: { d: JudgeDisclosures }) {
           />
         </CollapsibleSection>
       ) : null}
-      {!conflict && (d.gifts.length || d.reimbursements.length || d.agreements.length) ? (
+      {listedCount ? (
         <CollapsibleSection
           title="Gifts, reimbursements and agreements as filed"
-          summary={`${fmtInt(d.gifts.length + d.reimbursements.length + d.agreements.length)} items listed`}
+          summary={`${fmtInt(listedCount)} items listed`}
         >
           <div className="space-y-4">
             <MiniTable<Gift>
               caption="Gifts"
               rows={d.gifts}
-              rowKey={(g) => `${g.reportId}-${g.source}-${g.description}-${g.valueAsFiled}`}
+              rowKey={(g, i) => `${i}-${g.reportId}-${g.source}-${g.description}`}
               columns={[
                 {
                   key: "y",
                   label: "Year",
-                  render: (g) => (g.year == null ? NOT_RECORDED : String(g.year)),
+                  render: (g) => <ItemYear year={g.year} attribution={g.attribution} />,
                 },
                 {
                   key: "s",
                   label: "Source",
-                  render: (g) => (g.redacted ? REDACTED : asFiled(g.source)),
+                  render: (g) =>
+                    g.redacted ? <Redacted text={g.source} marker /> : asFiled(g.source),
                 },
                 {
                   key: "d",
                   label: "Description",
-                  render: (g) => (g.redacted ? "" : asFiled(g.description)),
+                  render: (g) =>
+                    g.redacted ? (
+                      <Redacted text={g.description} marker={false} />
+                    ) : (
+                      asFiled(g.description)
+                    ),
                 },
                 {
                   key: "v",
                   label: "Value as filed",
-                  render: (g) => (g.redacted ? "" : asFiled(g.valueAsFiled)),
+                  render: (g) =>
+                    g.redacted ? (
+                      <Redacted text={g.valueAsFiled} marker={false} />
+                    ) : (
+                      asFiled(g.valueAsFiled)
+                    ),
                 },
               ]}
             />
             <MiniTable<Reimbursement>
               caption="Reimbursements"
               rows={d.reimbursements}
-              rowKey={(r) =>
-                `${r.reportId}-${r.source}-${r.datesAsFiled}-${r.location}-${r.purpose}`
-              }
+              rowKey={(r, i) => `${i}-${r.reportId}-${r.source}-${r.datesAsFiled}`}
               noun="reimbursements"
               columns={[
                 {
                   key: "y",
                   label: "Year",
-                  render: (r) => (r.year == null ? NOT_RECORDED : String(r.year)),
+                  render: (r) => <ItemYear year={r.year} attribution={r.attribution} />,
                 },
                 {
                   key: "s",
                   label: "Source",
-                  render: (r) => (r.redacted ? REDACTED : asFiled(r.source)),
+                  render: (r) =>
+                    r.redacted ? <Redacted text={r.source} marker /> : asFiled(r.source),
                 },
                 {
                   key: "p",
                   label: "Purpose",
-                  render: (r) => (r.redacted ? "" : asFiled(r.purpose)),
+                  render: (r) =>
+                    r.redacted ? <Redacted text={r.purpose} marker={false} /> : asFiled(r.purpose),
                 },
                 {
                   key: "l",
                   label: "Location",
-                  render: (r) => (r.redacted ? "" : asFiled(r.location)),
+                  render: (r) =>
+                    r.redacted ? (
+                      <Redacted text={r.location} marker={false} />
+                    ) : (
+                      asFiled(r.location)
+                    ),
                 },
                 {
                   key: "i",
                   label: "Paid or provided",
-                  render: (r) => (r.redacted ? "" : asFiled(r.itemsPaid)),
+                  render: (r) =>
+                    r.redacted ? (
+                      <Redacted text={r.itemsPaid} marker={false} />
+                    ) : (
+                      asFiled(r.itemsPaid)
+                    ),
                 },
               ]}
             />
             <MiniTable<Agreement>
               caption="Agreements"
               rows={d.agreements}
-              rowKey={(a) => `${a.reportId}-${a.dateAsFiled}-${a.partiesAndTerms}`}
+              rowKey={(a, i) => `${i}-${a.reportId}-${a.dateAsFiled}`}
               columns={[
                 {
                   key: "y",
                   label: "Year",
-                  render: (a) => (a.year == null ? NOT_RECORDED : String(a.year)),
+                  render: (a) => <ItemYear year={a.year} attribution={a.attribution} />,
                 },
                 {
                   key: "d",
                   label: "Date as filed",
-                  render: (a) => (a.redacted ? REDACTED : asFiled(a.dateAsFiled)),
+                  render: (a) =>
+                    a.redacted ? <Redacted text={a.dateAsFiled} marker /> : asFiled(a.dateAsFiled),
                 },
                 {
                   key: "t",
                   label: "Parties and terms",
-                  render: (a) => (a.redacted ? "" : asFiled(a.partiesAndTerms)),
+                  render: (a) =>
+                    a.redacted ? (
+                      <Redacted text={a.partiesAndTerms} marker={false} />
+                    ) : (
+                      asFiled(a.partiesAndTerms)
+                    ),
                 },
               ]}
             />
             <p className="text-[11px] leading-4 text-muted-foreground">
               Text is the source's extraction from scanned forms and can contain reading errors;
-              values are the report's own codes or words.
-              {withheld
-                ? ` ${fmtInt(withheld)} items from reports whose file name does not carry this surname, or could not be read, are not listed.`
+              values are the report's own codes or words. A redacted line shows the text the source
+              read around the redaction, which can be unreadable.
+              {byReason && sum(byReason.otherSurname)
+                ? ` ${fmtInt(sum(byReason.otherSurname))} items from reports whose file name carries another surname are not listed.`
                 : ""}
-              {d.itemsTotal.reimbursements >
-              d.reimbursements.length + d.itemsWithheld.reimbursements
-                ? ` Only the ${fmtInt(d.reimbursements.length)} most recent reimbursements are listed.`
+              {byReason && sum(byReason.attributionConflict)
+                ? ` ${fmtInt(sum(byReason.attributionConflict))} items from reports that may belong to another judge are not listed.`
+                : ""}
+              {!byReason && withheld
+                ? ` ${fmtInt(withheld)} items from reports whose file name does not carry this surname are not listed.`
                 : ""}
             </p>
           </div>
@@ -312,7 +384,7 @@ function Body({ d }: { d: JudgeDisclosures }) {
               means:
                 "The report's original file name must carry this person's surname (exact letters, no similarity scoring) before its items are listed.",
               caveat:
-                "A person whose reports carry two numbered circuits may combine two judges; their items are not listed.",
+                "When the reports name more than one district, only reports coded for the district of the judge's recorded court are listed; if that cannot be settled, none are. Items of a report whose file name cannot be read are listed and tagged 'attribution not checked'.",
             },
           ]}
         />

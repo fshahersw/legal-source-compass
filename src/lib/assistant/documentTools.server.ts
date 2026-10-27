@@ -1,6 +1,6 @@
 /**
- * Assistant tool over the document layer (documents/1): full-text search of the court filings the published matter pages
- * list, with page-numbered passages, filters by court, MDL, type and filing date. Read-only; the same RPC and parsers as
+ * Assistant tool over the document layer (documents/1, scope documents-v2-scope.sql): full-text search of the stored court
+ * filings of the tracked dockets, with page-numbered passages, filters by court, MDL, type and filing date. Read-only; the same RPC and parsers as
  * the /litigation/documents page. Passages come only from text the display rule allows; every result names the page to
  * open, so a quotation can be checked at its page.
  */
@@ -23,7 +23,7 @@ export const DOCUMENT_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "search_documents",
     description:
-      'Search the text of the court filings stored for the MDLs and matters in this workspace (orders, opinions, motions, briefs, transcripts listed on the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number, document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL, docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings whose text mentions sealed, restricted, in camera, ex parte or redacted material are never searched or quoted; scanned filings without text are not searched.',
+      'Search the text of the stored court filings of the dockets this workspace tracks (orders, opinions, motions, briefs, transcripts from the docket sheets, the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number (or "none" for filings with no MDL linked), document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL (null when no explicit listing links the filing to an MDL; never guess one), docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings the docket source marks as held or sealed, and filings whose docket text carries contact or hearing-access details, are listed but never searched or quoted; scanned filings without text are not searched.',
     input_schema: {
       type: "object",
       properties: {
@@ -32,7 +32,10 @@ export const DOCUMENT_TOOL_DEFINITIONS: ToolDefinition[] = [
           description: "Words or a quoted phrase to find in the filings' text.",
         },
         court: { type: "string", description: "Court id, e.g. njd." },
-        mdl: { type: "string", description: "MDL number, e.g. 2738." },
+        mdl: {
+          type: "string",
+          description: 'MDL number, e.g. 2738, or "none" for filings with no MDL linked.',
+        },
         type: { type: "string", enum: [...DOC_TYPES] },
         filed_from: { type: "string", description: "YYYY-MM-DD" },
         filed_to: { type: "string", description: "YYYY-MM-DD" },
@@ -46,7 +49,9 @@ export const DOCUMENT_TOOL_DEFINITIONS: ToolDefinition[] = [
 async function searchDocumentsTool(input: Record<string, unknown>): Promise<ToolOutcome> {
   const query = str(input["query"]);
   const court = str(input["court"], 40).toLowerCase();
-  const mdl = str(input["mdl"], 12).replace(/^mdl\s*(no\.?)?\s*/i, "");
+  const mdl = str(input["mdl"], 12)
+    .replace(/^mdl\s*(no\.?)?\s*/i, "")
+    .toLowerCase();
   const type = (DOC_TYPES as readonly string[]).includes(str(input["type"], 40))
     ? (str(input["type"], 40) as DocType)
     : null;
@@ -88,8 +93,9 @@ async function searchDocumentsTool(input: Record<string, unknown>): Promise<Tool
     title: documentTitle(r),
     type: typeLabel(r.docType),
     court: r.courtId ? (res.courtNames[r.courtId] ?? r.courtId) : null,
+    // null: no MDL listing names this filing; never state or guess an MDL for it
     mdl: r.mdl,
-    mdl_name: res.mdlNames[r.mdl] ?? null,
+    mdl_name: r.mdl ? (res.mdlNames[r.mdl] ?? null) : null,
     docket_number: r.docketNumber,
     entry_number: r.entryNumber,
     filed: r.filedDate,
@@ -106,7 +112,7 @@ async function searchDocumentsTool(input: Record<string, unknown>): Promise<Tool
   }));
   const where = [
     court && `court ${court}`,
-    mdl && `MDL ${mdl}`,
+    mdl && (mdl === "none" ? "no MDL linked" : `MDL ${mdl}`),
     type && typeLabel(type),
     from && `from ${from}`,
     to && `to ${to}`,
@@ -123,7 +129,7 @@ async function searchDocumentsTool(input: Record<string, unknown>): Promise<Tool
         total_is_lower_bound: res.capped,
         page: res.page,
         has_more: res.hasMore,
-        note: "Passages are the stored text of the page named; matched words are marked «». Quote a passage only with its page, and open the link to check it. Filings with sealed or redacted material are not searched, so absence here is not proof a filing does not exist.",
+        note: "Passages are the stored text of the page named; matched words are marked «». Quote a passage only with its page, and open the link to check it. Filings on entries the docket source flags as sealed, filings whose docket text carries contact or hearing-access details, and scanned filings without text are not searched, so absence here is not proof a filing does not exist.",
         results: rows,
       }),
     ),

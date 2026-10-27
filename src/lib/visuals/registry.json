@@ -1947,6 +1947,18 @@
     {
       "id": "uscfc",
       "reason": "Error: Original hash differs from supplier metadata"
+    },
+    {
+      "id": "ilsd",
+      "reason": "Wrong court: the seal-rookery file is byte-identical to insd and reads \"United States District Court Southern District of Indiana\" (sha256 5f1302fa...). Removed 2026-10-27."
+    },
+    {
+      "id": "mdd",
+      "reason": "Wrong court: the file reads \"District Court of Maryland\" (State of Maryland District Court seal), not the federal District Court, D. Maryland (sha256 92dafe7e...). Removed 2026-10-27."
+    },
+    {
+      "id": "nyappdiv",
+      "reason": "Wrong court: the file reads \"State of New York Court of Appeals\", not the Appellate Division (sha256 e22c5eee...). Removed 2026-10-27."
     }
   ],
   "stateCourts": {
@@ -2370,16 +2382,6 @@
       "license": "Government work per Free Law Project seal-rookery image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
-    "ilsd": {
-      "name": "District Court, S.D. Illinois",
-      "kind": "community-court-mark",
-      "path": "/visuals/state-courts/ilsd.png",
-      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ilsd.png",
-      "sourceSha256": "f02a755270174f4c733bc58e95b78271a5c12eee44f5a0ba9ef2837d97b6e39f",
-      "sha256": "5f1302fa5bb3fc389550f1e1576377bac64377356835f7e86b4bf6c32df6476b",
-      "license": "Government work per Free Law Project seal-rookery image license; identification only",
-      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
-    },
     "ind": {
       "name": "Indiana Supreme Court",
       "kind": "community-court-mark",
@@ -2557,16 +2559,6 @@
       "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mdctspecapp.png",
       "sourceSha256": "36c4778a03a45ee8482e0a1860de0884c4fbd14bb2b2fc5fe21b91fb4788b742",
       "sha256": "49ac0bed1d355b7fbde6e0df88e9c90130ecd2e0e59edfe7fd27ba7e1793a501",
-      "license": "Government work per Free Law Project seal-rookery image license; identification only",
-      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
-    },
-    "mdd": {
-      "name": "District Court, D. Maryland",
-      "kind": "community-court-mark",
-      "path": "/visuals/state-courts/mdd.png",
-      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mdd.png",
-      "sourceSha256": "983a7a8954502aa05478fa378b9c75d93450929a562e17dd29a4e5fc43abbc59",
-      "sha256": "92dafe7e777490d5ff30f3f7b93ebc9ed075300f431ae78026b3fd42ec3ed358",
       "license": "Government work per Free Law Project seal-rookery image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
@@ -2887,16 +2879,6 @@
       "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ny.svg",
       "sourceSha256": "7567703b9d61ca4d1b384a0d567385baf01208a4a3c4179fc8f90c999516c671",
       "sha256": "7567703b9d61ca4d1b384a0d567385baf01208a4a3c4179fc8f90c999516c671",
-      "license": "Government work per Free Law Project seal-rookery image license; identification only",
-      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
-    },
-    "nyappdiv": {
-      "name": "Appellate Division of the Supreme Court of the State of New York",
-      "kind": "community-court-mark",
-      "path": "/visuals/state-courts/nyappdiv.png",
-      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nyappdiv.png",
-      "sourceSha256": "4b28f5e5831da69e051ee248f8913cb7777834f2c8aad0d9c2457f82f141621f",
-      "sha256": "e22c5eeeffda6b83f67fa7a5efb67aa01487e8ff4d91cd206fb07942c2bc401e",
       "license": "Government work per Free Law Project seal-rookery image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },

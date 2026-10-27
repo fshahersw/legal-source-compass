@@ -164,6 +164,7 @@ const EXPLICIT: Record<string, SectionId> = {
   coverage_labels: "sources",
   coverage_topics: "sources",
   large_text_assets: "sources",
+  large_text_official: "sources",
   focused: "sources",
 };
 
@@ -177,6 +178,22 @@ export function sectionOf(datasetId: string): SectionId {
   if (datasetId.startsWith("court")) return "courts";
   if (datasetId.startsWith("uscourts_tables_")) return "courts";
   return "other";
+}
+
+/**
+ * Retired catalog ids whose rows moved, with their record ids unchanged, into a successor collection.
+ * Their /data and /records URLs redirect to the successor so every former URL keeps working.
+ * sw_matter_regulatory_links_v1_staged: its 38 links were moved into sw_matter_regulatory_links_v1 on 2026-10-03
+ * (contract sw-matter-regulatory-links-flip-staged-r6-20261003-v1.sql); the empty catalog row is retired by
+ * database/contracts/release-dataset-regulatory-links-staged-empty-v1.sql.
+ */
+const RETIRED_DATASETS: Readonly<Record<string, string>> = {
+  sw_matter_regulatory_links_v1_staged: "sw_matter_regulatory_links_v1",
+};
+
+/** The collection a retired dataset id now lives in, or null when the id is not retired. */
+export function datasetSuccessor(id: string): string | null {
+  return Object.prototype.hasOwnProperty.call(RETIRED_DATASETS, id) ? RETIRED_DATASETS[id]! : null;
 }
 
 /** Human label: use the stored label unless it is just the raw id. */

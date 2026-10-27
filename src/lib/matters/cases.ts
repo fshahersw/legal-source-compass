@@ -273,12 +273,15 @@ export function parseFjcCase(item: unknown): CaseRow | null {
   const nativeId = nativeCourtListenerDocketId(cells["native_id"]);
   const docket = cleaned(cells["docket_number"]);
   if (!nativeId && !docket) return null;
+  // CourtListener's caption, released verbatim by cl-docket-metadata-fields/2026-10-27.v2; rows without it
+  // (CourtListener-blocked dockets) stay withheld.
+  const caption = cleaned(cells["case_name"]);
   return {
     id: `fjc:${nativeId ?? docket}`,
     clDocketId: nativeId,
     docketNumber: docket,
-    caption: null,
-    captionWithheld: true,
+    caption,
+    captionWithheld: !caption,
     courtId: cleaned(cells["court_id"]),
     dateFiled: cleaned(cells["date_filed"]),
     dateTerminated: cleaned(cells["date_terminated"]),

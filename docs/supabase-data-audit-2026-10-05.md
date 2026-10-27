@@ -143,12 +143,12 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | U.S. Courts pages | uscourts_pages | Courts and court resources | 1,404 | 40.86 MB | Available |
 | FDA device classification (openFDA) | agency_safety_openfda_device_classification | Science and product safety | 7,093 | 39.49 MB | Available |
 | MDL counsel and parties | mdl_counsel | Matters and dockets | 6,940 | 39.12 MB | Available |
-| Coverage topics | coverage_topics | Sources and captured pages | 17,942 | 38.83 MB | Held |
+| Coverage topics | coverage_topics | Sources and captured pages | 17,942 | 38.83 MB | Published 2026-10-27: 127 rows (release-coverage-topics-20261027-v1, run 5792288a; 7 rows removed and ledgered: 1 trellis.law, 6 unsupported NJ tags) |
 | FDA device category metadata — October 2, 2026 | agency_safety_openfda_device_classification_20261002 | Science and product safety | 7,094 | 37.98 MB | Available |
 | MDL case inventory | mdl_case_inventory | Matters and dockets | 4,159 | 36.87 MB | Available |
 | Source documents | source_documents | Sources and captured pages | 612 | 35.17 MB | Available |
 | CourtListener education records — September 2026 snapshot | cl_educations | Judges and people | 12,777 | 33.90 MB | Available |
-| Coverage labels | coverage_labels | Sources and captured pages | 10,013 | 27.42 MB | Held |
+| Coverage labels | coverage_labels | Sources and captured pages | 10,013 | 27.42 MB | Overlay stays unlisted (ids collide with focused); its facts were folded onto 10,009 published focused records 2026-10-27 (coverage-labels-fold-v1): 1,420 as-of dates, page-type detail, confidence on 8,848 |
 | Counsel directory | counsel_directory | Matters and dockets | 4,585 | 24.46 MB | Available |
 | Federal Register — August 21–October 2, 2026 metadata | regulatory_backfill | Law | 3,139 | 21.95 MB | Available |
 | Court directory | court_spine | Courts and court resources | 5,411 | 19.56 MB | Available |
@@ -180,13 +180,13 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | JPML multidistrict litigation | mdls | Matters and dockets | 179 | 1.52 MB | Available |
 | County court rules and orders — September 28 additions | county_enrichment_20260928 | Courts and court resources | 14 | 1.27 MB | Available |
 | Seeger Weiss matter registry — regulatory evidence links (topical associations, 6 MDLs) | sw_matter_regulatory_links_v1 | Matters and dockets | 165 | 1.06 MB | Available |
-| Court profiles & seals | court_reference | Courts and court resources | 253 | 827.97 KB | Held |
+| Court profiles & seals | court_reference | Courts and court resources | 253 | 827.97 KB | Published 2026-10-27: 253 records, 250 seal files (248 distinct objects); ilsd, mdd, nyappdiv seal files held as wrong-court images (court-reference-release-20261027, run c36e2186) |
 | Cited U.S. limitations rules — October 2026 review | statutory_limitations_review | Law | 124 | 827.24 KB | Available |
 | Selected eCFR authority and source notes | ecfr_authority_notes | Law | 36 | 680.26 KB | Available |
 | Official JPML and court HTML references — October 2026 | jpml_html_reference | Law | 93 | 573.91 KB | Available |
-| Complete large reader-text downloads | large_text_assets | Sources and captured pages | 155 | 405.78 KB | Held |
+| Complete large reader-text downloads | large_text_assets | Sources and captured pages | 155 | 405.78 KB | Partly published 2026-10-27: Grady County ordinances text moved to large_text_official (ready); 77 held (44 olls.info pending the owner's olls.info decision, 33 with no stored text; 18 of those now link their stored publisher originals on the parent records) |
 | CourtListener directed citation mentions — scoped September 2026 snapshot | cl_citation_edges | Law | 201 | 403.01 KB | Available |
-| MDL crosswalk | mdl_crosswalk | Matters and dockets | 59 | 338.64 KB | Held |
+| MDL crosswalk | mdl_crosswalk | Matters and dockets | 59 | 338.64 KB | Published 2026-10-27 (contract mdl-crosswalk-release-v1, run b6a1e2c4-5d3f-4a7e-9c21-8f0d3e6a2715) |
 | Seeger Weiss matter registry — MDL matters | sw_matters_v1 | Matters and dockets | 38 | 325.69 KB | Available |
 | Selected mass-tort authorities and statutory access gaps — October 2026 | mass_tort_authority_evidence | Law | 25 | 204.49 KB | Available |
 | Judge vendor analysis previews | judge_vendor | Judges and people | 2 | 87.04 KB | Available |
@@ -197,8 +197,8 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | Seeger Weiss matter registry — dockets in matters (superseded rows, not served) | sw_matter_dockets_v1_superseded | Matters and dockets | 2 | 8.75 KB | Held |
 | State codes | state_codes | Law | 2 | 5.89 KB | Available |
 | Library files | library_assets | Sources and captured pages | 1 | 336 B | Held |
-| Judge portraits | judge_portraits | Judges and people | 0 | 0 B | Held |
-| Seeger Weiss matter registry — regulatory evidence links, staged extension (not published) | sw_matter_regulatory_links_v1_staged | Matters and dockets | 0 | 0 B | Held |
+| Judge portraits | judge_portraits | Judges and people | 0 | 0 B | Retired 2026-10-27 (empty; ledger release20261027_judge_portraits_retire_empty_catalog); 22 more judge pages got FLP portraits (judge-portraits-release-20261027, run 7f3c2a91) |
+| Seeger Weiss matter registry — regulatory evidence links, staged extension (not published) | sw_matter_regulatory_links_v1_staged | Matters and dockets | 0 | 0 B | Retired 2026-10-27 (empty; its 38 links are in sw_matter_regulatory_links_v1; ledger issue release20261027_retire_empty_staged_catalog) |
 | Verdict reports | verdict_reports | Matters and dockets | 0 | 0 B | Held |
 
 Two available version families retain earlier rows: people (prior to cl_people), and the earlier FDA device-classification snapshot (prior to the 20261002 dataset). The normal section/search family view favors the current dataset; prior versions remain selectable through inventory/detail access. They are not proven redundant byte copies.

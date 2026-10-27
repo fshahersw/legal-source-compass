@@ -16,7 +16,7 @@ export const Route = createFileRoute("/litigation_/documents")({
   head: () =>
     pageHead(
       "Court filings",
-      "Search the text of the court filings the matter pages list, with page-numbered passages, filters by court, MDL, type and date, and an in-app viewer.",
+      "Search the text of the stored court filings of the tracked dockets, with page-numbered passages, filters by court, MDL, type and date, and an in-app viewer.",
     ),
   component: Page,
 });
@@ -27,7 +27,7 @@ function Page() {
   return (
     <AppShell
       title="Court filings"
-      description="The text of the court filings the matter pages list: search words and phrases, filter by court, MDL, type and filing date, and open a filing at the matching page."
+      description="The text of the stored court filings of the tracked dockets: search words and phrases, filter by court, MDL, type and filing date, and open a filing at the matching page."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Litigation", to: "/matters" },

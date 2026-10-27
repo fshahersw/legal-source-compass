@@ -6,6 +6,8 @@ to be installed by the administrative role first. Dry by default: --execute is r
   push-plan.py plan   --plan plan.jsonl [--execute]      # open_run (idempotent) then plan in batches of 500
   push-plan.py apply  [--execute] [--batch 500]          # dry run unless --execute; loops until nothing is planned
   push-plan.py verify | rollback [--execute] | close
+  --stage keyword_release   open/plan a keyword-release run (document-titles-v3-keyword-release.sql must be installed)
+  --run <uuid>              status / verify / rollback a named run (also after close)
 """
 import argparse, json, os, sys, time, urllib.error, urllib.request
 
@@ -36,19 +38,22 @@ def main():
     ap.add_argument("--plan")
     ap.add_argument("--execute", action="store_true")
     ap.add_argument("--batch", type=int, default=500)
+    ap.add_argument("--stage", choices=["keyword_release"])
+    ap.add_argument("--run")
     a = ap.parse_args()
+    named = {"run": a.run} if a.run else {}
     if a.cmd in ("status", "verify"):
-        print(json.dumps(call(a.cmd), indent=1))
+        print(json.dumps(call(a.cmd, named), indent=1))
     elif a.cmd == "close":
         print(json.dumps(call("close_run")))
     elif a.cmd == "rollback":
-        print(json.dumps(call("rollback", {"dry": not a.execute})))
+        print(json.dumps(call("rollback", {"dry": not a.execute, **named})))
     elif a.cmd == "plan":
-        rows = [json.loads(l) for l in open(a.plan) if l.strip()]
+        rows = [json.loads(l) for l in open(a.plan, encoding="utf-8") if l.strip()]
         if not a.execute:
             print(f"dry: {len(rows)} rows would be planned; pass --execute to open the run and plan them")
             return
-        print(json.dumps(call("open_run")))
+        print(json.dumps(call("open_run", {"stage": a.stage} if a.stage else {})))
         total, rejected = 0, []
         for i in range(0, len(rows), 500):
             res = call("plan", {"rows": rows[i:i + 500]})

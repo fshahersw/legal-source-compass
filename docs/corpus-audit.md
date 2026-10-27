@@ -36,14 +36,19 @@ These three buckets partition all 16,730 rows. They describe **what each ledger 
 | `courtlistener` | `pre_import_before_image:487f0d04-d694-4ba3-a7bf-6e679040e4f7` | 11,518 | Must stay |
 | `courtlistener` | `pre_import_before_image:216cd8bb-e850-4ca1-9a55-78251b79edcb` | 4,798 | Must stay |
 | `saved_pages` | `dq20261003r6_saved_pages_titles` | 140 | Must stay |
+| `coverage_topics` | `release20261027_coverage_topics_verify` | 135 | Must stay (rollback source, run 5792288a: 128 label_override before-images incl. the dataset row, 7 quarantined rows: 1 trellis.law commercial host, 6 NJ rows with no topic the official text supports) |
 | `court_documents` | `dq20261003r6_court_documents_titles` | 139 | Must stay |
+| `court_reference` | `court_reference_seal_wrong_court` | 3 | Must stay (rollback source, run c36e2186: ilsd, mdd, nyappdiv before-images; their seal files show another court and stay held) |
 | `court_documents` | `dq20261003r7_court_documents_titles_weak_first_page` | 59 | Must stay |
+| `public.corpus_datasets` | `release20261027_judge_portraits_retire_empty_catalog` | 1 | Must stay (the retired empty `judge_portraits` catalog row, run 7f3c2a91; `judge-portraits-release-20261027-rollback.sql` re-creates it) |
 | `court_documents` | `dq20261003r7_court_documents_titles_identical_file` | 28 | Exact-duplicate context |
+| `focused` / `seeger` | `release20261027_large_text_parent_originals` | 18 | Must stay (rollback source, run 5b8e0d47: detail before-images of the 18 parents that gained a link to their stored publisher original) |
 | `public.corpus_datasets` | `cleanup_20261006_counter` | 26 | Taxonomy / catalog noise |
 | `sw_matter_regulatory_links_v1` | `dq20261003r6_regulatory_links_restrict` | 4 | Must stay |
 | `sw_matter_regulatory_links_v1` | `dq20261003r5_regulatory_links_pilot` | 4 | Must stay |
 | `sw_matter_regulatory_links_v1` | `dq20261003r6_regulatory_links_flip` | 4 | Must stay |
 | `sw_matter_regulatory_links_v1_staged` | `dq20261003r6_regulatory_links_staged` | 4 | Must stay |
+| `public.corpus_datasets` | `release20261027_retire_empty_staged_catalog` | 1 | Must stay (rollback source: the retired empty catalog row `sw_matter_regulatory_links_v1_staged`, 2026-10-27; restore it with `release-dataset-regulatory-links-staged-empty-v1.rollback.sql` before any rollback of `dq20261003r6_regulatory_links_flip`) |
 | `public.corpus_datasets` | `cleanup_20261006_carry_county_enrichment_20260928_counter` | 1 | Taxonomy / catalog noise |
 | `public.corpus_datasets` | `cleanup_20261006_carry_gap_enrichment_20260927_counter` | 1 | Taxonomy / catalog noise |
 | `public.corpus_datasets` | `cleanup_20261006_carry_cl_reporter_citations_counter` | 1 | Taxonomy / catalog noise |

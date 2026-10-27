@@ -74,7 +74,7 @@ export function CitationResearch({ search, update }: WorkbenchProps) {
         </form>
         <p className="mt-3 text-[11px] text-muted-foreground">
           {info
-            ? `${fmt(info.records)} authority records · ${info.ready === true ? "Published dataset" : info.ready === false ? "Dataset held from publication" : "Publication status unavailable"}`
+            ? `${fmt(info.records)} authority records · ${info.ready === true ? "Published dataset" : info.ready === false ? "Dataset not marked ready" : "Publication status unavailable"}`
             : "Loading publication metadata…"}
           {info?.qualification ? ` · ${info.qualification}` : ""}
         </p>

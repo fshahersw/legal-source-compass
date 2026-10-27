@@ -38,9 +38,10 @@ export const searchInput = z.object({
     .regex(/^[a-z0-9_-]{1,40}$/)
     .nullable()
     .default(null),
+  /** An MDL number, or "none" for filings with no MDL listing. */
   mdl: z
     .string()
-    .regex(/^[1-9][0-9]{0,5}$/)
+    .regex(/^([1-9][0-9]{0,5}|none)$/)
     .nullable()
     .default(null),
   type: z.enum(DOC_TYPES).nullable().default(null),
@@ -132,8 +133,8 @@ export async function runDocumentSearch(
     ]),
     namesOf("mdls", [
       ...res.facets.mdl.map((f) => f.key),
-      ...res.rows.map((r) => r.mdl),
-      ...(d.mdl ? [d.mdl] : []),
+      ...res.rows.flatMap((r) => (r.mdl ? [r.mdl] : [])),
+      ...(d.mdl && d.mdl !== "none" ? [d.mdl] : []),
     ]),
   ]);
   return { available: true, page: d.page, courtNames, mdlNames, ...res };
@@ -171,13 +172,13 @@ export const getDocument = createServerFn({ method: "GET" })
       if (!doc) return { available: true, document: null, courtName: null, mdlName: null };
       const [courts, mdls] = await Promise.all([
         doc.courtId ? namesOf("court_spine", [doc.courtId]) : Promise.resolve({} as Names),
-        namesOf("mdls", [doc.mdl]),
+        doc.mdl ? namesOf("mdls", [doc.mdl]) : Promise.resolve({} as Names),
       ]);
       return {
         available: true,
         document: doc,
         courtName: doc.courtId ? (courts[doc.courtId] ?? null) : null,
-        mdlName: mdls[doc.mdl] ?? null,
+        mdlName: doc.mdl ? (mdls[doc.mdl] ?? null) : null,
       };
     },
   );
@@ -235,7 +236,7 @@ export const documentsForEntity = createServerFn({ method: "GET" })
       ),
       namesOf(
         "mdls",
-        docs.recent.map((r) => r.mdl),
+        docs.recent.flatMap((r) => (r.mdl ? [r.mdl] : [])),
       ),
     ]);
     return {
@@ -252,6 +253,8 @@ export type DocumentsStatus = {
   documents: number;
   pagesIndexed: number;
   mdls: number;
+  /** Filings with no MDL listing (documents/2 'docket_case'). */
+  withoutMdl: number;
   courts: number;
   byTextStatus: Record<string, number>;
 };
@@ -271,6 +274,7 @@ export const documentsStatus = createServerFn({ method: "GET" }).handler(
         documents: 0,
         pagesIndexed: 0,
         mdls: 0,
+        withoutMdl: 0,
         courts: 0,
         byTextStatus: {},
       };
@@ -284,6 +288,7 @@ export const documentsStatus = createServerFn({ method: "GET" }).handler(
       documents: n(o["documents"]),
       pagesIndexed: n(o["pages_indexed"]),
       mdls: n(o["mdls"]),
+      withoutMdl: n(o["without_mdl"]),
       courts: n(o["courts"]),
       byTextStatus: by,
     };
