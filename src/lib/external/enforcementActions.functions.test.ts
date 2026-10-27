@@ -395,6 +395,37 @@ describe("parseOfficialSettlement", () => {
     expect(s.deadline).toBeNull();
     expect(parseOfficialSettlement({ ...base, s: { ...base.s, facts_confirmed: [] } })).toBeNull();
   });
+  it("reads the typed amount role and leaves an untyped or unknown role null", () => {
+    const typed = parseOfficialSettlement({
+      ...base,
+      s: {
+        ...base.s,
+        amounts: [
+          { page_as_written: "$350", value_usd: 350, status: "confirmed", role: "per_claimant", role_basis: "payments" },
+          { page_as_written: "$5", value_usd: 5, status: "confirmed", role: "invented" },
+        ],
+      },
+    })!;
+    expect(typed.amounts[0]).toMatchObject({ role: "per_claimant", roleBasis: "payments", detail: null });
+    expect(typed.amounts[1]!.role).toBeNull();
+    expect(parseOfficialSettlement(base)!.amounts[0]!.role).toBeNull();
+  });
+  it("reads the registry-verified MDL links, and null before the retype", () => {
+    expect(parseOfficialSettlement(base)!.mdlLinks).toBeNull();
+    const linked = parseOfficialSettlement({
+      ...base,
+      s: {
+        ...base.s,
+        mdl_links: [
+          { mdl: 2905, case_number: "2:19-ml-02905-JAK-JPR", basis: "registry" },
+          { mdl: "2905", case_number: "x" },
+          { mdl: 3071 },
+        ],
+      },
+    })!;
+    expect(linked.mdlLinks).toEqual([{ mdl: 2905, caseNumber: "2:19-ml-02905-JAK-JPR" }]);
+    expect(parseOfficialSettlement({ ...base, s: { ...base.s, mdl_links: [] } })!.mdlLinks).toEqual([]);
+  });
 });
 
 describe("parseFacts", () => {

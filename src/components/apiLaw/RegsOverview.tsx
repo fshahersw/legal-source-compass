@@ -6,6 +6,7 @@ import { BarTrend, ChartFrame, ChartLegend, metricFormatter, seriesVar } from "@
 import type { PeriodAxis, TrendSeriesInput } from "@/components/charts/series";
 import { Panel, StateNote } from "@/components/enforcement/parts";
 import { getRegsOverview, type RegsOverview as Overview } from "@/lib/external/apiLaw.functions";
+import { getDocketCommentCoverage } from "@/lib/law/regsCoverage.functions";
 
 const fmtN = (n: number | null | undefined) =>
   typeof n === "number" ? n.toLocaleString("en-US") : "Not recorded";
@@ -22,7 +23,7 @@ const SOURCES = [
 const regsOverviewKey = ["regs-overview"] as const;
 
 /**
- * Regulations.gov at a glance for the twelve agencies: documents posted per year by type, documents still open for
+ * Regulations.gov at a glance for the agencies held: documents posted per year by type, documents still open for
  * comment, the most-commented dockets and a per-agency table. Comment counts are what agencies have posted publicly;
  * "Not recorded" where a count has not been read.
  */
@@ -61,7 +62,19 @@ export function RegsOverview() {
   return <OverviewBody o={q.data} />;
 }
 
+const pct = (n: number, of: number) =>
+  of > 0
+    ? `${((n / of) * 100).toLocaleString("en-US", { maximumFractionDigits: n / of < 0.01 ? 2 : 1 })}%`
+    : "Not recorded";
+
 function OverviewBody({ o }: { o: NonNullable<Overview> }) {
+  const coverage = useQuery({
+    queryKey: ["regs-docket-comment-coverage"],
+    queryFn: () => getDocketCommentCoverage(),
+    staleTime: 60 * 60 * 1000,
+  });
+  const docketAgencies = o.agencies.filter((a) => (a.dockets ?? 0) > 0).length;
+  const docAgencies = o.agencies.filter((a) => a.rules + a.proposed_rules + a.notices > 0).length;
   const years = useMemo(
     () => [...new Set(o.by_year.map((r) => r.year))].filter((y) => /^\d{4}$/.test(y)).sort(),
     [o.by_year],
@@ -72,7 +85,8 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
     label,
     points: years.map((y) => ({
       key: y,
-      value: o.by_year.find((r) => r.year === y && r.type === type)?.n ?? 0,
+      // A year x type cell the read function does not return is not recorded, never drawn as 0.
+      value: o.by_year.find((r) => r.year === y && r.type === type)?.n ?? null,
       partial: y === thisYear,
     })),
   }));
@@ -92,7 +106,7 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
   return (
     <div className="space-y-4">
       <ChartFrame
-        title="Documents posted on Regulations.gov, by year and type (twelve agencies)"
+        title={`Documents posted on Regulations.gov, by year and type (${docAgencies} agencies)`}
         unit="documents"
         period={years.length ? `${years[0]}–${years[years.length - 1]}` : undefined}
         asOf={o.as_of}
@@ -108,6 +122,7 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
         ]}
         footnotes={[
           `${fmtN(totals.docs)} documents held; ${fmtN(totals.open)} have a comment period ending ${o.as_of} or later.`,
+          "That open count includes a few documents whose printed end date is a far-future placeholder (for example 2050-02-21); the mass-tort tracker on the Rulemaking page counts those as having no fixed close date.",
         ]}
         table={{
           caption: "Documents posted per year",
@@ -119,9 +134,7 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
             key: y,
             cells: [
               y,
-              ...TYPES.map(([t]) =>
-                fmtN(o.by_year.find((r) => r.year === y && r.type === t)?.n ?? 0),
-              ),
+              ...TYPES.map(([t]) => fmtN(o.by_year.find((r) => r.year === y && r.type === t)?.n)),
             ],
           })),
         }}
@@ -177,7 +190,12 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
         </Panel>
         <Panel
           title="Most-commented dockets"
-          subtitle="Public comments posted in the docket (counts read so far)"
+          subtitle="Among dockets whose comment count has been read; not a ranking of all dockets"
+          footnote={
+            coverage.data
+              ? `Comment counts have been read for ${fmtN(coverage.data.counted)} of ${fmtN(coverage.data.dockets)} dockets (${pct(coverage.data.counted, coverage.data.dockets)}), so most heavily commented dockets are not in this list.`
+              : "Comment counts have been read for only a small share of dockets, so most heavily commented dockets are not in this list."
+          }
         >
           {o.most_commented_dockets.length ? (
             <ol className="m-0 max-h-96 list-none divide-y divide-border/70 overflow-y-auto p-0">
@@ -212,7 +230,7 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
       <Panel
         title="By agency"
         subtitle="Documents held, dockets, and public comments posted on proposed rules"
-        footnote="Comments on proposed rules sums the counts read so far; the column shows how many proposed rules have a count."
+        footnote={`Comments on proposed rules sums the counts read so far; the column shows how many proposed rules have a count. Dockets are held for ${docketAgencies} of the ${docAgencies} agencies with documents.`}
       >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-[12.5px]">

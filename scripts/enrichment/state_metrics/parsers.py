@@ -140,6 +140,14 @@ def leading_causes(text):
     return {k: {**v, "deaths": dict(v["deaths"]), "rate": dict(v["rate"])} for k, v in causes.items()}
 
 
+def year_span(by_area):
+    """'1999–2017' for {area: {year: value}} (years with a recorded value only); None when nothing is recorded."""
+    years = sorted({int(y) for series in by_area.values() for y, v in series.items() if v is not None})
+    if not years:
+        return None
+    return str(years[0]) if years[0] == years[-1] else f"{years[0]}–{years[-1]}"
+
+
 # ---------------------------------------------------------------- CDC VSRR provisional overdose (xkb8-kh2a)
 def vsrr(text, indicator):
     """Calendar-year counts = the December '12 month-ending' reported value (jurisdiction of occurrence).

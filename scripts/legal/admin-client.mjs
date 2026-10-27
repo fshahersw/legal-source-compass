@@ -9,7 +9,7 @@ export function adminClient(credentialFile) {
   } else if (!key.startsWith('sb_secret_')) throw Error('External corpus service role is required');
   const headers = { apikey: key, 'Content-Type': 'application/json', ...(!key.startsWith('sb_') ? { Authorization: `Bearer ${key}` } : {}) };
   return async (name, body) => {
-    if (!['corpus_legal_stage_v3', 'corpus_legal_edges_v3', 'corpus_legal_register_archive_v3', 'corpus_legal_register_mdl_v3', 'corpus_legal_mdl_v3', 'corpus_legal_deploy_check_v3', 'corpus_legal_quality_v3'].includes(name)) throw Error('Unknown legal corpus operation');
+    if (!['corpus_legal_stage_v3', 'corpus_legal_edges_v3', 'corpus_legal_register_archive_v3', 'corpus_legal_register_mdl_v3', 'corpus_legal_mdl_v3', 'corpus_legal_deploy_check_v3', 'corpus_legal_quality_v3', 'corpus_legal_fr_window_v3'].includes(name)) throw Error('Unknown legal corpus operation');
     let r;
     for (let attempt = 0; attempt < 6; attempt++) {
       try {

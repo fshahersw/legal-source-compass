@@ -39,6 +39,8 @@ const ROLE_REASON: Record<Exclude<Role, "defendant">, string> = {
 const DISMISSED_REASON =
   "the latest evidence excerpt reports a dismissal or that the company is not sued";
 const REVIEW_REASON = "the link is flagged for review";
+const TIER_C_REASON =
+  "its evidence only describes the MDL by its subject (tier C), which requires review";
 const FALLBACK_REASON = "the published dataset does not count it toward the company's exposure";
 
 /**
@@ -46,19 +48,22 @@ const FALLBACK_REASON = "the published dataset does not count it toward the comp
  * (build_company_sec.py: role is "defendant", not dismissed, no review note); the dataset's own
  * counts_toward_exposure flag stays authoritative, so an unexplained exclusion says so.
  */
-export function uncountedReasons(m: Pick<CompanyMdl, "role" | "dismissed" | "review">) {
+export function uncountedReasons(
+  m: Pick<CompanyMdl, "role" | "dismissed" | "review"> & { tier?: CompanyMdl["tier"] | undefined },
+) {
   const out: string[] = [];
   if (m.role !== "defendant") out.push(ROLE_REASON[m.role]);
   if (m.dismissed) out.push(DISMISSED_REASON);
   if (m.review) out.push(REVIEW_REASON);
+  if (m.tier === "C") out.push(TIER_C_REASON);
   return out.length ? out : [FALLBACK_REASON];
 }
 
 export function pendingTrendView(
-  mdls: Pick<
+  mdls: (Pick<
     CompanyMdl,
     "mdl" | "status" | "pending" | "role" | "dismissed" | "review" | "countsTowardExposure"
-  >[],
+  > & { tier?: CompanyMdl["tier"] | undefined })[],
   series: SeriesPoint[],
 ): PendingTrendView {
   const pending = mdls.filter((m) => m.status === "pending");

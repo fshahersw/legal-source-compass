@@ -301,7 +301,7 @@ export function DisclosureReview({
           [
             "Reports checked",
             fmtInt(checked.reduce((s, c) => s + c.reports.length, 0)),
-            `report years ${years[0] ?? "—"}–${years.at(-1) ?? "—"}`,
+            `report years ${years[0] ?? "—"}–${years.at(-1) ?? "—"}; none after ${years.at(-1) ?? 2020} in this corpus`,
           ],
           [
             "Investment lines compared",
@@ -343,9 +343,9 @@ export function DisclosureReview({
             </span>
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Scope: the checked reports only. The the source bulk files hold no report later than{" "}
-            {years.at(-1) ?? "the years shown"} for these judges, so current holdings are not
-            covered.
+            Scope: the checked reports only. There are no reports after {years.at(-1) ?? 2020} in
+            this corpus for these judges, so 0 matches does not mean no conflict, and current
+            holdings are not covered.
           </p>
         </div>
       )}

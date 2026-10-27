@@ -260,8 +260,13 @@ class BuilderTests(unittest.TestCase):
         self.assertEqual(by["med"]["unreconciled_years"]["mdl_out_12m"], [2024, 2025])
         self.assertIsNone(med["terminated_total"][0])                      # FY2005 has no file in the fixture
         badges = {r["id"]: r["item"]["badges"] for r in rows}
-        self.assertEqual(badges["med"], ["Source total mismatch"])
+        self.assertEqual(badges["med"], [])                                 # no record-level badge for one series-year
         self.assertEqual(badges["nhd"], [])
+        facts = {r["id"]: r["detail"]["facts"] for r in rows}
+        notes = [v for k, v in facts["med"] if k == "Reconciliation note"]
+        self.assertEqual(notes, ["MDL actions transferred out (12 months), Table S-19: FY2024, FY2025 do not add up to the printed total (kept as printed)"])
+        self.assertEqual([v for k, v in facts["nhd"] if k == "Reconciliation note"], [])
+        self.assertEqual(by["med"]["unreconciled_years"], {"mdl_out_12m": [2024, 2025]})
 
     def test_bankruptcy_records_show_dashes_and_not_recorded_and_keep_the_combined_arkansas_row_apart(self):
         f2 = lambda total, ch7, ch11, ch13: {f: 0 for f in B.F2_FIELDS} | {"total": total, "ch7": ch7, "ch11": ch11, "ch13": ch13, "bus_total": 1}  # noqa: E731

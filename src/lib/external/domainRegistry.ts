@@ -19,7 +19,7 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   mdl_counsel: "Directory",
   settlements: "Analysis",
   verdict_reports: "Analysis",
-  expert_rulings: "Analysis",
+  expert_rulings: "Source data",
   federal_regulations_sections: "Directory",
   federal_regulations_parts: "Directory",
   federal_regulations_documents: "Documents",
@@ -108,7 +108,8 @@ const LABELS: Record<string, string> = {
   sw_matter_dockets_v1: "Seeger Weiss matter registry — dockets in matters",
   settlements: "Settlements",
   verdict_reports: "Reported verdicts",
-  expert_rulings: "Expert-admissibility docket entries (keyword scan)",
+  expert_rulings:
+    "Expert-admissibility docket entries (keyword scan of docket entries, not rulings)",
   state_proceedings: "State proceedings",
   counsel_directory: "Counsel directory",
   federal_regulations_sections: "CFR sections",
@@ -211,6 +212,16 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
     description:
       "Opinion bodies, federal provisions, research routes, access gaps and legislative-status evidence retain their separate source kinds. A research route or gap is not a case holding, binding-authority finding or activated calculator rule.",
   },
+  agency_safety_openfda_device_recalls: {
+    unit: "FDA product recall numbers",
+    description:
+      "One record per FDA product recall number; several products can share one recall event, so counts are products, not events. The cause category is FDA's, not a defect, injury or liability finding, and the initiation date is the firm's, which can precede public notice.",
+  },
+  agency_safety_fda_warning_letters_index: {
+    unit: "FDA warning-letter pages",
+    description:
+      "Every letter listed in FDA's warning-letter table at capture (posted from 2021). Posted and issue dates differ; a warning letter states FDA's allegations and is not a final finding. FDA's table publishes no FEI number.",
+  },
   agency_safety_openfda_device_classification_20261002: {
     unit: "FDA product categories",
     description:
@@ -270,6 +281,11 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
     unit: "saved document records",
     description:
       "The source collection includes forms and supporting instructions. Source document-type labels and capture dates do not establish current applicability or effective dates.",
+  },
+  expert_rulings: {
+    unit: "docket entries found by keyword scan",
+    description:
+      "A keyword and category scan of docket entries that mention expert admissibility. These are entries, not rulings: the entry kind is often a filing, no grant or deny outcome is determined, and no judge is attributed.",
   },
 };
 

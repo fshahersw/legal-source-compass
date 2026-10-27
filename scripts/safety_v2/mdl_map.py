@@ -279,6 +279,9 @@ NOT_MAPPED = {
     1358: "MTBE is a gasoline additive; none of these sources reports on it.",
     2066: "'Oral sodium phosphate' cannot be isolated in FAERS: the openFDA route field belongs to any drug in a report.",
     2372: "The title names a Watson fentanyl patch; FAERS cannot isolate one maker's transdermal fentanyl by the title's terms.",
+    # Kept unmapped pending an owner decision: a CAERS 'talcum powder' series counts any maker's product, so it would not
+    # be the Johnson & Johnson product the title names (the 2016 transfer order centralizes the MDL; it says nothing
+    # about which CAERS reports are that product).
     2738: "Johnson & Johnson talcum powder: CAERS cosmetic reports do not carry the maker reliably enough to isolate the product.",
     2741: "Roundup is a pesticide (EPA); none of these sources reports on it.",
     2873: "Aqueous film-forming foams: not an FDA- or NHTSA-reported product.",
@@ -303,7 +306,61 @@ NOT_MAPPED = {
     1726: "Medtronic implantable defibrillators: the title names no model; every Medtronic defibrillator would be counted.",
     1785: "Bausch & Lomb contact lens solution: the title names no product name a MAUDE field holds.",
     1407: "Phenylpropanolamine (PPA): withdrawn in 2000, before openFDA FAERS coverage (2004).",
+    3199: "Apple AirTag: a consumer electronics product; no FDA, CAERS or NHTSA source reports on it (JPML evidence in JPML_ORDERS).",
 }
+
+# MDLs the JPML centralized AFTER the last pending-MDL report the title snapshot (fetch_titles.py) reads, so they are
+# not yet in dataset `mdls`. Evidence: the JPML hearing-session matter in mdl_intel_hearing_orders whose outcome is the
+# Panel's transfer order (outcome 'granted'), with the order's own URL and date. The title is the caption as printed in
+# the hearing-session notice. Nothing here is inferred: each entry is one record id that can be re-read.
+JPML_ORDERS = {
+    3194: {"title": "IN RE: ABBOTT LABORATORIES SPINAL CORD STIMULATOR PRODUCTS LIABILITY LITIGATION",
+           "dataset": "mdl_intel_hearing_orders", "record_id": "matter:2026-09-24:3194:A", "session": "2026-09-24",
+           "outcome": "granted", "order_date": "2026-10-02", "transferee_district": "N.D. Illinois",
+           "order_url": "https://www.jpml.uscourts.gov/sites/jpml/files/MDL-3194-Transfer_Order-9-26.pdf",
+           "notice_url": "https://www.jpml.uscourts.gov/sites/jpml/files/Hearing%20Session%20Filed_September%202026.pdf"},
+    3195: {"title": "IN RE: NEVRO CORPORATION SPINAL CORD STIMULATOR PRODUCTS LIABILITY LITIGATION",
+           "dataset": "mdl_intel_hearing_orders", "record_id": "matter:2026-09-24:3195:A", "session": "2026-09-24",
+           "outcome": "granted", "order_date": "2026-10-02", "transferee_district": "N.D. California",
+           "order_url": "https://www.jpml.uscourts.gov/sites/jpml/files/MDL-3195-Transfer_Order-9-26.pdf",
+           "notice_url": "https://www.jpml.uscourts.gov/sites/jpml/files/Hearing%20Session%20Filed_September%202026.pdf"},
+    3199: {"title": "IN RE: APPLE AIRTAG MARKETING, SALES PRACTICES, AND PRODUCTS LIABILITY LITIGATION",
+           "dataset": "mdl_intel_hearing_orders", "record_id": "matter:2026-09-24:3199:A", "session": "2026-09-24",
+           "outcome": "granted", "order_date": "2026-10-02", "transferee_district": "N.D. California",
+           "order_url": "https://www.jpml.uscourts.gov/sites/jpml/files/MDL-3199-Transfer_Order-9-26.pdf",
+           "notice_url": "https://www.jpml.uscourts.gov/sites/jpml/files/Hearing%20Session%20Filed_September%202026.pdf"},
+}
+
+# Product groups for MDLs in JPML_ORDERS. Kept out of MDLS so scripts/safety_v2/openfda_build.py (which requires every
+# MDLS title in the pending/terminated snapshot) keeps running unchanged; a builder that wants them calls all_entries()
+# with titles_with_orders(). Same evidence rule as MDLS: every token is a word of the JPML caption.
+MDLS_SINCE_PENDING_REPORT = [
+    {"mdl": 3194, "kind": DEVICE, "label": "Abbott spinal cord stimulators", "tokens": ["Abbott Laboratories", "Spinal Cord Stimulator"],
+     "basis": "title_names_manufacturer_and_device",
+     "maude": 'device.manufacturer_d_name:"abbott"+AND+device.generic_name:"spinal cord"',
+     "recall": 'recalling_firm:"abbott"+AND+product_description:"spinal cord"', "jpml_evidence": JPML_ORDERS[3194],
+     "note_extra": "Same search form as MDL 3181 (maker named by the title AND the device type); Abbott's other devices are not counted."},
+    {"mdl": 3195, "kind": DEVICE, "label": "Nevro spinal cord stimulators", "tokens": ["Nevro", "Spinal Cord Stimulator"],
+     "basis": "title_names_manufacturer_and_device",
+     "maude": 'device.manufacturer_d_name:"nevro"+AND+device.generic_name:"spinal cord"',
+     "recall": 'recalling_firm:"nevro"+AND+product_description:"spinal cord"', "jpml_evidence": JPML_ORDERS[3195]},
+]
+
+
+def titles_with_orders(titles):
+    """The title snapshot plus the captions of JPML_ORDERS MDLs it does not hold yet (status 'centralized_after_report').
+    A title already in the snapshot (the MDL reached a pending report) always wins."""
+    out = dict(titles)
+    for mdl, ev in JPML_ORDERS.items():
+        out.setdefault(str(mdl), {"title": ev["title"], "dataset": ev["dataset"], "source_url": ev["order_url"],
+                                  "date_transferred": ev["order_date"], "status": "centralized_after_report",
+                                  "record_id": ev["record_id"]})
+    return out
+
+
+def all_entries():
+    """MDLS plus the product groups of MDLs centralized after the last pending report."""
+    return MDLS + MDLS_SINCE_PENDING_REPORT
 
 
 def name_clause(name):

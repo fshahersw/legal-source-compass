@@ -1,56 +1,46 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
-import { MdlLens, mdlLensQuery } from "@/components/lens/MdlLens";
-import { JpmlMdlSeriesPanel } from "@/components/mdl/jpml-series/JpmlMdlSeriesPanel";
-import { jpmlMdlSeriesQuery } from "@/components/mdl/jpml-series/queries";
 import { pageHead } from "@/lib/corpus/head";
 
+/**
+ * The former MDL case lens. Its records (JPML series, hearings, Panel orders, terminated litigation, court page,
+ * companies, signal, flags, peers) now sit on the MDL command page, which serves recorded MDLs too, so a valid MDL
+ * number redirects to /matters/$id#mdl-jpml. The route stays: about 25 components, published records
+ * (jpml_mdl_pending_series links) and insights facts carry this path. A value that is not an MDL number keeps its
+ * message.
+ */
 const parse = (raw: string) => {
   const n = Number(raw);
-  return Number.isInteger(n) && n > 0 && n < 100000 ? n : null;
+  return /^\d{1,5}$/.test(raw) && Number.isInteger(n) && n > 0 && n < 100000 ? n : null;
 };
 
 export const Route = createFileRoute("/matters/lens/$mdl")({
-  loader: ({ context, params }) => {
+  beforeLoad: ({ params }) => {
     const mdl = parse(params.mdl);
-    return mdl
-      ? Promise.all([
-          context.queryClient.prefetchQuery(mdlLensQuery(mdl)),
-          context.queryClient.prefetchQuery(jpmlMdlSeriesQuery(mdl)),
-        ])
-      : undefined;
+    if (mdl)
+      throw redirect({
+        to: "/matters/$id",
+        params: { id: String(mdl) },
+        hash: "mdl-jpml",
+        replace: true,
+      });
   },
-  head: ({ params }) =>
-    pageHead(
-      `MDL ${params.mdl} case lens`,
-      "One MDL number across the JPML pending reports, hearing sessions, GovInfo Panel orders, terminated-litigation statistics, the transferee court page, linked companies, regulator signal, flags and peers.",
-    ),
+  head: ({ params }) => pageHead(`MDL ${params.mdl}`, "Not an MDL number."),
   component: Page,
 });
 
 function Page() {
   const { mdl: raw } = Route.useParams();
-  const mdl = parse(raw);
   return (
     <AppShell
-      title={`MDL ${raw} case lens`}
-      description="What the corpus records for one MDL number, joined by exact MDL number: report trajectory, court and judge, hearing sessions, Panel orders, terminated litigation, court page, companies, flags and peers."
+      title={`MDL ${raw}`}
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Analytics", to: "/analytics" },
-        { label: "Federal court analytics", to: "/courts/analytics" },
-        { label: "MDL analytics", to: "/matters/analytics" },
+        { label: "Matters", to: "/matters" },
         { label: `MDL ${raw}` },
       ]}
     >
-      {mdl ? (
-        <>
-          <MdlLens mdl={mdl} />
-          <JpmlMdlSeriesPanel mdl={mdl} />
-        </>
-      ) : (
-        <p className="text-sm text-muted-foreground">“{raw}” is not an MDL number.</p>
-      )}
+      <p className="text-sm text-muted-foreground">“{raw}” is not an MDL number.</p>
     </AppShell>
   );
 }
