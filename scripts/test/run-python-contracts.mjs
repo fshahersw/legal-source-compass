@@ -70,7 +70,7 @@ for (const suite of [
   { directory: "scripts/enrichment/state_metrics", modules: ["test_parsers"] },
   { directory: "scripts/enrichment/state_analysis", modules: ["test_state_analysis"] },
   { directory: "scripts/enrichment/agencies_fr", modules: ["test_agencies_fr"] },
-  { directory: "scripts/enrichment/courtlistener_rest", modules: ["test_courtlistener_rest"] },
+  { directory: "scripts/enrichment/courtlistener_rest", modules: ["test_courtlistener_rest", "test_build_clb_judge_disclosures"] },
   { directory: "scripts/enrichment/court_rules", modules: ["test_court_rules"] },
   { directory: "scripts/enrichment/caselaw", modules: ["test_caselaw", "test_caselaw_read"] },
   { directory: "scripts/enrichment/ecfr_full", modules: ["test_ecfr_full"] },

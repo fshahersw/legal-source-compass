@@ -63,7 +63,7 @@ const PROFILE = {
     },
   ],
   reimbursements: [
-    { year: 2015, report_id: 10, redacted: true, source: "should not show" },
+    { year: 2015, report_id: 10, redacted: true, source: "Trust (partly redacted)" },
     {
       year: 2015,
       report_id: 10,
@@ -115,16 +115,57 @@ const PROFILE = {
 };
 
 describe("parseJudgeDisclosures", () => {
-  it("lists items only from reports that passed the surname check and hides redacted text", () => {
+  it("lists items from reports that passed the surname check and keeps redacted lines' published text", () => {
     const d = parseJudgeDisclosures(PROFILE, 77)!;
-    expect(d.gifts.map((g) => g.reportId)).toEqual([10]);
+    expect(d.gifts.map((g) => g.reportId)).toEqual([10]); // report 12: file name carries another surname
+    expect(d.gifts[0]!.attribution).toBe("checked");
     expect(d.reimbursements).toHaveLength(2);
-    expect(d.reimbursements[0]!.source).toBeNull();
+    expect(d.reimbursements[0]!.redacted).toBe(true);
+    expect(d.reimbursements[0]!.source).toBe("Trust (partly redacted)");
     expect(d.reimbursements[1]!.source).toBe("Law School");
+    expect(d.itemsWithheldByReason).toBeNull(); // record built before the split was stored
     expect(d.reportList[0]!.pdf).toBe(PDF);
     expect(d.reportList[1]!.pdf).toBeNull(); // another person's path
     expect(d.years.map((y) => y.year)).toEqual([2014, 2015]);
     expect(d.statsRecord).toBe("/records/clb_judge_dockets/77");
+  });
+
+  it("lists items of a report whose file name could not be read, labelled not_checked", () => {
+    const d = parseJudgeDisclosures(
+      {
+        ...PROFILE,
+        gifts: [
+          ...PROFILE.gifts,
+          { year: 2014, report_id: 11, redacted: false, source: "Unread file" },
+        ],
+        report_list: PROFILE.report_list.map((r) =>
+          r.id === 11 ? { ...r, file_check: "unchecked" } : r,
+        ),
+        items_withheld_by_reason: {
+          other_surname: { gifts: 1, reimbursements: 0, agreements: 0 },
+          attribution_conflict: { gifts: 0, reimbursements: 0, agreements: 0 },
+        },
+      },
+      77,
+    )!;
+    expect(d.gifts.map((g) => [g.reportId, g.attribution])).toEqual([
+      [10, "checked"],
+      [11, "not_checked"],
+    ]);
+    expect(d.itemsWithheldByReason!.otherSurname.gifts).toBe(1);
+  });
+
+  it("does not trust a stored label: an item of a mismatch report stays out", () => {
+    const d = parseJudgeDisclosures(
+      {
+        ...PROFILE,
+        gifts: [
+          { year: 2016, report_id: 12, redacted: false, source: "x", attribution: "checked" },
+        ],
+      },
+      77,
+    )!;
+    expect(d.gifts).toEqual([]);
   });
 
   it("lists no items for an attribution conflict", () => {
@@ -141,6 +182,30 @@ describe("parseJudgeDisclosures", () => {
       { code: "04", reports: 2 },
       { code: "05", reports: 1 },
     ]);
+  });
+
+  it("for a conflict, lists only the reports the build marks as not held", () => {
+    const d = parseJudgeDisclosures(
+      {
+        ...PROFILE,
+        attribution: { ...PROFILE.attribution, status: "conflict", circuits: { "01": 1, "05": 1 } },
+        report_list: PROFILE.report_list.map((r) => ({ ...r, conflict_hold: r.id !== 10 })),
+      },
+      77,
+    )!;
+    expect(d.reimbursements.map((r) => r.reportId)).toEqual([10, 10]);
+    expect(d.reimbursements.every((r) => r.attribution === "checked")).toBe(true);
+    expect(d.reportList.map((r) => r.conflictHold)).toEqual([false, true, true]);
+    // a report marked held, or a record with no marks at all, shows nothing
+    const none = parseJudgeDisclosures(
+      {
+        ...PROFILE,
+        attribution: { ...PROFILE.attribution, status: "conflict" },
+        report_list: PROFILE.report_list.map((r) => ({ ...r, conflict_hold: true })),
+      },
+      77,
+    )!;
+    expect([...none.gifts, ...none.reimbursements]).toEqual([]);
   });
 
   it("rejects another person, a report list that does not match the count, or an unknown status", () => {
