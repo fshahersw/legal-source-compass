@@ -20,7 +20,7 @@ import { CorpusAccessGate } from "@/components/auth/CorpusAccessGate";
 import { isPublicAuthPath } from "@/lib/auth/gateState";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { BRAND_ASSETS, PRODUCT_NAME } from "@/lib/branding";
+import { BRAND_ASSETS } from "@/lib/branding";
 
 function NotFoundComponent() {
   return (
@@ -87,14 +87,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: PRODUCT_NAME },
+      { title: "Legal Source Atlas" },
       {
         name: "description",
         content:
           "Research workspace for statutes, courts, matters and source-backed time-limit analysis.",
       },
-      { property: "og:site_name", content: PRODUCT_NAME },
-      { property: "og:title", content: PRODUCT_NAME },
+      { property: "og:site_name", content: "Legal Source Atlas" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex, nofollow" },
