@@ -12,6 +12,10 @@ import type { SchemaReport } from "../../src/lib/legal/audit.ts";
 
 const hash = (v: string) => createHash("sha256").update(v).digest("hex");
 const lines = (file: string) => readJsonLines<NativeRow>(file);
+/** The staging key of a native row (legal_atlas.staging.input_key). It does not depend on the mapper. */
+export function inputKey(row: Pick<NativeRow, "source_system" | "entity_type" | "native_id" | "data" | "provenance">): string {
+  return hash(JSON.stringify([row.source_system, row.entity_type, row.native_id, row.provenance["record_sha256"] ?? hash(JSON.stringify(row.data))]));
+}
 export function openStage(file: string) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
@@ -30,7 +34,7 @@ export function openStage(file: string) {
 }
 export async function stageFiles(files: string[], supportFiles: string[], destination: string) {
   const db = openStage(destination); const context = adapterContext();
-  const mapperHash = hash(["adapters.ts", "schema.ts", "identity.ts", "enums.json"].map(file => fs.readFileSync(new URL(`../../src/lib/legal/${file}`, import.meta.url), "utf8")).join("\n"));
+  const mapperHash = hash(["adapters.ts", "schema.ts", "identity.ts", "enums.json", "frRefresh.ts"].map(file => fs.readFileSync(new URL(`../../src/lib/legal/${file}`, import.meta.url), "utf8")).join("\n"));
   const oldMapper = db.prepare("SELECT value FROM stage_metadata WHERE key='mapper_sha256'").get();
   const populated = Number(db.prepare("SELECT count(*) AS n FROM inputs").get()!["n"]) > 0;
   if ((oldMapper && oldMapper["value"] !== mapperHash) || (!oldMapper && populated)) throw Error("Mapper changed or was not recorded; retain this snapshot and stage into a new database");
@@ -63,7 +67,7 @@ export async function stageFiles(files: string[], supportFiles: string[], destin
     db.exec("BEGIN");
     try {
       for await (const row of lines(file)) {
-        const key = hash(JSON.stringify([row.source_system, row.entity_type, row.native_id, row.provenance["record_sha256"] ?? hash(JSON.stringify(row.data))]));
+        const key = inputKey(row);
         const adapted = adaptNative(row, context);
         const parsed = adapted.records.map((record) => legalRecord.safeParse(record));
         const errors = parsed.flatMap((result) => result.success ? [] : result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`));
