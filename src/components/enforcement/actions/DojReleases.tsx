@@ -446,8 +446,8 @@ function Largest() {
       subtitle="Releases whose title states a resolution of $1 billion or more"
       footnote={
         <>
-          Ranked only by the amount the release title states. Figures found only in the release
-          text are listed apart, unranked. Speeches, totals, victim payouts, filings, charges and
+          Ranked only by the amount the release title states. Figures found only in the release text
+          are listed apart, unranked. Speeches, totals, victim payouts, filings, charges and
           statutory maximums are held back. Only exact repeats of one release are merged. Figures
           are as stated, not verified payments, and are never summed.
           {q.data
@@ -570,7 +570,11 @@ function Largest() {
                     label: "Sentence",
                     value: (e) => e.release.headline?.sentence ?? null,
                   },
-                  { key: "related", label: "Same release elsewhere", value: (e) => e.related.length },
+                  {
+                    key: "related",
+                    label: "Same release elsewhere",
+                    value: (e) => e.related.length,
+                  },
                 ]}
                 source={{
                   source: {

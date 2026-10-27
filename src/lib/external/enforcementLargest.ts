@@ -74,7 +74,8 @@ const SPEECH =
   /\b(remarks|speech(?:es)?|delivers?|testif(?:y|ies|ied)|testimony|keynote|op-ed|prepared statements?|statements? (?:of|by|on|from)|applauds?)\b|^statements?\b/i;
 const PERSONNEL =
   /\b(appoint(?:ed|s|ment)?|sworn in|new leadership|commemorat\w*|recogni[sz]es|honou?rs|awards? ceremony|annual awards|attorney general'?s? awards?|retires|welcomes|departure|hosts?|annual meeting|launch(?:es|ed)?)\b|\breceiv\w*\b.*\b(?:award|honou?r|of the year)\b/i;
-const MONTH = "(?:january|february|march|april|may|june|july|august|september|october|november|december)";
+const MONTH =
+  "(?:january|february|march|april|may|june|july|august|september|october|november|december)";
 const STATISTICS = new RegExp(
   [
     String.raw`\b(?:fiscal year|FY ?\d{2,4}|accomplishments|year in review|annual report|most successful years?|surpass\w*)\b`,
@@ -99,7 +100,11 @@ const CHARGE_ALWAYS = /\b(takedown|arrested|extradited)\b/i;
 /** A charge unless the title also states an outcome. */
 const CHARGE = /\b(indicted|indictment|faces charges|charged|charges against)\b/i;
 const OUTCOME = /\b(plead\w*|guilty|sentenc\w*|agree\w*|pay|pays|settle\w*|convicted|ordered)\b/i;
-const NON_RESOLUTION_TOPICS = new Set(["Office and Personnel Updates", "Community Outreach", "Speeches"]);
+const NON_RESOLUTION_TOPICS = new Set([
+  "Office and Personnel Updates",
+  "Community Outreach",
+  "Speeches",
+]);
 /** Statutory-maximum wording in a sentence ("faces ... a fine of not more than $1,000,000,000"). */
 const MAXIMUM = /\b(not more than|up to|maximum|faces?|facing|could face)\b/i;
 /** The same in a title ("Pay Up to $350M" caps a real settlement, so "up to" alone does not count there). */
@@ -238,8 +243,12 @@ export function heldReason(r: DojRelease): { reason: HeldReason; detail: string 
   const at = sentence.indexOf(h.asWritten);
   const before = at >= 0 ? sentence.slice(0, at) : sentence;
   if (MAXIMUM.test(sentence))
-    return { reason: "maximum", detail: `The sentence states a maximum: “${sentence.slice(0, 200)}”` };
-  const lastAt = (re: RegExp) => Math.max(-1, ...[...before.matchAll(re)].map((m) => m.index ?? -1));
+    return {
+      reason: "maximum",
+      detail: `The sentence states a maximum: “${sentence.slice(0, 200)}”`,
+    };
+  const lastAt = (re: RegExp) =>
+    Math.max(-1, ...[...before.matchAll(re)].map((m) => m.index ?? -1));
   const after = at >= 0 ? sentence.slice(at + h.asWritten.length) : "";
   if (
     AGGREGATE.test(before) ||
@@ -328,7 +337,10 @@ export function collapseExact(releases: readonly DojRelease[]): LargestEntry[] {
  * non-resolutions and implausible figures, and collapse repeats on exact keys. Releases repeated across partitions
  * (same id or same URL) count once.
  */
-export function rankLargestResolutions(releases: readonly DojRelease[], minUsd = 1e9): LargestResult {
+export function rankLargestResolutions(
+  releases: readonly DojRelease[],
+  minUsd = 1e9,
+): LargestResult {
   const seen = new Set<string>();
   const unique: DojRelease[] = [];
   for (const r of releases) {

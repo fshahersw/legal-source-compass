@@ -240,10 +240,22 @@ const UBS = [
   ),
 ];
 const TAKATA = [
-  ["Takata Corporation Agrees to Plead Guilty and Pay $1 Billion in Criminal Penalties for Airbag Scheme", "2017-01-13"],
-  ["Takata Corporation Agrees to Plead Guilty and Pay $1 Billion in Criminal Penalties for Airbag Scheme", "2017-01-13"],
-  ["Takata Corporation Pleads Guilty, Sentenced to Pay $1 Billion in Criminal Penalties for Airbag Scheme", "2017-02-27"],
-  ["Takata Corporation Pleads Guilty, Sentenced to Pay $1 Billion in Criminal Penalties for Airbag Scheme", "2017-02-28"],
+  [
+    "Takata Corporation Agrees to Plead Guilty and Pay $1 Billion in Criminal Penalties for Airbag Scheme",
+    "2017-01-13",
+  ],
+  [
+    "Takata Corporation Agrees to Plead Guilty and Pay $1 Billion in Criminal Penalties for Airbag Scheme",
+    "2017-01-13",
+  ],
+  [
+    "Takata Corporation Pleads Guilty, Sentenced to Pay $1 Billion in Criminal Penalties for Airbag Scheme",
+    "2017-02-27",
+  ],
+  [
+    "Takata Corporation Pleads Guilty, Sentenced to Pay $1 Billion in Criminal Penalties for Airbag Scheme",
+    "2017-02-28",
+  ],
 ].map(([t, d]) => titled(t!, d!, 1e9));
 const OLYMPUS = titled(
   "Medical Equipment Company Will Pay $646 Million for Making Illegal Payments to Doctors and Hospitals in United States and Latin America",
@@ -308,7 +320,9 @@ describe("heldReason", () => {
       ),
     ).toBe("speech");
     expect(
-      reason("Statement Of Manhattan U.S. Attorney Preet Bharara On The Guilty Plea By BNP Paribas"),
+      reason(
+        "Statement Of Manhattan U.S. Attorney Preet Bharara On The Guilty Plea By BNP Paribas",
+      ),
     ).toBe("speech");
     expect(
       reason(
@@ -321,24 +335,30 @@ describe("heldReason", () => {
       ),
     ).toBe("charge");
     expect(
-      reason("Chairman of Prince Group Indicted for Operating Cambodian Forced-Labor Scam Compounds"),
+      reason(
+        "Chairman of Prince Group Indicted for Operating Cambodian Forced-Labor Scam Compounds",
+      ),
     ).toBe("charge");
     expect(
       reason(
         "Department of Justice Begins Second Distribution of Funds Recovered Through Asset Forfeiture Totaling $1.2 Billion to Compensate Victims of Madoff",
       ),
     ).toBe("distribution");
-    expect(reason("Three Individuals In District Of New Jersey Receive Attorney General Awards")).toBe(
-      "personnel",
-    );
+    expect(
+      reason("Three Individuals In District Of New Jersey Receive Attorney General Awards"),
+    ).toBe("personnel");
   });
 
   it("keeps resolutions whose titles mention distributing, charges or a cap", () => {
     expect(heldReason(ENDO)).toBeNull();
     expect(heldReason(BINANCE)).toBeNull();
-    expect(reason("Goldman Sachs Charged in Foreign Bribery Case and Agrees to Pay Over $2.9 Billion")).toBeNull();
     expect(
-      reason("Walgreens Agrees to Pay Up to $350 Million for Illegally Filling Unlawful Opioid Prescriptions"),
+      reason("Goldman Sachs Charged in Foreign Bribery Case and Agrees to Pay Over $2.9 Billion"),
+    ).toBeNull();
+    expect(
+      reason(
+        "Walgreens Agrees to Pay Up to $350 Million for Illegally Filling Unlawful Opioid Prescriptions",
+      ),
     ).toBeNull();
     expect(heldReason(BOFA)).toBeNull();
   });
@@ -433,7 +453,9 @@ describe("rankLargestResolutions", () => {
     const fourB = out.entries.filter((e) => e.valueUsd === 4e9);
     expect(fourB.map((e) => e.related.length)).toEqual([0, 0]);
     // Takata: the agreement (same title, same day) and the sentencing (same title and figure) are two entries
-    expect(out.entries.filter((e) => e.valueUsd === 1e9).map((e) => e.related.length)).toEqual([1, 1]);
+    expect(out.entries.filter((e) => e.valueUsd === 1e9).map((e) => e.related.length)).toEqual([
+      1, 1,
+    ]);
   });
 
   it("collapses the same title words up to the figure on the same date", () => {
@@ -462,9 +484,11 @@ describe("rankLargestResolutions", () => {
 
   it("reports every held release with its reason and counts the candidates", () => {
     expect(out.candidates).toBe(all.length);
-    expect(out.entries.reduce((s, e) => s + 1 + e.related.length, 0) +
-      out.textOnly.reduce((s, e) => s + 1 + e.related.length, 0) +
-      out.held.length).toBe(all.length);
+    expect(
+      out.entries.reduce((s, e) => s + 1 + e.related.length, 0) +
+        out.textOnly.reduce((s, e) => s + 1 + e.related.length, 0) +
+        out.held.length,
+    ).toBe(all.length);
   });
 
   it("counts a release repeated across partitions once", () => {
