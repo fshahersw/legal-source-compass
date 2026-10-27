@@ -4,10 +4,10 @@
 // PGLITE_DIR=/tmp/pgt node test-contract-ocr.mjs
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 const dir = process.env.PGLITE_DIR ?? "/tmp/pgt";
 const { PGlite } = await import(pathToFileURL(`${dir}/node_modules/@electric-sql/pglite/dist/index.js`).href);
-const here = new URL("./", import.meta.url).pathname;
+const here = fileURLToPath(new URL("./", import.meta.url));
 const db = new PGlite();
 await db.exec(readFileSync(here + "fixtures/mock-schema.sql", "utf8"));
 await db.exec(readFileSync(here + "../../database/contracts/document-titles-v1.sql", "utf8"));
@@ -30,8 +30,10 @@ await call("open_run");
 assert.equal((await call("plan", { rows: [v1row("i-1", "scan1.pdf", "no_text_layer"), v1row("i-2", "scan2.pdf", "no_text_layer"), v1row("i-3", "scan3.pdf", "no_text_layer"), v1row("i-4", "other.pdf", "multiple_title_blocks")] })).planned, 4);
 assert.equal((await call("apply", { limit: 100, dry: false })).applied, 4);
 await call("close_run");
-await db.exec(readFileSync(here + "../../database/contracts/document-titles-v2-ocr.sql", "utf8"));
-await db.exec(readFileSync(here + "../../database/contracts/document-titles-v2-ocr.sql", "utf8"));
+// OCR_CONTRACT=document-titles-v3-keyword-release.sql runs the same assertions against v3, which keeps the OCR stage unchanged.
+const ocrContract = process.env.OCR_CONTRACT ?? "document-titles-v2-ocr.sql";
+await db.exec(readFileSync(here + "../../database/contracts/" + ocrContract, "utf8"));
+await db.exec(readFileSync(here + "../../database/contracts/" + ocrContract, "utf8"));
 const postV1 = (await db.query("select md5(string_agg(to_jsonb(r)::text,'|' order by id)) m from public.corpus_records r")).rows[0].m;
 
 await call("open_run");
