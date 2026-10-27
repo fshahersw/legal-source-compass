@@ -714,8 +714,8 @@ export function SignalsView() {
     <div className="space-y-4">
       <p className="max-w-4xl text-xs leading-5 text-muted-foreground">
         Patterns across many records: how long MDLs last, how fast new ones grow and take in new
-        cases, where litigation starts and who works together. Every figure is a historical count
-        or rate from the records shown, with its n; none is a prediction for a particular matter.
+        cases, where litigation starts and who works together. Every figure is a historical count or
+        rate from the records shown, with its n; none is a prediction for a particular matter.
       </p>
       <nav
         aria-label="Sections on this page"

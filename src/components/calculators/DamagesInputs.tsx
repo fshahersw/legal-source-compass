@@ -17,7 +17,10 @@ import { controlClass } from "./format";
 
 const usd0 = (v: number | null | undefined) =>
   v == null || !Number.isFinite(v) ? "Not recorded" : `$${Math.round(v).toLocaleString("en-US")}`;
-const OEWS_SOURCE = { label: "BLS Occupational Employment and Wage Statistics", url: "https://www.bls.gov/oes/" };
+const OEWS_SOURCE = {
+  label: "BLS Occupational Employment and Wage Statistics",
+  url: "https://www.bls.gov/oes/",
+};
 const AWI_SOURCE = {
   label: "Social Security Administration, national average wage index (Federal Register notices)",
   url: "https://www.ssa.gov/oact/cola/AWI.html",
@@ -27,8 +30,8 @@ export function DamagesInputs() {
   return (
     <div className="flex min-w-0 flex-col gap-4">
       <Note kind="warn">
-        Official inputs only. Nothing on this tab computes lost earnings, an award or a present value
-        of damages, and none of it is legal advice.
+        Official inputs only. Nothing on this tab computes lost earnings, an award or a present
+        value of damages, and none of it is legal advice.
       </Note>
       <WagePercentiles />
       <WageIndex />
@@ -47,7 +50,11 @@ export function DamagesInputs() {
 }
 
 function WagePercentiles() {
-  const index = useQuery({ queryKey: ["oews-index"], queryFn: () => getOewsIndex(), staleTime: 30 * 60_000 });
+  const index = useQuery({
+    queryKey: ["oews-index"],
+    queryFn: () => getOewsIndex(),
+    staleTime: 30 * 60_000,
+  });
   const [soc, setSoc] = useState("472061");
   const [usps, setUsps] = useState("NJ");
   const [metro, setMetro] = useState("");
@@ -58,12 +65,18 @@ function WagePercentiles() {
   );
   const shownOcc = useMemo(() => {
     const f = filter.trim().toLowerCase();
-    const list = f ? occupations.filter((o) => o.title.toLowerCase().includes(f) || socLabel(o.soc).includes(f)) : occupations;
+    const list = f
+      ? occupations.filter((o) => o.title.toLowerCase().includes(f) || socLabel(o.soc).includes(f))
+      : occupations;
     const keep = list.slice(0, 400);
-    return keep.some((o) => o.soc === soc) ? keep : [...occupations.filter((o) => o.soc === soc), ...keep];
+    return keep.some((o) => o.soc === soc)
+      ? keep
+      : [...occupations.filter((o) => o.soc === soc), ...keep];
   }, [occupations, filter, soc]);
   const stateArea = index.data?.areas.find((a) => a.type === "S" && a.usps === usps) ?? null;
-  const metros = (index.data?.areas ?? []).filter((a) => a.type === "M" && metroStates(a.area).includes(usps));
+  const metros = (index.data?.areas ?? []).filter(
+    (a) => a.type === "M" && metroStates(a.area).includes(usps),
+  );
   const metroArea = metros.find((m) => m.id === metro) ?? null;
   const areaIds = [stateArea?.id, metroArea?.id].filter((x): x is string => !!x);
   const wages = useQuery({
@@ -75,7 +88,8 @@ function WagePercentiles() {
   const occ = occupations.find((o) => o.soc === soc) ?? null;
   const rows = wages.data ?? [];
   const release = rows[0]?.release ?? index.data?.release ?? null;
-  const local = rows.find((r) => r.type === "M") ?? rows.find((r) => r.type === "S") ?? rows[0] ?? null;
+  const local =
+    rows.find((r) => r.type === "M") ?? rows.find((r) => r.type === "S") ?? rows[0] ?? null;
   const national = rows.find((r) => r.type === "N") ?? null;
   const status: ChartStatus =
     index.isPending || wages.isPending
@@ -83,11 +97,17 @@ function WagePercentiles() {
       : index.isError || wages.isError
         ? { kind: "error", onRetry: () => void (index.isError ? index.refetch() : wages.refetch()) }
         : !rows.some((r) => r.wage)
-          ? { kind: "empty", reason: "Not recorded: BLS publishes no estimate for this occupation in these areas." }
+          ? {
+              kind: "empty",
+              reason: "Not recorded: BLS publishes no estimate for this occupation in these areas.",
+            }
           : { kind: "ready" };
   const figures: FigureInput[] = rows.flatMap((r) => [
     { label: `${r.area}: annual median wage`, value: usd0(r.wage?.median) },
-    { label: `${r.area}: 10th to 90th percentile`, value: `${usd0(r.wage?.p10)} to ${usd0(r.wage?.p90)}` },
+    {
+      label: `${r.area}: 10th to 90th percentile`,
+      value: `${usd0(r.wage?.p10)} to ${usd0(r.wage?.p90)}`,
+    },
     { label: `${r.area}: employment`, value: r.wage?.employment ?? null, unit: "jobs" },
   ]);
   const context = occ
@@ -143,7 +163,12 @@ function WagePercentiles() {
           </select>
         </Field>
         <Field label="Metro area (optional)" htmlFor="oews-metro">
-          <select id="oews-metro" className={controlClass} value={metro} onChange={(e) => setMetro(e.target.value)}>
+          <select
+            id="oews-metro"
+            className={controlClass}
+            value={metro}
+            onChange={(e) => setMetro(e.target.value)}
+          >
             <option value="">None</option>
             {metros.map((m) => (
               <option key={m.id} value={m.id}>
@@ -155,8 +180,16 @@ function WagePercentiles() {
       </div>
       {local?.wage ? (
         <div className="grid gap-2 sm:grid-cols-4">
-          <Figure label={`Median, ${local.area}`} value={usd0(local.wage.median)} sub={release ?? undefined} />
-          <Figure label={`Median, ${national?.area ?? "National"}`} value={usd0(national?.wage?.median)} sub={release ?? undefined} />
+          <Figure
+            label={`Median, ${local.area}`}
+            value={usd0(local.wage.median)}
+            sub={release ?? undefined}
+          />
+          <Figure
+            label={`Median, ${national?.area ?? "National"}`}
+            value={usd0(national?.wage?.median)}
+            sub={release ?? undefined}
+          />
           <Figure
             label={`Middle half, ${local.area}`}
             value={`${usd0(local.wage.p25)} to ${usd0(local.wage.p75)}`}
@@ -164,7 +197,11 @@ function WagePercentiles() {
           />
           <Figure
             label={`Employment, ${local.area}`}
-            value={local.wage.employment != null ? local.wage.employment.toLocaleString("en-US") : "Not recorded"}
+            value={
+              local.wage.employment != null
+                ? local.wage.employment.toLocaleString("en-US")
+                : "Not recorded"
+            }
             sub="jobs (wage and salary)"
           />
         </div>
@@ -173,10 +210,22 @@ function WagePercentiles() {
         title={occ ? `${occ.title}: annual wage range` : "Annual wage range"}
         unit="annual wage, 10th to 90th percentile"
         period={release ?? undefined}
-        sources={[OEWS_SOURCE, ...rows.flatMap((r) => (r.sourceUrl ? [{ label: `BLS OEWS, ${r.area}`, url: r.sourceUrl }] : []))]}
+        sources={[
+          OEWS_SOURCE,
+          ...rows.flatMap((r) =>
+            r.sourceUrl ? [{ label: `BLS OEWS, ${r.area}`, url: r.sourceUrl }] : [],
+          ),
+        ]}
         status={status}
         headingLevel="h3"
-        actions={<AskAiButton sectionId="oews-wages" title="Occupation wages" context={context} size="icon" />}
+        actions={
+          <AskAiButton
+            sectionId="oews-wages"
+            title="Occupation wages"
+            context={context}
+            size="icon"
+          />
+        }
         notes={[
           "Wage and salary workers only: OEWS excludes the self-employed. Percentiles are of annual wages as BLS publishes them for the release shown.",
           "BLS special codes (wages at or above the top code, or no estimate) read Not recorded, never zero. Metro areas are listed for a state when the BLS area name carries its code.",
@@ -203,7 +252,9 @@ function WagePercentiles() {
               usd0(r.wage?.p75),
               usd0(r.wage?.p90),
               usd0(r.wage?.annualMean),
-              r.wage?.employment != null ? r.wage.employment.toLocaleString("en-US") : "Not recorded",
+              r.wage?.employment != null
+                ? r.wage.employment.toLocaleString("en-US")
+                : "Not recorded",
             ],
           })),
         }}
@@ -232,7 +283,11 @@ function WagePercentiles() {
 }
 
 function WageIndex() {
-  const q = useQuery({ queryKey: ["ssa-awi"], queryFn: () => getAwiSeries(), staleTime: 30 * 60_000 });
+  const q = useQuery({
+    queryKey: ["ssa-awi"],
+    queryFn: () => getAwiSeries(),
+    staleTime: 30 * 60_000,
+  });
   const pts = useMemo(() => q.data ?? [], [q.data]);
   const last = pts.at(-1) ?? null;
   const g10 = last ? compoundGrowth(pts, last.year - 10, last.year) : null;
@@ -244,7 +299,9 @@ function WageIndex() {
       : pts.length < 2
         ? { kind: "empty", reason: "Not recorded." }
         : { kind: "ready" };
-  const years = pts.length ? Array.from({ length: last!.year - pts[0]!.year + 1 }, (_, i) => String(pts[0]!.year + i)) : [];
+  const years = pts.length
+    ? Array.from({ length: last!.year - pts[0]!.year + 1 }, (_, i) => String(pts[0]!.year + i))
+    : [];
   const byYear = new Map(pts.map((p) => [String(p.year), p.value]));
   const pctText = (v: number | null) => (v == null ? "Not recorded" : `${v.toFixed(2)}% a year`);
   const context = last
@@ -265,8 +322,16 @@ function WageIndex() {
       {last ? (
         <div className="grid gap-2 sm:grid-cols-3">
           <Figure label={`Index, ${last.year}`} value={usd0(last.value)} sub={last.citation} />
-          <Figure label={`Growth ${last.year - 5}-${last.year}`} value={pctText(g5)} sub="compound, per year" />
-          <Figure label={`Growth ${last.year - 10}-${last.year}`} value={pctText(g10)} sub="compound, per year" />
+          <Figure
+            label={`Growth ${last.year - 5}-${last.year}`}
+            value={pctText(g5)}
+            sub="compound, per year"
+          />
+          <Figure
+            label={`Growth ${last.year - 10}-${last.year}`}
+            value={pctText(g10)}
+            sub="compound, per year"
+          />
         </div>
       ) : null}
       <ChartFrame
@@ -276,21 +341,33 @@ function WageIndex() {
         sources={[AWI_SOURCE]}
         status={status}
         headingLevel="h3"
-        actions={<AskAiButton sectionId="ssa-awi" title="Wage index" context={context} size="icon" />}
+        actions={
+          <AskAiButton sectionId="ssa-awi" title="Wage index" context={context} size="icon" />
+        }
         notes={[
           "Each value is the amount SSA states in its Federal Register notice for that year (cited in the table). Years before 1994 are not in this dataset (Not recorded).",
           "A national average of all wages: it is not an occupation's or a person's wage path.",
         ]}
         table={{
           caption: "National average wage index",
-          columns: [{ label: "Year" }, { label: "Index", align: "right" }, { label: "Federal Register" }],
+          columns: [
+            { label: "Year" },
+            { label: "Index", align: "right" },
+            { label: "Federal Register" },
+          ],
           rows: [...pts].reverse().map((p) => ({
             key: String(p.year),
             cells: [
               String(p.year),
               `$${p.value.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
               p.sourceUrl ? (
-                <a key="a" href={p.sourceUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                <a
+                  key="a"
+                  href={p.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                >
                   {p.citation}
                   {p.publicationDate ? ` (${p.publicationDate})` : ""}
                 </a>
@@ -303,7 +380,13 @@ function WageIndex() {
       >
         {pts.length >= 2 ? (
           <LineTrend
-            series={[{ id: "awi", label: "Wage index", points: years.map((y) => ({ key: y, value: byYear.get(y) ?? null })) }]}
+            series={[
+              {
+                id: "awi",
+                label: "Wage index",
+                points: years.map((y) => ({ key: y, value: byYear.get(y) ?? null })),
+              },
+            ]}
             axis={{ keys: years, label: (k) => k, tick: (k) => k }}
             formatter={metricFormatter("currency_usd")}
             ariaLabel="National average wage index by year"

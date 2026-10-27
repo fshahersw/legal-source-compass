@@ -16,8 +16,25 @@ import {
 
 describe("OEWS", () => {
   it("reads a stored wage cell (construction laborers, New Jersey, May 2025)", () => {
-    const w = parseOewsCell(["23590", "33.84", "70400", "30.80", "37980", "46710", "64060", "94510", "106140", ""])!;
-    expect(w).toMatchObject({ employment: 23590, median: 64060, p10: 37980, p90: 106140, hourlyMedian: 30.8 });
+    const w = parseOewsCell([
+      "23590",
+      "33.84",
+      "70400",
+      "30.80",
+      "37980",
+      "46710",
+      "64060",
+      "94510",
+      "106140",
+      "",
+    ])!;
+    expect(w).toMatchObject({
+      employment: 23590,
+      median: 64060,
+      p10: 37980,
+      p90: 106140,
+      hourlyMedian: 30.8,
+    });
     expect(w.flags).toEqual([]);
   });
   it("keeps BLS special codes as Not recorded, never 0", () => {
@@ -30,7 +47,10 @@ describe("OEWS", () => {
     expect(parseOewsCell(null)).toBeNull();
   });
   it("reads occupation codes and areas", () => {
-    const codes = parseOccupationCodes({ "472061": ["Construction Laborers", "3"], bad: ["x", "1"] });
+    const codes = parseOccupationCodes({
+      "472061": ["Construction Laborers", "3"],
+      bad: ["x", "1"],
+    });
     expect(codes).toEqual([{ soc: "472061", title: "Construction Laborers", level: 3 }]);
     expect(socLabel("472061")).toBe("47-2061");
     expect(parseOewsArea({ id: "oews:S3400000", a: "New Jersey", t: "S", u: "NJ" })).toEqual({
@@ -47,11 +67,26 @@ describe("OEWS", () => {
 
 describe("SSA AWI", () => {
   const pts = [
-    parseAwi({ awi: { year: 2023, value: "66,621.80", citation: "89 FR 85276" }, source_url: "https://www.govinfo.gov/a" })!,
-    parseAwi({ awi: { year: 2024, value: "69,846.57", citation: "90 FR 49047", publication_date: "2025-11-03" } })!,
+    parseAwi({
+      awi: { year: 2023, value: "66,621.80", citation: "89 FR 85276" },
+      source_url: "https://www.govinfo.gov/a",
+    })!,
+    parseAwi({
+      awi: {
+        year: 2024,
+        value: "69,846.57",
+        citation: "90 FR 49047",
+        publication_date: "2025-11-03",
+      },
+    })!,
   ];
   it("reads the stated amount and its Federal Register citation", () => {
-    expect(pts[1]).toMatchObject({ year: 2024, value: 69846.57, citation: "90 FR 49047", publicationDate: "2025-11-03" });
+    expect(pts[1]).toMatchObject({
+      year: 2024,
+      value: 69846.57,
+      citation: "90 FR 49047",
+      publicationDate: "2025-11-03",
+    });
     expect(pts[0]!.sourceUrl).toBe("https://www.govinfo.gov/a");
   });
   it("computes compound growth only between recorded years", () => {

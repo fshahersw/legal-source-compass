@@ -86,11 +86,17 @@ export function parseOccupationCodes(raw: unknown): OewsOccupation[] {
 }
 
 /** SOC code as BLS writes it ("47-2061"). */
-export const socLabel = (soc: string) => (/^\d{6}$/.test(soc) ? `${soc.slice(0, 2)}-${soc.slice(2)}` : soc);
+export const socLabel = (soc: string) =>
+  /^\d{6}$/.test(soc) ? `${soc.slice(0, 2)}-${soc.slice(2)}` : soc;
 
 export type OewsArea = { id: string; area: string; type: "N" | "S" | "M"; usps: string | null };
 
-export function parseOewsArea(raw: { id?: unknown; a?: unknown; t?: unknown; u?: unknown }): OewsArea | null {
+export function parseOewsArea(raw: {
+  id?: unknown;
+  a?: unknown;
+  t?: unknown;
+  u?: unknown;
+}): OewsArea | null {
   const id = typeof raw.id === "string" && /^oews:[NSM]\d{7}$/.test(raw.id) ? raw.id : null;
   const t = raw.t === "N" || raw.t === "S" || raw.t === "M" ? raw.t : null;
   if (!id || !t || typeof raw.a !== "string") return null;
@@ -123,12 +129,19 @@ export function parseAwi(raw: { awi?: unknown; source_url?: unknown }): AwiPoint
       typeof a["publication_date"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(a["publication_date"])
         ? a["publication_date"]
         : null,
-    sourceUrl: typeof raw.source_url === "string" && /^https:\/\//.test(raw.source_url) ? raw.source_url : null,
+    sourceUrl:
+      typeof raw.source_url === "string" && /^https:\/\//.test(raw.source_url)
+        ? raw.source_url
+        : null,
   };
 }
 
 /** Compound yearly growth (%) between two recorded years; null when either is missing or the span is not positive. */
-export function compoundGrowth(points: readonly AwiPoint[], from: number, to: number): number | null {
+export function compoundGrowth(
+  points: readonly AwiPoint[],
+  from: number,
+  to: number,
+): number | null {
   const a = points.find((p) => p.year === from)?.value;
   const b = points.find((p) => p.year === to)?.value;
   if (a == null || b == null || to <= from || a <= 0) return null;
@@ -171,7 +184,10 @@ export function parseCpiArea(raw: { cpi?: unknown; source_url?: unknown }): CpiA
     area: typeof c["area"] === "string" ? c["area"].slice(0, 120) : sid,
     level: typeof c["level"] === "string" ? c["level"] : "",
     basePeriod: typeof c["base_period"] === "string" ? c["base_period"] : "",
-    sourceUrl: typeof raw.source_url === "string" && /^https:\/\//.test(raw.source_url) ? raw.source_url : null,
+    sourceUrl:
+      typeof raw.source_url === "string" && /^https:\/\//.test(raw.source_url)
+        ? raw.source_url
+        : null,
     annual,
   };
 }
@@ -187,7 +203,9 @@ export function cpiChange(a: CpiArea, from: number, to: number): number | null {
 export function rebase(a: CpiArea, base: number): { year: number; value: number }[] {
   const b = a.annual.find((p) => p.year === base)?.value;
   if (b == null) return [];
-  return a.annual.filter((p) => p.year >= base).map((p) => ({ year: p.year, value: (p.value / b) * 100 }));
+  return a.annual
+    .filter((p) => p.year >= base)
+    .map((p) => ({ year: p.year, value: (p.value / b) * 100 }));
 }
 
 export const lastYear = (a: CpiArea): number | null => a.annual.at(-1)?.year ?? null;

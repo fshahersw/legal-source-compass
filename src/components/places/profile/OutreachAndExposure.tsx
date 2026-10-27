@@ -7,8 +7,21 @@ import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ChartFrame, ScatterCorrelation, metricFormatter, type ChartStatus } from "@/components/charts";
-import { AiSummary, AskAiButton, KpiCard, KpiGrid, Section, buildSectionContext, type FigureInput } from "@/components/kit";
+import {
+  ChartFrame,
+  ScatterCorrelation,
+  metricFormatter,
+  type ChartStatus,
+} from "@/components/charts";
+import {
+  AiSummary,
+  AskAiButton,
+  KpiCard,
+  KpiGrid,
+  Section,
+  buildSectionContext,
+  type FigureInput,
+} from "@/components/kit";
 import type { CountyRow } from "@/lib/external/countyAnalysis.functions";
 import type { DistrictSummary } from "@/lib/external/placeAnalysisParse";
 import { CBP_YEAR, getStatePeople } from "./stateProfile.functions";
@@ -20,13 +33,20 @@ import {
   type SectorCode,
 } from "./stateProfileModel";
 
-const ACS_SOURCE = { label: "Census ACS 5-year estimates", url: "https://www.census.gov/programs-surveys/acs" };
+const ACS_SOURCE = {
+  label: "Census ACS 5-year estimates",
+  url: "https://www.census.gov/programs-surveys/acs",
+};
 const CBP_SOURCE = {
   label: `Census County Business Patterns ${CBP_YEAR}`,
   url: "https://www.census.gov/programs-surveys/cbp.html",
 };
-const OSHA_SOURCE = { label: "OSHA inspection data, FY2021-FY2025", url: "https://enforcedata.dol.gov/views/data_summary.php" };
-const pct1 = (v: number | null | undefined) => (v == null || !Number.isFinite(v) ? "Not recorded" : `${v.toFixed(1)}%`);
+const OSHA_SOURCE = {
+  label: "OSHA inspection data, FY2021-FY2025",
+  url: "https://enforcedata.dol.gov/views/data_summary.php",
+};
+const pct1 = (v: number | null | undefined) =>
+  v == null || !Number.isFinite(v) ? "Not recorded" : `${v.toFixed(1)}%`;
 const int = (v: number | null | undefined) =>
   v == null || !Number.isFinite(v) ? "Not recorded" : Math.round(v).toLocaleString("en-US");
 
@@ -85,13 +105,18 @@ function Outreach({
     ...OUTREACH_MEASURES.map((m) => ({
       label: `${stateName}: ${m.label} (share of ${m.universe})`,
       value: pct1(st?.shares[m.key]?.v),
-      note: st?.shares[m.key]?.moe != null ? `MOE ±${st.shares[m.key]!.moe!.toFixed(1)} points` : undefined,
+      note:
+        st?.shares[m.key]?.moe != null
+          ? `MOE ±${st.shares[m.key]!.moe!.toFixed(1)} points`
+          : undefined,
     })),
     ...rolled.flatMap((d) =>
       OUTREACH_MEASURES.map((m) => ({
         label: `${name.get(d.courtId) ?? d.courtId}: ${m.label}`,
         value: pct1(d.shares[m.key]?.v),
-        note: d.shares[m.key]?.exact ? "population-weighted county shares" : "approximate: population-weighted",
+        note: d.shares[m.key]?.exact
+          ? "population-weighted county shares"
+          : "approximate: population-weighted",
       })),
     ),
   ];
@@ -118,7 +143,14 @@ function Outreach({
       id="outreach"
       title="Outreach profile"
       description="Who lives here, for notice and outreach planning. Shares of residents, not claimant counts."
-      actions={<AskAiButton sectionId="outreach-profile" title="Outreach profile" context={context} size="icon" />}
+      actions={
+        <AskAiButton
+          sectionId="outreach-profile"
+          title="Outreach profile"
+          context={context}
+          size="icon"
+        />
+      }
     >
       <KpiGrid columns={5} label={`${stateName} outreach figures`}>
         {OUTREACH_MEASURES.map((m) => {
@@ -132,7 +164,9 @@ function Outreach({
               label={m.label}
               value={s ? pct1(s.v) : null}
               meta={`${s?.moe != null ? `±${s.moe.toFixed(1)} pts · ` : ""}of ${m.universe}${period ? ` · ${period}` : ""}`}
-              {...(derived != null ? { footnote: `≈ ${int(derived)} residents (derived: share × population)` } : {})}
+              {...(derived != null
+                ? { footnote: `≈ ${int(derived)} residents (derived: share × population)` }
+                : {})}
               state={q.isPending ? "loading" : q.isError ? "error" : "ready"}
             />
           );
@@ -142,7 +176,13 @@ function Outreach({
         title={`${stateName}'s federal districts`}
         unit="% of residents (population-weighted county shares)"
         period={period}
-        sources={[ACS_SOURCE, { label: "Districts: 28 U.S.C. ch. 5 (county assignments)", url: "https://www.govinfo.gov/content/pkg/USCODE-2024-title28/html/USCODE-2024-title28-partI-chap5.htm" }]}
+        sources={[
+          ACS_SOURCE,
+          {
+            label: "Districts: 28 U.S.C. ch. 5 (county assignments)",
+            url: "https://www.govinfo.gov/content/pkg/USCODE-2024-title28/html/USCODE-2024-title28-partI-chap5.htm",
+          },
+        ]}
         status={status}
         headingLevel="h3"
         notes={[
@@ -161,13 +201,19 @@ function Outreach({
           rows: rolled.map((d) => ({
             key: d.courtId,
             cells: [
-              <Link key="l" to="/courts/$id" params={{ id: d.courtId }} className="text-primary hover:underline">
+              <Link
+                key="l"
+                to="/courts/$id"
+                params={{ id: d.courtId }}
+                className="text-primary hover:underline"
+              >
                 {name.get(d.courtId) ?? d.courtId}
               </Link>,
               String(d.counties),
               int(d.pop),
               ...OUTREACH_MEASURES.map(
-                (m) => `${pct1(d.shares[m.key]?.v)}${d.shares[m.key] && !d.shares[m.key]!.exact ? " (approx.)" : ""}`,
+                (m) =>
+                  `${pct1(d.shares[m.key]?.v)}${d.shares[m.key] && !d.shares[m.key]!.exact ? " (approx.)" : ""}`,
               ),
             ],
           })),
@@ -203,14 +249,18 @@ function Outreach({
                 {OUTREACH_MEASURES.map((m) => (
                   <td key={m.key} className="px-2 py-1 text-right font-mono tabular-nums">
                     {pct1(d.shares[m.key]?.v)}
-                    {d.shares[m.key] && !d.shares[m.key]!.exact ? <span className="text-muted-foreground">*</span> : null}
+                    {d.shares[m.key] && !d.shares[m.key]!.exact ? (
+                      <span className="text-muted-foreground">*</span>
+                    ) : null}
                   </td>
                 ))}
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="mt-1 px-2 text-[11px] text-muted-foreground">* approximate (population-weighted)</p>
+        <p className="mt-1 px-2 text-[11px] text-muted-foreground">
+          * approximate (population-weighted)
+        </p>
       </ChartFrame>
       <AiSummary context={context} />
     </Section>
@@ -236,7 +286,13 @@ function Exposure({
   const osha = useMemo(
     () =>
       new Map(
-        (counties ?? []).map((c) => [c.id, { rate: c.metrics["osha_rate"] ?? null, base: c.metrics["osha_5y"] ?? null }] as const),
+        (counties ?? []).map(
+          (c) =>
+            [
+              c.id,
+              { rate: c.metrics["osha_rate"] ?? null, base: c.metrics["osha_5y"] ?? null },
+            ] as const,
+        ),
       ),
     [counties],
   );
@@ -261,8 +317,15 @@ function Exposure({
         figures: [
           { label: "Counties with both figures", value: screen.points.length },
           { label: "Counties left out (suppressed or not recorded)", value: screen.leftOut },
-          { label: `Median county ${sectorLabel.toLowerCase()} share of employees`, value: pct1(screen.medianShare) },
-          { label: "Median county OSHA inspections per 100,000 a year", value: screen.medianOsha, decimals: 1 },
+          {
+            label: `Median county ${sectorLabel.toLowerCase()} share of employees`,
+            value: pct1(screen.medianShare),
+          },
+          {
+            label: "Median county OSHA inspections per 100,000 a year",
+            value: screen.medianOsha,
+            decimals: 1,
+          },
           { label: "Counties above both medians", value: screen.above.length },
           ...screen.above.slice(0, 8).map((p) => ({
             label: `${p.name}`,
@@ -293,7 +356,12 @@ function Exposure({
               ))}
             </select>
           </label>
-          <AskAiButton sectionId="exposure-screen" title="Exposure screen" context={context} size="icon" />
+          <AskAiButton
+            sectionId="exposure-screen"
+            title="Exposure screen"
+            context={context}
+            size="icon"
+          />
         </div>
       }
     >
@@ -306,9 +374,17 @@ function Exposure({
         kpis={
           screen
             ? [
-                { label: "Counties with both figures", value: int(screen.points.length), detail: `${int(screen.leftOut)} left out` },
+                {
+                  label: "Counties with both figures",
+                  value: int(screen.points.length),
+                  detail: `${int(screen.leftOut)} left out`,
+                },
                 { label: "Median sector share", value: pct1(screen.medianShare) },
-                { label: "Median OSHA rate", value: screen.medianOsha == null ? "Not recorded" : screen.medianOsha.toFixed(1), detail: "per 100,000 a year" },
+                {
+                  label: "Median OSHA rate",
+                  value: screen.medianOsha == null ? "Not recorded" : screen.medianOsha.toFixed(1),
+                  detail: "per 100,000 a year",
+                },
                 { label: "Above both medians", value: int(screen.above.length) },
               ]
             : undefined
@@ -353,7 +429,12 @@ function Exposure({
       >
         {screen && screen.points.length >= 3 ? (
           <ScatterCorrelation
-            points={screen.points.map((p) => ({ id: p.fips, label: p.name, x: p.share, y: p.oshaRate }))}
+            points={screen.points.map((p) => ({
+              id: p.fips,
+              label: p.name,
+              x: p.share,
+              y: p.oshaRate,
+            }))}
             xFormatter={pctFmt}
             yFormatter={rateFmt}
             xLabel={`${sectorLabel} share of employees`}

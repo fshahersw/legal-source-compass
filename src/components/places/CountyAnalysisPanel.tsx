@@ -227,8 +227,8 @@ function Body({ c }: { c: CountyAnalysis }) {
               <p className="mb-1.5 flex items-start gap-1.5 text-[11px] text-muted-foreground">
                 <AlertTriangle className="mt-0.5 size-3 shrink-0 text-warning" aria-hidden />
                 <span>
-                  {mdlShare.toFixed(0)}% of these filings carry an MDL number. The FJC codes those to
-                  the court's or defendant's county, so this mix is not what residents sued over.
+                  {mdlShare.toFixed(0)}% of these filings carry an MDL number. The FJC codes those
+                  to the court's or defendant's county, so this mix is not what residents sued over.
                 </span>
               </p>
             ) : null}

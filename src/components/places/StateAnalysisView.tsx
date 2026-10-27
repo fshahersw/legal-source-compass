@@ -220,7 +220,8 @@ function StandOut({
             title: `What stands out in ${stateName}`,
             scope: `${stateName}'s counties and federal districts`,
             period: "FY2021-FY2025 legal activity; ACS 2020-2024",
-            source: "FJC IDB, OSHA, CFPB, EPA ECHO, Census ACS and population estimates (state analysis)",
+            source:
+              "FJC IDB, OSHA, CFPB, EPA ECHO, Census ACS and population estimates (state analysis)",
             figures: stateStandoutFigures(analysis),
             maxFigures: 24,
           })
@@ -412,8 +413,7 @@ function CountyMapView({
   // A measure no county records (e.g. the non-MDL product rate before its packet is published) falls back to the default.
   const requested = METRIC_BY_KEY.get(metric);
   const def =
-    requested &&
-    (!mrows.length || mrows.some((r) => r.metrics[requested.key] != null))
+    requested && (!mrows.length || mrows.some((r) => r.metrics[requested.key] != null))
       ? requested
       : METRIC_BY_KEY.get(DEFAULT_METRIC)!;
   const values = useMemo(

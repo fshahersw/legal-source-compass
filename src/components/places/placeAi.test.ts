@@ -9,7 +9,13 @@ const middlesex = {
   usps: "NJ",
   name: "Middlesex County",
   state: "New Jersey",
-  metrics: { fjc_rate: 1097.22, fjc_core_rate: 60.6, fjc_5y: 47891, fjc_core_5y: 2645, osha_rate: 12.1 },
+  metrics: {
+    fjc_rate: 1097.22,
+    fjc_core_rate: 60.6,
+    fjc_5y: 47891,
+    fjc_core_5y: 2645,
+    osha_rate: 12.1,
+  },
   legal: { window: { mdl: 45053 }, screened: [] },
   stateDistributions: { fjc_core_rate: { n: 21, min: 30, p25: 40, median: 50, p75: 60, max: 90 } },
   stateValues: { fjc_core_rate: 62.3, fjc_rate: 176.95 },
@@ -26,11 +32,17 @@ describe("county legal AI context", () => {
     expect(text).not.toContain("1,097");
     expect(text).not.toContain("1097");
     expect(text).not.toContain("176.95");
-    expect(figs.some((f) => f.label.startsWith("Federal civil filings by residents (core)"))).toBe(true);
-    expect(figs.find((f) => f.label.startsWith("Share of the county-coded filings"))?.value).toBe("94.1%");
+    expect(figs.some((f) => f.label.startsWith("Federal civil filings by residents (core)"))).toBe(
+      true,
+    );
+    expect(figs.find((f) => f.label.startsWith("Share of the county-coded filings"))?.value).toBe(
+      "94.1%",
+    );
   });
   it("leaves out a measure the record does not carry (unpublished product rate)", () => {
-    expect(JSON.stringify(countyLegalFigures(middlesex))).not.toContain("Product-liability filings");
+    expect(JSON.stringify(countyLegalFigures(middlesex))).not.toContain(
+      "Product-liability filings",
+    );
   });
 });
 
@@ -41,13 +53,58 @@ describe("state stand-out AI context", () => {
     testsRun: 84,
     testsHold: 20,
     standouts: [
-      { kind: "county", text: "Middlesex has the highest federal civil filings by residents in the state.", metric: "fjc_rate", county: "34023", courtId: null },
-      { kind: "county", text: "Essex has the highest OSHA inspection rate.", metric: "osha_rate", county: "34013", courtId: null },
+      {
+        kind: "county",
+        text: "Middlesex has the highest federal civil filings by residents in the state.",
+        metric: "fjc_rate",
+        county: "34023",
+        courtId: null,
+      },
+      {
+        kind: "county",
+        text: "Essex has the highest OSHA inspection rate.",
+        metric: "osha_rate",
+        county: "34013",
+        courtId: null,
+      },
     ],
     tests: [
-      { x: "fjc_rate", y: "poverty_rate", label: "", rho: 0.9, n: 21, ci: null, p: 0.001, pBh: 0.002, holds: true, strength: null },
-      { x: "cfpb_rate", y: "pct_black_nh", label: "", rho: 0.7, n: 21, ci: null, p: 0.001, pBh: 0.004, holds: true, strength: null },
-      { x: "osha_rate", y: "poverty_rate", label: "", rho: 0.2, n: 21, ci: null, p: 0.4, pBh: 0.6, holds: false, strength: null },
+      {
+        x: "fjc_rate",
+        y: "poverty_rate",
+        label: "",
+        rho: 0.9,
+        n: 21,
+        ci: null,
+        p: 0.001,
+        pBh: 0.002,
+        holds: true,
+        strength: null,
+      },
+      {
+        x: "cfpb_rate",
+        y: "pct_black_nh",
+        label: "",
+        rho: 0.7,
+        n: 21,
+        ci: null,
+        p: 0.001,
+        pBh: 0.004,
+        holds: true,
+        strength: null,
+      },
+      {
+        x: "osha_rate",
+        y: "poverty_rate",
+        label: "",
+        rho: 0.2,
+        n: 21,
+        ci: null,
+        p: 0.4,
+        pBh: 0.6,
+        holds: false,
+        strength: null,
+      },
     ],
   } as unknown as StateAnalysis;
   const figs = stateStandoutFigures(a);

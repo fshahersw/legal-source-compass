@@ -14,7 +14,8 @@ const KIND = { prejudgment: "Prejudgment", postjudgment: "Post-judgment" } as co
 function rateText(r: StateRate, today: string) {
   const status = rateStatus(r, today);
   if (status === "ended") return `Not recorded (the stated period ended ${r.effectiveTo})`;
-  if (status === "not_started") return `Not recorded yet (the stated period starts ${r.effectiveFrom})`;
+  if (status === "not_started")
+    return `Not recorded yet (the stated period starts ${r.effectiveFrom})`;
   if (r.ratePercent) return `${r.ratePercent}% per year`;
   if (r.rateType === "same_as_prejudgment") return "Same rate as the prejudgment interest awarded";
   if (r.rateType === "published_periodically")

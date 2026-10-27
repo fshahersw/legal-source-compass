@@ -6,7 +6,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { restGet } from "@/lib/external/rest.server";
-import { currentCounties, parseCbp, parseLatest, type CountyAcs, type CountyCbp, type Share } from "./stateProfileModel";
+import {
+  currentCounties,
+  parseCbp,
+  parseLatest,
+  type CountyAcs,
+  type CountyCbp,
+  type Share,
+} from "./stateProfileModel";
 
 export const CBP_YEAR = "2023";
 
@@ -45,11 +52,17 @@ export const getStatePeople = createServerFn({ method: "GET" })
       counties: currentCounties(
         co.rows
           .filter((r) => /^\d{5}$/.test(r.id))
-          .map((r) => ({ fips: r.id, name: typeof r.n === "string" ? r.n.slice(0, 120) : r.id, ...parseLatest(r.l) })),
+          .map((r) => ({
+            fips: r.id,
+            name: typeof r.n === "string" ? r.n.slice(0, 120) : r.id,
+            ...parseLatest(r.l),
+          })),
       ),
       cbp: cbp.rows
         .filter((r) => /^\d{5}$/.test(r.id))
-        .map((r) => parseCbp(r.id, typeof r.n === "string" ? r.n.slice(0, 120) : r.id, r.s, CBP_YEAR)),
+        .map((r) =>
+          parseCbp(r.id, typeof r.n === "string" ? r.n.slice(0, 120) : r.id, r.s, CBP_YEAR),
+        ),
     };
     cache.set(data.usps, { at: Date.now(), value });
     return value;

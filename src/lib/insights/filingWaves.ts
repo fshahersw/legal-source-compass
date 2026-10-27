@@ -24,7 +24,8 @@ export const COHORT_MIN_CASES = 500;
 export const MAX_OFFSET = 12;
 
 export const FJC_MDL_SOURCE = {
-  label: "Federal Judicial Center, Integrated Database (civil), cases carrying an MDL docket number",
+  label:
+    "Federal Judicial Center, Integrated Database (civil), cases carrying an MDL docket number",
   url: "https://www.fjc.gov/research/idb/civil-cases-filed-terminated-and-pending-sy-1988-present",
 } as const;
 
@@ -86,7 +87,10 @@ export function parseMdlFyRow(raw: unknown, title: string | null = null): MdlFyR
     all += n;
     if (code !== null && PRODUCT_NOS.includes(code)) product += n;
   }
-  const lastFiled = typeof cells["last_filed"] === "string" && ISO.test(cells["last_filed"]) ? cells["last_filed"] : null;
+  const lastFiled =
+    typeof cells["last_filed"] === "string" && ISO.test(cells["last_filed"])
+      ? cells["last_filed"]
+      : null;
   return {
     mdl: Number(m[1]),
     title,
@@ -153,7 +157,9 @@ const medianOf = (v: number[]): number | null => {
 };
 
 /** Median filings at each year since year 0, over complete fiscal years only, with the number of MDLs behind it. */
-export function cohortMedian(waves: readonly Wave[]): { offset: number; median: number | null; n: number }[] {
+export function cohortMedian(
+  waves: readonly Wave[],
+): { offset: number; median: number | null; n: number }[] {
   const out: { offset: number; median: number | null; n: number }[] = [];
   for (let offset = 0; offset <= MAX_OFFSET; offset++) {
     const vals = waves.flatMap((w) => {
@@ -199,7 +205,14 @@ export function buildFilingWaves(rows: readonly MdlFyRow[]): FilingWaves {
             return w ? [w] : [];
           })
           .sort((a, b) => b.startFy - a.startFy || b.cases - a.cases || a.mdl - b.mdl);
-  return { dataThrough, partialFy, lastFy, mdlsRead: rows.length, productMdls: product.length, waves };
+  return {
+    dataThrough,
+    partialFy,
+    lastFy,
+    mdlsRead: rows.length,
+    productMdls: product.length,
+    waves,
+  };
 }
 
 /** Default selection: the most recent starts (newest year 0 first, larger first), up to `n`. */

@@ -35,7 +35,10 @@ export function curateMetricDef(def: MetricDef): MetricDef {
       short: /\(to \d{4}\)/.test(def.short) ? def.short : `${def.short} (to ${end})`,
       caveats: def.caveats.some((c) => c.includes(`ends in ${end}`))
         ? def.caveats
-        : [`The NCHS leading-causes series ends in ${end}; later years are not recorded.`, ...def.caveats],
+        : [
+            `The NCHS leading-causes series ends in ${end}; later years are not recorded.`,
+            ...def.caveats,
+          ],
     };
   }
   return def;

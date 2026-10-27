@@ -19,7 +19,11 @@ import {
   type OewsWage,
 } from "./damagesInputs";
 
-export type OewsIndex = { release: string | null; occupations: OewsOccupation[]; areas: OewsArea[] };
+export type OewsIndex = {
+  release: string | null;
+  occupations: OewsOccupation[];
+  areas: OewsArea[];
+};
 
 const readOewsIndex = memoAsync(READ_TTL_MS, async (): Promise<OewsIndex> => {
   const [codes, areas] = await Promise.all([
@@ -41,12 +45,11 @@ const readOewsIndex = memoAsync(READ_TTL_MS, async (): Promise<OewsIndex> => {
   };
 });
 
-export const getOewsIndex = createServerFn({ method: "GET" }).handler(
-  (): Promise<OewsIndex> =>
-    readOewsIndex().catch((e: unknown) => {
-      console.error("oews index", e);
-      throw new Error("The BLS wage tables could not be read just now.");
-    }),
+export const getOewsIndex = createServerFn({ method: "GET" }).handler((): Promise<OewsIndex> =>
+  readOewsIndex().catch((e: unknown) => {
+    console.error("oews index", e);
+    throw new Error("The BLS wage tables could not be read just now.");
+  }),
 );
 
 export type OewsWageRow = {
@@ -86,7 +89,9 @@ export const getOewsWages = createServerFn({ method: "GET" })
           type: area.type,
           release: typeof r.r === "string" ? r.r : null,
           sourceUrl:
-            typeof r.source_url === "string" && /^https:\/\//.test(r.source_url) ? r.source_url : null,
+            typeof r.source_url === "string" && /^https:\/\//.test(r.source_url)
+              ? r.source_url
+              : null,
           wage: parseOewsCell(r.w),
         },
       ];
@@ -105,12 +110,11 @@ const readAwi = memoAsync(READ_TTL_MS, async (): Promise<AwiPoint[]> => {
     .sort((a, b) => a.year - b.year);
 });
 
-export const getAwiSeries = createServerFn({ method: "GET" }).handler(
-  (): Promise<AwiPoint[]> =>
-    readAwi().catch((e: unknown) => {
-      console.error("ssa awi", e);
-      throw new Error("The SSA wage index could not be read just now.");
-    }),
+export const getAwiSeries = createServerFn({ method: "GET" }).handler((): Promise<AwiPoint[]> =>
+  readAwi().catch((e: unknown) => {
+    console.error("ssa awi", e);
+    throw new Error("The SSA wage index could not be read just now.");
+  }),
 );
 
 const readCpiAreas = memoAsync(READ_TTL_MS, async (): Promise<CpiArea[]> => {
@@ -125,10 +129,9 @@ const readCpiAreas = memoAsync(READ_TTL_MS, async (): Promise<CpiArea[]> => {
     .sort((a, b) => a.area.localeCompare(b.area));
 });
 
-export const getCpiAreas = createServerFn({ method: "GET" }).handler(
-  (): Promise<CpiArea[]> =>
-    readCpiAreas().catch((e: unknown) => {
-      console.error("cpi areas", e);
-      throw new Error("The BLS CPI area series could not be read just now.");
-    }),
+export const getCpiAreas = createServerFn({ method: "GET" }).handler((): Promise<CpiArea[]> =>
+  readCpiAreas().catch((e: unknown) => {
+    console.error("cpi areas", e);
+    throw new Error("The BLS CPI area series could not be read just now.");
+  }),
 );

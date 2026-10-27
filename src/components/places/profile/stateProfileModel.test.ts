@@ -30,7 +30,10 @@ const county = (fips: string, year: number, pop: number, age: number, vet?: numb
   name: fips,
   year,
   pop,
-  shares: { age_65plus: { v: age, moe: 0.1 }, ...(vet != null ? { veterans: { v: vet, moe: 0.1 } } : {}) },
+  shares: {
+    age_65plus: { v: age, moe: 0.1 },
+    ...(vet != null ? { veterans: { v: vet, moe: 0.1 } } : {}),
+  },
 });
 
 describe("district outreach", () => {
@@ -40,7 +43,13 @@ describe("district outreach", () => {
   });
   it("weights shares by population, exact only for total-population universes", () => {
     const rows = [county("34023", 2024, 800000, 16, 3), county("34025", 2024, 200000, 21)];
-    const d = districtOutreach(rows, new Map([["34023", "njd"], ["34025", "njd"]]));
+    const d = districtOutreach(
+      rows,
+      new Map([
+        ["34023", "njd"],
+        ["34025", "njd"],
+      ]),
+    );
     expect(d).toHaveLength(1);
     expect(d[0]!.shares.age_65plus).toEqual({ v: 17, exact: true, covered: 2 });
     expect(d[0]!.shares.veterans).toEqual({ v: 3, exact: false, covered: 1 });
@@ -50,10 +59,25 @@ describe("district outreach", () => {
 
 describe("exposure screen", () => {
   // Autauga AL (01001), CBP 2023: 12,749 employees, 1,484 in manufacturing
-  const a = parseCbp("01001", "Autauga County", { "00": { "2023": [968, 12749, 527009] }, "31-33": { "2023": [28, 1484, 121140] } }, "2023");
-  const b = parseCbp("01003", "Baldwin County", { "00": { "2023": [6000, 80000, 1] }, "31-33": { "2023": [1, 4000, 1] } }, "2023");
+  const a = parseCbp(
+    "01001",
+    "Autauga County",
+    { "00": { "2023": [968, 12749, 527009] }, "31-33": { "2023": [28, 1484, 121140] } },
+    "2023",
+  );
+  const b = parseCbp(
+    "01003",
+    "Baldwin County",
+    { "00": { "2023": [6000, 80000, 1] }, "31-33": { "2023": [1, 4000, 1] } },
+    "2023",
+  );
   const c = parseCbp("01005", "Barbour County", { "00": { "2023": [300, 5000, 1] } }, "2023"); // suppressed sector
-  const d = parseCbp("01007", "Bibb County", { "00": { "2023": [200, 2000, 1] }, "31-33": { "2023": [1, 600, 1] } }, "2023");
+  const d = parseCbp(
+    "01007",
+    "Bibb County",
+    { "00": { "2023": [200, 2000, 1] }, "31-33": { "2023": [1, 600, 1] } },
+    "2023",
+  );
   it("joins sector share and OSHA rate on exact FIPS and leaves out suppressed cells", () => {
     const osha = new Map([
       ["01001", { rate: 40, base: 20 }],

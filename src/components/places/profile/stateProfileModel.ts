@@ -19,14 +19,24 @@ export type OutreachMeasure = {
 };
 
 export const OUTREACH_MEASURES: readonly OutreachMeasure[] = [
-  { key: "age_65plus", label: "Aged 65 and over", universe: "total population", totalPopUniverse: true },
+  {
+    key: "age_65plus",
+    label: "Aged 65 and over",
+    universe: "total population",
+    totalPopUniverse: true,
+  },
   {
     key: "disability",
     label: "With a disability",
     universe: "civilian noninstitutionalized population",
     totalPopUniverse: false,
   },
-  { key: "veterans", label: "Veterans", universe: "civilian population 18 and over", totalPopUniverse: false },
+  {
+    key: "veterans",
+    label: "Veterans",
+    universe: "civilian population 18 and over",
+    totalPopUniverse: false,
+  },
   {
     key: "non_english",
     label: "Speak a language other than English at home",
@@ -42,11 +52,16 @@ export const OUTREACH_MEASURES: readonly OutreachMeasure[] = [
 ];
 
 type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj | null => (v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : null);
+const obj = (v: unknown): Obj | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Obj) : null;
 const fin = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
 /** ACS latest block ({measure: [value, moe, year, flag?]}) as shares for the outreach measures, plus population. */
-export function parseLatest(raw: unknown): { year: number | null; pop: number | null; shares: Partial<Record<OutreachMeasure["key"], Share>> } {
+export function parseLatest(raw: unknown): {
+  year: number | null;
+  pop: number | null;
+  shares: Partial<Record<OutreachMeasure["key"], Share>>;
+} {
   const l = obj(raw) ?? {};
   const cell = (k: string) => (Array.isArray(l[k]) ? (l[k] as unknown[]) : null);
   const pop = cell("pop");
@@ -129,7 +144,12 @@ export const EXPOSURE_SECTORS = [
 ] as const;
 export type SectorCode = (typeof EXPOSURE_SECTORS)[number]["code"];
 
-export type CountyCbp = { fips: string; name: string; total: number | null; sectors: Partial<Record<SectorCode, number>> };
+export type CountyCbp = {
+  fips: string;
+  name: string;
+  total: number | null;
+  sectors: Partial<Record<SectorCode, number>>;
+};
 
 /** One census_cbp_counties series block for a year: employees (the second element) per sector, total from "00". */
 export function parseCbp(fips: string, name: string, series: unknown, year: string): CountyCbp {
@@ -171,7 +191,13 @@ export function exposureScreen(
   cbp: readonly CountyCbp[],
   osha: ReadonlyMap<string, { rate: number | null; base: number | null }>,
   sector: SectorCode,
-): { points: ExposurePoint[]; medianShare: number | null; medianOsha: number | null; above: ExposurePoint[]; leftOut: number } {
+): {
+  points: ExposurePoint[];
+  medianShare: number | null;
+  medianOsha: number | null;
+  above: ExposurePoint[];
+  leftOut: number;
+} {
   const points: ExposurePoint[] = [];
   let leftOut = 0;
   for (const c of cbp) {
@@ -181,7 +207,14 @@ export function exposureScreen(
       leftOut++;
       continue;
     }
-    points.push({ fips: c.fips, name: c.name, share: (e / c.total) * 100, employees: e, oshaRate: o.rate, oshaBase: o.base });
+    points.push({
+      fips: c.fips,
+      name: c.name,
+      share: (e / c.total) * 100,
+      employees: e,
+      oshaRate: o.rate,
+      oshaBase: o.base,
+    });
   }
   const medianShare = median(points.map((p) => p.share));
   const medianOsha = median(points.map((p) => p.oshaRate));

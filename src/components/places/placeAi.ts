@@ -22,7 +22,8 @@ export const ECOLOGICAL_NOTE = "pattern across areas, not a cause; says nothing 
 export function mdlShareOfFilings(c: Pick<CountyAnalysis, "legal" | "metrics">): number | null {
   const mdl = c.legal?.window["mdl"];
   const all = c.metrics["fjc_5y"];
-  if (mdl == null || all == null || !Number.isFinite(mdl) || !Number.isFinite(all) || all <= 0) return null;
+  if (mdl == null || all == null || !Number.isFinite(mdl) || !Number.isFinite(all) || all <= 0)
+    return null;
   return (mdl / all) * 100;
 }
 
@@ -49,12 +50,33 @@ export function countyLegalFigures(c: CountyAnalysis): FigureInput[] {
     const fmt = (v: number | null | undefined) => formatPlaceValue(v, def.format);
     out.push({ label: `${def.label}: ${c.name}`, value: fmt(c.metrics[key]), unit: def.unit });
     const dist = c.stateDistributions[key];
-    if (dist) out.push({ label: `${def.label}: median ${c.usps} county`, value: fmt(dist.median), unit: def.unit });
-    if (key in c.stateValues) out.push({ label: `${def.label}: ${c.state}`, value: fmt(c.stateValues[key]), unit: def.unit });
-    if (key in c.usValues) out.push({ label: `${def.label}: United States`, value: fmt(c.usValues[key]), unit: def.unit });
+    if (dist)
+      out.push({
+        label: `${def.label}: median ${c.usps} county`,
+        value: fmt(dist.median),
+        unit: def.unit,
+      });
+    if (key in c.stateValues)
+      out.push({
+        label: `${def.label}: ${c.state}`,
+        value: fmt(c.stateValues[key]),
+        unit: def.unit,
+      });
+    if (key in c.usValues)
+      out.push({
+        label: `${def.label}: United States`,
+        value: fmt(c.usValues[key]),
+        unit: def.unit,
+      });
   }
   const core5 = c.metrics["fjc_core_5y"];
-  if (core5 != null) out.push({ label: "Core federal civil filings, five years", value: core5, unit: "cases", period: "FY2021-FY2025" });
+  if (core5 != null)
+    out.push({
+      label: "Core federal civil filings, five years",
+      value: core5,
+      unit: "cases",
+      period: "FY2021-FY2025",
+    });
   const share = mdlShareOfFilings(c);
   if (share != null)
     out.push({
@@ -76,10 +98,15 @@ export function stateStandoutFigures(a: StateAnalysis): FigureInput[] {
   const out: FigureInput[] = [
     { label: "Counties analysed", value: a.counties },
     { label: "Federal districts", value: a.districts.length },
-    { label: "County associations that hold (of those run)", value: `${a.testsHold} of ${a.testsRun}` },
+    {
+      label: "County associations that hold (of those run)",
+      value: `${a.testsHold} of ${a.testsRun}`,
+    },
   ];
   a.standouts
-    .filter((s: Standout) => !(s.metric && AI_EXCLUDED_KEYS.has(s.metric)) && !mentionsExcluded(s.text))
+    .filter(
+      (s: Standout) => !(s.metric && AI_EXCLUDED_KEYS.has(s.metric)) && !mentionsExcluded(s.text),
+    )
     .slice(0, 10)
     .forEach((s: Standout, i: number) =>
       out.push({
@@ -89,7 +116,10 @@ export function stateStandoutFigures(a: StateAnalysis): FigureInput[] {
       }),
     );
   a.tests
-    .filter((t: Test) => t.holds && t.rho != null && !AI_EXCLUDED_KEYS.has(t.x) && !AI_EXCLUDED_KEYS.has(t.y))
+    .filter(
+      (t: Test) =>
+        t.holds && t.rho != null && !AI_EXCLUDED_KEYS.has(t.x) && !AI_EXCLUDED_KEYS.has(t.y),
+    )
     .sort((x: Test, y: Test) => Math.abs(y.rho ?? 0) - Math.abs(x.rho ?? 0))
     .slice(0, 8)
     .forEach((t: Test) =>

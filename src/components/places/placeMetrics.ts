@@ -136,7 +136,8 @@ export const PLACE_METRICS: PlaceMetric[] = [
     group: "Legal activity",
     source: "county_litigation records tagged with the county",
     pickable: false,
-    caveat: "Counts saved court web pages in this corpus: coverage of the corpus, not legal activity.",
+    caveat:
+      "Counts saved court web pages in this corpus: coverage of the corpus, not legal activity.",
   },
   {
     key: "population",

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { MetricDef } from "./contract";
-import { curateCatalog, DOJ_SERIES_BREAK_CAVEAT, emptyMetricIds, withReadingNotes } from "./catalogCuration";
+import {
+  curateCatalog,
+  DOJ_SERIES_BREAK_CAVEAT,
+  emptyMetricIds,
+  withReadingNotes,
+} from "./catalogCuration";
 
 const def = (id: string, facts: number, caveats: string[] = []): MetricDef => ({
   id,
@@ -36,7 +41,10 @@ describe("curateCatalog", () => {
   });
 
   it("puts the 2013 series-break caveat first on the DOJ metrics, once", () => {
-    const out = curateCatalog([def("doj_press_releases", 18, ["Counts publications."]), def("doj_state_press_releases", 746)]);
+    const out = curateCatalog([
+      def("doj_press_releases", 18, ["Counts publications."]),
+      def("doj_state_press_releases", 746),
+    ]);
     expect(out[0]?.caveats).toEqual([DOJ_SERIES_BREAK_CAVEAT, "Counts publications."]);
     expect(out[1]?.caveats[0]).toBe(DOJ_SERIES_BREAK_CAVEAT);
     const again = withReadingNotes(out[0]!);

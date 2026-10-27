@@ -24,7 +24,9 @@ const read = memoAsync(READ_TTL_MS, async (): Promise<FilingWaves> => {
     return row ? [row] : [];
   });
   // Captions only for the cohort, joined on the exact MDL number (dataset mdls ids are the bare number).
-  const cohort = rows.filter((r) => isProductMdl(r) && r.cases >= COHORT_MIN_CASES).map((r) => r.mdl);
+  const cohort = rows
+    .filter((r) => isProductMdl(r) && r.cases >= COHORT_MIN_CASES)
+    .map((r) => r.mdl);
   const titles = new Map<number, string>();
   for (let i = 0; i < cohort.length; i += 150) {
     const ids = cohort.slice(i, i + 150).join(",");

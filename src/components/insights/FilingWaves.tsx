@@ -5,7 +5,13 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChartFrame, LineTrend, metricFormatter, type ChartStatus, type PeriodAxis } from "@/components/charts";
+import {
+  ChartFrame,
+  LineTrend,
+  metricFormatter,
+  type ChartStatus,
+  type PeriodAxis,
+} from "@/components/charts";
 import { AiSummary, AskAiButton, buildSectionContext, type FigureInput } from "@/components/kit";
 import { getFilingWaves } from "@/lib/insights/filingWaves.functions";
 import {
@@ -20,7 +26,7 @@ import {
 } from "@/lib/insights/filingWaves";
 import { Segmented } from "./controls";
 
-export const filingWavesQuery = {
+const filingWavesQuery = {
   queryKey: ["insights", "filing-waves"] as const,
   queryFn: () => getFilingWaves(),
   staleTime: 10 * 60 * 1000,
@@ -32,7 +38,9 @@ const pct = metricFormatter("percent");
 /** Five MDL lines plus the cohort median fill the six-slot categorical palette. */
 const MAX_SELECTED = 5;
 const shortName = (w: Wave) => {
-  const t = w.title?.replace(/^IN RE:?\s*/i, "").replace(/\s+(Products? Liability|Marketing, Sales Practices).*$/i, "");
+  const t = w.title
+    ?.replace(/^IN RE:?\s*/i, "")
+    .replace(/\s+(Products? Liability|Marketing, Sales Practices).*$/i, "");
   return `MDL ${w.mdl}${t ? ` ${t.slice(0, 40)}` : ""}`;
 };
 
@@ -129,7 +137,11 @@ export function FilingWaves() {
     <div id="waves" className="scroll-mt-16 space-y-3">
       <ChartFrame
         title="New filings in product-liability MDLs, by years since the first sizeable year"
-        unit={mode === "filings" ? "cases filed per fiscal year" : "% of the MDL's own peak complete year"}
+        unit={
+          mode === "filings"
+            ? "cases filed per fiscal year"
+            : "% of the MDL's own peak complete year"
+        }
         period={q.data?.dataThrough ? `FJC data through ${q.data.dataThrough}` : undefined}
         sources={[FJC_MDL_SOURCE]}
         status={status}
