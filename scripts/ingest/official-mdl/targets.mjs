@@ -349,6 +349,13 @@ export const MATTERS = {
     ],
     index_pages: [],
   },
+  // D. Mont. MDL 3126 (Snowflake data breach; Drupal MDL node with direct PDFs on litigation page).
+  '3126': {
+    name: 'In re Snowflake Inc. Data Security Breach Litigation', court_id: 'mtd', host: 'www.mtd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3126',
+    pages: [{ id: 'mtd-3126-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mtd.uscourts.gov/snowflake-data-security-breach-litigation' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
