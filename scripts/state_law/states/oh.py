@@ -121,6 +121,13 @@ def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     retained = getattr(ctx, "retained", None)
     prefix = options.get("prefix", "")          # e.g. section-2305. for a bounded sample
+    # Lead decision 2026-10-27 (review of release state-codes-official-unprojected): OH is held together with OK. Both
+    # captures were taken while the publisher's robots.txt said `Disallow: /` for every agent; OH's file is one malformed
+    # line, but its intent is the same explicit restriction. A retained re-parse waits for the same owner decision.
+    if options.get("live") != "owner-approved" and options.get("owner_release") != "2026-10-27-robots":
+        raise lib.Blocked("codes.ohio.gov robots.txt reads 'User-agent: * Disallow: /' (one line). Held with OK on the "
+                          "publisher's explicit restriction until the owner decides (lead 2026-10-27); pass "
+                          "--option owner_release=2026-10-27-robots with --option source=retained once released.")
     if retained is None and options.get("live") != "owner-approved":
         raise lib.Blocked("codes.ohio.gov robots.txt reads 'User-agent: * Disallow: /' (one line); live crawling "
                           "waits for an owner decision. Re-parse retained originals: --option source=retained")

@@ -8,18 +8,23 @@
 --   Staged captured layer (corpus_ingest.entities, entity_type 'code-section', review_status 'source_metadata'):
 --   IL 72,813; OR 65,750; OK 48,019; KS 47,489; MD 40,347; NY 37,530 (+1,358 quarantined); CO 35,791; OH 33,343;
 --   MA 26,812 = 407,894. Released by this plan: IL OR KS MD NY OH MA = 324,084 staged sections.
---   Held: CO 35,791 (publisher unconfirmed) + OK 48,019 (publisher's robots.txt) = 83,810.
+--   Held: CO 35,791 (publisher's terms: section 2-5-118 C.R.S. statement; olls.info is the OLLS host) + OK 48,019 and
+--   OH 33,343 (each capture was taken while the publisher's robots.txt disallowed every agent; lead 2026-10-27 holds
+--   both until the owner decides) = 117,153.
+-- Read-only; run inside one transaction so the timeout applies (review 2026-10-27).
+begin;
 set local statement_timeout = '60s';
 
--- 1. editions of the nine (after: IL OR KS MD NY OH MA active; CO and OK absent)
+-- 1. editions of the nine (after: IL OR KS MD NY MA active; CO, OK and OH absent)
 select state, edition_id, lifecycle, parser, access, activated_at, left(note, 240) as note
 from state_law.editions where state in ('IL','OR','OK','KS','MD','NY','CO','OH','MA') order by state, created_at;
 
--- 2. active editions overall (38 before, 45 after)
+-- 2. active editions overall (38 before, 44 after)
 select count(*) as active_editions from state_law.editions where lifecycle = 'active';
 
--- 3. sections per state (after: each equals its edition.json counts.sections; expected near the staged counts above,
---    IL slightly higher because each two-text section becomes @1/@2; CO and OK stay 0)
+-- 3. sections per state (after: each equals its edition.json counts.sections; expected near the staged counts above.
+--    IL is about 1,127 higher (~73,940): every same-table printed version becomes its own @1/@2 row, the 60 P.A. 89-7
+--    WITH/WITHOUT pairs and the ~1,067 "before/after amendment by P.A. ..." pairs; CO, OK and OH stay 0)
 select 'IL' as state, count(*) from state_law.sections_il union all select 'OR', count(*) from state_law.sections_or
 union all select 'KS', count(*) from state_law.sections_ks union all select 'MD', count(*) from state_law.sections_md
 union all select 'NY', count(*) from state_law.sections_ny union all select 'OH', count(*) from state_law.sections_oh
@@ -33,9 +38,10 @@ from state_law.sections_il where number = '735:5/13-213' order by version_index;
 select count(*) as rows, count(distinct version_index) as versions
 from state_law.sections_il where number = '735:5/13-213';
 
--- 5. no IL text still carries a second printed version (after: 0 rows; the staged layer has 60 such rows)
+-- 5. no IL text still carries a second printed version of any kind (after: 0 rows; the staged layer has 1,033 texts
+--    with a "(Source: ...)" line followed by another "(Text of Section|Article|Part ...)" label)
 select section_id from state_law.sections_il
-where text like '%(Text of Section WITHOUT the changes made by%' or text like '%(Text of Section WITH the changes made by%'
+where text ~ E'\\(Text of (Section|Article|Part)[^)]*\\)' or text ~ E'\\(Source: [^\\n]*\\)\\n'
 limit 20;
 
 -- 6. NY carries its provenance label (after: terms_note and note say "captured via fetch proxy from nysenate.gov")
@@ -47,8 +53,8 @@ select count(*) as container_like from state_law.sections_ny where number !~ '^[
 -- 8. citations resolve to the in-force layer (after: one hit each)
 select public.state_law_resolve_v1('NY', 'N.Y. C.P.L.R. 214') as ny_cplr,
        public.state_law_resolve_v1('IL', '735 ILCS 5/13-202') as il_sol,
-       public.state_law_resolve_v1('OH', 'R.C. 2305.10') as oh_pi,
        public.state_law_resolve_v1('MD', 'Md. Code Ann., Cts. & Jud. Proc. § 5-101') as md_sol,
        public.state_law_resolve_v1('KS', 'K.S.A. 60-513') as ks_sol,
        public.state_law_resolve_v1('MA', 'Mass. Gen. Laws ch. 260, § 2A') as ma_sol,
        public.state_law_resolve_v1('OR', 'ORS 12.110') as or_sol;
+commit;

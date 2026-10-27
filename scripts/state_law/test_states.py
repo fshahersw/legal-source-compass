@@ -209,9 +209,110 @@ class IllinoisSameTableVersionsTests(unittest.TestCase):
         il = load("il")
         lines = [["(735 ILCS 5/1-101)"], ["Sec. 1-101. ", "Short title."], ["(a) Text."], ["(Source: P.A. 82-280.)"],
                  ["Editor's note line."]]
-        out = il.table_versions(lines)
-        self.assertEqual(len(out), 1)
-        self.assertEqual(out[0]["text"], "(a) Text.")
+        segs = il.version_segments(lines[1:])
+        self.assertEqual(len(segs), 1)
+        self.assertEqual(il.parse_segment(segs[0], None, __import__("datetime").date(2026, 10, 27))["text"], "(a) Text.")
+
+    def test_same_table_before_and_after_amendment_pair_gives_two_versions(self):
+        # review 2026-10-27: same-table versions are not only the 89-7 WITH/WITHOUT pairs (10 ILCS 5/1A-50 style)
+        il = load("il")
+        lines = [["(10 ILCS 5/1A-50)"], ["(Text of Section before amendment by P.A. 104-600)"], ["Sec. 1A-50. ", "Duties."],
+                 ["(a) Old text."], ["(Source: P.A. 103-1.)"], ["(Text of Section after amendment by P.A. 104-600)"],
+                 ["Sec. 1A-50. ", "Duties."], ["(a) New text."], ["(Source: P.A. 104-600, eff. 1-1-27.)"]]
+        segs = il.version_segments(lines[1:])
+        self.assertEqual(len(segs), 2)
+        today = __import__("datetime").date(2026, 10, 27)
+        page = __import__("types").SimpleNamespace(text=lambda: "")
+        first, second = (il.parse_segment(s, page, today) for s in segs)
+        self.assertEqual(first["text"], "(a) Old text.")
+        self.assertEqual(second["text"], "(a) New text.")
+        self.assertEqual(second["version"], "(Text of Section after amendment by P.A. 104-600)")
+        self.assertEqual(second["status"], "future_effective")
+
+
+class IllinoisVersionsAndNoticesTests(unittest.TestCase):
+    """Markup as ilga.gov prints it in 735 ILCS 5 (Code of Civil Procedure), checked against the live page 2026-10-27."""
+    F = "<code><font size='2' face='Courier New'>{}</font></code>"
+    I = "<code>&nbsp;&nbsp;&nbsp;&nbsp;</code>"
+
+    def table(self, *lines: str) -> str:
+        return ("<table><tr><td><div align='justify'><p></p>" + "<br>".join(self.I + line for line in lines)
+                + "</div></td></tr></table>")
+
+    def parse(self, *tables: str) -> tuple[list[dict], list[dict], bool]:
+        il = load("il")
+        page = ("<html><body><div class='billtext-host'>" + "".join(tables) + "</div></body></html>").encode()
+        with tempfile.TemporaryDirectory() as tmp:
+            c = Ctx(il, pathlib.Path(tmp))
+            fetched_page = c.record(fetched("https://www.ilga.gov/legislation/ILCS/details?x=3", page))
+            il.parse_act_page(c.ctx, fetched_page, "735", "CIVIL PROCEDURE", "5", "Code of Civil Procedure.",
+                              dt.date(2026, 10, 27))
+            c.ctx.finish()
+            rows = list(lib.read_jsonl(c.ctx.dir / "sections.jsonl.gz"))
+            rejects_file = c.ctx.dir / "rejects.jsonl.gz"
+            rejects = list(lib.read_jsonl(rejects_file)) if rejects_file.exists() else []
+            return rows, rejects, verify_mod.verify(c.ctx.dir, pathlib.Path(tmp) / "raw")["ok"]
+
+    def test_both_versions_of_13_213_are_kept(self):
+        f = self.F.format
+        with_label = "(Text of Section WITH the changes made by P.A. 89-7, which has been held unconstitutional)"
+        without_label = "(Text of Section WITHOUT the changes made by P.A. 89-7, which has been held unconstitutional)"
+        rows, rejects, ok = self.parse(self.table(
+            f("(735 ILCS 5/13-213)") + " " + f("(from Ch. 110, par. 13-213)"),
+            f(with_label),
+            f("Sec. 13-213. ") + f("Product liability; statute of repose. "),
+            f("(a) As used in this Section, the term: product."),
+            f("(Source: P.A. 89-7, eff. 3-9-95.)"),
+            f(without_label),
+            f("Sec. 13-213. ") + f("Product liability. "),
+            f("(a) As used in this Section, the term: product, original."),
+            f("(Source: P.A. 85-907; 86-1329.)")))
+        self.assertTrue(ok)
+        self.assertEqual(rejects, [])
+        self.assertEqual([r["section_id"] for r in rows], ["IL:ILCS:735:5/13-213@1", "IL:ILCS:735:5/13-213@2"])
+        self.assertEqual([r["version"] for r in rows], [with_label, without_label])
+        self.assertEqual([r["status"] for r in rows], ["not_recorded", "in_force"])
+        self.assertEqual(rows[0]["status_marker"], with_label)
+        self.assertEqual([r["history"] for r in rows], ["(Source: P.A. 89-7, eff. 3-9-95.)", "(Source: P.A. 85-907; 86-1329.)"])
+        self.assertEqual([r["heading"] for r in rows], ["Product liability; statute of repose.", "Product liability."])
+        self.assertEqual(rows[1]["text"], "(a) As used in this Section, the term: product, original.")
+
+    def test_notice_lines_are_not_dropped_sections(self):
+        f = self.F.format
+        rows, rejects, ok = self.parse(
+            self.table(f("(735 ILCS 5/2-623)"), f("(This Section was added by P.A. 89-7, which has been held unconstitutional)"),
+                       f("Sec. 2-623. ") + f("Certificate of merit; product liability."), f("(a) Text."),
+                       f("(Source: P.A. 89-7, eff. 3-9-95.)")),
+            self.table(f("(735 ILCS 5/13-109.2)"), f("(This Section may contain text from a Public Act with a delayed effective date)"),
+                       f("Sec. 13-109.2. ") + f("Tenancy in common, intestate succession."), f("(a) Text."),
+                       f("(Source: P.A. 104-506, eff. 1-1-27.)")),
+            self.table(f("(735 ILCS 5/804.5)"), f("This Section was renumbered as Section 8-804.5 by P.A. 104-417)"),
+                       f("Sec. 804.5. ") + f("(Renumbered)."),
+                       f("(Source: P.A. 102-100, eff. 7-15-21. Renumbered by P.A. 104-417, eff. 8-15-25.)")))
+        self.assertTrue(ok)
+        self.assertEqual(rejects, [])
+        self.assertEqual([r["number"] for r in rows], ["735:5/2-623", "735:5/13-109.2", "735:5/804.5"])
+        self.assertEqual(rows[0]["status"], "not_recorded")
+        self.assertEqual(rows[0]["status_marker"], "(This Section was added by P.A. 89-7, which has been held unconstitutional)")
+        self.assertEqual(rows[1]["status"], "future_effective")
+        self.assertEqual(rows[1]["effective"]["start"], "2027-01-01")
+        self.assertEqual(rows[1]["effective"]["note"],
+                         "(This Section may contain text from a Public Act with a delayed effective date)")
+        self.assertEqual(rows[2]["status"], "renumbered")
+        for row in rows:
+            self.assertNotIn("This Section", row["text"])
+
+    def test_form_lines_keep_their_spaces_and_the_source_note_is_history(self):
+        f = self.F.format
+        rows, rejects, ok = self.parse(self.table(
+            f("(735 ILCS 5/5-101)"), f("Sec. 5-101. ") + f("Form of notice."),
+            f("The notice shall be in the following form:") + "<center>" + f('"CITATION NOTICE') + "</center>"
+            + f("\n") + self.I + f("Plaintiff requests:"),
+            f("Dated this .... day of ...., .....") + f("\n") + f("(Signed) E.F.") + f("\n") + f("(Source: P.A. 83-707.)")))
+        self.assertTrue(ok)
+        self.assertEqual(rows[0]["history"], "(Source: P.A. 83-707.)")
+        self.assertEqual(rows[0]["text"], 'The notice shall be in the following form:\n"CITATION NOTICE\nPlaintiff requests:\n'
+                                          "Dated this .... day of ...., ..... (Signed) E.F.")
 
 
 class MissouriChapterGuardTests(unittest.TestCase):

@@ -188,9 +188,10 @@ def _meta():
         publisher_url=INDEX, official_source=True, access="html", hosts=(HOST,), codes=tuple(codes), parser=PARSER,
         min_interval_s=1.0,
         terms_note=("Statutory text is public domain (Georgia v. Public.Resource.Org, 2020). The publisher's pages were "
-                    f"{PROXY_LABEL} (Firecrawl, 2026-10-06/07; direct requests meet a browser check, never bypassed by "
-                    "this project's fetcher), accepted by the owner on 2026-10-07 as for Pennsylvania and released "
-                    "2026-10-27; never fetched live."),
+                    f"{PROXY_LABEL}: obtained on 2026-10-06/07 through a third-party fetch proxy (Firecrawl) that passed "
+                    "the publisher's browser check, which this project's own fetcher does not pass; the owner accepted "
+                    "these copies on 2026-10-07 as for Pennsylvania (scripts/legal/state-codes/ny/capture.py), and they "
+                    "were released into the in-force layer on 2026-10-27. Never fetched live."),
         update_cadence=("Each page prints its own revision date; a refresh needs an OpenLegislation API key (free, from "
                         "the Senate) or a new owner-accepted capture."))
 
