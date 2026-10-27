@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   nhtsaCampaigns,
+  recallCampaignIds,
   pctChange,
   radarRows,
   recallQuarterRows,
@@ -15,6 +16,17 @@ describe("nhtsaCampaigns", () => {
     expect(
       nhtsaCampaigns(["25V437000", "Z-0119-2027", " 25V437000", "25V43700", "24E001000"]),
     ).toEqual(["25V437000", "24E001000"]);
+  });
+});
+
+describe("recallCampaignIds", () => {
+  it("reads the campaign from an NHTSA recall-pattern sample's id (recall_numbers is empty there)", () => {
+    const nhtsa = { id: "26V668000", recallNumbers: [] as string[] };
+    const fda = { id: "fda-enf:Z-0119-2027", recallNumbers: ["Z-0119-2027"] };
+    expect(
+      recallCampaignIds([nhtsa, fda, { id: "25V437000", recallNumbers: ["26V668000"] }]),
+    ).toEqual(["26V668000", "25V437000"]);
+    expect(recallCampaignIds([fda])).toEqual([]);
   });
 });
 

@@ -142,7 +142,9 @@ begin
       select c.received, c.injured, c.crash, c.fire, c.deaths,
              exists (select 1 from unnest(c.components) u, tops where split_part(u, ':', 1) = any (tops.t)) as comp_match
         from safety.nhtsa_complaints c
-       where exists (select 1 from veh
+       -- Pre-filter the GIN index nhtsa_complaints_makes can serve, so a recall reads only its makes' complaints.
+       where c.makes && (select coalesce(array_agg(distinct veh.make), '{}'::text[]) from veh)
+         and exists (select 1 from veh
                       where veh.make = any (c.makes) and veh.model = any (c.models)
                         and exists (select 1 from unnest(c.model_years) y where y between veh.y1 and veh.y2))
     ),

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { SectionPage } from "@/components/corpus/SectionPage";
@@ -25,6 +26,8 @@ import { NhtsaPipelineSection } from "@/components/safety/NhtsaPipelineSection";
 import { ComplaintRadarSection } from "@/components/safety/ComplaintRadarSection";
 import { CpscDeathsSection } from "@/components/safety/CpscDeathsSection";
 import { SilicaSection } from "@/components/safety/SilicaSection";
+import { complaintWindowsQuery, oshaSilicaQuery } from "@/components/safety/sectionQueries";
+import { hasComplaintWindows, hasSilica } from "@/lib/safety/safetyWindows";
 import {
   COLLECTION_CAVEATS,
   LANDING_RECALL_BLOCKS,
@@ -62,20 +65,33 @@ function EachAgencyRecalls() {
   );
 }
 
-const OVERVIEW_INDEX = [
-  { id: "safety-intelligence", label: "Flags" },
-  { id: "fda-recall-events", label: "FDA recalls" },
-  { id: "nhtsa-pipeline", label: "Vehicle probes" },
-  { id: "complaint-radar", label: "Vehicle complaints" },
-  { id: "cpsc-deaths", label: "Recalls reporting deaths" },
-  { id: "occupational-exposure", label: "Silica" },
-];
+/**
+ * The in-page index. The complaint radar and silica sections render nothing until their read RPCs are applied, so they
+ * are listed only once their query has data (or failed, when the section shows its error note).
+ */
+function useOverviewIndex() {
+  const radar = useQuery(complaintWindowsQuery);
+  const silica = useQuery(oshaSilicaQuery);
+  return [
+    { id: "safety-intelligence", label: "Flags" },
+    { id: "fda-recall-events", label: "FDA recalls" },
+    { id: "nhtsa-pipeline", label: "Vehicle probes" },
+    ...(radar.isError || hasComplaintWindows(radar.data)
+      ? [{ id: "complaint-radar", label: "Vehicle complaints" }]
+      : []),
+    { id: "cpsc-deaths", label: "Recalls reporting deaths" },
+    ...(silica.isError || hasSilica(silica.data)
+      ? [{ id: "occupational-exposure", label: "Silica" }]
+      : []),
+  ];
+}
 
 /** The landing page's sections, in reading order; the agency cards follow once the catalog loads. */
 function OverviewSections({ children }: { children?: React.ReactNode }) {
+  const index = useOverviewIndex();
   return (
     <div className="space-y-6">
-      <SectionIndex items={OVERVIEW_INDEX} />
+      <SectionIndex items={index} />
       <DailyInsightCard section="safety" />
       <div id="safety-intelligence">
         <SafetyIntelligence />

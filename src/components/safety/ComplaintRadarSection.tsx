@@ -17,7 +17,14 @@ import {
   buildSectionContext,
 } from "@/components/kit";
 import { openProbesByManufacturer } from "@/lib/safety/nhtsaPipeline";
-import { pctChange, radarRows, shortMaker, titleCase } from "@/lib/safety/safetyWindows";
+import { StateNote } from "@/components/enforcement/parts";
+import {
+  hasComplaintWindows,
+  pctChange,
+  radarRows,
+  shortMaker,
+  titleCase,
+} from "@/lib/safety/safetyWindows";
 import { complaintWindowsQuery, nhtsaPipelineQuery } from "./sectionQueries";
 
 const SOURCE = {
@@ -33,8 +40,23 @@ export function ComplaintRadarSection() {
   const q = useQuery(complaintWindowsQuery);
   const pipeline = useQuery(nhtsaPipelineQuery);
   const w = q.data;
+  if (q.isError)
+    return (
+      <Section id={ID} title="Vehicle complaint surge radar">
+        <StateNote
+          tone="error"
+          action={
+            <button type="button" className="underline" onClick={() => void q.refetch()}>
+              Retry
+            </button>
+          }
+        >
+          The complaint windows could not be read just now.
+        </StateNote>
+      </Section>
+    );
   // Shows nothing until the RPC is applied (null) or while it loads.
-  if (!w || !w.totals || !w.as_of) return null;
+  if (!hasComplaintWindows(w)) return null;
   const t = w.totals;
   const rows = radarRows(w, MIN, 15);
   const withChange = rows.filter((r) => r.change !== null);
@@ -83,8 +105,9 @@ export function ComplaintRadarSection() {
         component, so pairs must not be added up.
       </li>
       <li>
-        Pairs need at least {MIN} complaints in the latest window. The dot line is the median change
-        of the pairs shown.
+        The pairs shown are the 60 with the largest increase in complaints, then kept when they have
+        at least {MIN} in the latest window; a pair with a larger percent rise but a smaller
+        increase may not be among them. The dot line is the median change of the pairs shown.
       </li>
       <li>Manufacturers are shown as NHTSA records them; open probes match on the exact name.</li>
     </ul>
@@ -133,7 +156,7 @@ export function ComplaintRadarSection() {
           variant="editorial"
           title={
             withChange[0]
-              ? `${withChange[0].label} complaints rose ${pct(withChange[0].change!)}, the fastest rise among pairs with ${MIN}+ complaints`
+              ? `${withChange[0].label} complaints rose ${pct(withChange[0].change!)}, the fastest rise among the pairs shown`
               : "Complaint change by manufacturer and component"
           }
           subtitle="Change in complaints, latest 365 days vs the 365 before · manufacturer × component"

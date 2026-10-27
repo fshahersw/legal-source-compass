@@ -27,6 +27,21 @@ export function RecallComplaintEffect({ campaigns }: { campaigns: readonly strin
     label: `NHTSA complaints for the vehicles of recall ${r.campaign}`,
     url: `https://www.nhtsa.gov/recalls?nhtsaId=${r.campaign}`,
   };
+  const partial = !!(b?.partial || a?.partial);
+  const partialNote = partial
+    ? [
+        b?.partial
+          ? `The 12 months before the recall start before the complaint data (${r.coverage_from ?? "start Not recorded"}); ${nr(b.complaints)} counted.`
+          : `${nr(b?.complaints)} complaints in the 12 months before.`,
+        a?.partial
+          ? `The 12 months after the recall run past the latest complaint (${r.coverage_to ?? "Not recorded"}); ${nr(a.complaints)} so far.`
+          : `${nr(a?.complaints)} complaints in the 12 months after.`,
+        "The two windows are not compared.",
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : undefined;
+  // Only the figures the card shows: the before and after complaint totals (in the title or partial note).
   const context = buildSectionContext({
     id: `recall-effect-${r.campaign}`,
     title: `Complaints before and after recall ${r.campaign}`,
@@ -36,16 +51,15 @@ export function RecallComplaintEffect({ campaigns }: { campaigns: readonly strin
       {
         label: "Complaints in the 12 months before the recall",
         value: b?.complaints ?? null,
-        note: b?.partial ? "partial window" : undefined,
+        note: b?.partial ? "partial window; not comparable with the other window" : undefined,
       },
       {
         label: "Complaints in the 12 months after the recall",
         value: a?.complaints ?? null,
-        note: a?.partial ? "partial window" : undefined,
+        note: a?.partial
+          ? "partial window, counted so far; not comparable with the other window"
+          : undefined,
       },
-      { label: "Injuries reported, 12 months before", value: b?.injured ?? null },
-      { label: "Injuries reported, 12 months after", value: a?.injured ?? null },
-      { label: "Crashes reported, 12 months before", value: b?.crashes ?? null },
     ],
   });
   return (
@@ -70,7 +84,11 @@ export function RecallComplaintEffect({ campaigns }: { campaigns: readonly strin
         ) : null}
       </div>
       <ChartCard
-        title={`Recall ${r.campaign}: ${nr(b?.complaints)} complaints in the 12 months before, ${nr(a?.complaints)} after`}
+        title={
+          partial
+            ? `Complaints per quarter for the vehicles of recall ${r.campaign}`
+            : `Recall ${r.campaign}: ${nr(b?.complaints)} complaints in the 12 months before, ${nr(a?.complaints)} after`
+        }
         subtitle={`Complaints per quarter received for the recalled vehicles and component${r.recall_date ? ` · recalled ${r.recall_date}` : ""}`}
         status={
           rows.length
@@ -81,11 +99,7 @@ export function RecallComplaintEffect({ campaigns }: { campaigns: readonly strin
         period={
           r.coverage_from && r.coverage_to ? `${r.coverage_from} to ${r.coverage_to}` : undefined
         }
-        partial={
-          b?.partial || a?.partial
-            ? "A 12-month window runs outside the complaint data (2020 onward), so the two windows are not compared."
-            : undefined
-        }
+        partial={partialNote}
         about={
           <ul className="list-disc space-y-1 pl-4">
             <li>

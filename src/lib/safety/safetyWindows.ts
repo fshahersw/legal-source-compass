@@ -11,6 +11,26 @@ export function nhtsaCampaigns(ids: readonly string[]): string[] {
   return [...new Set(ids.map((s) => s.trim()).filter((s) => CAMPAIGN.test(s)))];
 }
 
+/** The complaint radar has data to draw (the RPC is applied and returned its windows). */
+export function hasComplaintWindows(w: ComplaintWindows | null | undefined): w is ComplaintWindows {
+  return !!(w && w.totals && w.as_of);
+}
+
+/** The silica tracker has data to draw (the RPC is applied and returned its last-12-month block). */
+export function hasSilica(s: OshaSilica | null | undefined): s is OshaSilica {
+  return !!(s && s.last12 && s.to);
+}
+
+/**
+ * NHTSA campaign numbers of recall-pattern samples. NHTSA samples carry the campaign in `id` (e.g. "26V668000") and an
+ * empty recallNumbers list; other agencies' samples never match the exact NNVNNN000 form.
+ */
+export function recallCampaignIds(
+  samples: readonly { id: string; recallNumbers: readonly string[] }[],
+): string[] {
+  return nhtsaCampaigns(samples.flatMap((s) => [s.id, ...s.recallNumbers]));
+}
+
 export type ComplaintCounts = {
   current: number;
   prior: number;

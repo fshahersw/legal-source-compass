@@ -16,7 +16,8 @@ import {
   Section,
   buildSectionContext,
 } from "@/components/kit";
-import { silicaYears } from "@/lib/safety/safetyWindows";
+import { StateNote } from "@/components/enforcement/parts";
+import { hasSilica, silicaYears } from "@/lib/safety/safetyWindows";
 import { oshaSilicaQuery } from "./sectionQueries";
 
 const SOURCE = {
@@ -38,7 +39,23 @@ const LABELS = {
 export function SilicaSection() {
   const q = useQuery(oshaSilicaQuery);
   const s = q.data;
-  if (!s || !s.last12 || !s.to) return null;
+  if (q.isError)
+    return (
+      <Section id={ID} title="Occupational exposure: silica">
+        <StateNote
+          tone="error"
+          action={
+            <button type="button" className="underline" onClick={() => void q.refetch()}>
+              Retry
+            </button>
+          }
+        >
+          The OSHA silica citations could not be read just now.
+        </StateNote>
+      </Section>
+    );
+  // Shows nothing until the RPC is applied (null) or while it loads.
+  if (!hasSilica(s)) return null;
   const years = silicaYears(s);
   const l = s.last12;
   const window = `12 months to ${s.to}`;
