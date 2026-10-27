@@ -133,7 +133,9 @@ describe("agenda", () => {
     expect(projectedMonth("Final Rule · 07/00/2026 (projected month passed)")).toBe("2026-07");
     expect(projectedMonth("Next Action Undetermined · To Be Determined")).toBeNull();
     expect(agendaEdition(row("2127-AK17", "x", "y").source_url)).toBe("202510");
-    expect(editionLabel("202510")).toBe("October 2025");
+    expect(editionLabel("202510")).toBe("Fall 2025 (202510)");
+    expect(editionLabel("202604")).toBe("Spring 2026 (202604)");
+    expect(editionLabel("202507")).toBe("Edition 202507");
     expect(editionLabel(null)).toBeNull();
   });
   it("counts active items past their projected month against the current month only", () => {

@@ -51,7 +51,7 @@ function Page() {
               to: "/data/unified_agenda_pipeline",
               label: "Unified Agenda",
               description:
-                "Actions agencies plan, one row per RIN. Only the October 2025 edition (202510) is held; its projected dates are as printed then.",
+                "Actions agencies plan, one row per RIN. Only the Fall 2025 edition (202510) is held; its projected dates are as printed then.",
               counts: [{ dataset: "unified_agenda_pipeline", label: "actions" }],
             },
             {

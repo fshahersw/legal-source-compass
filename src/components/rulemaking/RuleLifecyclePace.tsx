@@ -38,8 +38,9 @@ export function RuleLifecyclePace() {
       about={
         <ul className="list-disc space-y-1 pl-4">
           <li>
-            RINs are grouped by agency prefix (0910 FDA, 2127 NHTSA, 3041 CPSC, 3084 FTC, 20xx EPA).
-            A final rule published before the first proposal is not counted.
+            RINs are grouped by agency prefix (0910 FDA, 2127 NHTSA, 3041 CPSC, 3084 FTC; EPA counts
+            prefixes 2040, 2050, 2060, 2070, 2080 and 2090 only). A final rule published before the
+            first proposal is not counted.
           </li>
           <li>
             Agencies with fewer than {MIN_FINALIZED} finalized RINs are not ranked. “Open” means no

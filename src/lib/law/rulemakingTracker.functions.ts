@@ -25,6 +25,7 @@ import {
 export const FR_FROM_YEAR = 2015;
 
 const cs = (v: Record<string, string[]>) => encodeURIComponent(JSON.stringify(v));
+const OPEN_PAGE = 1000;
 
 type DocRow = {
   id: string;
@@ -35,13 +36,20 @@ type DocRow = {
   comments: unknown;
 };
 
+/**
+ * Open, not-withdrawn documents of one agency (filters @> {agency, withdrawn: no}, GIN-indexed). The comment_end
+ * comparison is a row filter; an expression index or RPC for it is a lead follow-up (see the workstream report).
+ */
 async function openDeadlines(agency: string, today: string): Promise<Deadline[]> {
-  const rows = await readAllRows<DocRow>(
+  const path =
     `corpus_records?select=id,title,source_url,filters,dates_et:item->dates_et,comments:item->comments` +
-      `&dataset=eq.regulations_gov_documents&filters=cs.${cs({ agency: [agency] })}` +
-      `&item->dates_et->>comment_end=gte.${today}&order=ordinal.asc,id.asc`,
-    { max: 3_000 },
-  );
+    `&dataset=eq.regulations_gov_documents&filters=cs.${cs({ agency: [agency], withdrawn: ["no"] })}` +
+    `&item->dates_et->>comment_end=gte.${today}&order=ordinal.asc,id.asc`;
+  // One page without an exact count (open periods number in the tens per agency, so the filter runs once); a full
+  // first page falls back to the counted, paged read.
+  const page = await restGet<DocRow[]>(path, { range: [0, OPEN_PAGE - 1] });
+  const rows =
+    page.rows.length < OPEN_PAGE ? page.rows : await readAllRows<DocRow>(path, { max: 3_000 });
   return rows.flatMap((r) => {
     const d = toDeadline({ ...r, item: { dates_et: r.dates_et, comments: r.comments } }, today);
     return d ? [d] : [];

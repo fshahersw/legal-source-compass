@@ -228,11 +228,14 @@ export function agendaEdition(url: string | null): string | null {
   return url?.match(/[?&]pubId=(\d{6})\b/)?.[1] ?? null;
 }
 
-/** "202510" → "October 2025". */
+/**
+ * The publisher's name for an edition: "202510" → "Fall 2025 (202510)", "202604" → "Spring 2026 (202604)". The
+ * Unified Agenda appears twice a year (pubId month 04 = Spring, 10 = Fall); any other id keeps the bare number.
+ */
 export function editionLabel(edition: string | null): string | null {
   if (!edition || !/^\d{6}$/.test(edition)) return null;
-  const d = new Date(Date.UTC(Number(edition.slice(0, 4)), Number(edition.slice(4)) - 1, 1));
-  return d.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const season = ({ "04": "Spring", "10": "Fall" } as Record<string, string>)[edition.slice(4)];
+  return season ? `${season} ${edition.slice(0, 4)} (${edition})` : `Edition ${edition}`;
 }
 
 export function toAgendaItem(agency: string, raw: unknown): AgendaItem | null {

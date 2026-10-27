@@ -9,7 +9,10 @@
 -- Rules (exact identifiers only):
 --   - A RIN's first proposal is its earliest 'proposes' edge; its first final rule is the earliest 'finalizes' edge on
 --     or after that proposal (a final rule before the first proposal is not counted). RIN = to_key->>2.
---   - Agencies by RIN prefix only: 0910 FDA, 2127 NHTSA, 3041 CPSC, 3084 FTC, 2040-2090 EPA.
+--   - Agencies by RIN prefix only: 0910 FDA, 2127 NHTSA, 3041 CPSC, 3084 FTC, EPA prefixes 2040, 2050, 2060, 2070,
+--     2080 and 2090 (regex '^20[4-9]0-'; the prefix label '2040–2090' and the page's About text say exactly
+--     this). Other 20xx prefixes held in legal_atlas (2020: 13 proposes / 13 finalizes edges, 2025: 31 / 28,
+--     2030: 4 / 11 on 2026-10-27) are not counted until their agency is checked against the reginfo agency list.
 --   - "open_since_2021": first proposal on or after 2021-01-01 with no final rule in the records held; the rule may
 --     have been withdrawn. The page labels it that way.
 --   - legal_atlas Federal Register records stop at their last refresh (2026-10-02 on 2026-10-27); as_of says so.
@@ -36,7 +39,7 @@ language sql stable security definer set search_path = '' as $$
     group by p.rin, p.first_prop
   ), a(agency, prefix, re, ord) as (
     values ('FDA', '0910', '^0910-', 1), ('NHTSA', '2127', '^2127-', 2), ('CPSC', '3041', '^3041-', 3),
-           ('EPA', '20xx', '^20[4-9]0-', 4), ('FTC', '3084', '^3084-', 5)
+           ('EPA', '2040–2090', '^20[4-9]0-', 4), ('FTC', '3084', '^3084-', 5)
   ), agg as (
     select a.agency, a.prefix, a.ord,
            count(*) as rins_proposed,
