@@ -68,7 +68,9 @@ export function MassTortSignals() {
   const [selected, setSelected] = useState<number | null>(null);
   const rows = useMemo(
     () =>
-      (q.data ?? []).filter((s) => !kind || s.kind === kind).sort((a, b) => b.pending - a.pending),
+      (q.data ?? [])
+        .filter((s) => !kind || s.kind === kind)
+        .sort((a, b) => (b.pending ?? -1) - (a.pending ?? -1) || a.mdl - b.mdl),
     [q.data, kind],
   );
   const scroll = useMoreBelow(rows);
@@ -101,8 +103,8 @@ export function MassTortSignals() {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground">
-        Each products-liability MDL is matched to its product in FDA adverse-event and recall data
-        (openFDA) or NHTSA vehicle complaints. {q.data[0]?.caveat}
+        Products already in an MDL: each products-liability MDL is matched to its product in FDA
+        adverse-event and recall data (openFDA) or NHTSA vehicle complaints. {q.data[0]?.caveat}
       </p>
       <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Product kind">
         <KindButton active={!kind} onClick={() => setKind("")} label={`All · ${q.data.length}`} />
@@ -258,14 +260,30 @@ function Detail({ s }: { s: MassTortSignal }) {
           <div className="min-w-0">
             <h2 className="text-heading font-semibold text-foreground">{s.product}</h2>
             <p className="text-xs text-muted-foreground">
-              <Link
-                to="/records/$dataset/$id"
-                params={{ dataset: "mdl_analytics", id: String(s.mdl) }}
-                className="text-primary hover:underline"
-              >
-                MDL {s.mdl}
-              </Link>{" "}
-              · {s.title.replace(/^IN RE:\s*/i, "")} · {s.district} · {s.judge}
+              {s.jpmlEvidence ? (
+                <a
+                  href={s.jpmlEvidence.orderUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  MDL {s.mdl}
+                </a>
+              ) : (
+                <Link
+                  to="/records/$dataset/$id"
+                  params={{ dataset: "mdl_analytics", id: String(s.mdl) }}
+                  className="text-primary hover:underline"
+                >
+                  MDL {s.mdl}
+                </Link>
+              )}{" "}
+              · {s.title.replace(/^IN RE:\s*/i, "")}
+              {s.district ? ` · ${s.district}` : ""}
+              {s.judge ? ` · ${s.judge}` : ""}
+              {s.jpmlEvidence
+                ? ` · centralized ${s.jpmlEvidence.orderDate ?? ""} by JPML transfer order; not yet in a pending report`
+                : ""}
             </p>
           </div>
           {s.eventsQuery ? (
