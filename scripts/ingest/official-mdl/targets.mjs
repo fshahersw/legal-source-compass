@@ -286,6 +286,19 @@ export const MATTERS = {
     ],
     index_pages: [],
   },
+  // E.D. Wis. MDL pages (one dedicated page per matter; direct PDFs under /sites/wied/files/).
+  '2439': {
+    name: 'In re Subway Footlong Sandwich Marketing and Sales Practices Litigation', court_id: 'wied', host: 'www.wied.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL No. 2439', page_id: 'wied-2439-mdl', note: 'printed in the page heading on the court MDL page' },
+    pages: [{ id: 'wied-2439-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.wied.uscourts.gov/mdl-no-2439-re-subway-footlong-sandwich-marketing-and-sales-practices-litigation' }],
+    index_pages: ['wied-mdl-index'],
+  },
+  '2688': {
+    name: 'In re Windsor Wood Clad Window Products Liability Litigation', court_id: 'wied', host: 'www.wied.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL No. 2688', page_id: 'wied-2688-mdl', note: 'printed in the page heading on the court MDL page' },
+    pages: [{ id: 'wied-2688-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.wied.uscourts.gov/mdl-no-2688-re-windsor-wood-clad-window-products-liability-litigation' }],
+    index_pages: ['wied-mdl-index'],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
@@ -300,6 +313,7 @@ export const INDEX_PAGES = {
   'jpml-panel-orders': { id: 'jpml-panel-orders', role: 'jpml_panel_orders', family: 'jpml-panel-orders', url: 'https://www.jpml.uscourts.gov/panel-orders' },
   'pawd-mdl-index': { id: 'pawd-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.pawd.uscourts.gov/mdl' },
   'alnd-mdl-cases': { id: 'alnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.alnd.uscourts.gov/mdl-cases' },
+  'wied-mdl-index': { id: 'wied-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.wied.uscourts.gov/multi-district-litigation-mdl' },
 };
 
 export function pagesFor(mdls, { includeIndex = true } = {}) {
