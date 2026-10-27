@@ -808,7 +808,11 @@ def ssl_context() -> ssl.SSLContext:
     with contextlib.suppress(Exception):
         ctx.load_default_certs()
     ccr = pathlib.Path("/root/.ccr/ca-bundle.crt")
-    if ccr.exists():
+    try:
+        have_ccr = ccr.exists()
+    except OSError:  # /root is unreadable for non-root users (CI runners)
+        have_ccr = False
+    if have_ccr:
         ctx.load_verify_locations(cafile=str(ccr))
     for pem in sorted(CERT_DIR.glob("*.pem")):
         ctx.load_verify_locations(cafile=str(pem))
