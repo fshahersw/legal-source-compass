@@ -176,9 +176,27 @@ def build_rows(mapping, mdls, vehicles, openfda_dir, only=None):
     return rows, missing
 
 
+def publish_problems(rows, missing, live_ids, *, mapping, nhtsa_present):
+    """Why a publish must not run. A publish REPLACES the whole dataset, so a mapped MDL whose input file is absent, a
+    missing NHTSA vehicle file (vehicle rows would lose their counts) or a live record this build would not rewrite
+    would silently delete published rows. Empty when the publish is safe."""
+    problems = []
+    if missing:
+        problems.append(f"{len(missing)} mapped MDL(s) have no input file and would be dropped: {', '.join(map(str, missing))} "
+                        f"(fetch or copy private/acq/openfda/<mdl>.json first)")
+    if not nhtsa_present and any(e.get("kind") == "vehicle" for e in mapping):
+        problems.append(f"{NHTSA} is absent: every vehicle row would lose its complaint counts")
+    dropped = sorted(set(live_ids) - {r["id"] for r in rows}, key=str)
+    if dropped:
+        problems.append(f"{len(dropped)} published record(s) would be deleted: {', '.join(dropped[:20])}")
+    return problems
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Build agency_safety_mass_tort_signals")
     ap.add_argument("--dry-run", action="store_true", help="write rows to --out; never publish")
+    ap.add_argument("--allow-missing", action="store_true",
+                    help="publish even though rows would be dropped (the lead's explicit choice; the problems are printed)")
     ap.add_argument("--mdl-analytics", help="JSON list of mdl_analytics rows {id, item} (read-only snapshot) instead of a live read")
     ap.add_argument("--openfda", default=str(OPENFDA))
     ap.add_argument("--only", help="comma-separated MDL numbers (dry run only: a publish replaces the whole dataset)")
@@ -197,6 +215,12 @@ def main(argv=None):
         if args.out:
             Path(args.out).write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
         return rows
+    live_ids = [r["id"] for r in cw.fetch_all("agency_safety_mass_tort_signals", "id")]
+    problems = publish_problems(rows, missing, live_ids, mapping=mapping, nhtsa_present=NHTSA.exists())
+    if problems:
+        print(json.dumps({"publish_problems": problems, "live_records": len(live_ids), "new_rows": len(rows)}))
+        if not args.allow_missing:
+            raise SystemExit("Refusing to publish (it replaces the whole dataset): " + "; ".join(problems))
     cw.publish(
         "agency_safety_mass_tort_signals", "Mass-tort product signals (FDA adverse events, recalls, NHTSA complaints)", rows,
         listing_block=cw.listing(

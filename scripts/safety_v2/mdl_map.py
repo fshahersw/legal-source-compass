@@ -248,11 +248,6 @@ MDLS = [
     {"mdl": 3178, "kind": "food", "label": "ByHeart infant formula", "tokens": ["ByHeart", "Infant Formula"], "basis": "title_names_manufacturer_and_device",
      "caers": 'products.name_brand:"byheart"', "recall": 'recalling_firm:"byheart"',
      "note_extra": "Food adverse-event (CAERS) reports naming the brand ByHeart."},
-    {"mdl": 2738, "kind": "cosmetic", "label": "Johnson & Johnson talcum powder", "tokens": ["Johnson & Johnson", "Talcum Powder"],
-     "basis": "title_names_manufacturer_and_device", "caers": 'products.name_brand:"talcum powder"',
-     "note_extra": ("Cosmetic adverse-event (CAERS) reports whose product name contains 'talcum powder'. CAERS does not carry the "
-                    "maker reliably, so the series is broader than the title (other makers' talcum powder is counted) and "
-                    "narrower (Johnson & Johnson products reported under another name, e.g. 'baby powder', are not).")},
     {"mdl": 3060, "kind": "cosmetic", "label": "Hair relaxers", "tokens": ["Hair Relaxer"], "basis": "title_names_product",
      "caers": 'products.name_brand:"relaxer"+products.name_brand:"relaxers"',
      "note_extra": "Cosmetic adverse-event (CAERS) reports whose product name contains 'relaxer'."},
@@ -284,6 +279,10 @@ NOT_MAPPED = {
     1358: "MTBE is a gasoline additive; none of these sources reports on it.",
     2066: "'Oral sodium phosphate' cannot be isolated in FAERS: the openFDA route field belongs to any drug in a report.",
     2372: "The title names a Watson fentanyl patch; FAERS cannot isolate one maker's transdermal fentanyl by the title's terms.",
+    # Kept unmapped pending an owner decision: a CAERS 'talcum powder' series counts any maker's product, so it would not
+    # be the Johnson & Johnson product the title names (the 2016 transfer order centralizes the MDL; it says nothing
+    # about which CAERS reports are that product).
+    2738: "Johnson & Johnson talcum powder: CAERS cosmetic reports do not carry the maker reliably enough to isolate the product.",
     2741: "Roundup is a pesticide (EPA); none of these sources reports on it.",
     2873: "Aqueous film-forming foams: not an FDA- or NHTSA-reported product.",
     2885: "3M Combat Arms earplugs are not reported in MAUDE as medical devices.",
