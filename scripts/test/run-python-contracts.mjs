@@ -48,6 +48,8 @@ for (const suite of [
   { directory: "scripts/enrichment/open_payments", modules: ["test_open_payments"] },
   { directory: "scripts/enrichment/cfpb", modules: ["test_cfpb"] },
   { directory: "scripts/enrichment/fda_adverse_events", modules: ["test_fda_adverse_events"] },
+  { directory: "scripts/enrichment/openfda_device_recalls", modules: ["test_device_recalls"] },
+  { directory: "scripts/enrichment/fda_warning_letters", modules: ["test_warning_letters"] },
   { directory: "scripts/enrichment/epa_echo", modules: ["test_epa_echo"] },
   { directory: "scripts/enrichment/npdb", modules: ["test_npdb"] },
   { directory: "scripts/enrichment/osha", modules: ["test_osha"] },
