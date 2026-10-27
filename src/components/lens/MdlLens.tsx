@@ -341,7 +341,7 @@ function JudgeCard({
  * `showYears` is false when the page already draws this product's reports by year as a trend card (FAERS or MAUDE), which
  * adds the data table, source, partial-year marking and the national total; the same series is then not drawn twice.
  */
-function SignalCard({ signal, showYears = true }: { signal: MassTortSignal; showYears?: boolean }) {
+export function SignalCard({ signal, showYears = true }: { signal: MassTortSignal; showYears?: boolean }) {
   const regulator = REGULATOR[signal.kind];
   const year = new Date().getUTCFullYear();
   const rows = reportYears(signal, year);
@@ -480,7 +480,7 @@ const TIER_STYLE = {
   C: "border-warning/40 bg-warning/15",
 } as const;
 
-function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
+export function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
   // Registrants read as claimants or as not named are listed apart from possible defendants.
   // Counted defendants first; dismissed, review-flagged, claimant and role-not-stated links are listed apart.
   const companies = all.filter(
@@ -648,7 +648,7 @@ const BY_TYPE_REPORT = "the JPML “Pending MDL Dockets by MDL Type” report of
 const ACTIONS_PENDING_SERIES =
   "the JPML monthly “Distribution of Pending MDL Dockets by Actions Pending” reports";
 
-function CourtPageCard({
+export function CourtPageCard({
   page,
   sourceUrl,
   sourceLabel,
@@ -852,7 +852,7 @@ function CourtPageCard({
   );
 }
 
-function FlagsCard({
+export function FlagsCard({
   insights,
   className,
 }: {
@@ -887,7 +887,7 @@ function FlagsCard({
   );
 }
 
-function PeersCard({ mdl, type }: { mdl: number; type: string | null }) {
+export function PeersCard({ mdl, type }: { mdl: number; type: string | null }) {
   const q = useQuery(mdlAnalyticsQuery);
   const ranking = useMemo(
     () => (q.data ? peerRanking(q.data.mdls, mdl, type) : null),
@@ -961,7 +961,7 @@ function PeersCard({ mdl, type }: { mdl: number; type: string | null }) {
 const HEARINGS_SHOWN = 6;
 
 /** Dockets on the Panel's hearing-session Schedule of Matters for this MDL number, with the order or report found. */
-function HearingsCard({
+export function HearingsCard({
   hearings,
   className,
 }: {
@@ -1060,7 +1060,7 @@ function HearingsCard({
 }
 
 /** Entries of the JPML terminated-litigations report for this MDL number, one per transferee district. */
-function FdaReportsCard({
+export function FdaReportsCard({
   reports,
   className,
 }: {
@@ -1100,7 +1100,7 @@ function FdaReportsCard({
   );
 }
 
-function TerminatedCard({
+export function TerminatedCard({
   rows,
   className,
 }: {
@@ -1167,7 +1167,7 @@ function TerminatedCard({
 }
 
 /** Panel orders published on GovInfo for this MDL number (mdl_intel_hearing_orders, ids order:<package>-<part>). */
-function PanelOrdersCard({
+export function PanelOrdersCard({
   orders,
   className,
 }: {
