@@ -38,9 +38,20 @@ const ROWS = [
   ["agency_safety_openfda_device_pma", "openfda:device/pma:P060040", { pma_number: "P060040", supplement_number: "" }, null, ""],
   ["agency_safety_openfda_device_pma", "openfda:device/pma:N17752:S035", { pma_number: "N17752", supplement_number: "S035" }, null, ""],
   ["agency_safety_openfda_drugsfda", "openfda:drug/drugsfda:NDA19019", { application_number: "NDA19019" }, null, ""],
+  // one package NDC with two postings on different dates: each row's URL opens its own posting
+  ["agency_safety_openfda_drug_shortages", "openfda:drug/shortages:65219-086-20", { package_ndc: "65219-086-20", initial_posting_date: "05/21/2026" }, null, ""],
+  ["agency_safety_openfda_drug_shortages", "openfda:drug/shortages:65219-086-20~2", { package_ndc: "65219-086-20", initial_posting_date: "06/30/2026" }, null, ""],
+  // two postings with the same NDC and date share one URL (counted as key_query by the verify file)
+  ["agency_safety_openfda_drug_shortages", "openfda:drug/shortages:57664-048-88", { package_ndc: "57664-048-88", initial_posting_date: "07/14/2023" }, null, ""],
+  ["agency_safety_openfda_drug_shortages", "openfda:drug/shortages:57664-048-88~2", { package_ndc: "57664-048-88", initial_posting_date: "07/14/2023" }, null, ""],
+  // no usable posting date: the key-only query, still with a limit so every posting is listed
   ["agency_safety_openfda_drug_shortages", "openfda:drug/shortages:71288-728-32~2", { package_ndc: "71288-728-32" }, null, ""],
-  ["agency_safety_openfda_crl", "openfda:transparency/crl:a", { file_name: "208574Orig1s000,Orig2s000OtherActionLtrs.pdf" }, null, ""],
-  ["agency_safety_openfda_crl", "openfda:transparency/crl:b", { file_name: "CRL_NDA 217711_20250827.pdf" }, null, ""],
+  ["agency_safety_openfda_crl", "openfda:transparency/crl:a", { file_name: "208574Orig1s000,Orig2s000OtherActionLtrs.pdf", letter_date: "01/17/2025" }, null, ""],
+  ["agency_safety_openfda_crl", "openfda:transparency/crl:b", { file_name: "CRL_NDA 217711_20250827.pdf", letter_date: "08/27/2025" }, null, ""],
+  // one file name holding letters of different dates
+  ["agency_safety_openfda_crl", "openfda:transparency/crl:210852", { file_name: "210852_2024_Orig1s000OtherActionLtrs.pdf", letter_date: "05/03/2019" }, null, ""],
+  ["agency_safety_openfda_crl", "openfda:transparency/crl:210852~2", { file_name: "210852_2024_Orig1s000OtherActionLtrs.pdf", letter_date: "05/21/2020" }, null, ""],
+  ["agency_safety_openfda_crl", "openfda:transparency/crl:nodate", { file_name: "CRL_BLA761000.pdf", letter_date: "2025" }, null, ""],
   ["agency_safety_openfda_crl", "openfda:transparency/crl:c", { file_name: "Under Review for Release" }, bulk("transparency/crl/transparency-crl-0001-of-0001.json.zip"), ""],
   ["agency_safety_openfda_crl", "openfda:transparency/crl:d", { file_name: "x'); drop table x; --.pdf" }, null, ""],
 ];
@@ -57,9 +68,24 @@ const EXPECTED = {
   "openfda:device/pma:P060040": "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpma/pma.cfm?id=P060040",
   "openfda:device/pma:N17752:S035": "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfpma/pma.cfm?id=N17752S035",
   "openfda:drug/drugsfda:NDA19019": "https://api.fda.gov/drug/drugsfda.json?search=application_number:%22NDA19019%22",
-  "openfda:drug/shortages:71288-728-32~2": "https://api.fda.gov/drug/shortages.json?search=package_ndc:%2271288-728-32%22",
-  "openfda:transparency/crl:a": "https://api.fda.gov/transparency/crl.json?search=file_name:%22208574Orig1s000%2COrig2s000OtherActionLtrs.pdf%22",
-  "openfda:transparency/crl:b": "https://api.fda.gov/transparency/crl.json?search=file_name:%22CRL_NDA%20217711_20250827.pdf%22",
+  "openfda:drug/shortages:65219-086-20":
+    "https://api.fda.gov/drug/shortages.json?search=package_ndc:%2265219-086-20%22+AND+initial_posting_date:%2205/21/2026%22&limit=100",
+  "openfda:drug/shortages:65219-086-20~2":
+    "https://api.fda.gov/drug/shortages.json?search=package_ndc:%2265219-086-20%22+AND+initial_posting_date:%2206/30/2026%22&limit=100",
+  "openfda:drug/shortages:57664-048-88":
+    "https://api.fda.gov/drug/shortages.json?search=package_ndc:%2257664-048-88%22+AND+initial_posting_date:%2207/14/2023%22&limit=100",
+  "openfda:drug/shortages:57664-048-88~2":
+    "https://api.fda.gov/drug/shortages.json?search=package_ndc:%2257664-048-88%22+AND+initial_posting_date:%2207/14/2023%22&limit=100",
+  "openfda:drug/shortages:71288-728-32~2": "https://api.fda.gov/drug/shortages.json?search=package_ndc:%2271288-728-32%22&limit=100",
+  "openfda:transparency/crl:a":
+    "https://api.fda.gov/transparency/crl.json?search=file_name:%22208574Orig1s000%2COrig2s000OtherActionLtrs.pdf%22+AND+letter_date:%2201/17/2025%22&limit=100",
+  "openfda:transparency/crl:b":
+    "https://api.fda.gov/transparency/crl.json?search=file_name:%22CRL_NDA%20217711_20250827.pdf%22+AND+letter_date:%2208/27/2025%22&limit=100",
+  "openfda:transparency/crl:210852":
+    "https://api.fda.gov/transparency/crl.json?search=file_name:%22210852_2024_Orig1s000OtherActionLtrs.pdf%22+AND+letter_date:%2205/03/2019%22&limit=100",
+  "openfda:transparency/crl:210852~2":
+    "https://api.fda.gov/transparency/crl.json?search=file_name:%22210852_2024_Orig1s000OtherActionLtrs.pdf%22+AND+letter_date:%2205/21/2020%22&limit=100",
+  "openfda:transparency/crl:nodate": "https://api.fda.gov/transparency/crl.json?search=file_name:%22CRL_BLA761000.pdf%22&limit=100",
   "openfda:transparency/crl:c": bulk("transparency/crl/transparency-crl-0001-of-0001.json.zip"),
   "openfda:transparency/crl:d": "",
 };
@@ -94,6 +120,23 @@ test("sets each record's own official URL, keeps stored URLs, falls back to the 
   const rules = (await db.query("select id, metadata->>'source_url_rule' as rule from public.corpus_datasets order by id")).rows;
   assert.equal(rules.length, 7);
   for (const r of rules) assert.match(r.rule, /record|recall|application|NDC|file/);
+});
+
+test("the verify split counts shared or key-only FDA queries as key_query, not record_specific", async () => {
+  const db = await seed();
+  await db.exec(SQL);
+  const VERIFY = await fs.readFile("database/contracts/fda-source-url-backfill-v1-verify.sql", "utf8");
+  const first = VERIFY.split(/;\s*\n/).find((s) => /\bwith r as\b/.test(s));
+  assert.ok(first, "split query present");
+  const rows = Object.fromEntries((await db.query(first)).rows.map((r) => [r.dataset, r]));
+  const split = (d) => {
+    const r = rows[d];
+    return [r.records, r.empty, r.record_specific, r.key_query, r.bulk_file, r.other].map(Number);
+  };
+  // records, empty, record_specific, key_query, bulk_file, other
+  assert.deepEqual(split("agency_safety_openfda_drug_shortages"), [5, 0, 2, 3, 0, 0]);
+  assert.deepEqual(split("agency_safety_openfda_crl"), [7, 1, 4, 1, 1, 0]);
+  assert.deepEqual(split("agency_safety_openfda_drug_enforcement"), [3, 0, 1, 0, 1, 1]);
 });
 
 test("is idempotent: a second run changes nothing", async () => {
