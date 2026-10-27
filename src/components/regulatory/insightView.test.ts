@@ -1,6 +1,67 @@
 import { describe, expect, it } from "vitest";
 import { parseInsight, type SafetyInsight } from "@/lib/external/safetyInsights.functions";
-import { EMPTY_FILTER, filterInsights, metricLine, risingThemes } from "./insightView";
+import {
+  EMPTY_FILTER,
+  filterInsights,
+  insightCaveat,
+  metricLine,
+  risingThemes,
+} from "./insightView";
+
+describe("insightCaveat", () => {
+  const raw = {
+    id: "x",
+    rank: 1,
+    kind: "firm_cluster",
+    agency: "FDA",
+    entity: "Acme",
+    headline: "h",
+    summary: "s",
+    score: 50,
+    severity: "elevated",
+    serious: false,
+    metric: { recent: 4, baseline: 1, ratio: 4, window: "180 days", unit: "recall events" },
+    series: [],
+    evidence: [
+      {
+        dataset: "agency_safety_openfda_food_enforcement",
+        id: "r1",
+        title: "t",
+        date: null,
+        note: null,
+      },
+    ],
+    method: "Product rows collapsed to events by firm, initiation date and reason.",
+    as_of: "2026-09-01",
+    tags: [],
+  };
+  it("flags old event keying, the warning-letter sample and the superseded CPSC snapshot", () => {
+    expect(insightCaveat(parseInsight(raw)!)).toMatch(/event id/);
+    expect(
+      insightCaveat(parseInsight({ ...raw, method: "Grouped on FDA's event_id." })!),
+    ).toBeNull();
+    const ev = (dataset: string) => [{ dataset, id: "1", title: "t", date: null, note: null }];
+    expect(
+      insightCaveat(
+        parseInsight({
+          ...raw,
+          kind: "hazard_surge",
+          evidence: ev("agency_safety_fda_warning_letters"),
+        })!,
+      ),
+    ).toMatch(/1,000-row sample/);
+    expect(
+      insightCaveat(
+        parseInsight({
+          ...raw,
+          kind: "hazard_surge",
+          agency: "CPSC",
+          evidence: ev("agency_safety_cpsc_recalls_local"),
+        })!,
+      ),
+    ).toMatch(/superseded/);
+  });
+});
 
 const base = {
   id: "firm-cluster-fda-acme",

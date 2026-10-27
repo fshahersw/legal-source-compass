@@ -7,7 +7,7 @@ export const Route = createFileRoute("/insights/signals")({
   head: () =>
     pageHead(
       "Signals",
-      "Time from MDL creation to termination (Kaplan–Meier), growth of new MDLs after centralization, recall-to-MDL timing, clusters of states, originating courts of the largest MDLs and co-counsel networks, each with its method and n.",
+      "Time from MDL creation to termination (Kaplan–Meier), growth of new MDLs after centralization, new-filing waves of product-liability MDLs, recall-to-MDL timing, originating courts and co-counsel networks, each with its method and n.",
     ),
   component: Page,
 });

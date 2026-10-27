@@ -1,0 +1,1201 @@
+{
+ "candidates_snapshot_sha256": "f3bc609336dc1ec228ff7031a271c3d5bc2d44cd1cb46c5ddbab7a4722e288d7",
+ "labels": {
+  "d_03a1f25889a1b3042d12449b": {
+   "index": 22,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_03a576e635e3218dad179939": {
+   "index": 1,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_0af8e14cbf46baa1ace163b1": {
+   "index": 21,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_0def1468509f14c552b05727": {
+   "index": 23,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied_as_moot"
+    }
+   ]
+  },
+  "d_116a9a98637a4c0b9fa7f02b": {
+   "index": 56,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_142fe029bdcc9b326f741e12": {
+   "index": 38,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_148d515ebfd1b8009757c177": {
+   "index": 58,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_154d37ff89ba194087158da0": {
+   "index": 33,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_18656c08b339fcb41f874205": {
+   "index": 6,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_1b91f9364bd67a184e02ba2e": {
+   "index": 64,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_21bacafac870d0026397d87c": {
+   "index": 48,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_21eaffa428396f1e5e0dd6fc": {
+   "index": 5,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_25ba85c77cac0dc21084bd3e": {
+   "index": 24,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_2c5012c7b3f0d2b97b6af9d4": {
+   "index": 40,
+   "rulings": []
+  },
+  "d_2e6324d127d4f9d21eea71d3": {
+   "index": 3,
+   "rulings": []
+  },
+  "d_3077cb05d11e44e8069c7e49": {
+   "index": 45,
+   "rulings": []
+  },
+  "d_335a52c0a9369598080404d0": {
+   "index": 51,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_359fc05d57ec2acdaf0c7b41": {
+   "index": 19,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_3d9d3b45193bc8830e3dcb7d": {
+   "index": 62,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_3f541c611efdeea3fc930a9e": {
+   "index": 4,
+   "rulings": []
+  },
+  "d_3fadfaaf1325ded3557b1081": {
+   "index": 57,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_45ac63c81f8ef80b0cb453e6": {
+   "index": 47,
+   "rulings": []
+  },
+  "d_4f4e5812a2004c4e00f5f4ab": {
+   "index": 36,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_530179a69518d36d3d1f95f6": {
+   "index": 11,
+   "note": "motion in limine about referring to an expert's prior designation, not an exclusion of expert testimony",
+   "rulings": []
+  },
+  "d_63132f869814165a2e2c813a": {
+   "index": 63,
+   "note": "expert ruling printed without the motion's type ('5864 Plaintiff's Motion')",
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_6541e08c9f4d58b5994a2442": {
+   "index": 8,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_669ee91d05f7ef0bf1cf74c7": {
+   "index": 12,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_6cf46fd70256457d7301d713": {
+   "index": 52,
+   "rulings": []
+  },
+  "d_7c8f1a277b1d9c09061d919f": {
+   "index": 31,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "not_determined"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_7f6f52fb833763f67f69a680": {
+   "index": 55,
+   "rulings": []
+  },
+  "d_8078066fc01f17641a194c69": {
+   "index": 13,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_8093fdb45333cbe31c6b2ecc": {
+   "index": 30,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_836714a23bb7abe9c5a027bb": {
+   "index": 9,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_864ea42acef137ddbf2d564e": {
+   "index": 37,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_86d3e462c5c5f407eb2d2a9e": {
+   "index": 26,
+   "note": "motion in limine about personal-experience evidence, not expert admissibility",
+   "rulings": []
+  },
+  "d_8755cee0899bb84cc6655689": {
+   "index": 10,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_8df7876f8dd4d0809088b1fe": {
+   "index": 50,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_925a9d7f3916d27fc5593741": {
+   "index": 29,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_94dbf7d7fb8d2b17337b3bcc": {
+   "index": 34,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_9671104641a8df9791223ec8": {
+   "index": 28,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_9ac569c5625c8f9c45e72edc": {
+   "index": 17,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_a22ffee7395f18e763e5fa51": {
+   "index": 42,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_b0f59dc1e87d144063bc88bb": {
+   "index": 18,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_b1ea41bb0b33c2d621af138a": {
+   "index": 46,
+   "rulings": []
+  },
+  "d_b3dc27d82a7e5e0b55b2d38f": {
+   "index": 59,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_b445a8946e9706589be1ba1c": {
+   "index": 67,
+   "rulings": []
+  },
+  "d_b48e92c50dd65c884d0706bc": {
+   "index": 2,
+   "note": "first clause decides a plaintiff motion about six defense experts' testimony but prints no 'motion to exclude' wording",
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_bafe12d46176630e15c2fda2": {
+   "index": 41,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_bd00596f93b54a3bbc8697d1": {
+   "index": 65,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_bf85011bfb237a506ff60c86": {
+   "index": 66,
+   "note": "trial rulings taken under advisement; no motion to exclude decided",
+   "rulings": []
+  },
+  "d_c092b6afee3944204ff32a64": {
+   "index": 7,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_c2438581b48583a0d52f1a59": {
+   "index": 60,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_c3643ec9f36802600576d0ac": {
+   "index": 15,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_c3fafb43754b3ff5d98e3909": {
+   "index": 20,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_c76b24f3da983750c899758c": {
+   "index": 43,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_c981fb0ec211fcaf3b3dfdfe": {
+   "index": 35,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_cac1f30e56ecbbee5fbbf8a1": {
+   "index": 16,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_ccf3a5e5adefc7fdaa43ec88": {
+   "index": 27,
+   "note": "covers undisclosed expert opinions among other evidence",
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_cd628e8f45fe7df4f9506b61": {
+   "index": 44,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_d8ae0edbc7702b8612fec5e5": {
+   "index": 14,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_da9aed2abaa16523bc2b8f6d": {
+   "index": 25,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "d_dcc81992ba1401b12180ff4e": {
+   "index": 32,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "d_e31f436d4e9a3e1aceec66e0": {
+   "index": 49,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied_as_moot"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied_as_moot"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied_as_moot"
+    }
+   ]
+  },
+  "d_e53056d6f2a6977eada81461": {
+   "index": 53,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "d_e667463145da55e570f73c4d": {
+   "index": 0,
+   "rulings": []
+  },
+  "d_eac05c171b10287c6ad84cea": {
+   "index": 39,
+   "rulings": []
+  },
+  "d_f7ed15d4a08d73aa7f972b64": {
+   "index": 54,
+   "rulings": []
+  },
+  "d_f802b8944251d3a99ddf77eb": {
+   "index": 61,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:111584039": {
+   "index": 84,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:123062884": {
+   "index": 85,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:146070920": {
+   "index": 71,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:170781423": {
+   "index": 72,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:170781426": {
+   "index": 73,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:170781427": {
+   "index": 74,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:170781449": {
+   "index": 75,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:170781450": {
+   "index": 76,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:170781454": {
+   "index": 77,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:170781457": {
+   "index": 78,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:170781458": {
+   "index": 79,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:174618790": {
+   "index": 94,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:175207012": {
+   "index": 68,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:177085676": {
+   "index": 95,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:183387980": {
+   "index": 96,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:186933149": {
+   "index": 97,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:186933150": {
+   "index": 98,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:186933151": {
+   "index": 99,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:186933153": {
+   "index": 100,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:187042484": {
+   "index": 101,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:189160523": {
+   "index": 103,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:192413066": {
+   "index": 102,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:192413121": {
+   "index": 104,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:202949192": {
+   "index": 86,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:22379665": {
+   "index": 69,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:257551254": {
+   "index": 105,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:286097384": {
+   "index": 87,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:303188979": {
+   "index": 88,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:364452689": {
+   "index": 122,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:375889230": {
+   "index": 123,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:377068887": {
+   "index": 110,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:396038343": {
+   "index": 124,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:420904838": {
+   "index": 143,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:421735120": {
+   "index": 144,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:424270344": {
+   "index": 120,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:424278500": {
+   "index": 125,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:427818396": {
+   "index": 106,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:427818420": {
+   "index": 107,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:427818473": {
+   "index": 108,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:427818490": {
+   "index": 109,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:433283783": {
+   "index": 126,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:434840549": {
+   "index": 121,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:448688736": {
+   "index": 133,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:449815142": {
+   "index": 134,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:450990250": {
+   "index": 135,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:451079118": {
+   "index": 136,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:452073506": {
+   "index": 137,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:454153156": {
+   "index": 127,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:454336221": {
+   "index": 138,
+   "note": "same as 63",
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:456071877": {
+   "index": 128,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:456503811": {
+   "index": 111,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:456694539": {
+   "index": 139,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:456974597": {
+   "index": 112,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:457371086": {
+   "index": 129,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:457568224": {
+   "index": 130,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "not_printed",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:457653194": {
+   "index": 140,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:458505456": {
+   "index": 113,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:460724328": {
+   "index": 141,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:464027576": {
+   "index": 114,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:465907036": {
+   "index": 145,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:467986819": {
+   "index": 115,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:470887124": {
+   "index": 116,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:471179536": {
+   "index": 131,
+   "rulings": [
+    {
+     "movant_side": "not_printed",
+     "outcome": "denied"
+    },
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:471871772": {
+   "index": 146,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:471970178": {
+   "index": 147,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:473168018": {
+   "index": 148,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:474767739": {
+   "index": 142,
+   "note": "announces a later order; not the ruling itself",
+   "rulings": []
+  },
+  "sw-entry:courtlistener:474851161": {
+   "index": 132,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:476180388": {
+   "index": 117,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:476539847": {
+   "index": 118,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:479053502": {
+   "index": 119,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:61648023": {
+   "index": 80,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:62682635": {
+   "index": 81,
+   "rulings": []
+  },
+  "sw-entry:courtlistener:99980032": {
+   "index": 82,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:courtlistener:99980195": {
+   "index": 83,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "denied"
+    }
+   ]
+  },
+  "sw-entry:govinfo:USCOURTS-flnd-3_19-md-02885-20": {
+   "index": 89,
+   "rulings": []
+  },
+  "sw-entry:govinfo:USCOURTS-flnd-3_19-md-02885-24": {
+   "index": 90,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:govinfo:USCOURTS-flnd-3_19-md-02885-25": {
+   "index": 91,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    },
+    {
+     "movant_side": "defendants",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:govinfo:USCOURTS-flnd-3_19-md-02885-28": {
+   "index": 92,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted"
+    }
+   ]
+  },
+  "sw-entry:govinfo:USCOURTS-flnd-3_19-md-02885-46": {
+   "index": 93,
+   "rulings": [
+    {
+     "movant_side": "plaintiffs",
+     "outcome": "granted_in_part"
+    }
+   ]
+  },
+  "sw-entry:govinfo:USCOURTS-njd-3_16-md-02738-5": {
+   "index": 70,
+   "rulings": [
+    {
+     "movant_side": "defendants",
+     "outcome": "granted"
+    }
+   ]
+  }
+ },
+ "reviewed_at": "2026-10-27",
+ "reviewed_by": "de-judges-data workstream reviewer, reading each printed text in full"
+}

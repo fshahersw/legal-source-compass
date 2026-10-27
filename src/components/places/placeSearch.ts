@@ -1,5 +1,5 @@
 import { parseStateHubSearch, type StateHubSearch, type StateHubTab } from "@/lib/corpus/stateHub";
-import { METRIC_BY_KEY } from "./placeMetrics";
+import { PICKABLE_KEYS } from "./placeMetrics";
 
 /** Sub-views of a state's Analysis tab. */
 export const ANALYSIS_VIEWS = ["map", "districts", "cities", "associations"] as const;
@@ -17,7 +17,8 @@ export function parsePlaceHubSearch(value: Record<string, unknown>): PlaceHubSea
   const tab: PlaceHubTab = value["tab"] === "analysis" ? "analysis" : (base.tab ?? "overview");
   const view = ANALYSIS_VIEWS.find((v) => v === value["view"]);
   const metric =
-    typeof value["metric"] === "string" && METRIC_BY_KEY.has(value["metric"])
+    // a measure no picker offers (fjc_rate, resources) falls back to the default core filings
+    typeof value["metric"] === "string" && PICKABLE_KEYS.has(value["metric"])
       ? value["metric"]
       : undefined;
   return {

@@ -12,6 +12,7 @@ import { StateNote } from "@/components/enforcement/parts";
 import { formatCount, KIND_LABELS, NOT_RECORDED, type SafetySubjectRow } from "./productModel";
 import { PAGE_SIZE, subjectsQuery, type IndexView } from "./queries";
 import { ViewTabs } from "./ViewTabs";
+import { DeviceRiskMap } from "./DeviceRiskMap";
 
 const TABS = [
   { id: "mdl" as const, label: "Named in MDL titles", Icon: Gavel },
@@ -58,6 +59,7 @@ export function ProductsIndex({
         aria-labelledby={`safety-products-tab-${view}`}
         className="min-w-0 space-y-3"
       >
+        {view === "devices" && page === 1 && !q ? <DeviceRiskMap /> : null}
         <p className="text-xs leading-5 text-muted-foreground">{NOTES[view]}</p>
         <form
           role="search"

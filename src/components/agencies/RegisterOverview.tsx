@@ -166,9 +166,9 @@ export function RegisterOverview() {
           note={`${fmt(o.significantTotals.RULE)} since 1994`}
         />
         <Kpi
-          label="Open comment periods"
+          label="Open comment periods (Federal Register)"
           value={fmt(o.openComments.count)}
-          note={`As of ${o.openComments.asOf}`}
+          note={`Federal Register documents, as of ${o.openComments.asOf}`}
         />
         <Kpi
           label="Executive orders this term"
@@ -273,7 +273,7 @@ export function RegisterOverview() {
           title="Unified Agenda pipeline"
           subtitle={
             o.agenda
-              ? `${fmt(o.agenda.total)} actions in publication ${o.agenda.edition}`
+              ? `${fmt(o.agenda.total)} actions in publication ${o.agenda.edition}, the only edition held; projected dates are as printed then`
               : "Not recorded"
           }
         >

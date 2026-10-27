@@ -169,6 +169,23 @@ class Stats(unittest.TestCase):
         self.assertIsNone(ST.quantile([], 0.5))
 
 
+class CoreProduct(unittest.TestCase):
+    def test_suppressed_rate(self):
+        self.assertAlmostEqual(ST.suppressed_rate(50, 100_000), 10.0)
+        self.assertIsNone(ST.suppressed_rate(4, 100_000))  # under 5 filings: not published, never 0
+        self.assertIsNone(ST.suppressed_rate(0, 100_000))
+        self.assertIsNone(ST.suppressed_rate(None, 100_000))
+        self.assertIsNone(ST.suppressed_rate(50, None))
+        self.assertIsNone(ST.suppressed_rate(50, 0))
+        self.assertAlmostEqual(ST.suppressed_rate(5, 50_000), 2.0)
+
+    def test_core_group_count(self):
+        self.assertEqual(ST.core_group_count({"product": 12, "civil_rights": 3}, "product"), 12)
+        self.assertEqual(ST.core_group_count({"civil_rights": 3}, "product"), 0)
+        self.assertEqual(ST.core_group_count({}, "product"), 0)
+        self.assertIsNone(ST.core_group_count(None, "product"))
+
+
 class Acs(unittest.TestCase):
     def test_share_and_moe(self):
         cells = {"poverty_rate": {"num": ["C17002_002", "C17002_003"], "den": "C17002_001"}}

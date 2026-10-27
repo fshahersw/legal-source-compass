@@ -16,7 +16,7 @@ create type legal_atlas.edge_type as enum ('cites','cites_statute','cites_regula
 create type legal_atlas.treatment as enum ('follows','distinguishes','overrules','criticizes','questions');
 create type legal_atlas.counsel_role as enum ('lead','liaison','PSC','PEC','defense');
 create type legal_atlas.order_class as enum ('cmo','pto','daubert','msj','bellwether','settlement','remand','other');
-create type legal_atlas.fr_document_type as enum ('RULE','PRORULE','NOTICE','PRESDOCU');
+create type legal_atlas.fr_document_type as enum ('RULE','PRORULE','NOTICE','PRESDOCU','CORRECTION');
 create type legal_atlas.review_status as enum ('pending','approved','rejected');
 create type legal_atlas.court_level as enum ('supreme','circuit','district','state_supreme','state_appellate','state_trial','other');
 create type legal_atlas.law_scope as enum ('federal','state','unknown');
@@ -389,7 +389,7 @@ begin
   if p->>'type'='court' and p->>'id' !~ '^[A-Za-z0-9][A-Za-z0-9-]*$' then errors:=array_append(errors,'id:canonical_format'); end if;
   if p->>'type'='mdl' and p->>'id' !~ '^MDL-[1-9][0-9]*$' then errors:=array_append(errors,'id:canonical_format'); end if;
   if p->>'type'='agency' and p->>'id' !~ '^[a-z0-9]+(-[a-z0-9]+)*$' then errors:=array_append(errors,'id:canonical_format'); end if;
-  if p->>'type'='fr_document' and p->>'id' !~ '^(C[0-9]+-)?([0-9]{2}|[0-9]{4}|[A-Z][0-9]{1,2})-[0-9]{1,6}$' then errors:=array_append(errors,'id:canonical_format'); end if;
+  if p->>'type'='fr_document' and p->>'id' !~ '^([CR][0-9]+-)?([0-9]{2}|[0-9]{4}|[A-Z][0-9]{1,2})-[0-9]{1,6}$' then errors:=array_append(errors,'id:canonical_format'); end if;
   if p->>'type'='cfr_section' and p->>'id' !~ '^[0-9]+ CFR [0-9]+(\.[0-9]+)?[a-zA-Z]?(\([a-zA-Z0-9]+\))*$' then errors:=array_append(errors,'id:canonical_format'); end if;
   if p->>'type'='usc_section' and p->>'id' !~ '^[0-9]+ USC [0-9]+[a-zA-Z]?([–-][0-9]+[a-zA-Z]?)?(\([a-zA-Z0-9]+\))*$' then errors:=array_append(errors,'id:canonical_format'); end if;
   if p->>'type'='rule_proceeding' and p->>'id' !~ '^[0-9]{4}-[A-Z0-9]{4}$' then errors:=array_append(errors,'id:canonical_format'); end if;

@@ -1,21 +1,36 @@
-/** The litigation calculators: in-page tabs (six), each a calculator or table built on published official series. */
+/**
+ * The litigation calculators: four in-page tabs, each built on published official series. Former tab ids (life,
+ * state-rates, sources) still open the tab that now holds their content.
+ */
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EconSourcesPanel } from "./EconSourcesPanel";
+import { CpiByArea } from "./CpiByArea";
+import { DamagesInputs } from "./DamagesInputs";
 import { InflationCalculator, type InflationDefaults } from "./InflationCalculator";
-import { LifeExpectancyLookup } from "./LifeExpectancyLookup";
 import { PostJudgmentCalculator, type PjiDefaults } from "./PostJudgmentCalculator";
 import { PresentValueCalculator } from "./PresentValueCalculator";
 import { StateRatesTable } from "./StateRatesTable";
 
 export const CALCULATOR_TABS = [
-  { id: "interest", label: "Post-judgment interest" },
+  { id: "interest", label: "Judgment interest" },
   { id: "inflation", label: "Inflation" },
   { id: "present-value", label: "Present value" },
-  { id: "life", label: "Life expectancy" },
-  { id: "state-rates", label: "State rates" },
-  { id: "sources", label: "Sources" },
+  { id: "damages", label: "Damages inputs" },
 ] as const;
 export type CalculatorTab = (typeof CALCULATOR_TABS)[number]["id"];
+
+/** Tab ids used before the four-tab layout, and the tab that now holds their content. */
+export const LEGACY_CALCULATOR_TABS: Record<string, CalculatorTab> = {
+  life: "damages",
+  "state-rates": "interest",
+  sources: "damages",
+};
+
+/** A tab id from the URL (current or former) as a current tab, or undefined. */
+export function calculatorTab(raw: unknown): CalculatorTab | undefined {
+  if (typeof raw !== "string") return undefined;
+  const current = CALCULATOR_TABS.find((t) => t.id === raw);
+  return current ? current.id : LEGACY_CALCULATOR_TABS[raw];
+}
 
 export function CalculatorsPage({
   tab,
@@ -40,21 +55,25 @@ export function CalculatorsPage({
         </TabsList>
       </div>
       <TabsContent value="interest">
-        {tab === "interest" ? <PostJudgmentCalculator {...(pji ? { defaults: pji } : {})} /> : null}
+        {tab === "interest" ? (
+          <div className="flex min-w-0 flex-col gap-4">
+            <PostJudgmentCalculator {...(pji ? { defaults: pji } : {})} />
+            <StateRatesTable />
+          </div>
+        ) : null}
       </TabsContent>
       <TabsContent value="inflation">
         {tab === "inflation" ? (
-          <InflationCalculator {...(inflation ? { defaults: inflation } : {})} />
+          <div className="flex min-w-0 flex-col gap-4">
+            <InflationCalculator {...(inflation ? { defaults: inflation } : {})} />
+            <CpiByArea />
+          </div>
         ) : null}
       </TabsContent>
       <TabsContent value="present-value">
         {tab === "present-value" ? <PresentValueCalculator /> : null}
       </TabsContent>
-      <TabsContent value="life">{tab === "life" ? <LifeExpectancyLookup /> : null}</TabsContent>
-      <TabsContent value="state-rates">
-        {tab === "state-rates" ? <StateRatesTable /> : null}
-      </TabsContent>
-      <TabsContent value="sources">{tab === "sources" ? <EconSourcesPanel /> : null}</TabsContent>
+      <TabsContent value="damages">{tab === "damages" ? <DamagesInputs /> : null}</TabsContent>
     </Tabs>
   );
 }

@@ -32,6 +32,8 @@ import { CourtBuildingsPanel } from "@/components/visuals/CourtBuildingsPanel";
 import { courtBuildingsQuery } from "@/components/visuals/queries";
 import { CourtGlance } from "@/components/courts/glance/CourtGlance";
 import { ProfileSections } from "@/components/kit/ProfileSections";
+import { CourtVenueHistoryPanel } from "@/components/courts/venue/CourtVenueHistoryPanel";
+import { CourtEnforcementPanel } from "@/components/courts/venue/CourtEnforcementPanel";
 
 /** Court ids the filings index accepts (documents_for_entity_v1). */
 const COURT_ID = /^[a-z0-9_-]{1,40}$/;
@@ -136,9 +138,10 @@ function Page() {
                 id: "court-caseload",
                 title: "Caseload",
                 description:
-                  "Filings, pending cases, appeals, criminal, bankruptcy and sentencing figures over time.",
+                  "Speed, backlog and MDL load over time, then filings, appeals, criminal, bankruptcy and sentencing.",
                 content: (
                   <>
+                    <CourtVenueHistoryPanel courtId={id} system={system} />
                     <CourtAnalyticsPanel courtId={id} />
                     <CaseloadHistoryPanel courtId={id} />
                     <CourtStatsTrendsPanel courtId={id} />
@@ -167,6 +170,14 @@ function Page() {
                     <CourtSearchTopicsPanel courtId={id} />
                     <OralArgumentsPanel courtId={id} />
                   </>
+                ),
+              },
+              {
+                id: "court-enforcement",
+                title: "Federal enforcement",
+                description: "SEC and Justice Department releases tied to this district, by year.",
+                content: (
+                  <CourtEnforcementPanel courtId={id} courtName={view.title} system={system} />
                 ),
               },
               {

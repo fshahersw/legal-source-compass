@@ -159,3 +159,23 @@ def apply_bh(tests: list[dict]) -> None:
     for t in tests:
         t.setdefault("holds", False)
         t.setdefault("p_bh", None)
+
+
+PRODUCT_MIN = 5  # five-year counts below this are suppressed (rate not published)
+
+
+def suppressed_rate(count: int | None, pop_mean: float | None, years: int = 5, min_count: int = PRODUCT_MIN) -> float | None:
+    """Yearly rate per 100,000 residents from a multi-year count; None (Not recorded) when the count or the denominator
+    is missing, or when the count is below min_count (small-number suppression, never a zero)."""
+    if count is None or pop_mean in (None, 0) or count < min_count:
+        return None
+    return count / years / pop_mean * 100_000
+
+
+def core_group_count(nos_core: dict | None, group: str) -> int | None:
+    """Five-year core (non-MDL, non-prisoner, non-U.S.-plaintiff) filings in one NOS group; None when the county has no
+    core NOS breakdown at all (not recorded), 0 when it has one without that group."""
+    if not isinstance(nos_core, dict):
+        return None
+    v = nos_core.get(group, 0)
+    return int(v) if isinstance(v, (int, float)) else None

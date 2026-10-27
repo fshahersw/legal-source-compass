@@ -26,6 +26,14 @@ class NumberTests(unittest.TestCase):
             self.assertIsNone(p.number(blank))
 
 
+class YearSpanTests(unittest.TestCase):
+    def test_span_of_recorded_years(self):
+        self.assertEqual(p.year_span({"NJ": {"1999": 1.0, "2017": 2.0}, "NY": {"2005": None}}), "1999–2017")
+        self.assertEqual(p.year_span({"NJ": {"2017": 1.0}}), "2017")
+        self.assertIsNone(p.year_span({"NJ": {"2017": None}}))
+        self.assertIsNone(p.year_span({}))
+
+
 class CensusTests(unittest.TestCase):
     def test_states_and_nation_only(self):
         text = ("SUMLEV,REGION,DIVISION,STATE,NAME,POPESTIMATE2020,POPESTIMATE2021\n"

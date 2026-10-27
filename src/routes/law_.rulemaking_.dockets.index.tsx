@@ -13,7 +13,7 @@ export const Route = createFileRoute("/law_/rulemaking_/dockets/")({
   head: () =>
     pageHead(
       "Rulemaking dockets and comments",
-      "Regulations.gov dockets of twelve federal agencies, documents open for comment and public comment counts.",
+      "Regulations.gov dockets of eleven federal agencies, documents open for comment and the public comment counts read so far.",
     ),
   component: Page,
 });
@@ -24,7 +24,7 @@ function Page() {
   return (
     <AppShell
       title="Rulemaking"
-      description="Dockets on Regulations.gov for twelve federal agencies, what is open for comment and how many public comments each docket has posted."
+      description="Regulations.gov dockets of the agencies held, what is open for comment, and comment counts where they have been read."
       breadcrumbs={[
         { label: "Law & government", to: "/law" },
         { label: "Rulemaking", to: "/law/rulemaking" },
