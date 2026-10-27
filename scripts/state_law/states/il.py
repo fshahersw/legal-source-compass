@@ -77,6 +77,22 @@ def is_catchline(run: str) -> bool:
         return False
     return not (SENTENCE_BREAK_RE.search(text) or MODAL_RE.search(text))
 VERSION_RE = re.compile(r"^\(Text of (?:Section|Article|Part)[^)]*\)$")
+# Publisher notices printed between the citation line and "Sec. N.": "(This Section may contain text from a Public Act
+# with a delayed effective date)", "(This Section was added by P.A. 89-7, which has been held unconstitutional)" and
+# (sic, no opening parenthesis) "This Section was renumbered as Section 8-804.5 by P.A. 104-417)". Never section text.
+NOTICE_LINE_RE = re.compile(r"^\(?This (?:Section|Article|Part) [^()]*\)$")
+NESTED_BLOCKS = {"div", "td", "th", "tr", "table", "li", "pre", "blockquote"}
+
+
+def split_source(line: str) -> tuple[str | None, str | None]:
+    """(body, source) for a line that is or ends with the publisher's "(Source: …)" note. In form layouts the note
+    can share a line with the form's last words ("(Signed) E.F. (Source: P.A. 83-707.)"); it is history, never text."""
+    if SOURCE_RE.match(line):
+        return None, line
+    at = line.rfind(" (Source:")
+    if at > 0 and SOURCE_RE.match(line[at + 1:]):
+        return line[:at].rstrip(), line[at + 1:]
+    return line, None
 EFF_RE = re.compile(r"P\.A\.\s*([0-9]+-[0-9]+)[^;)]*?eff\.\s*(\d{1,2})-(\d{1,2})-(\d{2,4})")
 UNIT_LEVEL = {"Art.": "article", "Pt.": "part", "Div.": "division", "Subdiv.": "subdivision", "Tit.": "title",
               "Ch.": "chapter", "Subpt.": "subpart", "Subart.": "subarticle"}
@@ -95,19 +111,29 @@ def _eff_date(day: str, month: str, year: str) -> dt.date | None:
 
 def table_lines(table) -> list[list[str]]:
     """Lines of a section table, split at <br>/<p>; each line is the list of its text nodes (runs) in order.
-    Runs keep their own whitespace; join them with "" (never insert spaces the publisher did not print)."""
+    Runs keep their own whitespace; join them with "" (never insert spaces the publisher did not print). The one
+    exception is a block boundary inside a nested table (form layouts), which the publisher's rendering shows as a
+    line break: a single space keeps the words on either side apart."""
     lines: list[list[str]] = [[]]
 
     def add(text: str | None) -> None:
         if text:
             lines[-1].append(_html.unescape(text).replace("\xa0", " ").replace("\n", " "))
 
+    def separate() -> None:
+        # a block boundary inside a nested table is a visual line break: never glue the words on either side
+        # ("form:" + "\"CITATION NOTICE" -> "form: \"CITATION NOTICE", as the publisher's rendering reads)
+        if lines[-1] and not lines[-1][-1][-1:].isspace():
+            lines[-1][-1] += " "
+
     def walk(el, nested: bool) -> None:
         tag = el.tag.lower() if isinstance(el.tag, str) else ""
         # <br>/<p> always break; a <div> row breaks only at the section table's own level (the publisher wraps a
         # paragraph's continuation lines in nested hanging-indent tables, which continue the paragraph)
-        if tag in ("br", "p") or (tag == "div" and not nested):
+        if tag in ("br", "p", "center") or (tag == "div" and not nested):
             lines.append([])
+        elif nested and tag in NESTED_BLOCKS:
+            separate()
         elif tag in ("script", "style"):
             add(el.tail)
             return
@@ -115,13 +141,25 @@ def table_lines(table) -> list[list[str]]:
             add(el.text)
         for child in el:
             walk(child, nested or tag == "table")
+        if tag == "center":  # a centred form title ("CITATION NOTICE") is a line of its own
+            lines.append([])
+        elif nested and tag in NESTED_BLOCKS:
+            separate()
         add(el.tail)
 
     for child in table:
         walk(child, False)
     out = []
     for line in lines:
-        runs = [r for r in line if r.strip()]
+        # whitespace-only runs (the source's newlines and &nbsp; indents) are not runs of their own, but whitespace
+        # between two runs is printed space: it stays on the run before ("REQUEST FOR RELIEF" + "\n" + "Plaintiff
+        # requests:" -> "REQUEST FOR RELIEF Plaintiff requests:"); leading indentation is dropped
+        runs: list[str] = []
+        for run in line:
+            if run.strip():
+                runs.append(run)
+            elif runs and not runs[-1][-1:].isspace():
+                runs[-1] += " "
         if runs:
             out.append(runs)
     return out
@@ -135,6 +173,107 @@ def heading_steps(unit: str) -> list[tuple[str, str]]:
     """'Art. XIII Pt. 1' -> [('article','XIII'), ('part','1')]."""
     tokens = re.findall(r"(Art\.|Pt\.|Div\.|Subdiv\.|Tit\.|Ch\.|Subpt\.|Subart\.)\s*([0-9A-Za-z.\-]+?)(?=\s+(?:Art\.|Pt\.|Div\.|Subdiv\.|Tit\.|Ch\.|Subpt\.|Subart\.)|$)", unit)
     return [(UNIT_LEVEL[k], v) for k, v in tokens]
+
+
+def is_notice(line: str) -> bool:
+    return bool(VERSION_RE.match(line) or NOTICE_LINE_RE.match(line))
+
+
+def version_segments(lines: list[list[str]]) -> list[list[list[str]]]:
+    """Split a section table's lines (after the citation line) into the versions the publisher prints under one
+    citation: each version is [notice lines …, "Sec. N." line, body …, "(Source: …)"]. The publisher prints e.g.
+    735 ILCS 5/13-213 as "(Text of Section WITH the changes made by P.A. 89-7, …)" + text + source, then "(Text of
+    Section WITHOUT the changes …)" + text + source in the same table; a new version starts only after a source line,
+    at a notice line or a "Sec." line. Lines after the last source line that start no version are not section text."""
+    segments: list[list[list[str]]] = []
+    current: list[list[str]] = []
+    closed = True  # True at the start and after each "(Source: …)" line
+    for line in lines:
+        text_line = joined(line)
+        if closed:
+            if is_notice(text_line) or text_line.startswith("Sec."):
+                current = [line]
+                segments.append(current)
+                closed = False
+            elif not segments:
+                current = [line]  # unexpected first line: kept so the block is ledgered, never silently dropped
+                segments.append(current)
+                closed = False
+            continue
+        current.append(line)
+        if split_source(text_line)[1]:
+            closed = True
+    return segments
+
+
+def parse_segment(lines: list[list[str]], page: lib.Fetched, today: dt.date) -> dict | None:
+    notices, i = [], 0
+    while i < len(lines) and is_notice(joined(lines[i])):
+        notices.append(joined(lines[i]))
+        i += 1
+    if i >= len(lines):
+        return None
+    sec_runs = [r for r in lines[i] if r.strip()]
+    heading = None
+    body_first: list[str] = []
+    match = SEC_RE.match(lib.norm_ws(sec_runs[0]))
+    if match:
+        # second run = catchline when it reads like one; otherwise it is the section's first body text
+        if len(sec_runs) > 1 and is_catchline(sec_runs[1]):
+            heading = lib.norm_ws(sec_runs[1])
+            body_first = sec_runs[2:]
+        else:
+            body_first = sec_runs[1:]
+    else:
+        inline = SEC_INLINE_RE.match(joined(sec_runs))
+        if not inline:
+            return None
+        body_first = [inline.group(2)]
+    body = [joined(body_first)] if body_first else []
+    history = None
+    for line in lines[i + 1:]:
+        text_line, source_note = split_source(joined(line))
+        if text_line:
+            body.append(text_line)
+        if source_note:
+            history = source_note
+            break
+    text = "\n".join(part for part in body if lib.norm_ws(part))
+    status = marker = None
+    effective = None
+    version_lines = [n for n in notices if VERSION_RE.match(n)]
+    other = [n for n in notices if not VERSION_RE.match(n)]
+    label = version_lines[-1] if version_lines else None
+    if label and "held unconstitutional" in label and " WITH " in f" {label} ":
+        status, marker = "not_recorded", label
+    # "(This Section was added by P.A. 89-7, which has been held unconstitutional)", "(This Section was repealed by
+    # P.A. 89-7, which has been held unconstitutional)": the publisher marks the text's force as doubtful in a way the
+    # status enum does not name -> not_recorded with the verbatim notice (MODEL.md §2)
+    void = next((n for n in other if "held unconstitutional" in n), None)
+    if status is None and void and not (label and " WITHOUT " in f" {label} "):
+        status, marker = "not_recorded", void
+    note = next((n for n in other if "effective date" in n), None)  # "(This Section may contain text from a Public
+    # Act with a delayed effective date)": kept verbatim as the effective note; the date itself comes from the source
+    if status is None and history:
+        future = [(d, m.group(0)) for m in EFF_RE.finditer(history)
+                  if (d := _eff_date(m.group(3), m.group(2), m.group(4))) and d > today]
+        before = label and re.search(r"before amendment by P\.A\.", label)
+        if future and not before:
+            when, frag = max(future)
+            status, marker = "future_effective", frag
+            effective = {"start": when.isoformat(), "end": None, "note": note}
+    if status is None and label and re.search(r"before amendment by P\.A\.\s*([0-9]+-[0-9]+)", label):
+        pa = re.search(r"P\.A\.\s*([0-9]+-[0-9]+)", label).group(1)
+        later = re.search(rf"P\.A\.\s*{re.escape(pa)}[^;)]*?eff\.\s*(\d{{1,2}})-(\d{{1,2}})-(\d{{2,4}})", page.text())
+        if later and (d := _eff_date(later.group(2), later.group(1), later.group(3))):
+            if d > today:
+                effective = {"start": None, "end": d.isoformat(), "note": label}
+            else:
+                status, marker = "not_recorded", label
+    if effective is None and note:
+        effective = {"start": None, "end": None, "note": note}
+    return dict(heading=heading, text=text, history=history, status=status, marker=marker, effective=effective,
+                version=label)
 
 
 def parse_act_page(ctx: lib.RunContext, page: lib.Fetched, chapter: str, chapter_heading: str | None,
@@ -176,61 +315,19 @@ def parse_act_page(ctx: lib.RunContext, page: lib.Fetched, chapter: str, chapter
         section_no = cite.group(3).strip()
         if section_no.endswith("heading"):
             continue
-        version_lines, i = [], 1
-        while i < len(lines) and VERSION_RE.match(joined(lines[i])):
-            version_lines.append(joined(lines[i]))
-            i += 1
-        if i >= len(lines):
+        number = f"{chapter}:{act}/{section_no}"
+        segments = version_segments(lines[1:])
+        if not segments:
+            ctx.reject(code="ILCS", number=number, reason="no 'Sec.' line after the citation line", source=page)
             continue
-        sec_runs = [r for r in lines[i] if r.strip()]
-        heading = None
-        body_first: list[str] = []
-        match = SEC_RE.match(lib.norm_ws(sec_runs[0]))
-        if match:
-            # second run = catchline when it reads like one; otherwise it is the section's first body text
-            if len(sec_runs) > 1 and is_catchline(sec_runs[1]):
-                heading = lib.norm_ws(sec_runs[1])
-                body_first = sec_runs[2:]
-            else:
-                body_first = sec_runs[1:]
-        else:
-            inline = SEC_INLINE_RE.match(joined(sec_runs))
-            if not inline:
+        for segment in segments:
+            item = parse_segment(segment, page, today)
+            if item is None:
+                ctx.reject(code="ILCS", number=number, reason="unparsed section block: "
+                           + " / ".join(joined(line) for line in segment[:2]), source=page)
                 continue
-            body_first = [inline.group(2)]
-        body = [joined(body_first)] if body_first else []
-        history = None
-        for line in lines[i + 1:]:
-            text_line = joined(line)
-            if SOURCE_RE.match(text_line):
-                history = text_line
-                break
-            body.append(text_line)
-        text = "\n".join(part for part in body if lib.norm_ws(part))
-        status = marker = None
-        effective = None
-        label = version_lines[-1] if version_lines else None
-        if label and "held unconstitutional" in label and " WITH " in f" {label} ":
-            status, marker = "not_recorded", label
-        if status is None and history:
-            future = [(d, m.group(0)) for m in EFF_RE.finditer(history)
-                      if (d := _eff_date(m.group(3), m.group(2), m.group(4))) and d > today]
-            before = label and re.search(r"before amendment by P\.A\.", label)
-            if future and not before:
-                when, frag = max(future)
-                status, marker = "future_effective", frag
-                effective = {"start": when.isoformat(), "end": None, "note": None}
-        if status is None and label and re.search(r"before amendment by P\.A\.\s*([0-9]+-[0-9]+)", label):
-            pa = re.search(r"P\.A\.\s*([0-9]+-[0-9]+)", label).group(1)
-            later = re.search(rf"P\.A\.\s*{re.escape(pa)}[^;)]*?eff\.\s*(\d{{1,2}})-(\d{{1,2}})-(\d{{2,4}})", page.text())
-            if later and (d := _eff_date(later.group(2), later.group(1), later.group(3))):
-                if d > today:
-                    effective = {"start": None, "end": d.isoformat(), "note": label}
-                else:
-                    status, marker = "not_recorded", label
-        pending.append(dict(number=f"{chapter}:{act}/{section_no}", heading=heading, text=text, history=history,
-                            status=status, marker=marker, effective=effective, version=label,
-                            path=base + list(context)))
+            item.update(number=number, path=base + list(context))
+            pending.append(item)
     # number versions: same number printed more than once -> @1, @2 …
     totals: dict[str, int] = {}
     for item in pending:
