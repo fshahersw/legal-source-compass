@@ -30,15 +30,20 @@ export const KIND_LABELS: Record<PublicDateKind, string> = {
   nhtsa_recall: "NHTSA recall",
 };
 
-/** Exact identifier shapes. Anything else is a text search whose results the user must pick from. */
+/**
+ * Exact identifier shapes, widened to every shape the corpus datasets publish (measured 2026-10-27): FDA recall
+ * numbers of 2012-2016 such as D-723-2016 and Z-229-2014 and the few printed without the first hyphen; older PMAs
+ * numbered N18033; CPSC numbers with a letter suffix such as 98167a; NHTSA campaigns such as 21V00D000. An identifier
+ * still maps to one record id by exact equality. Anything else is a text search whose results the user must pick from.
+ */
 export const IDENTIFIER_PATTERNS: Record<PublicDateKind, RegExp> = {
   mdl: /^[1-9]\d{2,4}$/,
-  drug_application: /^(NDA|ANDA|BLA)\d{6}$/,
-  device_pma: /^P\d{6}$/,
-  fda_drug_recall: /^D-\d{4}-\d{4}$/,
-  fda_device_recall: /^Z-\d{4}-\d{4}$/,
-  cpsc_recall: /^\d{5,6}$/,
-  nhtsa_recall: /^\d{2}[VEITC]\d{6}$/,
+  drug_application: /^(NDA|ANDA|BLA)\d{5,6}$/,
+  device_pma: /^(P\d{6}|N\d{4,6})$/,
+  fda_drug_recall: /^D-?\d{3,5}-\d{1,5}$/,
+  fda_device_recall: /^Z-?\d{3,5}-\d{1,5}$/,
+  cpsc_recall: /^\d{5,6}[a-z]?$/,
+  nhtsa_recall: /^\d{2}[VEITC]\d{2}[0-9A-Z]\d{3}$/,
 };
 
 export const IDENTIFIER_HINTS: Record<PublicDateKind, string> = {
@@ -62,11 +67,15 @@ export const PUBLIC_DATE_DATASETS: Record<PublicDateKind, string> = {
 };
 export const MDLS_DATASET = "mdls";
 
-/** Upper-case and strip spaces so "nda 020193" and "z-1974-2021" match their exact shapes. */
+/**
+ * Strip spaces and set the case the dataset uses, so "nda 020193" and "z-1974-2021" match their exact shapes. CPSC
+ * suffixes are lower-case in the corpus ids (cpsc-api:98167a), so a CPSC number is lower-cased instead.
+ */
 export function normalizeIdentifier(kind: PublicDateKind, q: string): string {
   const t = q.trim();
   if (kind === "mdl") return t.replace(/^mdl\s*(no\.?)?\s*/i, "");
-  return t.replace(/\s+/g, "").toUpperCase();
+  const compact = t.replace(/\s+/g, "");
+  return kind === "cpsc_recall" ? compact.toLowerCase() : compact.toUpperCase();
 }
 
 /** The exact identifier the text is, or null when it is free text. */
@@ -75,7 +84,7 @@ export function exactIdentifier(kind: PublicDateKind, q: string): string | null 
   return IDENTIFIER_PATTERNS[kind].test(id) ? id : null;
 }
 
-/** The corpus record id an identifier maps to (PMA: the prefix of its supplements' ids). */
+/** The corpus record id an identifier maps to (PMA: the base record, whose supplements' ids extend it). */
 export function recordIdFor(kind: PublicDateKind, identifier: string): string {
   switch (kind) {
     case "mdl":
@@ -129,7 +138,7 @@ export const EVENT_CAVEATS: Record<PublicDateEvent, string> = {
   fda_recall_classified:
     "The date FDA's center classified the recall (Class I, II or III). It is not the public notice date.",
   fda_enforcement_report_posted:
-    "The date FDA posted the recall in its weekly Enforcement Report, the first FDA publication of the record.",
+    "The date FDA posted the recall in its weekly Enforcement Report. Earlier public notices (the firm's announcement, FDA press or safety communications) may exist and are not recorded here.",
   fda_labeling_supplement_approved:
     "Drugs@FDA records an approved labeling supplement. What changed in the label is not recorded here, so this may be routine labeling.",
   pma_labeling_supplement_decision:
@@ -159,6 +168,8 @@ export type PublicDateCandidate = {
   basis: string;
   caveat: string;
   anomaly: string | null;
+  /** Other records of the same event and date (e.g. a second GovInfo part of one transfer order), shown on the chip. */
+  related?: { recordId: string; officialUrl: string | null; pdfUrl: string | null }[];
 };
 
 export type MdlProductAid = { label: string; kind: string | null; basis: string };
@@ -249,9 +260,13 @@ function candidate(
 
 type Row = { id?: unknown; source_url?: unknown; item?: unknown; detail?: unknown };
 
-/** Transfer-order rows of mdl_intel_hearing_orders, kept only when order.mdl equals the MDL number exactly. */
+/**
+ * Transfer-order rows of mdl_intel_hearing_orders, kept only when order.mdl equals the MDL number exactly. GovInfo
+ * publishes some orders in two parts (-0 and -1) with the same date; those collapse into one chip that prefers the
+ * part with a signed date and lists the other part as related.
+ */
 export function parseTransferOrders(mdl: string, rows: readonly Row[]): PublicDateCandidate[] {
-  const out: PublicDateCandidate[] = [];
+  const parts: { signed: boolean; c: PublicDateCandidate }[] = [];
   for (const row of rows) {
     const item = obj(row.item);
     const order = obj(item?.["order"]);
@@ -269,8 +284,9 @@ export function parseTransferOrders(mdl: string, rows: readonly Row[]): PublicDa
           .map(obj)
           .find((l) => /govinfo details/i.test(String(l?.["label"] ?? "")))?.["url"],
       );
-    out.push(
-      candidate({
+    parts.push({
+      signed: !!signed,
+      c: candidate({
         eventType: "jpml_transfer_order",
         date,
         label: signed
@@ -288,6 +304,29 @@ export function parseTransferOrders(mdl: string, rows: readonly Row[]): PublicDa
           : "GovInfo issued date (no signed date recorded)",
         anomaly: null,
       }),
+    });
+  }
+  const byDate = new Map<string, { signed: boolean; c: PublicDateCandidate }[]>();
+  for (const p of parts) byDate.set(p.c.date, [...(byDate.get(p.c.date) ?? []), p]);
+  const out: PublicDateCandidate[] = [];
+  for (const group of byDate.values()) {
+    const [primary, ...rest] = [...group]
+      .sort(
+        (a, b) => Number(b.signed) - Number(a.signed) || a.c.recordId.localeCompare(b.c.recordId),
+      )
+      .map((p) => p.c);
+    if (!primary) continue;
+    out.push(
+      rest.length
+        ? {
+            ...primary,
+            related: rest.map((r) => ({
+              recordId: r.recordId,
+              officialUrl: r.officialUrl,
+              pdfUrl: r.pdfUrl,
+            })),
+          }
+        : primary,
     );
   }
   return out.sort((a, b) => a.date.localeCompare(b.date));
@@ -480,18 +519,31 @@ export function parseDrugsFdaLabeling(row: Row | undefined): {
   };
 }
 
-/** Device PMA supplements whose recorded reason starts with "Labeling Change". */
+/**
+ * Device PMA supplements whose recorded reason starts with "Labeling Change". The base record (id without a
+ * supplement suffix) gives the title only; a PMA held without supplements is found but has no candidates.
+ */
 export function parsePmaLabeling(
   pma: string,
   rows: readonly Row[],
-): { candidates: PublicDateCandidate[]; title: string | null } {
+): { candidates: PublicDateCandidate[]; title: string | null; found: boolean } {
   const out: PublicDateCandidate[] = [];
-  let title: string | null = null;
+  const baseId = `openfda:device/pma:${pma}`;
+  let baseTitle: string | null = null;
+  let supplementTitle: string | null = null;
+  let found = false;
   for (const row of rows) {
     const id = str(row.id, 200);
     const item = obj(row.item);
-    if (!id || !item || !id.startsWith(`openfda:device/pma:${pma}:`)) continue;
-    title = title ?? str(item["title"], 300);
+    if (!id || !item) continue;
+    if (id === baseId) {
+      found = true;
+      baseTitle = baseTitle ?? str(item["title"], 300);
+      continue;
+    }
+    if (!id.startsWith(`${baseId}:`)) continue;
+    found = true;
+    supplementTitle = supplementTitle ?? str(item["title"], 300);
     const reason = str(item["snippet"], 300);
     if (!reason || !/^Labeling Change/i.test(reason)) continue;
     const date = day(obj(item["dates"])?.["decision_date"]);
@@ -515,7 +567,11 @@ export function parsePmaLabeling(
       }),
     );
   }
-  return { candidates: out.sort((a, b) => b.date.localeCompare(a.date)), title };
+  return {
+    candidates: out.sort((a, b) => b.date.localeCompare(a.date)),
+    title: baseTitle ?? supplementTitle,
+    found,
+  };
 }
 
 export function parseCpscRecall(row: Row | undefined): {

@@ -31,10 +31,16 @@ type Row = { id?: unknown; source_url?: unknown; item?: unknown; detail?: unknow
 
 const memo = new Map<string, { at: number; v: unknown }>();
 const TTL = 10 * 60 * 1000;
-async function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
+/** Memoised read; `keep` returns false for a result that must not be cached (a sub-read failed). */
+async function cached<T>(
+  key: string,
+  fn: () => Promise<T>,
+  keep: (v: T) => boolean = () => true,
+): Promise<T> {
   const hit = memo.get(key);
   if (hit && Date.now() - hit.at < TTL) return hit.v as T;
   const v = await fn();
+  if (!keep(v)) return v;
   memo.set(key, { at: Date.now(), v });
   if (memo.size > 300) memo.delete(memo.keys().next().value as string);
   return v;
@@ -99,7 +105,25 @@ const datesInput = z
   .object({ kind: z.enum(PUBLIC_DATE_KINDS), id: z.string().trim().min(1).max(40) })
   .refine((d) => IDENTIFIER_PATTERNS[d.kind].test(d.id), { message: "Not an exact identifier." });
 
-async function readDates(kind: PublicDateKind, id: string): Promise<PublicDatesResult> {
+const PRODUCTS_FAILED = Symbol("products-failed");
+
+/** The record's dates, and whether every sub-read succeeded (only a complete read is cached). */
+async function readDates(
+  kind: PublicDateKind,
+  id: string,
+): Promise<{ result: PublicDatesResult; complete: boolean }> {
+  let partial = false;
+  const result = await readDatesInner(kind, id, () => {
+    partial = true;
+  });
+  return { result, complete: !partial };
+}
+
+async function readDatesInner(
+  kind: PublicDateKind,
+  id: string,
+  markPartial: () => void,
+): Promise<PublicDatesResult> {
   const base = { kind, identifier: id, products: [], notes: [] as string[] };
   const one = async (dataset: string, select: string) =>
     (
@@ -118,9 +142,11 @@ async function readDates(kind: PublicDateKind, id: string): Promise<PublicDatesR
         ),
         rpcPostOptional<unknown>("safety_mdl_products_v1", { p_mdl: id }).catch((e: unknown) => {
           console.error("public dates products", e);
-          return null;
+          return PRODUCTS_FAILED;
         }),
       ]);
+      // A failed product read is not cached, so a transient error does not hide the aid for the TTL.
+      if (products === PRODUCTS_FAILED) markPartial();
       const r = mdlPublicDates(
         id,
         orders.rows,
@@ -131,7 +157,7 @@ async function readDates(kind: PublicDateKind, id: string): Promise<PublicDatesR
         title: r.title,
         candidates: r.candidates,
         notes: r.notes,
-        products: parseMdlProducts(products),
+        products: products === PRODUCTS_FAILED ? [] : parseMdlProducts(products),
         found: orders.rows.length > 0 || pending.rows.length > 0,
       };
     }
@@ -157,18 +183,25 @@ async function readDates(kind: PublicDateKind, id: string): Promise<PublicDatesR
       return { ...base, ...r, found: !!row };
     }
     case "device_pma": {
-      const rows = await restGet<(Row & Record<string, unknown>)[]>(
-        `corpus_records?select=id,item,original_file:detail->original_file&dataset=eq.${PUBLIC_DATE_DATASETS.device_pma}&id=like.${enc(`${recordIdFor(kind, id)}:`)}*&limit=1000`,
-      );
+      // The base record and its supplements (base id + ":S###"), each matched by exact id or exact id prefix.
+      const select = `select=id,item,original_file:detail->original_file&dataset=eq.${PUBLIC_DATE_DATASETS.device_pma}`;
+      const [baseRows, supplements] = await Promise.all([
+        restGet<(Row & Record<string, unknown>)[]>(
+          `corpus_records?${select}&id=eq.${enc(recordIdFor(kind, id))}&limit=2`,
+        ),
+        restGet<(Row & Record<string, unknown>)[]>(
+          `corpus_records?${select}&id=like.${enc(`${recordIdFor(kind, id)}:`)}*&limit=1000`,
+        ),
+      ]);
       const r = parsePmaLabeling(
         id,
-        rows.rows.map((x) => ({
+        [...baseRows.rows, ...supplements.rows].map((x) => ({
           id: x.id,
           item: x.item,
           detail: { original_file: x["original_file"] },
         })),
       );
-      return { ...base, ...r, found: rows.rows.length > 0 };
+      return { ...base, ...r };
     }
     case "fda_drug_recall":
     case "fda_device_recall": {
@@ -208,7 +241,12 @@ export const getPublicDates = createServerFn({ method: "GET" })
   .inputValidator((d: z.input<typeof datesInput>) => datesInput.parse(d))
   .handler(async ({ data }): Promise<PublicDatesResult> => {
     try {
-      return await cached(`d:${data.kind}:${data.id}`, () => readDates(data.kind, data.id));
+      const read = await cached(
+        `d:${data.kind}:${data.id}`,
+        () => readDates(data.kind, data.id),
+        (v) => v.complete,
+      );
+      return read.result;
     } catch (e) {
       console.error("public dates", e);
       throw new Error("The public record could not be read just now.");

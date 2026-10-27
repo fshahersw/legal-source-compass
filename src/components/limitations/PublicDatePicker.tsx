@@ -46,8 +46,9 @@ function kindFor(tab: Tab, recallKind: (typeof RECALL_KINDS)[number], q: string)
   if (tab === "mdl") return "mdl";
   if (tab === "application") return "drug_application";
   if (tab === "pma") return "device_pma";
-  // An identifier-shaped recall number names its own source.
-  for (const k of RECALL_KINDS) if (exactIdentifier(k, q) && k !== "cpsc_recall") return k;
+  // An identifier-shaped recall number names its own source: D- and Z- numbers are FDA, a letter in the third place is
+  // NHTSA, and a bare 5-6 digit number (optionally with a letter suffix) matches only the CPSC shape.
+  for (const k of RECALL_KINDS) if (exactIdentifier(k, q)) return k;
   return recallKind;
 }
 
@@ -116,7 +117,10 @@ function PickerBody({ rule, dateFields, cutoff, values, accepted, onAccept }: Pi
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
-    run(kindFor(tab, recallKind, text), text);
+    const kind = kindFor(tab, recallKind, text);
+    if (tab === "recall" && kind !== recallKind)
+      setRecallKind(kind as (typeof RECALL_KINDS)[number]);
+    run(kind, text);
   };
   const hintKind = kindFor(tab, recallKind, text);
   const groups = new Map<PublicDateEvent, PublicDateCandidate[]>();
@@ -160,6 +164,7 @@ function PickerBody({ rule, dateFields, cutoff, values, accepted, onAccept }: Pi
             onClick={() => {
               setTab(t.id);
               setSearch(null);
+              setSelected(null);
             }}
             className={
               "min-h-9 rounded-md px-3 text-xs font-medium " +
@@ -279,7 +284,7 @@ function PickerBody({ rule, dateFields, cutoff, values, accepted, onAccept }: Pi
                 <p className="text-xs text-muted-foreground">
                   {dates.data.found
                     ? (dates.data.title ?? "Title not recorded")
-                    : "Not found in the corpus."}
+                    : "This identifier is not in the corpus."}
                 </p>
               </div>
               {dates.data.notes.map((n) => (
@@ -396,6 +401,37 @@ function CandidateChip({
               </a>
             )}
           </p>
+          {c.related?.map((r) => (
+            <p key={r.recordId} className="mt-1 text-xs text-muted-foreground">
+              Same date also published as {r.recordId}
+              {r.officialUrl && (
+                <>
+                  {" · "}
+                  <a
+                    href={r.officialUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline"
+                  >
+                    Record
+                  </a>
+                </>
+              )}
+              {r.pdfUrl && (
+                <>
+                  {" · "}
+                  <a
+                    href={r.pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary underline"
+                  >
+                    PDF
+                  </a>
+                </>
+              )}
+            </p>
+          ))}
           {c.anomaly && (
             <StatusPill tone="warning" className="mt-1">
               Shown as published: {c.anomaly}

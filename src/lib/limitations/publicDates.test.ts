@@ -149,6 +149,36 @@ describe("identifiers", () => {
     );
     expect(recordIdFor("cpsc_recall", "73039")).toBe("cpsc-api:73039");
   });
+  it("accepts every recall-number shape the corpus publishes, still as one exact record id", () => {
+    // FY2013-2016 drug recalls (2,541 rows), e.g. D-723-2016 and D-001-2013.
+    expect(exactIdentifier("fda_drug_recall", "D-723-2016")).toBe("D-723-2016");
+    expect(exactIdentifier("fda_drug_recall", "d-001-2013")).toBe("D-001-2013");
+    expect(recordIdFor("fda_drug_recall", "D-001-2013")).toBe(
+      "openfda:drug/enforcement:D-001-2013",
+    );
+    for (const id of ["D-66014-001", "D0029-2015", "D-0731-201", "D00432-2015"])
+      expect(exactIdentifier("fda_drug_recall", id)).toBe(id);
+    for (const id of ["Z-229-2014", "Z1855-2015", "Z-1548-201"])
+      expect(exactIdentifier("fda_device_recall", id)).toBe(id);
+    // CPSC letter suffixes are lower-case in the corpus ids, so the match stays exact.
+    expect(exactIdentifier("cpsc_recall", "98167a")).toBe("98167a");
+    expect(exactIdentifier("cpsc_recall", "98167A")).toBe("98167a");
+    expect(recordIdFor("cpsc_recall", "98167a")).toBe("cpsc-api:98167a");
+    expect(exactIdentifier("nhtsa_recall", "21v00d000")).toBe("21V00D000");
+    expect(exactIdentifier("device_pma", "N18033")).toBe("N18033");
+    // Still not free text.
+    expect(exactIdentifier("fda_drug_recall", "D-12-2016")).toBeNull();
+    expect(exactIdentifier("cpsc_recall", "98167ab")).toBeNull();
+  });
+  it("keeps a search hit for an older recall number", () => {
+    expect(
+      parseHit("fda_drug_recall", { item: { native_id: "D-723-2016", title: "x" } })?.identifier,
+    ).toBe("D-723-2016");
+    expect(
+      parseHit("cpsc_recall", { item: { title: "x", cells: { recall_number: "98167a" } } })
+        ?.identifier,
+    ).toBe("98167a");
+  });
 });
 
 describe("MDL centralization dates", () => {
@@ -186,6 +216,19 @@ describe("MDL centralization dates", () => {
     expect(r.notes[0]).toMatch(/No GovInfo transfer order/);
     expect(mdlPublicDates("9999", [], undefined).notes[0]).toMatch(/No centralization date/);
   });
+  it("collapses two GovInfo parts of one order with the same date into one chip", () => {
+    const part1 = structuredClone(elmironOrder);
+    part1.id = "order:USCOURTS-jpml-1_20-F-02973-1";
+    part1.source_url = part1.source_url.replace(/-0$/, "-1");
+    (part1.item.order as Record<string, unknown>)["signed_date"] = null;
+    const r = mdlPublicDates("2973", [part1, elmironOrder], elmironMdl);
+    expect(r.candidates).toHaveLength(1);
+    expect(r.candidates[0]!.recordId).toBe("order:USCOURTS-jpml-1_20-F-02973-0");
+    expect(r.candidates[0]!.label).toMatch(/signed/);
+    expect(r.candidates[0]!.related).toEqual([
+      expect.objectContaining({ recordId: "order:USCOURTS-jpml-1_20-F-02973-1" }),
+    ]);
+  });
   it("lists title-named products once", () => {
     expect(
       parseMdlProducts([
@@ -214,6 +257,9 @@ describe("recall and labeling dates", () => {
     ]);
     expect(r.candidates[0]!.urlKind).toBe("source_file");
     expect(r.candidates[0]!.anomaly).toBeNull();
+    // The Enforcement Report is not presented as the first public notice.
+    expect(r.candidates[2]!.caveat).toMatch(/Earlier public notices .* may exist/);
+    expect(r.candidates[2]!.caveat).not.toMatch(/first/i);
   });
   it("flags date-ordering anomalies without correcting them", () => {
     expect(
@@ -267,6 +313,21 @@ describe("recall and labeling dates", () => {
     ];
     const r = parsePmaLabeling("P100047", rows);
     expect(r.candidates.map((c) => c.identifier)).toEqual(["P100047:S215"]);
+    expect(r.found).toBe(true);
+  });
+  it("finds a PMA held only as its base record, with its title and no candidates", () => {
+    const r = parsePmaLabeling("P250042", [
+      {
+        id: "openfda:device/pma:P250042",
+        item: { title: "BAGUERA C Cervical Disc Prosthesis", native_id: "P250042" },
+      },
+    ]);
+    expect(r).toEqual({
+      candidates: [],
+      title: "BAGUERA C Cervical Disc Prosthesis",
+      found: true,
+    });
+    expect(parsePmaLabeling("P250043", []).found).toBe(false);
   });
   it("reads CPSC 73039 and NHTSA 10V377000 with their official pages", () => {
     const c = parseCpscRecall(cpsc).candidates[0]!;
@@ -439,6 +500,41 @@ describe("server reads", () => {
     const paths = restGet.mock.calls.map((c) => String(c[0]));
     expect(paths.some((p) => p.includes("item->order->>mdl=eq.2973"))).toBe(true);
     expect(paths.every((p) => p.includes("dataset=eq."))).toBe(true);
+  });
+  it("reads a PMA by its exact base id and by its supplements' id prefix", async () => {
+    restGet.mockReset();
+    restGet.mockImplementation(async (path: string) => ({
+      rows: path.includes("id=eq.")
+        ? [{ id: "openfda:device/pma:P250042", item: { title: "BAGUERA C" } }]
+        : [],
+      total: null,
+    }));
+    const r = await (
+      getPublicDates as unknown as (a: {
+        data: unknown;
+      }) => Promise<{ found: boolean; title: string | null; candidates: unknown[] }>
+    )({ data: { kind: "device_pma", id: "P250042" } });
+    expect([r.found, r.title, r.candidates]).toEqual([true, "BAGUERA C", []]);
+    const paths = restGet.mock.calls.map((c) => decodeURIComponent(String(c[0])));
+    expect(paths.some((p) => p.includes("id=eq.openfda:device/pma:P250042&"))).toBe(true);
+    expect(paths.some((p) => p.includes("id=like.openfda:device/pma:P250042:*"))).toBe(true);
+  });
+  it("does not cache an MDL read whose product aid failed", async () => {
+    restGet.mockReset();
+    rpcPostOptional.mockReset();
+    restGet.mockImplementation(async (path: string) => ({
+      rows: path.includes("dataset=eq.mdl_intel_hearing_orders") ? [elmironOrder] : [elmironMdl],
+      total: null,
+    }));
+    rpcPostOptional.mockRejectedValueOnce(new Error("transient"));
+    rpcPostOptional.mockResolvedValue([{ label: "Elmiron", kind: "drug", basis: "title" }]);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const call = (
+      getPublicDates as unknown as (a: { data: unknown }) => Promise<{ products: unknown[] }>
+    ).bind(null, { data: { kind: "mdl", id: "2975" } });
+    expect((await call()).products).toEqual([]);
+    expect((await call()).products).toHaveLength(1);
+    expect(rpcPostOptional).toHaveBeenCalledTimes(2);
   });
   it("rejects a non-identifier for a dated lookup", () => {
     expect(() =>
