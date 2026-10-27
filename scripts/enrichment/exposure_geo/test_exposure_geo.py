@@ -46,6 +46,18 @@ class MappingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             X.validate_map(data)
 
+    def test_places_links_cite_a_document_for_every_drug(self):
+        data = X.load_map()
+        bp = next(e for e in data["places"] if e["measure"] == "BPHIGH")
+        urls = [bp["source_url"], *(s["url"] for s in bp["more_sources"])]
+        self.assertEqual([u.split("drugName=")[1].split("&")[0] for u in urls], ["valsartan", "losartan", "irbesartan"])
+        vision = next(e for e in data["places"] if e["measure"] == "VISION")
+        self.assertTrue(vision["source_url"].endswith(".pdf"))
+        broken = copy.deepcopy(data)
+        next(e for e in broken["places"] if e["measure"] == "VISION")["source_url"] = "https://www.jpml.uscourts.gov/"
+        with self.assertRaises(ValueError):
+            X.validate_map(broken)
+
     def test_reviewed_places_links_cite_a_source(self):
         data = copy.deepcopy(X.load_map())
         data["places"][0]["source_url"] = ""
@@ -88,11 +100,16 @@ class PartDTests(unittest.TestCase):
         self.assertFalse(point["lower_bound"])
         self.assertIsNone(products[1]["benes"])  # suppressed stays None, never 0
 
-    def test_missing_product_marks_a_lower_bound(self):
+    def test_missing_product_marks_a_bounded_total(self):
         point = P.year_point(2024, [P.product(partd_row())], {("Semaglutide", "Ozempic"), ("Dulaglutide", "Trulicity")})
         self.assertTrue(point["lower_bound"])
         self.assertEqual(point["missing_products"], ["Trulicity (Dulaglutide)"])
+        self.assertEqual((point["claims"], point["claims_max"]), (100, 110))  # a hidden product had at most 10 claims
         self.assertIsNone(point["benes"])  # a single present product is not the group total
+
+    def test_complete_total_has_equal_bounds(self):
+        point = P.year_point(2024, [P.product(partd_row())], {("Semaglutide", "Ozempic")})
+        self.assertEqual((point["claims"], point["claims_max"]), (100, 100))
 
     def test_single_product_group_keeps_beneficiaries(self):
         point = P.year_point(2024, [P.product(partd_row(brand="Elmiron", generic="Pentosan Polysulfate Sodium"))], {("Pentosan Polysulfate Sodium", "Elmiron")})
@@ -116,7 +133,7 @@ class PartDTests(unittest.TestCase):
         self.assertTrue(nj["source_url"].startswith("https://data.cms.gov/"))
         self.assertEqual(skipped, {})
 
-    def test_ranks_use_complete_values_only_and_share_the_national_total(self):
+    def test_ranks_cover_all_states_and_dc_and_share_the_national_total(self):
         nat = partd_row(level="National", code="", desc="National", brand="Elmiron", generic="Pentosan Polysulfate Sodium", claims="1000")
         rows = {2024: [
             nat,
@@ -129,9 +146,44 @@ class PartDTests(unittest.TestCase):
         recs = {r["id"]: r["item"]["exposure"] for r in P.build_records(groups, [2024])}
         self.assertEqual(recs["partd:2973:NJ"]["latest_rank"]["rank"], 1)
         self.assertEqual(recs["partd:2973:NY"]["latest_rank"]["rank"], 1)  # ties share a rank
-        self.assertEqual(recs["partd:2973:CA"]["latest_rank"], {"year": 2024, "rank": 3, "of": 3, "measure": "claims", "share_of_national": 0.1})
+        self.assertEqual(recs["partd:2973:CA"]["latest_rank"], {
+            "year": 2024, "rank": 3, "rank_max": 3, "of": 51, "measure": "claims", "share_of_national": 0.1,
+            "share_is_lower_bound": False,
+        })  # the 48 states without a row had at most 10 claims, so they sit below California
         self.assertIsNone(recs["partd:2973:PR"]["latest_rank"])  # territories are not ranked
         self.assertIsNone(recs["partd:2973:US"]["latest_rank"])
+        dist = recs["partd:2973:US"]["state_distribution"]
+        self.assertEqual((dist["states"], dist["states_with_row"], dist["median_lo"], dist["median_hi"]), (51, 3, 0, 10))
+
+    def _ppi_case(self):
+        """NY 2024 shape from the packet: PPIs miss only Esomeprazole Sodium (IV) yet far exceed the ARBs."""
+        ppi = [("Omeprazole", "Omeprazole", "3797196"), ("Esomeprazole Sodium", "Esomeprazole Sodium", None)]
+        arb = [("Losartan Potassium", "Losartan Potassium", "2824274")]
+        rows = []
+        for generic, brand, ny in ppi + arb:
+            rows.append(partd_row(level="National", code="", desc="National", brand=brand, generic=generic, claims="9000000"))
+            if ny:
+                rows.append(partd_row(code="36", desc="New York", brand=brand, generic=generic, claims=ny))
+        rows.append(partd_row(code="06", desc="California", brand="Omeprazole", generic="Omeprazole", claims="3797190"))
+        rows.append(partd_row(code="06", desc="California", brand="Esomeprazole Sodium", generic="Esomeprazole Sodium", claims="12"))
+        groups, _ = P.collect({2024: rows}, [self.entries["2789"], self.entries["2875"]])
+        return {r["id"]: r["item"]["exposure"] for r in P.build_records(groups, [2024])}
+
+    def test_a_hidden_iv_product_keeps_the_state_bounded_and_ranked(self):
+        recs = self._ppi_case()
+        ny = recs["partd:2789:NY"]
+        point = ny["series"][-1]
+        self.assertEqual((point["claims"], point["claims_max"], point["lower_bound"]), (3797196, 3797206, True))
+        self.assertGreater(point["claims"], recs["partd:2875:NY"]["series"][-1]["claims_max"])  # PPIs lead the ARBs
+        self.assertEqual(ny["latest_rank"]["rank"], 1)
+        self.assertEqual(ny["latest_rank"]["rank_max"], 2)  # CA (3,797,202, exact) lies inside NY's interval
+        self.assertTrue(ny["latest_rank"]["share_is_lower_bound"])
+        ca = recs["partd:2789:CA"]["latest_rank"]
+        self.assertEqual((ca["rank"], ca["rank_max"], ca["of"]), (1, 2, 51))
+
+    def test_rank_intervals(self):
+        ranks = P.rank_intervals({"A": (100, 100), "B": (90, 110), "C": (50, 50), "D": (50, 50), "E": (0, 10)})
+        self.assertEqual(ranks, {"A": (1, 2), "B": (1, 2), "C": (3, 3), "D": (3, 3), "E": (5, 5)})
 
 
 def places_row(loc="34023", usps="NJ", mid="DIABETES", kind="CrdPrv", value="11.2", lo="10.1", hi="12.3"):
@@ -159,6 +211,7 @@ class PlacesTests(unittest.TestCase):
         links = recs[1]["item"]["exposure"]["mdl_links"]
         self.assertEqual(links["HEARING"], [])
         self.assertIn("3094", links["DIABETES"][0]["mdls"])
+        self.assertEqual(links["DIABETES"][0]["sources"][0]["url"], links["DIABETES"][0]["source_url"])
 
 
 def ucmr_row(pwsid="NJ1225001", contaminant="PFOA", sign="=", value="0.0042", state="NJ", sample="S1", date="3/14/2024"):
@@ -193,6 +246,19 @@ class UcmrTests(unittest.TestCase):
         st = U.state_view("NJ", list(views.values()))
         self.assertEqual((st["systems_sampled"], st["systems_with_detect"], st["systems_pfoa_pfos_at_or_above_4"]), (3, 2, 1))
         self.assertEqual(st["population_with_detect"], {"sum": 50000, "systems_with_population": 1, "systems_without_population": 1})
+        self.assertEqual(st["population_with_detect_cws"]["sum"], 50000)
+        self.assertEqual((st["large_systems_sampled"], st["large_systems_with_detect"]), (3, 2))
+        self.assertIsNone(st["epa_file_date"])
+
+    def test_cws_population_leaves_out_non_community_systems(self):
+        systems = U.aggregate([ucmr_row(), ucmr_row(pwsid="NJ0000002")])
+        sdwis = {"NJ1225001": {"population": 50000, "type": "CWS", "activity": "A"},
+                 "NJ0000002": {"population": 900, "type": "NTNCWS", "activity": "A"}}
+        views = [U.system_view(s, {}, {}, sdwis) for s in systems.values()]
+        st = U.state_view("NJ", views, "2026-10-15")
+        self.assertEqual(st["population_with_detect"]["sum"], 50900)
+        self.assertEqual(st["population_with_detect_cws"]["sum"], 50000)
+        self.assertEqual(st["epa_file_date"], "2026-10-15")
 
     def test_records_name_tribal_agencies_and_national_first(self):
         systems = U.aggregate([ucmr_row(), ucmr_row(pwsid="090000001", state="09")])

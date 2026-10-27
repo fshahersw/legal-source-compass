@@ -15,6 +15,12 @@ Rules:
   finding: compliance uses running annual averages.
 - Population served comes from SDWIS by exact PWSID; a system SDWIS does not list has none (never estimated).
 - Water systems link to places only through the ZIP codes EPA publishes for them; there is no county link.
+- UCMR 5 tested every system serving more than 3,300 people but only a national sample of smaller ones, so a state's
+  share of tested systems depends on its sample mix. Large systems (EPA size "L", more than 10,000 people) were all
+  tested and are counted separately for like-for-like state comparison.
+- Population served is summed over community water systems (SDWIS type CWS) separately: non-community systems report
+  workers or visitors on a typical day, and consecutive systems can buy water from another tested system.
+- EPA keeps adding results; every state record carries the date of the EPA data file it was built from.
 
 Usage: python -B build_ucmr5.py [--acq <dir>]
 """
@@ -176,12 +182,13 @@ def system_view(s: dict, zips: dict, sources: dict, sdwis: dict) -> dict:
     }
 
 
-def state_view(code: str, systems: list[dict]) -> dict:
+def state_view(code: str, systems: list[dict], file_date: str | None = None) -> dict:
     def pop(rows):
         known = [r["population_served"] for r in rows if r["population_served"] is not None]
         return {"sum": sum(known) if known else None, "systems_with_population": len(known), "systems_without_population": len(rows) - len(known)}
     detect = [s for s in systems if s["any_detect"]]
     over = [s for s in systems if s["pfoa_pfos_at_or_above_4"]]
+    large = [s for s in systems if s["size"] == "L"]
     by_analyte: dict[str, int] = {}
     for s in systems:
         for a in s["analytes"]:
@@ -200,6 +207,10 @@ def state_view(code: str, systems: list[dict]) -> dict:
         "population_sampled": pop(systems),
         "population_with_detect": pop(detect),
         "population_pfoa_pfos_at_or_above_4": pop(over),
+        "population_with_detect_cws": pop([s for s in detect if s["sdwis_type"] == "CWS"]),
+        "large_systems_sampled": len(large),
+        "large_systems_with_detect": sum(1 for s in large if s["any_detect"]),
+        "epa_file_date": file_date,
         "systems_by_size": {k: sum(1 for s in systems if s["size"] == k) for k in ("L", "S")},
         "systems_detecting_by_analyte": dict(sorted(by_analyte.items(), key=lambda kv: (-kv[1], kv[0]))),
         "first_sample": min(firsts) if firsts else None,
@@ -237,11 +248,11 @@ def system_records(views: list[dict], mdl: dict) -> list[dict]:
     return rows
 
 
-def state_records(views: list[dict], mdl: dict) -> list[dict]:
+def state_records(views: list[dict], mdl: dict, file_date: str | None = None) -> list[dict]:
     groups: dict[str, list[dict]] = {}
     for v in views:
         groups.setdefault(v["agency"], []).append(v)
-    bodies = [state_view("US", views)] + [state_view(code, rows) for code, rows in sorted(groups.items())]
+    bodies = [state_view("US", views, file_date)] + [state_view(code, rows, file_date) for code, rows in sorted(groups.items())]
     rows = []
     for b in bodies:
         code = b["agency"]
@@ -286,7 +297,7 @@ def main(argv=None) -> int:
     sdwis = sdwis_population(sdwis_files)
     views = [system_view(s, zips, sources, sdwis) for s in systems.values()]
     sys_rows = system_records(views, mdl)
-    st_rows = state_records(views, mdl)
+    st_rows = state_records(views, mdl, stamps.get("UCMR5_All.txt"))
     matched = sum(1 for v in views if v["population_served"] is not None)
     common = {
         "publisher": PUBLISHER,
@@ -303,7 +314,9 @@ def main(argv=None) -> int:
             "Occurrence only: UCMR 5 does not identify the source of PFAS, and a detection is not evidence of AFFF.",
             "Single results compared with 4.0 ng/L are not MCL compliance findings.",
             "Lithium is left out.",
-            "Population served is from SDWIS by exact PWSID and is missing where SDWIS has no row.",
+            "Population served is from SDWIS by exact PWSID and is missing where SDWIS has no row; sums over all systems can overlap (consecutive systems, non-community systems), so community systems are also summed alone.",
+            "Small systems were tested only through a national sample; large systems (more than 10,000 people) were all tested.",
+            "EPA keeps adding results to the UCMR 5 file; epa_file_date is the date of the file used.",
         ],
     }
     out1 = X.write_packet(args.acq, SYSTEMS, "PFAS in drinking water by water system (EPA UCMR 5)", sys_rows,

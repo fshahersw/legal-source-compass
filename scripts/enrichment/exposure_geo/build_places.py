@@ -83,6 +83,7 @@ def links_for(mapping: dict) -> dict[str, list[dict]]:
         out.setdefault(m["measure"], []).append({
             "mdls": m["mdls"], "basis": m["basis"], "relation": m["relation"],
             "source_label": m["source_label"], "source_url": m["source_url"], "caveat": m.get("caveat"),
+            "sources": [{"label": m["source_label"], "url": m["source_url"]}, *m.get("more_sources", [])],
         })
     return out
 

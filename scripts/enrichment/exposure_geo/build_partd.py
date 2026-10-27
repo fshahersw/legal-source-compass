@@ -10,7 +10,11 @@ Rules:
 - Claims, 30-day fills and drug cost add up across products. Prescribers and beneficiaries do not (one person can use
   two products), so a group value is published only when a single product row exists; otherwise it is None and the
   per-product values are kept.
-- CMS suppresses rows with fewer than 11 claims and beneficiary counts under 11. A missing state-year stays missing.
+- CMS publishes a geography-drug row only when it has at least 11 claims, and hides beneficiary counts under 11. A
+  product the national row lists but a state row lacks therefore had 0 to 10 claims there: the state total is published
+  as the interval [claims, claims_max], claims_max = claims + 10 x missing products. Nothing inside it is guessed.
+- States are ranked on those intervals (50 states and DC, a state with no row counts as [0, 10 x products]); a rank is a
+  range when the intervals overlap. A missing state-year stays missing in the series.
 - The geography is the prescriber's state, not where the patient lives.
 
 Usage: python -B build_partd.py [--acq <dir>]
@@ -29,6 +33,8 @@ DATASET = "exposure_partd_mdl_drugs"
 LABEL = "Medicare Part D prescriptions for MDL drugs, by state"
 LANDING = "https://data.cms.gov/provider-summary-by-type-of-service/medicare-part-d-prescribers/medicare-part-d-prescribers-by-geography-and-drug"
 PUBLISHER = "Centers for Medicare & Medicaid Services"
+# CMS leaves out geography-drug rows with fewer than 11 claims, so a hidden product had at most this many claims.
+HIDDEN_MAX_CLAIMS = 10
 # data year -> CSV download (data.cms.gov catalog, read 2026-10-27)
 SOURCES = {
     2013: "https://data.cms.gov/sites/default/files/2021-08/MUP_DPR_RY21_P04_V10_DY13_Geo_0.csv",
@@ -104,14 +110,16 @@ def _sum(values):
 
 def year_point(year: int, products: list[dict], national_keys: set[tuple[str, str]] | None = None) -> dict:
     """One year for one geography. `national_keys` are the products the national row lists that year: a product missing
-    here was suppressed (fewer than 11 claims) or not prescribed, so the sum is a lower bound and is flagged as such."""
+    here was hidden by CMS (fewer than 11 claims) or not prescribed, so the true total lies in [claims, claims_max]."""
     products = sorted(products, key=lambda p: (p["generic"], p["brand"]))
     present = {(p["generic"], p["brand"]) for p in products}
     missing = sorted(f"{b} ({g})" for g, b in (national_keys or set()) - present)
     single = products[0] if len(products) == 1 and not missing else None
+    claims = _sum([p["claims"] for p in products])
     return {
         "year": year,
-        "claims": _sum([p["claims"] for p in products]),
+        "claims": claims,
+        "claims_max": None if claims is None else claims + HIDDEN_MAX_CLAIMS * len(missing),
         "fills": _sum([p["fills"] for p in products]),
         "cost": _sum([p["cost"] for p in products]),
         "prescribers": single["prescribers"] if single else None,
@@ -190,7 +198,7 @@ def build_records(groups: dict, years: list[int]) -> list[dict]:
             {"label": "Prescriber geography", "value": geo["name"]},
             {"label": "Drugs matched", "value": ", ".join(entry.get("brand_names") or entry["generic_names"])},
             {"label": "Latest data year", "value": str(latest["year"]) if latest else "Not recorded"},
-            {"label": "Claims, latest year", "value": "Not recorded" if not latest or latest["claims"] is None else (f"at least {latest['claims']:,} (some products suppressed)" if latest["lower_bound"] else f"{latest['claims']:,}")},
+            {"label": "Claims, latest year", "value": "Not recorded" if not latest or latest["claims"] is None else (f"{latest['claims']:,} to {latest['claims_max']:,} (CMS hides products with fewer than 11 claims)" if latest["lower_bound"] else f"{latest['claims']:,}")},
         ]
         rows.append(X.record(
             DATASET, rid, title,
@@ -208,36 +216,81 @@ def build_records(groups: dict, years: list[int]) -> list[dict]:
     return rows
 
 
+RANKED_STATES = frozenset(usps for usps, _ in X.STATE_FIPS.values()) - {"AS", "GU", "MP", "PR", "VI"}
+
+
+def rank_intervals(intervals: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
+    """usps -> (best, worst) rank among the given [lo, hi] claim intervals, highest first. A state is certainly below
+    every other state whose lo exceeds its hi, and possibly below every state whose hi exceeds its lo; equal exact
+    values share a rank."""
+    out = {}
+    for usps, (lo, hi) in intervals.items():
+        others = [v for k, v in intervals.items() if k != usps]
+        best = 1 + sum(1 for o_lo, _ in others if o_lo > hi)
+        worst = 1 + sum(1 for _, o_hi in others if o_hi > lo)
+        out[usps] = (best, worst)
+    return out
+
+
+def median_of(values: list[float]) -> float | None:
+    v = sorted(values)
+    if not v:
+        return None
+    mid = len(v) // 2
+    return v[mid] if len(v) % 2 else (v[mid - 1] + v[mid]) / 2
+
+
 def add_ranks(rows: list[dict]) -> None:
-    """For each MDL, rank the 50 states and DC by claims in the latest national data year. Only complete values rank
-    (a lower bound or a missing year does not); ties share a rank. Each state's share of the national total is kept
-    beside it. Territories and the nation get no rank."""
+    """For each MDL, rank the 50 states and DC by claims in the latest national data year, on [claims, claims_max]
+    intervals. A state with no row that year counts as [0, 10 x the products the national row lists] (CMS shows no row
+    under 11 claims) for the others' ranks and the median, but gets no rank itself. `rank`..`rank_max` is a range when
+    the intervals overlap. The national record keeps the median state as an interval. Territories get no rank."""
     by_mdl: dict[str, list[dict]] = {}
     for r in rows:
         by_mdl.setdefault(r["item"]["exposure"]["mdl"], []).append(r["item"]["exposure"])
-    ranked_codes = {usps for usps, _ in X.STATE_FIPS.values()} - {"AS", "GU", "MP", "PR", "VI"}
     for exposures in by_mdl.values():
+        for e in exposures:
+            e["latest_rank"] = None
         nation = next((e for e in exposures if e["geo"]["usps"] == "US"), None)
         if not nation or not nation["series"]:
             continue
-        year = nation["series"][-1]["year"]
-        total = nation["series"][-1]["claims"]
-        scored = []
+        latest = nation["series"][-1]
+        year, total = latest["year"], latest["claims"]
+        hidden_max = HIDDEN_MAX_CLAIMS * len(latest["products"])
+        intervals: dict[str, tuple[int, int]] = {}
+        with_row: dict[str, dict] = {}
         for e in exposures:
+            usps = e["geo"]["usps"]
+            if usps not in RANKED_STATES:
+                continue
             point = next((p for p in e["series"] if p["year"] == year), None)
-            e["latest_rank"] = None
-            if e["geo"]["usps"] in ranked_codes and point and point["claims"] is not None and not point["lower_bound"]:
-                scored.append((point["claims"], e))
-        scored.sort(key=lambda t: -t[0])
-        for claims, e in scored:
-            rank = 1 + sum(1 for c, _ in scored if c > claims)
+            if point and point["claims"] is not None:
+                intervals[usps] = (point["claims"], point["claims_max"])
+                with_row[usps] = e
+        no_row = sorted(RANKED_STATES - set(intervals))
+        for usps in no_row:
+            intervals[usps] = (0, hidden_max)
+        ranks = rank_intervals(intervals)
+        for usps, e in with_row.items():
+            lo, hi = intervals[usps]
+            best, worst = ranks[usps]
             e["latest_rank"] = {
                 "year": year,
-                "rank": rank,
-                "of": len(scored),
+                "rank": best,
+                "rank_max": worst,
+                "of": len(intervals),
                 "measure": "claims",
-                "share_of_national": round(claims / total, 6) if total else None,
+                "share_of_national": round(lo / total, 6) if total else None,
+                "share_is_lower_bound": hi > lo,
             }
+        nation["state_distribution"] = {
+            "year": year,
+            "states": len(intervals),
+            "states_with_row": len(with_row),
+            "states_lower_bound": sum(1 for u in with_row if intervals[u][1] > intervals[u][0]),
+            "median_lo": median_of([lo for lo, _ in intervals.values()]),
+            "median_hi": median_of([hi for _, hi in intervals.values()]),
+        }
 
 
 def read_year(path: str):
@@ -277,7 +330,7 @@ def main(argv=None) -> int:
         "licence": "U.S. government work (public domain)",
         "caveats": [
             "Geography is the prescriber's state, not the patient's residence.",
-            "CMS suppresses rows with fewer than 11 claims and beneficiary counts under 11.",
+            "CMS leaves out rows with fewer than 11 claims and hides beneficiary counts under 11; a state total missing a product is published as an interval [claims, claims_max].",
             "Beneficiaries and prescribers are not added across products.",
             "Medicare Part D only: no Medicaid, commercial or cash prescriptions, and no Part B (clinic-administered) drugs.",
         ],

@@ -80,6 +80,11 @@ def validate_map(data: dict) -> None:
             raise ValueError(f"PLACES {entry.get('measure')}: unknown basis")
         if entry["basis"] != "candidate_unreviewed" and not entry.get("source_url", "").startswith("https://"):
             raise ValueError(f"PLACES {entry.get('measure')}: reviewed links must cite a source")
+        for extra in entry.get("more_sources", []):
+            if not extra.get("label") or not str(extra.get("url", "")).startswith("https://"):
+                raise ValueError(f"PLACES {entry.get('measure')}: every extra source needs a label and an https URL")
+        if entry["basis"] != "candidate_unreviewed" and "jpml.uscourts.gov" in entry["source_url"] and entry["source_url"].rstrip("/").endswith("uscourts.gov"):
+            raise ValueError(f"PLACES {entry.get('measure')}: cite the JPML document, not the JPML home page")
 
 
 def num(raw: str | None) -> float | None:
