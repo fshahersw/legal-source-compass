@@ -4,6 +4,9 @@ name: Legal atlas Federal Register refresh
 # (public domain, no key). Manual only until the lead has applied
 # database/contracts/legal-atlas-v3-fr-refresh.sql and verified a first upload; then uncomment the
 # schedule (after the 16:00 UTC federal-register-daily run) to keep the atlas current.
+# A scheduled run uploads (inputs are empty on schedule). It is safe only because the refresh step
+# fails before upload when any staged row would be rejected, and skips publications already held
+# or already staged in production.
 on:
   # schedule:
   #   - cron: "30 16 * * 1-5"
@@ -38,6 +41,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      # The scripts import repo TypeScript that needs packages (src/lib/legal/schema.ts imports zod).
+      # Same frozen install as verify.yml: Lovable's npm mirror answers HTTP 429 when busy, so retry.
+      - name: Install dependencies (frozen lockfile, retried on rate limits)
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4; do
+            if bun install --frozen-lockfile; then exit 0; fi
+            if [ "$attempt" -lt 4 ]; then
+              echo "bun install failed (attempt $attempt of 4); retrying in $((attempt * 45))s"
+              sleep $((attempt * 45))
+            fi
+          done
+          exit 1
       - name: Require repository secrets
         run: |
           missing=0
@@ -59,7 +78,7 @@ jobs:
           fi
           node scripts/legal/refresh-federal-register.mjs "${args[@]}"
       - name: Upload records, then edges (review_status pending)
-        if: ${{ inputs.upload }}
+        if: ${{ github.event_name == 'schedule' || inputs.upload }}
         run: |
           set -euo pipefail
           cfg="$RUNNER_TEMP/legal-fr/staging/config.json"
