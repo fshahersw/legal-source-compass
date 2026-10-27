@@ -7,6 +7,7 @@ import {
   gapAfterPublished,
   withholdingFor,
   docketbirdEntryRecord,
+  entryAvailability,
   tally,
 } from "./entries-packet.mjs";
 
@@ -217,4 +218,56 @@ test("a withheld DocketBird row shows no text, links the sheet, and is tallied",
   assert.equal(t.withheld, 2);
   assert.equal(t.sealed_document, 1);
   assert.equal(t.sealed_or_restricted_text, 1);
+});
+
+const recordFor = (docs, number) => {
+  const cap = normalizeCapture(capture(docs));
+  const e = sheetEntries([cap]).entries.find((x) => x.entry_number === number);
+  return docketbirdEntryRecord(e, ctx, { run: "r" }).rec;
+};
+
+test("availability: a text-held entry whose PDF is open keeps its document counts", () => {
+  const r = recordFor([doc("00050", "MOTION to file under seal")], 50);
+  const c = r.item.cells;
+  assert.equal(c.description_withheld, "sealed_or_restricted_text");
+  assert.equal(c.description, null);
+  assert.equal(c.documents, 1);
+  assert.equal(c.documents_available, 1);
+  assert.equal(c.documents_sealed, 0);
+  assert.equal(c.availability, "provider_pdf");
+  assert.deepEqual(c.document_ids, []);
+  assert.equal(r.source_url, `https://www.docketbird.com/cases?case_id=${CASE}`);
+  assert.ok(
+    r.detail.facts.some(([k, v]) => k === "Documents" && v === "1 (1 held by the provider as PDF)"),
+  );
+});
+
+test("availability: a restricted attachment marks the entry includes_sealed, a restricted entry document zeroes the available count", () => {
+  const partly = recordFor(
+    [doc("00051", "ORDER"), doc("00051-001", "Exhibit A", { restricted: true })],
+    51,
+  ).item.cells;
+  assert.equal(partly.description_withheld, null);
+  assert.equal(partly.availability, "includes_sealed");
+  assert.equal(partly.documents, 2);
+  assert.equal(partly.documents_sealed, 1);
+  assert.equal(partly.documents_available, 1);
+  const sealed = recordFor(
+    [doc("00052", "ORDER", { restricted: true }), doc("00052-001", "Exhibit")],
+    52,
+  ).item.cells;
+  assert.equal(sealed.description_withheld, "sealed_document");
+  assert.equal(sealed.availability, "includes_sealed");
+  assert.equal(sealed.documents_available, 0);
+});
+
+test("availability: documents listed but not held as PDF are never 'no_documents'", () => {
+  const r = recordFor([doc("00053", "NOTICE of appearance", { downloaded: 0 })], 53);
+  assert.equal(r.item.cells.documents, 1);
+  assert.equal(r.item.cells.availability, "provider_not_downloaded");
+  assert.equal(r.filters.has_documents, "true");
+  assert.equal(entryAvailability(0, 0, 0), "no_documents");
+  assert.equal(entryAvailability(2, 0, 0), "provider_not_downloaded");
+  assert.equal(entryAvailability(2, 1, 1), "includes_sealed");
+  assert.equal(entryAvailability(2, 0, 1), "provider_pdf");
 });

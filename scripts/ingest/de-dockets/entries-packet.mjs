@@ -7,6 +7,9 @@
 //     attachment ("-NNNNN-NNN-tNNN") repeats the entry-level text and is not projected (counted).
 //   * Description withheld when the provider flags the document restricted (restricted !== false: 'sealed_document', held), else when the text
 //     matches the exclusion pattern ('sealed_or_restricted_text', held), else when it carries a contact field ('contact_or_access_data').
+//   * Document counts and availability follow the documents, as for CourtListener rows (members-entry-record.mjs): no_documents only when no
+//     document is listed; includes_sealed when the provider restricts one of them; provider_pdf when an open one is held as PDF; otherwise
+//     provider_not_downloaded. A text hold keeps the counts; only a restricted entry document zeroes documents_available.
 //   * No duplicates with rows already published: a numbered entry is added only when its number is above the highest entry number already
 //     published for the MDL (CourtListener or DocketBird rows); a text-only entry only when the entry it follows is above that number.
 //     Rows are only ever added; no existing row is changed.
@@ -149,6 +152,15 @@ export function withholdingFor(doc, { releaseTextMentions = false } = {}) {
   return null;
 }
 
+/** Availability label of an entry's documents. Values shared with the CourtListener rows (no_documents, includes_sealed) keep their meaning;
+ *  provider_pdf = at least one open document the provider holds as PDF; provider_not_downloaded = documents are listed and open, but the
+ *  provider holds none of them as PDF. */
+export function entryAvailability(documents, documentsSealed, downloadable) {
+  if (documents === 0) return "no_documents";
+  if (documentsSealed > 0) return "includes_sealed";
+  return downloadable > 0 ? "provider_pdf" : "provider_not_downloaded";
+}
+
 /** One sw_docket_entries_v1 row from a DocketBird docket-sheet entry. ctx = {mdl, docket_key, docket_number, court_id, docketbird_case_id}. */
 export function docketbirdEntryRecord(entry, ctx, { run, releaseTextMentions = false } = {}) {
   const d = entry.doc;
@@ -159,13 +171,12 @@ export function docketbirdEntryRecord(entry, ctx, { run, releaseTextMentions = f
   const description = withheld || !raw ? null : clip.text;
   const docsAll = entry.kind === "numbered" ? [d, ...entry.attachments] : [];
   const docsOpen = docsAll.filter((x) => x.restricted === false);
-  const downloadable = docsOpen.filter((x) => x.downloaded === 1).length;
-  const availability =
-    docsAll.length === 0 || (d.downloaded !== 1 && downloadable === 0)
-      ? "no_documents"
-      : held
-        ? "includes_sealed"
-        : "provider_pdf";
+  const documentsSealed = docsAll.length - docsOpen.length;
+  const downloadable = docsOpen.filter((x) => x.downloaded === 1 || x.downloaded === true).length;
+  // Document availability follows the documents themselves (as members-entry-record.mjs does for CourtListener); a text hold changes the
+  // description and the link, never the document counts.
+  const availability = entryAvailability(docsAll.length, documentsSealed, downloadable);
+  const documentsAvailable = withheld === "sealed_document" ? 0 : downloadable;
   const id = `sw-entry:docketbird:${d.id}`;
   const dateFiled =
     typeof d.filing_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.filing_date)
@@ -195,8 +206,8 @@ export function docketbirdEntryRecord(entry, ctx, { run, releaseTextMentions = f
     description_truncated: clip.truncated && !withheld,
     description_withheld: withheld,
     documents: docsAll.length,
-    documents_available: held ? 0 : downloadable,
-    documents_sealed: docsAll.length - docsOpen.length,
+    documents_available: documentsAvailable,
+    documents_sealed: documentsSealed,
     availability,
     document_ids: [],
     held,
@@ -230,7 +241,7 @@ export function docketbirdEntryRecord(entry, ctx, { run, releaseTextMentions = f
     ],
     [
       "Documents",
-      `${docsAll.length}${docsAll.length ? ` (${held ? 0 : downloadable} held by the provider as PDF)` : ""}`,
+      `${docsAll.length}${docsAll.length ? ` (${documentsAvailable} held by the provider as PDF${documentsSealed ? `; ${documentsSealed} restricted by the provider` : ""})` : ""}`,
     ],
     ["Source", label],
     ["Source id", d.id],
