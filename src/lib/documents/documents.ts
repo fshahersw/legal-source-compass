@@ -1,7 +1,8 @@
 /**
  * documents/1 client-safe shapes, parsers and labels (no I/O). The rows come from the documents_* RPCs
- * (database/contracts/documents-v1.sql): the court filings the published matter pages list, open under the live
- * availability rule, with page-numbered snippets cut from the stored text and exact links only.
+ * (database/contracts/documents-v1.sql, scope widened by documents-v2-scope.sql): every stored court filing of a tracked
+ * docket that is open under the live availability rule and carries no explicit seal, restriction or policy flag, with
+ * its MDL only where an explicit listing names one, page-numbered snippets cut from the stored text and exact links only.
  */
 import { assembleBlock, yearPoints, type TrendBlockData } from "@/lib/analytics/trend";
 
@@ -27,8 +28,14 @@ export const LISTED_BY = [
   "registry_pdf_case_id",
   "court_mdl_label",
   "derived_master_docket",
+  "docket_case",
 ] as const;
 export type ListedBy = (typeof LISTED_BY)[number];
+
+/** A filing of a tracked docket that no MDL listing names (documents/2 'docket_case'); its MDL is never guessed. */
+export const NO_MDL_LABEL = "MDL not linked";
+/** The search filter value for filings with no MDL listing. */
+export const NO_MDL_FILTER = "none";
 
 /** Document types the contract derives from the court's own wording (documents.doc_type). */
 export const DOC_TYPES = [
@@ -118,6 +125,7 @@ export const LISTED_BY_LABEL: Record<ListedBy, string> = {
   registry_pdf_case_id: "Listed on the matter page",
   court_mdl_label: "Listed on the court's MDL page",
   derived_master_docket: "Filed on the MDL's master docket",
+  docket_case: "Filed on a tracked docket",
 };
 
 export type DocSummary = {
@@ -126,7 +134,8 @@ export type DocSummary = {
   sourceSystem: DocSource;
   nativeDocumentId: string;
   nativeCaseId: string;
-  mdl: string;
+  /** The MDL an explicit listing names; null only for a 'docket_case' filing (shown as NO_MDL_LABEL). */
+  mdl: string | null;
   listedBy: ListedBy;
   courtId: string | null;
   docketNumber: string | null;
@@ -153,7 +162,14 @@ export type DocHit = DocSummary & {
   snippets: Snippet[];
 };
 export type Facet = { key: string; count: number; label?: string };
-export type DocFacets = { court: Facet[]; mdl: Facet[]; type: Facet[]; year: Facet[] };
+export type DocFacets = {
+  court: Facet[];
+  mdl: Facet[];
+  type: Facet[];
+  year: Facet[];
+  /** Matching filings with no MDL listing. */
+  noMdl: number;
+};
 export type DocSort = "relevance" | "newest" | "oldest";
 
 export type DocSearchResult = {
@@ -252,13 +268,15 @@ export function parseDocSummary(v: unknown): DocSummary | null {
   const mdl = typeof v["mdl"] === "string" && /^[1-9][0-9]{0,5}$/.test(v["mdl"]) ? v["mdl"] : null;
   const listedBy = oneOf(LISTED_BY, v["listed_by"]);
   const textStatus = oneOf(TEXT_STATUSES, v["text_status"]);
+  // an MDL exactly when an explicit listing names one; a 'docket_case' filing never carries one
+  const mdlOk = listedBy === "docket_case" ? v["mdl"] == null : !!mdl;
   if (
     !id ||
     !collection ||
     !sourceSystem ||
     !nativeDocumentId ||
     !nativeCaseId ||
-    !mdl ||
+    !mdlOk ||
     !listedBy ||
     !textStatus
   )
@@ -352,6 +370,7 @@ export function parseSearchResult(v: unknown): DocSearchResult | null {
       mdl: parseFacets(f["mdl"]),
       type: parseFacets(f["type"]),
       year: parseFacets(f["year"]),
+      noMdl: int(f["no_mdl"]) ?? 0,
     },
     query: str(v["query"], 600),
     sort: oneOf(["relevance", "newest", "oldest"] as const, v["sort"]) ?? "newest",
@@ -548,7 +567,8 @@ export function normalizeDocumentSearch(s: Record<string, unknown>): DocSearchSt
   if (typeof s["court"] === "string" && /^[a-z0-9_-]{1,40}$/.test(s["court"]))
     out.court = s["court"];
   const mdl = typeof s["mdl"] === "number" ? String(s["mdl"]) : s["mdl"];
-  if (typeof mdl === "string" && /^[1-9][0-9]{0,5}$/.test(mdl)) out.mdl = mdl;
+  if (typeof mdl === "string" && (/^[1-9][0-9]{0,5}$/.test(mdl) || mdl === NO_MDL_FILTER))
+    out.mdl = mdl;
   const type = oneOf(DOC_TYPES, s["type"]);
   if (type) out.type = type;
   out.from = validDay(s["from"]);
@@ -601,7 +621,7 @@ export function documentsTrend(e: EntityDocs, today: string): TrendBlockData | n
     cited
       ? "Counts filings in this collection whose text cites it, by the filing date; a filing citing it several times counts once."
       : "Counts filings in this collection, by the filing date the docket or the court's page gives (else the date printed in the ECF header).",
-    "The collection is the court filings the published matter pages list and that are open to view; it is not every filing in these cases.",
+    "The collection is the stored court filings of the dockets this workspace tracks that are open to view; it is not every filing in these cases.",
     "A year without a filing in the collection shows 0. The current year is partial.",
   ];
   if (e.undated)
@@ -620,7 +640,7 @@ export function documentsTrend(e: EntityDocs, today: string): TrendBlockData | n
         points: yearPoints(entries),
       },
     ],
-    source: { label: "Court filings listed on the matter pages", url: "/litigation/documents" },
+    source: { label: "Court filings of the tracked dockets", url: "/litigation/documents" },
     asOf: e.refreshed ? e.refreshed.slice(0, 10) : null,
     notes,
   });
