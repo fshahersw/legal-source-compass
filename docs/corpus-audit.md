@@ -36,6 +36,7 @@ These three buckets partition all 16,730 rows. They describe **what each ledger 
 | `courtlistener` | `pre_import_before_image:487f0d04-d694-4ba3-a7bf-6e679040e4f7` | 11,518 | Must stay |
 | `courtlistener` | `pre_import_before_image:216cd8bb-e850-4ca1-9a55-78251b79edcb` | 4,798 | Must stay |
 | `saved_pages` | `dq20261003r6_saved_pages_titles` | 140 | Must stay |
+| `coverage_topics` | `release20261027_coverage_topics_verify` | 135 | Must stay (rollback source, run 5792288a: 128 label_override before-images incl. the dataset row, 7 quarantined rows: 1 trellis.law commercial host, 6 NJ rows with no topic the official text supports) |
 | `court_documents` | `dq20261003r6_court_documents_titles` | 139 | Must stay |
 | `court_documents` | `dq20261003r7_court_documents_titles_weak_first_page` | 59 | Must stay |
 | `court_documents` | `dq20261003r7_court_documents_titles_identical_file` | 28 | Exact-duplicate context |
