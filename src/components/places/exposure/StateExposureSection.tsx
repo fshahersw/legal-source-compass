@@ -2,7 +2,7 @@
  * "Exposure" section of a state page: how many MDL-drug prescriptions prescribers in the state write, how common the
  * conditions those drugs treat are, and how many drinking-water systems found PFAS. Opens with up to four key figures, then one block per source
  * (Medicare Part D, CDC PLACES, EPA UCMR 5). Each block renders only when its dataset is published; with none published
- * the section renders nothing. Not mounted yet: see the de-exposure report for the mount point.
+ * the section renders nothing. Mounted on the state Overview tab (StateOverviewTab), after Litigation.
  */
 import { useQuery } from "@tanstack/react-query";
 import { KpiCard, KpiGrid, Section } from "@/components/kit";
