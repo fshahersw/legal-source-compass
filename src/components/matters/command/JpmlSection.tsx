@@ -13,6 +13,7 @@ import {
 } from "@/components/lens/MdlLens";
 import { JpmlMdlSeriesPanel } from "@/components/mdl/jpml-series/JpmlMdlSeriesPanel";
 import { JpmlCountsPanel } from "@/components/matters/OverviewPanel";
+import { MdlExposurePanel } from "@/components/places/exposure/MdlExposurePanel";
 import { ProfileTrend } from "@/components/trends/ProfileTrend";
 import type { MdlCommandPayload } from "@/lib/matters/types";
 
@@ -58,6 +59,7 @@ export function JpmlSection({ cmd }: { cmd: MdlCommandPayload }) {
   return (
     <div className="space-y-4">
       {inSeries ? <JpmlMdlSeriesPanel mdl={n} /> : null}
+      <MdlExposurePanel mdl={String(cmd.mdl)} />
       {inSeries ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <ProfileTrend kind="mdl-fy-pending" id={n} />
