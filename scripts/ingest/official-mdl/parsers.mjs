@@ -176,7 +176,7 @@ function inSiteChrome(node) {
   return false;
 }
 
-// ---- MND (Drupal 7 MDL node): orders in horizontal-tab field groups; PDF anchors sit in <p> blocks outside field--name-body ----
+// Drupal MDL content pages (MND node tabs, NYSM hubs, LAED quicktabs): PDF anchors outside field--name-body.
 export function parseMndMdl({ html, pageUrl }) {
   const root = parseHtml(html);
   const scope = findFirst(root, n => hasClass(n, 'node--mdl'))
@@ -193,13 +193,13 @@ export function parseMndMdl({ html, pageUrl }) {
     const cls = classifyUrl(a.attrs.href, pageUrl);
     if (!DOCUMENT_KINDS.has(cls.kind)) continue;
     const label = textOf(a);
-    const paragraph = ancestorOf(a, n => n.tag === 'p') ?? a;
+    const paragraph = ancestorOf(a, n => n.tag === 'p') ?? ancestorOf(a, n => n.tag === 'span' && hasClass(n, 'file')) ?? a;
     const paraText = textOf(paragraph);
     const dateText = /^(\d{1,2}\/\d{1,2}\/\d{4})\b/.exec(paraText)?.[1] ?? null;
-    const title = paraText && paraText !== label ? paraText : label;
+    const title = (a.attrs.title?.trim() || (paraText && paraText !== label ? paraText : label));
     ordinal++;
     rows.push(rowBase({ ctx, node: paragraph, section: page.title, ordinal, href: a.attrs.href, label, title, dateText, docNumber: null,
-      extra: { title_source: paraText !== label ? 'paragraph_text' : 'link_text', date_source: dateText ? 'paragraph_leading_date' : null } }));
+      extra: { title_source: a.attrs.title ? 'link_title_attribute' : paraText !== label ? 'paragraph_text' : 'link_text', date_source: dateText ? 'paragraph_leading_date' : null } }));
   }
   return { page, rows };
 }
