@@ -149,6 +149,53 @@ def append(dataset, rows, *, metadata, expected_before, first_ordinal, manifest_
     return count
 
 
+def _jsonl_rows(path):
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                yield json.loads(line)
+
+
+def publish_jsonl(dataset, label, path, *, listing_block, summary, replace=True):
+    """publish() for a dataset too large to hold in memory: rows are read from a JSONL file, one row per line.
+
+    Same contract as publish(): every row is validated (dataset, id, unique ids) and the digest computed in a first pass before
+    anything is written; the digest equals publish()'s for the same rows in the same order.
+    """
+    seen, digest, total = set(), hashlib.sha256(), 0
+    for row in _jsonl_rows(path):
+        row.setdefault("dataset", dataset)
+        if row["dataset"] != dataset or not isinstance(row.get("id"), str) or not row["id"]:
+            raise ValueError(f"{dataset}: row {row.get('id')!r} has dataset {row.get('dataset')!r} or no id; nothing written")
+        if row["id"] in seen:
+            raise ValueError(f"{dataset}: duplicate record ids")
+        seen.add(row["id"])
+        digest.update((b"\n" if total else b"") + json.dumps(row, sort_keys=True).encode())
+        total += 1
+    digest = digest.hexdigest()
+    metadata = {"id": dataset, "label": label, "ready": False, "listing": {**listing_block, "total": total}, "summary": summary}
+    _call("POST", "corpus_datasets", [{"id": dataset, "label": label, "ready": False, "expected_records": total, "imported_records": 0, "manifest_sha256": digest, "metadata": metadata}], prefer="return=minimal,resolution=merge-duplicates")
+    if replace:
+        _call("DELETE", f"corpus_records?dataset=eq.{dataset}")
+    batch = []
+    for ordinal, row in enumerate(_jsonl_rows(path)):
+        row.setdefault("dataset", dataset)
+        row["ordinal"] = ordinal
+        batch.append(row)
+        if len(batch) == BATCH:
+            _call("POST", "corpus_records", batch, prefer="return=minimal,resolution=merge-duplicates")
+            batch = []
+    if batch:
+        _call("POST", "corpus_records", batch, prefer="return=minimal,resolution=merge-duplicates")
+    count = _count(dataset)
+    if count != total:
+        raise RuntimeError(f"{dataset}: wrote {total} rows but {count} are stored")
+    metadata["ready"] = True
+    _call("PATCH", f"corpus_datasets?id=eq.{dataset}", {"ready": True, "imported_records": count, "metadata": metadata})
+    print(json.dumps({"dataset": dataset, "records": count, "sha256": digest}))
+    return count
+
+
 def fetch_all(dataset, select="id,title,state,item", page=1000):
     """Read every record of a dataset (ordered by id) for joins in builders."""
     rows, start = [], 0
