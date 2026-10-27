@@ -1,3 +1,9 @@
+-- SUPERSEDED, DO NOT APPLY (2026-10-27). Production received revision .2 from branch release/dataset-court-reference
+-- (same run id c36e2186): all 253 records released, 250 seal files ready, only ilsd/mdd/nyappdiv seal files held.
+-- This revision's extra hold of the aoc, cbca and compliance records was rejected under the owner decision of 2026-10-27
+-- ("dont withhold any data"): the 'every id must exist in court_spine' gate has no source in the repo or the release plan,
+-- the seal images are accurate, and they are shown only on their own court_reference records, never bound to a court page.
+-- This file's preflight refuses anyway (run c36e2186 already exists). Use release/dataset-court-reference's rollback.
 -- court-reference-release/2026-10-27.3  (run c36e2186-fb92-42bb-8632-4bd599772cff; branch release/dataset-court-reference-seals,
 -- which carries and supersedes release/dataset-court-reference at f816a656; the run id was never applied: 0 runs rows, 0 ledger rows)
 -- Owner decision 2026-10-27: "dont withhold any data. If its accurate and valuable, USE IT".
