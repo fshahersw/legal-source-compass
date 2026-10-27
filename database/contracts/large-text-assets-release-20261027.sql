@@ -14,7 +14,13 @@
 -- Released here (accurate, official publisher, bytes present):
 --   * large-text:f6f572ee6ca009b460712aac316397d6 "Grady County Ordinances" moves to the new ready dataset
 --     large_text_official, with download and source links the record page can render, and its two /api/text routes
---     become ready. Its label "pending_publication" was a staging label, not a source restriction.
+--     become ready. Its label "pending_publication" was a staging label, not a source restriction; the staging
+--     source_dataset/source_record_id keys (which match no record) are dropped from filters and detail.metadata.
+--     The same bytes were already public through the ready county_litigation record (same text object; its stored
+--     original /files/0ee5263f... is byte-identical to the county's PDF, sha256 fbbebdaa..., checked live 2026-10-27).
+--     This release adds a listing for already-served bytes and links that stored original. Provenance note: the
+--     county_litigation lineage found the county website through a Trellis county profile crosswalk; the URL was
+--     confirmed on the county's own homepage and every byte comes from gradycountyga.gov, never from Trellis.
 --
 -- Kept out, with the evidence (not caution):
 --   * 44 rows from olls.info (41 Colorado Revised Statutes 2026 titles, 3 constitution files): statute source rule
@@ -24,10 +30,12 @@
 --     are also absent (0 of 44), so confirmation alone would not make them downloadable.
 --   * 33 rows from official publishers (legis.iowa.gov 9, legislature.maine.gov 6, doa.la.gov 5, uscode.house.gov 4,
 --     law.lis.virginia.gov 3, nebraskalegislature.gov 2, oregonlegislature.gov 1, pub.njleg.state.nj.us 1, govinfo.gov 1,
---     ncleg.gov 1): nothing to serve. Their full-text objects are not in storage (0 of 33), so a ready flag would only turn a
---     404 "not available in the corpus" into a 404 "not available in storage". Their parents in the ready datasets
---     focused/seeger already show the same source and a 1,000,000-character preview. Restore = re-acquire from the
---     official URL (lead action), then re-run this contract's selection rule.
+--     ncleg.gov 1): their extracted full-text objects are not in storage (0 of 33), so their /api/text routes have nothing
+--     to serve. For 18 of them the parent's publisher original IS stored and its /files route is ready (released
+--     2026-10-27); large-text-assets-parent-originals-20261027.sql links those originals on the parent records, labelled
+--     with the capture date (Maine titles 5 and 12 and NC chapter 58 have since been re-issued by their publishers, so
+--     the stored copies are earlier official editions). Restore the text = re-acquire from the official URL, then
+--     re-run this contract's selection rule.
 --   The large_text_assets catalog row is corrected to the live counts (77) and records these two hold reasons.
 --
 -- ROLLBACK: database/contracts/large-text-assets-release-20261027.rollback.sql (exact before-images).
@@ -124,33 +132,37 @@ update public.corpus_records r set
     'subtitle', 'Grady County, Georgia: complete text of the county''s published ordinances PDF',
     'cells', jsonb_build_object(
       'publisher', 'Grady County, Georgia (gradycountyga.gov)',
-      'document', 'County ordinances (PDF)',
+      'document', 'Code of Ordinances, Supplement No. 4 (April 2025)',
       'captured', '2026-09-18',
       'size', '3,148,045 characters'),
     'links', jsonb_build_array(
       jsonb_build_object('url', '/api/text?id=f6f572ee6ca009b460712aac316397d6', 'label', 'Complete text (plain text, 3.2 MB)'),
+      jsonb_build_object('url', '/files/0ee5263f40c92141ced0dbfcd86505ba', 'label', 'County PDF as stored (6.2 MB)'),
       jsonb_build_object('url', r.source_url, 'label', 'Official PDF (gradycountyga.gov)')),
     'source_url', r.source_url,
     'has_text', false,
     'text_url', '',
     'has_original', true,
     'original_url', '/api/text?id=f6f572ee6ca009b460712aac316397d6'),
-  detail = (r.detail || jsonb_build_object(
+  detail = (jsonb_set(r.detail, '{metadata}', (r.detail->'metadata') - 'source_dataset' - 'source_record_id') || jsonb_build_object(
     'dataset', 'large_text_official',
     'subtitle', 'Grady County, Georgia: complete text of the county''s published ordinances PDF',
     'qualification', 'Plain text taken from the county''s published PDF. The PDF on gradycountyga.gov is the authoritative version.',
     'facts', jsonb_build_array(
       jsonb_build_array('Publisher', 'Grady County, Georgia (gradycountyga.gov)'),
-      jsonb_build_array('Document', 'County ordinances, published as one PDF'),
+      jsonb_build_array('Document', 'Code of Ordinances of Grady County, Georgia, published as one PDF'),
+      jsonb_build_array('Edition', 'Supplement No. 4, April 2025'),
+      jsonb_build_array('Ordinances included', 'Through the ordinance of February 18, 2025 (as the document states)'),
       jsonb_build_array('Captured', '2026-09-18'),
       jsonb_build_array('Text', '3,148,045 characters (3,153,723 bytes, UTF-8)'),
       jsonb_build_array('SHA-256 of the text', '2ee81cc5208a0b5f8116dc14711c7d513d4c8e914951d5268cb7a5c854c12660')),
     'links', jsonb_build_array(
       jsonb_build_object('url', '/api/text?id=f6f572ee6ca009b460712aac316397d6', 'label', 'Complete text (plain text, 3.2 MB)'),
+      jsonb_build_object('url', '/files/0ee5263f40c92141ced0dbfcd86505ba', 'label', 'County PDF as stored (6.2 MB, sha256 fbbebdaa...)'),
       jsonb_build_object('url', r.source_url, 'label', 'Official PDF (gradycountyga.gov)'),
       jsonb_build_object('url', '#record/county_litigation/county-litigation%3A0cc4bbcfb4cd6c81e6e2d0d7d44963f1',
                          'label', 'Same PDF as a county source record')))),
-  filters = r.filters || jsonb_build_object('_listing', 'yes', 'availability', jsonb_build_array('text'),
+  filters = (r.filters - 'source_dataset' - 'source_record_id') || jsonb_build_object('_listing', 'yes', 'availability', jsonb_build_array('text'),
     'state', r.state, 'jurisdiction_level', 'county')
 where r.dataset = 'large_text_assets' and r.id = 'large-text:f6f572ee6ca009b460712aac316397d6';
 

@@ -2,7 +2,7 @@
 -- Before the release: official_rows 0, held_rows 78, held_expected 155, ready_text_routes 0 (of the 156 large-text routes),
 --   official_dataset_ready null.
 -- After the release:  official_rows 1, held_rows 77, held_expected 77, ready_text_routes 2, official_dataset_ready true,
---   held_dataset_ready false, grady_object_present true, served_detail_links 3.
+--   held_dataset_ready false, grady_object_present true, served_detail_links 4.
 set local statement_timeout = '30s';
 
 select

@@ -177,11 +177,14 @@ test("releases the one stored official text and records why the other 77 stay he
     rec.detail.links.map((l) => l.url),
     [
       "/api/text?id=f6f572ee6ca009b460712aac316397d6",
+      "/files/0ee5263f40c92141ced0dbfcd86505ba",
       "https://gradycountyga.gov/wp-content/uploads/2025/04/Updated-Grady-County.pdf",
       "#record/county_litigation/county-litigation%3A0cc4bbcfb4cd6c81e6e2d0d7d44963f1",
     ],
   );
   assert.equal(rec.detail.metadata.display_text_sha256, GRADY_SHA, "provenance fields are kept");
+  assert.equal(rec.detail.metadata.source_dataset, undefined, "staging label dropped");
+  assert.equal(rec.filters.source_dataset, undefined, "staging label dropped from filters");
   assert.equal(rec.title, "Grady County Ordinances");
 
   const ready = (await db.query(`select route from public.corpus_artifacts where ready order by route`)).rows.map((r) => r.route);

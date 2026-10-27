@@ -184,7 +184,7 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | Cited U.S. limitations rules — October 2026 review | statutory_limitations_review | Law | 124 | 827.24 KB | Available |
 | Selected eCFR authority and source notes | ecfr_authority_notes | Law | 36 | 680.26 KB | Available |
 | Official JPML and court HTML references — October 2026 | jpml_html_reference | Law | 93 | 573.91 KB | Available |
-| Complete large reader-text downloads | large_text_assets | Sources and captured pages | 155 | 405.78 KB | Held |
+| Complete large reader-text downloads | large_text_assets | Sources and captured pages | 155 | 405.78 KB | Partly published 2026-10-27: Grady County ordinances text moved to large_text_official (ready); 77 held (44 olls.info pending the owner's olls.info decision, 33 with no stored text; 18 of those now link their stored publisher originals on the parent records) |
 | CourtListener directed citation mentions — scoped September 2026 snapshot | cl_citation_edges | Law | 201 | 403.01 KB | Available |
 | MDL crosswalk | mdl_crosswalk | Matters and dockets | 59 | 338.64 KB | Held |
 | Seeger Weiss matter registry — MDL matters | sw_matters_v1 | Matters and dockets | 38 | 325.69 KB | Available |
