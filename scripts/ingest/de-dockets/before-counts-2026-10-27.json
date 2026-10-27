@@ -1,0 +1,705 @@
+{
+ "schema_version": "de-dockets-before-counts/1",
+ "read_at": "2026-10-27T14:45:00Z",
+ "source": "Read-only SELECTs on corpus_records (project corpussite). dataset: per-MDL aggregates of sw_docket_entries_v1 (rows, latest date_filed, withheld rows by item.cells.description_withheld). matter_cells: sw_matters_v1 item.cells as stored.",
+ "dataset": {
+  "2323": {
+   "rows": 0,
+   "max_date": null,
+   "w_text": 0,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2545": {
+   "rows": 0,
+   "max_date": null,
+   "w_text": 0,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2592": {
+   "rows": 3920,
+   "max_date": "2026-02-12",
+   "w_text": 750,
+   "w_doc": 0,
+   "w_contact": 22
+  },
+  "2606": {
+   "rows": 1337,
+   "max_date": "2020-07-28",
+   "w_text": 70,
+   "w_doc": 0,
+   "w_contact": 1
+  },
+  "2672": {
+   "rows": 0,
+   "max_date": null,
+   "w_text": 0,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2738": {
+   "rows": 81,
+   "max_date": "2026-07-22",
+   "w_text": 1,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2741": {
+   "rows": 1060,
+   "max_date": "2026-10-02",
+   "w_text": 60,
+   "w_doc": 0,
+   "w_contact": 9
+  },
+  "2782": {
+   "rows": 928,
+   "max_date": "2025-09-11",
+   "w_text": 51,
+   "w_doc": 0,
+   "w_contact": 5
+  },
+  "2789": {
+   "rows": 1264,
+   "max_date": "2026-10-02",
+   "w_text": 156,
+   "w_doc": 0,
+   "w_contact": 1
+  },
+  "2800": {
+   "rows": 1001,
+   "max_date": "2026-10-02",
+   "w_text": 23,
+   "w_doc": 0,
+   "w_contact": 2
+  },
+  "2804": {
+   "rows": 7605,
+   "max_date": "2026-10-01",
+   "w_text": 959,
+   "w_doc": 0,
+   "w_contact": 24
+  },
+  "2843": {
+   "rows": 0,
+   "max_date": null,
+   "w_text": 0,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2846": {
+   "rows": 994,
+   "max_date": "2026-08-26",
+   "w_text": 87,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2873": {
+   "rows": 6775,
+   "max_date": "2026-10-02",
+   "w_text": 63,
+   "w_doc": 14,
+   "w_contact": 0
+  },
+  "2885": {
+   "rows": 60,
+   "max_date": "2026-07-03",
+   "w_text": 4,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2921": {
+   "rows": 1006,
+   "max_date": "2026-08-28",
+   "w_text": 35,
+   "w_doc": 0,
+   "w_contact": 1
+  },
+  "2924": {
+   "rows": 0,
+   "max_date": null,
+   "w_text": 0,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "2973": {
+   "rows": 419,
+   "max_date": "2026-09-04",
+   "w_text": 24,
+   "w_doc": 0,
+   "w_contact": 26
+  },
+  "3014": {
+   "rows": 4794,
+   "max_date": "2026-10-01",
+   "w_text": 274,
+   "w_doc": 41,
+   "w_contact": 1
+  },
+  "3026": {
+   "rows": 986,
+   "max_date": "2026-10-02",
+   "w_text": 144,
+   "w_doc": 0,
+   "w_contact": 3
+  },
+  "3031": {
+   "rows": 0,
+   "max_date": null,
+   "w_text": 0,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "3043": {
+   "rows": 2160,
+   "max_date": "2026-09-14",
+   "w_text": 107,
+   "w_doc": 0,
+   "w_contact": 23
+  },
+  "3047": {
+   "rows": 4035,
+   "max_date": "2026-10-03",
+   "w_text": 652,
+   "w_doc": 47,
+   "w_contact": 27
+  },
+  "3060": {
+   "rows": 2060,
+   "max_date": "2026-10-01",
+   "w_text": 208,
+   "w_doc": 0,
+   "w_contact": 72
+  },
+  "3080": {
+   "rows": 1391,
+   "max_date": "2026-10-01",
+   "w_text": 76,
+   "w_doc": 35,
+   "w_contact": 41
+  },
+  "3081": {
+   "rows": 16807,
+   "max_date": "2026-10-02",
+   "w_text": 599,
+   "w_doc": 0,
+   "w_contact": 4
+  },
+  "3094": {
+   "rows": 1036,
+   "max_date": "2026-10-02",
+   "w_text": 161,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "3108": {
+   "rows": 778,
+   "max_date": "2026-10-02",
+   "w_text": 26,
+   "w_doc": 0,
+   "w_contact": 4
+  },
+  "3113": {
+   "rows": 496,
+   "max_date": "2026-10-02",
+   "w_text": 60,
+   "w_doc": 0,
+   "w_contact": 9
+  },
+  "3114": {
+   "rows": 85,
+   "max_date": "2026-10-02",
+   "w_text": 6,
+   "w_doc": 0,
+   "w_contact": 23
+  },
+  "3125": {
+   "rows": 1079,
+   "max_date": "2026-09-30",
+   "w_text": 15,
+   "w_doc": 0,
+   "w_contact": 2
+  },
+  "3140": {
+   "rows": 1057,
+   "max_date": "2026-09-25",
+   "w_text": 85,
+   "w_doc": 0,
+   "w_contact": 10
+  },
+  "3144": {
+   "rows": 465,
+   "max_date": "2026-09-30",
+   "w_text": 142,
+   "w_doc": 2,
+   "w_contact": 44
+  },
+  "3149": {
+   "rows": 643,
+   "max_date": "2026-09-30",
+   "w_text": 16,
+   "w_doc": 0,
+   "w_contact": 3
+  },
+  "3163": {
+   "rows": 168,
+   "max_date": "2026-09-30",
+   "w_text": 21,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "3166": {
+   "rows": 532,
+   "max_date": "2026-10-02",
+   "w_text": 41,
+   "w_doc": 30,
+   "w_contact": 6
+  },
+  "3180": {
+   "rows": 43,
+   "max_date": "2026-10-02",
+   "w_text": 0,
+   "w_doc": 0,
+   "w_contact": 0
+  },
+  "3185": {
+   "rows": 70,
+   "max_date": "2026-09-29",
+   "w_text": 1,
+   "w_doc": 0,
+   "w_contact": 3
+  }
+ },
+ "matter_cells": {
+  "2323": {
+   "entries_published": 0,
+   "entries_withheld": 0
+  },
+  "2545": {
+   "entries_published": 0,
+   "entries_withheld": 0
+  },
+  "2592": {
+   "entries_published": 3920,
+   "entries_withheld": 772
+  },
+  "2606": {
+   "entries_published": 1337,
+   "entries_withheld": 71
+  },
+  "2672": {
+   "entries_published": 0,
+   "entries_withheld": 0
+  },
+  "2738": {
+   "entries_published": 21,
+   "entries_withheld": 0
+  },
+  "2741": {
+   "entries_published": 480,
+   "entries_withheld": 8
+  },
+  "2782": {
+   "entries_published": 928,
+   "entries_withheld": 56
+  },
+  "2789": {
+   "entries_published": 1264,
+   "entries_withheld": 156
+  },
+  "2800": {
+   "entries_published": 1001,
+   "entries_withheld": 25
+  },
+  "2804": {
+   "entries_published": 7605,
+   "entries_withheld": 983
+  },
+  "2843": {
+   "entries_published": 0,
+   "entries_withheld": 0
+  },
+  "2846": {
+   "entries_published": 994,
+   "entries_withheld": 87
+  },
+  "2873": {
+   "entries_published": 6755,
+   "entries_withheld": 77
+  },
+  "2885": {
+   "entries_published": 60,
+   "entries_withheld": 4
+  },
+  "2921": {
+   "entries_published": 1006,
+   "entries_withheld": 36
+  },
+  "2924": {
+   "entries_published": 0,
+   "entries_withheld": 0
+  },
+  "2973": {
+   "entries_published": 419,
+   "entries_withheld": 50
+  },
+  "3014": {
+   "entries_published": 4794,
+   "entries_withheld": 315
+  },
+  "3026": {
+   "entries_published": 986,
+   "entries_withheld": 144
+  },
+  "3031": {
+   "entries_published": 0,
+   "entries_withheld": 0
+  },
+  "3043": {
+   "entries_published": 2160,
+   "entries_withheld": 130
+  },
+  "3047": {
+   "entries_published": 4035,
+   "entries_withheld": 699
+  },
+  "3060": {
+   "entries_published": 2060,
+   "entries_withheld": 208
+  },
+  "3080": {
+   "entries_published": 1391,
+   "entries_withheld": 111
+  },
+  "3081": {
+   "entries_published": 16807,
+   "entries_withheld": 599
+  },
+  "3094": {
+   "entries_published": 1036,
+   "entries_withheld": 161
+  },
+  "3108": {
+   "entries_published": 778,
+   "entries_withheld": 26
+  },
+  "3113": {
+   "entries_published": 496,
+   "entries_withheld": 60
+  },
+  "3114": {
+   "entries_published": 85,
+   "entries_withheld": 6
+  },
+  "3125": {
+   "entries_published": 1079,
+   "entries_withheld": 15
+  },
+  "3140": {
+   "entries_published": 1057,
+   "entries_withheld": 95
+  },
+  "3144": {
+   "entries_published": 465,
+   "entries_withheld": 144
+  },
+  "3149": {
+   "entries_published": 643,
+   "entries_withheld": 16
+  },
+  "3163": {
+   "entries_published": 168,
+   "entries_withheld": 21
+  },
+  "3166": {
+   "entries_published": 532,
+   "entries_withheld": 71
+  },
+  "3180": {
+   "entries_published": 43,
+   "entries_withheld": 0
+  },
+  "3185": {
+   "entries_published": 70,
+   "entries_withheld": 4
+  }
+ },
+ "existing_courtlistener_ids_since_max_date": {
+  "2741": [
+   "480373218"
+  ],
+  "2789": [
+   "480319509"
+  ],
+  "2804": [
+   "480126917"
+  ],
+  "2873": [
+   "480343575",
+   "480269549",
+   "480277023",
+   "480294995",
+   "480308223",
+   "480331123",
+   "480343410",
+   "480366748",
+   "480366700",
+   "480374152",
+   "480374147",
+   "480374136",
+   "480379524",
+   "480379513",
+   "480331068"
+  ],
+  "3081": [
+   "480280851",
+   "480280859",
+   "480280857",
+   "480289445",
+   "480289444",
+   "480289443",
+   "480289442",
+   "480289437",
+   "480289436",
+   "480289426",
+   "480289410",
+   "480289402",
+   "480289397",
+   "480289394",
+   "480289385",
+   "480289364",
+   "480289348",
+   "480300337",
+   "480300312",
+   "480300258",
+   "480300247",
+   "480300209",
+   "480300181",
+   "480300104",
+   "480313314",
+   "480313265",
+   "480313241",
+   "480313221",
+   "480313196",
+   "480313157",
+   "480313097",
+   "480313021",
+   "480312943",
+   "480324759",
+   "480324710",
+   "480370507",
+   "480370482",
+   "480370436",
+   "480370421",
+   "480370407",
+   "480370393",
+   "480370388",
+   "480370371",
+   "480370354",
+   "480370338",
+   "480377073",
+   "480377067",
+   "480377054",
+   "480377040",
+   "480377023",
+   "480376999",
+   "480376987",
+   "480376976",
+   "480376965",
+   "480376959",
+   "480376933",
+   "480376926",
+   "480376912",
+   "480376884",
+   "480376865",
+   "480381922",
+   "480386269"
+  ]
+ },
+ "withheld_text_release_estimate": {
+  "method": "Per-MDL count of rows withheld as sealed_or_restricted_text, joined on native id to the raw lake text (corpus_ingest.entities: courtlistener docket-entries description, or sw-matter-registry external-entry title), with the contact pattern of members-publish-rules.mjs ported to a Postgres regex.",
+  "total_withheld_text": 5657,
+  "lake_text_found": 5657,
+  "rows_with_sealed_documents": 0,
+  "would_release": 4837,
+  "would_stay_withheld_as_contact_or_access_data": 820,
+  "by_mdl": {
+   "2100": [
+    8,
+    3,
+    5
+   ],
+   "2592": [
+    750,
+    719,
+    31
+   ],
+   "2606": [
+    70,
+    30,
+    40
+   ],
+   "2641": [
+    76,
+    73,
+    3
+   ],
+   "2738": [
+    1,
+    1,
+    0
+   ],
+   "2741": [
+    60,
+    46,
+    14
+   ],
+   "2782": [
+    51,
+    40,
+    11
+   ],
+   "2789": [
+    156,
+    131,
+    25
+   ],
+   "2800": [
+    23,
+    17,
+    6
+   ],
+   "2804": [
+    959,
+    844,
+    115
+   ],
+   "2846": [
+    87,
+    52,
+    35
+   ],
+   "2873": [
+    63,
+    55,
+    8
+   ],
+   "2885": [
+    4,
+    4,
+    0
+   ],
+   "2913": [
+    656,
+    554,
+    102
+   ],
+   "2921": [
+    35,
+    31,
+    4
+   ],
+   "2973": [
+    24,
+    2,
+    22
+   ],
+   "3014": [
+    274,
+    243,
+    31
+   ],
+   "3026": [
+    144,
+    72,
+    72
+   ],
+   "3043": [
+    107,
+    93,
+    14
+   ],
+   "3047": [
+    652,
+    592,
+    60
+   ],
+   "3060": [
+    208,
+    101,
+    107
+   ],
+   "3080": [
+    76,
+    59,
+    17
+   ],
+   "3081": [
+    599,
+    540,
+    59
+   ],
+   "3094": [
+    161,
+    161,
+    0
+   ],
+   "3108": [
+    26,
+    21,
+    5
+   ],
+   "3113": [
+    60,
+    55,
+    5
+   ],
+   "3114": [
+    6,
+    3,
+    3
+   ],
+   "3125": [
+    15,
+    15,
+    0
+   ],
+   "3140": [
+    85,
+    71,
+    14
+   ],
+   "3144": [
+    142,
+    133,
+    9
+   ],
+   "3149": [
+    16,
+    16,
+    0
+   ],
+   "3163": [
+    21,
+    21,
+    0
+   ],
+   "3166": [
+    41,
+    39,
+    2
+   ],
+   "3185": [
+    1,
+    0,
+    1
+   ]
+  },
+  "by_mdl_columns": [
+   "withheld_text",
+   "would_release",
+   "would_stay_withheld_as_contact"
+  ]
+ },
+ "existing_courtlistener_ids_note": "Ids of rows already published on or after the MDL's latest date (3081: on or after 2026-10-02, 62 rows)."
+}
