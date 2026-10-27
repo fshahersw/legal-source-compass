@@ -18,6 +18,7 @@ with scripts/safety_v2/load.py.
     faers     count every drug/event partition (resumable; one aggregate file per partition under <acq>/faers/parts)
     maude     count every device/event partition (product codes and the MDL device groups of mdl_map.py)
     reduce-faers / reduce-maude   merge the partition aggregates into loader chunks under <acq>/load/<stream>
+              (reduce-faers --refresh-loaded: optional series-only recount of the already-loaded products, <acq>/load/faers_refresh)
     accept-groups   compare each MDL device group's offline series with the count API's (<acq>/api); reduce-maude
               then writes bulk breakdowns only for the groups that matched every month
     ndc       NDC directory (drug/ndc bulk file) → subjects rows carrying pharm_class_epc and application_numbers keys
@@ -613,7 +614,8 @@ def reduce_faers(args):
                     row[k] += v
     through = args.through or last_complete_month(max_date)
     bd_rows = []
-    for shard in range(BD_SHARDS):
+    refresh = getattr(args, "refresh_loaded", False)
+    for shard in range(0 if refresh else BD_SHARDS):  # a refresh writes series only
         bd = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [0, 0])))
         for name in names_done:
             for i, per in read_json_gz(acq / "faers" / "parts" / f"{name}.bd{shard}.json.gz").items():
@@ -648,8 +650,11 @@ def reduce_faers(args):
               f"request that returns the same numbers.")
     names = [(n, k, u) for (n, k), (_n, _e, u) in zip(FAERS_SERIES, ob.FAERS_SERIES)]
     s_rows, skipped = [], []
+    all_names = [n for n, _k, _u in names]
     for i, p in sorted(prods.items()):
         need = p.get("series")
+        if refresh:  # the series already loaded from the count API on 2026-10-23/24, recounted from the current export
+            need = [n for n in all_names if n not in (need or [])]
         if not need:
             continue
         rows = series_rows(p["id"], series.get(i, {}), names, ob.FAERS_FLOOR, through, "openfda_faers",
@@ -674,7 +679,9 @@ def reduce_faers(args):
     universe = [[r, n, g] for r, (n, g) in enumerate(ranked, 1)]
     (acq / "faers" / "universe_bulk.json").write_text(json.dumps(universe, ensure_ascii=False), encoding="utf-8")
     universe_sha = c.sha256_bytes("\n".join(f"{r}|{n}|{g}" for r, n, g in universe).encode("utf-8"))
-    outputs = write_chunks(acq / "load" / "faers", "openfda_bulk/faers", {"series": s_rows, "breakdowns": bd_rows}, "openfda_faers",
+    outputs = write_chunks(acq / "load" / ("faers_refresh" if refresh else "faers"),
+                           "openfda_bulk/faers_refresh" if refresh else "openfda_bulk/faers",
+                           {"series": s_rows} if refresh else {"series": s_rows, "breakdowns": bd_rows}, "openfda_faers",
                            {"index": {"url": INDEX_URL, "sha256": c.sha256_file(acq / "download.json")}, "export_date": export,
                             "files": files, "targets_sha256": c.sha256_file(acq / "targets.json")},
                            {"records": records, "max_receivedate": max_date, "through": through, "no_reports_in_window": skipped,
@@ -1053,6 +1060,8 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--keep-zips", action="store_true")
     ap.add_argument("--through", default=None, help="YYYY-MM: cap the series at this month (default: the export's last complete month)")
+    ap.add_argument("--refresh-loaded", action="store_true",
+                    help="reduce-faers: series only, for the products whose series are already loaded (<acq>/load/faers_refresh)")
     ap.add_argument("--reaction-limit", type=int, default=25)
     ap.add_argument("--alltime-limit", type=int, default=1000)
     ap.add_argument("--as-of", default=date.today().isoformat(), help="the stored subjects' as_of date (kept unchanged)")

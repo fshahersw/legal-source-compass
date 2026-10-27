@@ -252,6 +252,12 @@ class ReduceFaersEndToEndTests(unittest.TestCase):
             self.assertEqual(sorted(p for s, p in bds), ["2024", "all"])  # 2025 is not a complete year before 2025-06
             uni = json.loads((acq / "faers" / "universe_bulk.json").read_text())
             self.assertEqual(uni, [[1, 3, "X"], [2, 1, "Y"]])
+            b.reduce_faers(argparse.Namespace(acq=str(acq), through=None, reaction_limit=25, alltime_limit=1000,
+                                              refresh_loaded=True))
+            refresh = b.load_rows(acq, "faers_refresh", "series")
+            self.assertEqual({r["subject_id"] for r in refresh}, {"faers:y"})  # only the already-loaded product
+            self.assertEqual(len(refresh), len(ob.FAERS_SERIES))
+            self.assertEqual(len(b.load_rows(acq, "faers", "series")), len(series))  # the main build is untouched
 
 
 class NdcTests(unittest.TestCase):
