@@ -692,6 +692,37 @@ class ReleaseContactText(unittest.TestCase):
         self.assertEqual(s["privacy"], xt.PRIVACY)
         self.assertEqual(s["totals"], {"documents": 3})
         self.assertEqual(s["source"], "x")
+        # a partial release: the targets left redacted are counted and named in the privacy line
+        held = {"id": "a", "title": "t", "text": "a t x [email omitted]",
+                "item": {"practice_document": {"redactions": {"emails": 2, "phones": 0}}}}
+        clean = {"id": "b", "title": "t", "text": "b t x", "item": {"practice_document": {"redactions": None}}}
+        p = rc.updated_summary({"privacy": "old", "totals": {"documents": 3, "redacted_emails": 9}}, [held, clean])
+        self.assertTrue(p["privacy"].startswith(xt.PRIVACY) and "1 documents still carries" in p["privacy"])
+        self.assertEqual(p["totals"], {"documents": 3, "redacted_emails": 2, "documents_still_redacted": 1})
+
+    def test_a_second_dry_run_never_replaces_the_snapshot(self):
+        import tempfile
+
+        import release_contact_text as rc
+
+        with tempfile.TemporaryDirectory() as out:
+            open(os.path.join(out, "prior_rows.jsonl"), "w").close()
+            with self.assertRaises(SystemExit) as e:
+                rc.dry_run(out, 1, 0)
+            self.assertIn("rollback snapshot", str(e.exception))
+
+    def test_rollback_needs_the_published_snapshot(self):
+        import json
+        import tempfile
+
+        import release_contact_text as rc
+
+        with tempfile.TemporaryDirectory() as out:
+            with open(os.path.join(out, "report.json"), "w") as h:
+                json.dump({"prior_rows_digest": "a", "prior_manifest_sha256": "b", "files": {}}, h)
+            with self.assertRaises(SystemExit) as e:
+                rc.rollback(out)
+            self.assertIn("--force-rollback", str(e.exception))
 
     def test_doc_records_take_the_released_text(self):
         import json

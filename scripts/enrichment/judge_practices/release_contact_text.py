@@ -24,6 +24,14 @@ Files (in --out, default private/acq/release-judge-practice-contact-redaction/, 
     python3 -I -B scripts/enrichment/judge_practices/release_contact_text.py                 # dry run: read, download, check, write files
     python3 -I -B scripts/enrichment/judge_practices/release_contact_text.py --publish       # then republish with corpus_writer.publish
     python3 -I -B scripts/enrichment/judge_practices/release_contact_text.py --rollback      # republish prior_rows.jsonl / prior_dataset.json
+    python3 -I -B scripts/enrichment/judge_practices/release_contact_text.py --file-types html   # dry run on the targets of those file types only
+
+A dry run refuses to write into an --out folder that already holds a snapshot (prior_rows.jsonl or report.json): a second dry run
+after --publish would otherwise replace the pre-release snapshot with the released dataset and make --rollback a no-op. Use a new
+--out folder (or --force-new-snapshot deliberately). --rollback only accepts a snapshot whose digest equals the catalog manifest the
+dry run read (prior_rows_digest == prior_manifest_sha256), i.e. the published dataset byte for byte.
+A partial release (--file-types, or --allow-partial) keeps the earlier redaction on the targets it did not release; the dataset's
+privacy line and redacted_* totals then say how many documents still carry it.
     python3 -I -B scripts/enrichment/judge_practices/release_contact_text.py --update-doc-records private/build/judge_practices/docs
 
 Credentials: EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY from the environment (or private/scratch/env.sh, as store.py reads it); never printed.
@@ -140,12 +148,24 @@ def tidy_untouched(row: dict) -> dict:
     return out
 
 
-def updated_summary(summary: dict) -> dict:
+def updated_summary(summary: dict, rows: list[dict] | None = None) -> dict:
+    """The dataset summary after the release. With `rows` (the rows being published), documents that still carry the earlier
+    redaction (targets not released) are counted: the privacy line says how many, and the redacted_* totals are recounted from them."""
     s = dict(summary or {})
-    s["privacy"] = xt.PRIVACY
     totals = dict(s.get("totals") or {})
     for k in [k for k in totals if k.startswith("redacted_")]:
         totals.pop(k)
+    still = [r for r in (rows or []) if is_target(r)]
+    s["privacy"] = xt.PRIVACY
+    if still:
+        s["privacy"] += (f" The text of {len(still):,} documents still carries the contact redaction made before 2026-10-27 "
+                         "(marked in the text) until it is re-extracted with the original tools.")
+        sums = Counter()
+        for r in still:
+            for k, v in (((r.get("item") or {}).get("practice_document") or {}).get("redactions") or {}).items():
+                sums[f"redacted_{k}"] += int(v or 0)
+        totals.update({k: v for k, v in sorted(sums.items()) if v})
+        totals["documents_still_redacted"] = len(still)
     if totals:
         s["totals"] = totals
     return s
@@ -254,13 +274,20 @@ def process(row: dict, originals: Originals, tmp: str) -> tuple[str, dict | None
 
 
 # ------------------------------------------------------------------------------------------------------------------ commands
-def dry_run(out: str, workers: int, limit: int) -> dict:
+def dry_run(out: str, workers: int, limit: int, file_types: set[str] | None = None, force_new_snapshot: bool = False) -> dict:
     os.makedirs(out, exist_ok=True)
+    existing = [f for f in ("prior_rows.jsonl", "report.json") if os.path.exists(os.path.join(out, f))]
+    if existing and not force_new_snapshot:
+        raise SystemExit(f"{out} already holds {', '.join(existing)}: a new dry run would replace the rollback snapshot. "
+                         "Use a new --out folder (keep this one for --rollback), or pass --force-new-snapshot deliberately.")
     rows, ds = fetch_prior()
     prior_sha = write_jsonl(os.path.join(out, "prior_rows.jsonl"), rows)
     with open(os.path.join(out, "prior_dataset.json"), "w", encoding="utf-8") as h:
         json.dump(ds, h, ensure_ascii=False, sort_keys=True, indent=1)
     targets = [r for r in rows if is_target(r)]
+    all_targets = len(targets)
+    if file_types:
+        targets = [r for r in targets if (((r.get("item") or {}).get("practice_document") or {}).get("file_type") or "") in file_types]
     if limit:
         targets = targets[:limit]
     originals = Originals()
@@ -275,7 +302,8 @@ def dry_run(out: str, workers: int, limit: int) -> dict:
     release_sha = write_jsonl(os.path.join(out, "release_rows.jsonl"), out_rows)
     after_markers = sum(1 for r in out_rows if xt.has_legacy_marker(r.get("text") or ""))
     report = {
-        "dataset": DATASET, "rows": len(rows), "targets": len(targets),
+        "dataset": DATASET, "rows": len(rows), "targets": len(targets), "all_targets": all_targets,
+        "file_types": sorted(file_types) if file_types else None,
         # same as the packet's selection query: sha256 of the sorted target ids joined by newlines
         "target_ids_sha256": hashlib.sha256("\n".join(sorted(r["id"] for r in targets)).encode()).hexdigest(),
         "targets_with_marker": sum(1 for r in targets if xt.has_legacy_marker(r.get("text") or "")),
@@ -303,6 +331,8 @@ def publish(out: str, allow_partial: bool) -> None:
         raise SystemExit("the dry run was limited (--limit); run it in full before publishing")
     if report["not_released"] and not allow_partial:
         raise SystemExit(f"{report['not_released']} targets were not released ({report['not_released_by_reason']}); fix or pass --allow-partial")
+    if report.get("file_types") and not allow_partial:
+        raise SystemExit(f"the dry run covered file types {report['file_types']} only ({report['targets']} of {report.get('all_targets')} targets); pass --allow-partial")
     path = os.path.join(out, "release_rows.jsonl")
     if sha_file(path) != report["files"]["release_rows.jsonl"]:
         raise SystemExit("release_rows.jsonl changed since the dry run")
@@ -312,13 +342,16 @@ def publish(out: str, allow_partial: bool) -> None:
         raise SystemExit("row count differs from the dry run")
     md = ds.get("metadata") or {}
     listing = {k: v for k, v in (md.get("listing") or {}).items() if k != "total"}
-    writer.publish(DATASET, ds["label"], rows, listing_block=listing, summary=updated_summary(md.get("summary") or {}))
+    writer.publish(DATASET, ds["label"], rows, listing_block=listing, summary=updated_summary(md.get("summary") or {}, rows))
 
 
-def rollback(out: str) -> None:
+def rollback(out: str, force: bool = False) -> None:
     import corpus_writer as writer
 
     report = load_json(os.path.join(out, "report.json"))
+    if report.get("prior_rows_digest") != report.get("prior_manifest_sha256") and not force:
+        raise SystemExit("the snapshot's digest differs from the manifest the dry run read, so it may not be the pre-release dataset; "
+                         "check it, then pass --force-rollback")
     path = os.path.join(out, "prior_rows.jsonl")
     if sha_file(path) != report["files"]["prior_rows.jsonl"]:
         raise SystemExit("prior_rows.jsonl changed since it was saved")
@@ -363,16 +396,20 @@ def main() -> None:
     ap.add_argument("--publish", action="store_true")
     ap.add_argument("--allow-partial", action="store_true", help="publish although some targets keep their published text")
     ap.add_argument("--rollback", action="store_true")
+    ap.add_argument("--force-rollback", action="store_true", help="roll back although the snapshot digest differs from the manifest")
+    ap.add_argument("--file-types", help="comma list (e.g. html): dry run on the targets of these file types only (a partial release)")
+    ap.add_argument("--force-new-snapshot", action="store_true", help="let a dry run replace an existing snapshot in --out")
     ap.add_argument("--update-doc-records", metavar="DIR")
     a = ap.parse_args()
     if a.rollback:
-        rollback(a.out)
+        rollback(a.out, a.force_rollback)
     elif a.publish:
         publish(a.out, a.allow_partial)
     elif a.update_doc_records:
         update_doc_records(a.out, a.update_doc_records)
     else:
-        dry_run(a.out, a.workers, a.limit)
+        types = {t.strip() for t in a.file_types.split(",") if t.strip()} if a.file_types else None
+        dry_run(a.out, a.workers, a.limit, types, a.force_new_snapshot)
 
 
 if __name__ == "__main__":

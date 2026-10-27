@@ -21,6 +21,16 @@
 --   q4 ready true, expected_records 7066, imported_records 7066, manifest_sha256 = report.json release_rows_digest, privacy = extract_text.PRIVACY
 --   q5 rows_with_email_address >= 1675 (5 before: addresses the legacy pattern did not match)
 -- A partial release (--allow-partial) leaves exactly report.json not_released rows in q2 and their markers in q1.
+--
+-- Applied 2026-10-27 (lead), partial: release_contact_text.py --file-types html, then --publish --allow-partial.
+-- The build's poppler pdftotext, python-docx and LibreOffice are not on the lead's machine (xpdf 4.00 does not reproduce
+-- the published PDF text), so only HTML targets were tried: 417 tried, 359 released (306 judge pages), 58 HTML did not
+-- reproduce (bs4/lxml drift) and stay as they were. Snapshot digest = prior manifest 4b157984... (rollback valid);
+-- packet private/acq/release-judge-practice-contact-redaction/html-run-2026-10-27/.
+-- After: q1 marker3 1946, marker4 1949; q2 targets 1953; q3 text_sha_ok 6745, method_says_omitted 57, redacted_fact_rows 1953;
+-- q4 manifest_sha256 ed05fde9... (= release_rows_digest), privacy line names the 1,953 documents still redacted; q5 266.
+-- The remaining 1,953 targets (1,677 PDF, 186 DOCX, 58 HTML, 13 DOC, 15 WPD, 4 RTF) need a dry run with the build's tools
+-- into a NEW --out folder, then --publish (the snapshot of that run is the current, partly released dataset).
 
 set local statement_timeout = '120s';
 
