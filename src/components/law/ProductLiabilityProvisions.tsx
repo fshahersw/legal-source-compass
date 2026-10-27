@@ -1,7 +1,7 @@
 /**
  * /law/codes/$state (in-force view): the sections of the state's code in force whose text mentions "product
  * liability", most relevant first, each with its exact citation and a link into the code browser. A full-text hit is
- * not a doctrine classification, and common-law states can show few or none; the section says so.
+ * not a doctrine classification. The source line is the in-force edition's own publisher, link and currency.
  */
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -13,7 +13,7 @@ import {
   buildSectionContext,
 } from "@/components/kit";
 import { searchStateLaw } from "@/lib/law/stateLaw.functions";
-import { snippetSegments } from "@/lib/law/stateLawContract";
+import { currencyLine, snippetSegments, type StateLawEdition } from "@/lib/law/stateLawContract";
 import { PRODUCT_LIABILITY_QUERY } from "./lawQueries";
 const ID = "product-liability-provisions";
 const fmt = (v: number) => v.toLocaleString("en-US");
@@ -21,11 +21,23 @@ const fmt = (v: number) => v.toLocaleString("en-US");
 export function ProductLiabilityProvisions({
   state,
   stateName,
+  edition,
   onOpen,
   onSeeAll,
 }: {
   state: string;
   stateName: string;
+  /** The in-force edition the code browser reads: its publisher, link and currency are this block's source. */
+  edition: Pick<
+    StateLawEdition,
+    | "codeName"
+    | "publisher"
+    | "publisherUrl"
+    | "currencyStatement"
+    | "editionLabel"
+    | "currencyThrough"
+    | "sourceLastModified"
+  >;
   onOpen: (sectionId: string) => void;
   onSeeAll: () => void;
 }) {
@@ -41,11 +53,16 @@ export function ProductLiabilityProvisions({
   if (q.isError || !r || !r.available) return null;
   const hits = r.hits.slice(0, 12);
   const codes = new Set(r.hits.map((h) => h.code).filter(Boolean));
-  const source = { label: `${stateName} code in force, official publisher` };
+  const source = {
+    label: `${edition.codeName}${edition.publisher ? `, ${edition.publisher}` : ""}`,
+    href: edition.publisherUrl,
+  };
+  const currency = currencyLine(edition);
   const context = buildSectionContext({
     id: ID,
     title: `${stateName} code sections mentioning product liability`,
     scope: `${stateName} statutes in force; sections whose text mentions "product liability"`,
+    period: currency,
     source: source.label,
     figures: [
       {
@@ -81,8 +98,9 @@ export function ProductLiabilityProvisions({
           meta="In force, full-text match"
           source={{
             source,
+            period: currency,
             about:
-              "A text match on the section's words (English stemming), not a legal classification. States whose product-liability law is mostly judge-made show few sections.",
+              "A text match on the section's words (English stemming), not a legal classification of the section.",
           }}
         />
         <KpiCard
@@ -91,7 +109,7 @@ export function ProductLiabilityProvisions({
           label="Codes among the top hits"
           value={fmt(codes.size)}
           meta={`Top ${fmt(r.hits.length)} hits`}
-          source={{ source }}
+          source={{ source, period: currency }}
         />
       </KpiGrid>
       {hits.length ? (
@@ -126,8 +144,7 @@ export function ProductLiabilityProvisions({
         </ol>
       ) : (
         <p className="mt-3 text-meta text-muted-foreground">
-          No section in force mentions the phrase; this state&apos;s product-liability law may be
-          mostly judge-made.
+          No section in force contains the phrase “product liability”.
         </p>
       )}
       {r.total > hits.length ? (

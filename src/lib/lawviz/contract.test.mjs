@@ -720,3 +720,18 @@ test("nhtsa/epa calendar: series, agency views, undated recalls, idempotent", as
   assert.equal((await cal("osha", 2022)).status, "invalid");
   await db.close();
 });
+
+test("nhtsa/epa calendar: re-applying lawviz-v1 reverts the views until the follow-on is re-applied", async () => {
+  // Apply order matters: lawviz-v1.sql redefines lawviz_calendar_v1 and lawviz_refresh_v1 without these series.
+  const db = await fresh();
+  await db.exec(EXTRA);
+  const status = async (a) =>
+    (await one(db, "select public.lawviz_calendar_v1($1,$2) r", [a, 2022])).r.status;
+  assert.notEqual(await status("nhtsa"), "invalid");
+  await db.exec(CONTRACT);
+  assert.equal(await status("nhtsa"), "invalid", "lawviz-v1 alone does not know the nhtsa view");
+  await db.exec(EXTRA);
+  assert.notEqual(await status("nhtsa"), "invalid");
+  assert.notEqual(await status("epa"), "invalid");
+  await db.close();
+});

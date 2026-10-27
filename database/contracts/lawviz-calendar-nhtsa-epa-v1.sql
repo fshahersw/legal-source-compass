@@ -1,6 +1,12 @@
 -- lawviz calendar, NHTSA and EPA series (v1). Apply AFTER database/contracts/lawviz-v1.sql. Idempotent; re-applying
 -- replaces the same objects. LEAD applies; workers never run this against production.
 --
+-- APPLY ORDER: this file replaces public.lawviz_refresh_v1 and public.lawviz_calendar_v1 wholesale. Re-applying
+-- lawviz-v1.sql later silently reverts both (no 'nhtsa'/'epa' views, no extra refresh step), and /enforcement then
+-- answers 'invalid' for those tabs. Whenever lawviz-v1.sql is re-applied, re-apply this file right after it
+-- (src/lib/lawviz/contract.test.mjs asserts that order). Any edit to those two function bodies in lawviz-v1.sql must
+-- be copied here too.
+--
 -- Adds three event series to the enforcement calendar (/enforcement, EnforcementCalendar):
 --   fr_345        Federal Register documents listing NHTSA (agency id 345)      agency view: nhtsa
 --   fr_145        Federal Register documents listing the EPA (agency id 145)    agency view: epa

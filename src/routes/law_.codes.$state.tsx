@@ -207,6 +207,7 @@ function StateCodePage() {
         <ProductLiabilityProvisions
           state={usps}
           stateName={place.name}
+          edition={inForce}
           onOpen={(sec) => void navigate({ search: { view: "inforce", sec } })}
           onSeeAll={() =>
             void navigate({ search: { view: "inforce", lq: PRODUCT_LIABILITY_QUERY } })
