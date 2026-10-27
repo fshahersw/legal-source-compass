@@ -35,15 +35,18 @@ test('rollback is the live v1 definition verbatim', async () => {
   assert.match(def, /'public_projection_allowed',false\)\);/);
 });
 
-test('v2 changes only the declare line and the observation label block', async () => {
+test('v2 changes only the declare line, the stale seal comment and the observation label block', async () => {
   const v1 = functionDef(await read('corpus-register-pdf-assets-v2.rollback.sql')).split('\n');
   const v2 = functionDef(await read('corpus-register-pdf-assets-v2.sql')).split('\n');
   const a = withoutLabel(v1).outside, b = withoutLabel(v2).outside;
   assert.equal(a.length, b.length);
   const differing = a.map((line, i) => (line === b[i] ? null : i)).filter((i) => i !== null);
-  assert.equal(differing.length, 1, 'only one line outside the label block differs');
+  assert.equal(differing.length, 2, 'only two lines outside the label block differ');
   assert.match(a[differing[0]], /^declare row jsonb;/);
   assert.equal(b[differing[0]], a[differing[0]] + ' legacy_observation jsonb; pdf_availability text;');
+  // The comment that called an unreported seal status "retained privately" is corrected; code is unchanged.
+  assert.equal(a[differing[1]], '  -- Explicit JSON null is an unknown source seal status, retained privately;');
+  assert.equal(b[differing[1]], '  -- Explicit JSON null is an unknown source seal status: recorded as unknown, never a hold (owner decision 2026-10-27);');
   for (const fixed of [' SECURITY DEFINER', " SET search_path TO ''", " return jsonb_build_object('received',n,'private_only',true,'bucket','corpus-originals');"]) assert.ok(v2.includes(fixed), fixed);
 });
 
