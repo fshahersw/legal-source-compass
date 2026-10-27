@@ -3,8 +3,9 @@
 --
 -- Owner decision 2026-10-27 ("dont withhold any data. If its accurate and valuable, USE IT"): run dc2371a4 withheld 64 court_documents
 -- titles with reason policy_withheld only because the first-page wording mentions sealed, restricted, in camera, ex parte or redacted
--- material. These are forms, orders, rules and notices the courts publish on their own websites; a keyword in their text is not a seal,
--- and none carries a court- or provider-reported seal or restriction. The deriving tool no longer has that keyword rule
+-- material. These are forms, orders, rules and notices the courts publish on their own websites; a keyword in their text is not a seal.
+-- One (S.D. Tex. GENERAL ORDER NO. 95-9) is the court's published placeholder for an order it sealed; its printed heading is shown and
+-- the Title basis says only that the title is the court's own heading. The deriving tool no longer has that keyword rule
 -- (scripts/document-titles/derive_titles.py, build_keyword_release_plan.py).
 --
 -- What this adds:
@@ -119,7 +120,7 @@ create or replace function corpus_ingest.title_projection_facts_v1(p_plan corpus
 language plpgsql immutable set search_path = '' as $$
 declare facts jsonb := '[]'::jsonb; basis text; read_on text := case when p_plan.stage = 'keyword_release' then '2026-10-27' else '2026-10-06' end;
         released text := case when p_plan.stage = 'keyword_release'
-          then ' Released 2026-10-27: an earlier rule hid this title only because the page mentions sealing-related words; no seal or restriction is reported for this published court file.'
+          then ' Released 2026-10-27: an earlier rule hid this title only because the page mentions sealing-related words; the title is the court''s own printed heading on the file it publishes on its website.'
           else '' end;
 begin
   if p_plan.method = 'not_recorded' then

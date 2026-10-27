@@ -71,5 +71,37 @@ class KeywordReleasePlan(unittest.TestCase):
         self.assertEqual(by["other"]["new_title"], text, "the reviewed hold applies to that record only")
 
 
+def L(t, y, s=10.6, b=True, x=342.8, x1=500.0):
+    return {"t": t, "y": y, "s": s, "b": b, "x": x, "x1": x1}
+
+
+class HeadingContinuation(unittest.TestCase):
+    def test_joins_lines_in_same_size_and_weight(self):
+        lines = [L("MOTION FOR SENTENCE", 190.9), L("REDUCTION UNDER", 203.0), L("18 U.S.C. § 3582(c)(1)(A)", 215.2),
+                 L("(Compassionate Release)", 227.3), L("Body text", 300.0, b=False)]
+        self.assertEqual(K.join_heading_continuation(lines, "MOTION FOR SENTENCE"), "MOTION FOR SENTENCE REDUCTION UNDER 18 U.S.C. § 3582(c)(1)(A)")
+
+    def test_skips_margin_line_numbers_and_stops_at_gap(self):
+        lines = [L("STANDING ORDER FOR CIVIL CASES BEFORE", 194.1, s=12.0, x=203.5, x1=476.3), L("6", 199.0, s=12.0, b=False, x=74.3, x1=83.3),
+                 L("DISTRICT JUDGE TRINA L. THOMPSON", 207.9, s=12.0, x=223.2, x1=456.6), L("CONFORMITY TO RULES", 249.8, s=12.0, x=277.9, x1=401.8)]
+        self.assertEqual(K.join_heading_continuation(lines, "STANDING ORDER FOR CIVIL CASES BEFORE"),
+                         "STANDING ORDER FOR CIVIL CASES BEFORE DISTRICT JUDGE TRINA L. THOMPSON")
+
+    def test_stops_at_caption_bracket_other_column_or_weight_change(self):
+        lines = [L("GENERAL ORDER NO. 05-07", 222.1, s=13.0, b=False, x=288.0, x1=454.3), L(")", 237.2, s=13.0, b=False, x=252.0, x1=256.3),
+                 L("ASSIGNMENT OF DUTIES", 252.2, s=13.0, b=False, x=72.0, x1=224.6)]
+        self.assertEqual(K.join_heading_continuation(lines, "GENERAL ORDER NO. 05-07"), "GENERAL ORDER NO. 05-07")
+        lines = [L("ORDER TO SEAL", 100.0, s=12.0), L("The court finds", 112.0, s=12.0, b=False)]
+        self.assertEqual(K.join_heading_continuation(lines, "ORDER TO SEAL"), "ORDER TO SEAL")
+
+
+class ReviewedCorrections(unittest.TestCase):
+    def test_corrections_use_printed_words_only(self):
+        for (rid, derived), fixed in K.REVIEWED_TITLE_CORRECTIONS.items():
+            words = set(derived.split())
+            for w in fixed.split():
+                self.assertTrue(w in words or any(x.startswith(w) and x[len(w):].isdigit() for x in words), (rid, w))
+
+
 if __name__ == "__main__":
     unittest.main()

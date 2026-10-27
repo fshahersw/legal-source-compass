@@ -5,8 +5,16 @@ Owner decision 2026-10-27 ("dont withhold any data. If its accurate and valuable
 dc2371a4 (document-titles/2026-10-06.1) withheld with reason policy_withheld, only because the first-page wording mentions sealed,
 restricted, in camera, ex parte or redacted material, are re-derived with exactly the same title rules (derive_titles.py) minus that
 keyword rule. A row is held back only on explicit evidence from its own source; these are files the courts publish on their own websites
-and none carries a court- or provider-reported seal or restriction (checked: no corpus_ingest.local_pdf_asset_occurrences row for any of
-their 60 distinct SHA-256 values).
+(no corpus_ingest.local_pdf_asset_occurrences row for any of their 60 distinct SHA-256 values). One of them, S.D. Tex. GENERAL ORDER
+NO. 95-9, is the court's published placeholder for an order it sealed ("ORDER SEALED BY THE COURT"); its heading is the court's own
+printed text and is released as such, and the Title basis no longer claims that no seal is reported for any of these files.
+
+Accuracy fixes after review (2026-10-27):
+  * a document-type heading continues onto the following lines set in the same size and weight (e.g. "MOTION FOR SENTENCE" /
+    "REDUCTION UNDER" / "18 U.S.C. § 3582(c)(1)(A)"; "STANDING ORDER FOR CIVIL CASES BEFORE" / "DISTRICT JUDGE ..."): those lines are
+    joined (join_heading_continuation), skipping margin line numbers and stopping at a gap, a size or weight change or a parenthetical;
+  * REVIEWED_TITLE_CORRECTIONS: exact (record id, derived string) pairs whose derived string carries a margin label or a footnote marker
+    that is not part of the printed title; the corrected title is made only of words printed on that first page (asserted).
 
 Inputs:
   --rows FILE         court_documents rows (JSONL: id, title, source_url, item, detail) currently titled "<file name> (title not recorded)"
@@ -31,6 +39,36 @@ REVIEWED_NOT_TITLES = {
     # ("COVER SHEET – PETITION FOR APPOINTMENT OF GUARDIAN AND/OR CONSERVATOR") is set smaller and is not what the rules pick.
     ("court-expansion-artifact:caf33c348ef6225260d1b50d", "Using This Revisable PDF Form"): "heading_is_instructions_label",
 }
+REVIEWED_TITLE_CORRECTIONS = {
+    # Virginia form CC-1642 instructions: the right-margin label "Form CC-1642" is a separate span merged into the first title line.
+    ("court-expansion-artifact:2e654ed5c82d012da5477e1d",
+     "FORM CC-1642 ADDENDUM TO PETITION FOR APPOINTMENT Form CC-1642 OF GUARDIAN OR CONSERVATOR —UNDER SEAL"):
+        "FORM CC-1642 ADDENDUM TO PETITION FOR APPOINTMENT OF GUARDIAN OR CONSERVATOR —UNDER SEAL",
+    # Maine Bar Rules: "1" is a footnote reference on the title line and "Table of Contents" is the next section's label.
+    ("court-expansion-artifact:7f86dea99f1db89f0407458f", "MAINE BAR RULES1 Table of Contents"): "MAINE BAR RULES",
+}
+LINE_NUMBER_RE = re.compile(r"^\d{1,3}$")
+
+
+def join_heading_continuation(lines, title):
+    """A document-type heading broken over lines: append the lines that directly follow it in the same size and weight."""
+    clean = [dict(l, t=D.clean(l["t"])) for l in lines if D.clean(l["t"])]
+    idx = next((i for i, l in enumerate(clean) if l["t"] == title), None)
+    if idx is None:
+        return title
+    head, prev_y, parts = clean[idx], clean[idx]["y"], [title]
+    for l in clean[idx + 1:]:
+        if LINE_NUMBER_RE.match(l["t"]) and not l["b"]:
+            continue  # pleading-paper line numbers in the margin
+        if abs(l["s"] - head["s"]) > 0.2 or l["b"] != head["b"] or l["y"] - prev_y > 1.6 * head["s"] or l["y"] <= prev_y:
+            break
+        if "x" in l and "x1" in head and (l["x"] >= head["x1"] or l["x1"] <= head["x"]):
+            break  # another column (e.g. the caption's left side)
+        if not l["t"][0].isalnum() or l["t"].endswith(":"):  # a parenthetical, a caption bracket or a label
+            break
+        parts.append(l["t"])
+        prev_y = l["y"]
+    return " ".join(parts)
 
 
 def sha256(text):
@@ -61,6 +99,14 @@ def build(rows, arts, fps):
         text_hash = sha256("\n".join(l["t"] for l in fp["lines"]))
         kws = former_keywords(fp["lines"], title)
         stats["former_keyword_rule_matched" if kws else "former_keyword_rule_not_matched"] += 1
+        if title and method == D.METHOD_DOCTYPE:
+            title = join_heading_continuation(fp["lines"], title)
+        fixed = REVIEWED_TITLE_CORRECTIONS.get((r["id"], title))
+        if fixed:
+            page_words = set(" ".join(D.clean(l["t"]) for l in fp["lines"]).split())
+            # every word is printed on the page, at most with a footnote digit attached ("RULES1")
+            assert all(w in page_words or any(re.fullmatch(re.escape(w) + r"\d{1,2}", pw) for pw in page_words) for w in fixed.split()), (r["id"], fixed)
+            title = fixed
         held = REVIEWED_NOT_TITLES.get((r["id"], title))
         if held:
             title, method, reason = None, None, held
