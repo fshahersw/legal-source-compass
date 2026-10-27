@@ -276,6 +276,16 @@ export const MATTERS = {
     pages: [{ id: 'tnwd-mdl-hub', role: 'mdl_page', family: 'njd-body', url: 'https://www.tnwd.uscourts.gov/mdl-cases' }],
     index_pages: [],
   },
+  // S.D. Ind. MDL 2570 (Cook Medical IVC; direct PDFs on one orders page).
+  '2570': {
+    name: 'In re Cook Medical, Inc., IVC Filters Marketing, Sales Practices and Products Liability Litigation', court_id: 'insd', host: 'www.insd.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL 2570', page_id: 'insd-2570-info', note: 'printed on the court MDL case information page' },
+    pages: [
+      { id: 'insd-2570-info', role: 'mdl_page', family: 'njd-body', url: 'https://www.insd.uscourts.gov/mdl-case-information' },
+      { id: 'insd-2570-orders', role: 'orders_table', family: 'njd-body', url: 'https://www.insd.uscourts.gov/cook-mdl-case-management' },
+    ],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
