@@ -20,7 +20,7 @@ const ruling = (i: number, movant: ExpertRuling["movant"] = "defendant"): Expert
 const render = (rulings: ExpertRuling[] | null) =>
   renderToStaticMarkup(
     createElement(JudgeExpertRulingsCard, {
-      data: rulings ? { label: "Judge expert rulings", rulings, precision: null } : null,
+      data: rulings ? { label: "Judge expert rulings", rulings, precision: null, coverage: null } : null,
     }),
   );
 

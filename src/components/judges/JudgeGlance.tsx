@@ -1,6 +1,6 @@
 /**
  * "At a glance": the first section of a judge page. Up to six KPI tiles (JPML MDL load, CJRA docket flow, the
- * CourtListener collection, recorded expert rulings), then the docket-flow trend, the docket mix and, once published,
+ * case-law collection, recorded expert rulings), then the docket-flow trend, the docket mix and, once published,
  * the recorded expert rulings, with an AI summary built only from the figures shown. Renders nothing when no source
  * holds anything for this judge (so the section drops out of the page).
  */
@@ -55,6 +55,7 @@ export function JudgeGlance({ judgeId, name }: { judgeId: string; name: string }
     activity: crosswalk?.linked ? (cl.data?.activity ?? null) : null,
     clPersonId,
     rulings: rulings.data ? rulings.data.rulings.length : null,
+    rulingsNote: rulings.data?.coverage ?? null,
   };
   const failed = [cross, cl, cjra].filter((q) => q.isError).length;
   if (!glanceHasData(input))
@@ -68,7 +69,7 @@ export function JudgeGlance({ judgeId, name }: { judgeId: string; name: string }
     id: "judge-glance",
     title: `${name}: docket and MDL figures`,
     scope: glanceScope(name),
-    source: "JPML pending MDL report; U.S. Courts CJRA reports; CourtListener collection",
+    source: "JPML pending MDL report; U.S. Courts CJRA reports; case-law collection",
     figures: glanceFigures(kpis, input),
   });
   const dockets = input.activity?.dockets ?? null;

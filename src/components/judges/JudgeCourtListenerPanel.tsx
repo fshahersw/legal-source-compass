@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import {
   getJudgeCourtListener,
+  serviceRunsPast,
   type Crosswalk,
   type CrosswalkTier,
   type JudgeActivity,
@@ -42,8 +43,16 @@ const KPI_COLS: Record<number, string> = {
   6: "sm:grid-cols-3 lg:grid-cols-6",
 };
 
-/** True when the last attributed opinion is older than last year (the series stops, it does not fall). */
-const attributionEnded = (yr: number | null) => yr !== null && yr < new Date().getUTCFullYear() - 1;
+/** True when the last attributed opinion is older than last year. */
+const attributionStops = (yr: number | null): yr is number =>
+  yr !== null && yr < new Date().getUTCFullYear() - 1;
+
+/**
+ * True only when the series stops while the judge's recorded service (matched positions) runs past the following
+ * year: then the stop is a gap in attribution. A judge who left the bench gets a neutral "last attributed" line.
+ */
+const attributionGap = (c: Crosswalk, yr: number | null) =>
+  attributionStops(yr) && serviceRunsPast(c.positions, yr + 1);
 
 const fmt = (n: number | null | undefined) =>
   n === null || n === undefined ? "Not recorded" : n.toLocaleString("en-US");
@@ -109,7 +118,7 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
       "Opinions authored",
       fmt(o.authored),
       o.firstFiled && o.lastFiled
-        ? `${o.firstFiled.slice(0, 4)}–${o.lastFiled.slice(0, 4)}${attributionEnded(o.lastAttributedYear) ? " (attribution ends)" : ""}`
+        ? `${o.firstFiled.slice(0, 4)}–${o.lastFiled.slice(0, 4)}${attributionGap(c, o.lastAttributedYear) ? " (attribution ends)" : ""}`
         : undefined,
     ]);
     if (o.timesCitedTotal !== null)
@@ -177,11 +186,15 @@ function Linked({ c, a }: { c: Crosswalk; a: JudgeActivity | null }) {
               />
             ) : null}
           </TrendGrid>
-          {o?.byYear.length && attributionEnded(o.lastAttributedYear) ? (
+          {o?.byYear.length && attributionGap(c, o.lastAttributedYear) ? (
             <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
-              Attributed opinions end in {o.lastAttributedYear}: the source does not credit later
-              opinions to this judge, so no year after {o.lastAttributedYear} is drawn. This is a
-              gap in attribution, not a fall in output.
+              Attributed opinions end in {o.lastAttributedYear} although recorded service runs
+              later: the source does not credit later opinions to this judge, so no year after{" "}
+              {o.lastAttributedYear} is drawn. This is a gap in attribution, not a fall in output.
+            </p>
+          ) : o?.byYear.length && attributionStops(o.lastAttributedYear) ? (
+            <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
+              Last attributed opinion: {o.lastAttributedYear}.
             </p>
           ) : null}
         </div>

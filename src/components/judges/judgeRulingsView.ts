@@ -39,7 +39,7 @@ export const MOVANT_LABELS: Record<RulingMovant, string> = {
 const MOVANT_ORDER: readonly RulingMovant[] = ["plaintiff", "defendant", "other"];
 
 export const RULINGS_CAPTION =
-  "Rulings found in published opinions and MDL filings in this corpus; not every ruling. Outcomes depend on the motion, the expert and the record, and say nothing about how a future motion will be decided.";
+  "Rulings this corpus records; not every ruling. Outcomes depend on the motion, the expert and the record, and say nothing about how a future motion will be decided.";
 
 export type MovantTally = {
   movant: RulingMovant;

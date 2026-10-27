@@ -8,7 +8,8 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { BenchMatrix, ChartCard } from "@/components/charts/recharts";
 import { AiSummary, AskAiButton, DataDrawer, buildSectionContext } from "@/components/kit";
-import { CJRA_SOURCE } from "@/lib/external/judgeCjra.functions";
+import { CJRA_SOURCE, VISITING_LABELS } from "@/lib/external/judgeCjra.functions";
+import { NOS_COVERAGE_FLOOR } from "@/lib/external/judgeCourtListener.functions";
 import { benchMeasures, benchModel } from "./judgeBenchView";
 import { judgeCrossQuery } from "./judgeCrossQuery";
 import { shortDate } from "./judgeGlanceView";
@@ -41,25 +42,33 @@ export function JudgeCourtBench() {
     ? buildSectionContext({
         id: "court-bench",
         title: `Same-court docket flow: ${courtName}`,
-        scope: `${courtName} · district judges in the latest CJRA report · context, not a ranking or a prediction`,
+        // the clause first: the scope is cut at 120 characters and a long court name must not cut it
+        scope: `Context, not a ranking or a prediction · district judges of ${courtName} in the latest CJRA report`,
         ...(period ? { period } : {}),
-        source: "U.S. Courts CJRA reports; CourtListener collection",
+        source: "U.S. Courts CJRA reports; case-law collection",
         figures: [
-          { label: "District judges listed", value: bench!.judges.length },
+          { label: "District judges of the court listed", value: model.own },
+          {
+            label: "Judges sitting by designation (left out of the comparison)",
+            value: model.visiting,
+          },
           ...benchMeasures(period).map((m) => ({
             label: `Court median: ${m.label}`,
             value: model.medians[m.key].value,
             note: `${model.medians[m.key].n} judges with a value`,
-            ...(m.key === "productShare" ? { unit: "%", decimals: 1 } : {}),
           })),
         ],
       })
     : null;
+  const retry = () => {
+    void cross.refetch();
+    if (court) void q.refetch();
+  };
   const status =
     cross.isPending || (court && q.isPending)
       ? ({ kind: "loading" } as const)
       : q.isError || cross.isError
-        ? ({ kind: "error", onRetry: () => void q.refetch() } as const)
+        ? ({ kind: "error", onRetry: retry } as const)
         : !model
           ? ({
               kind: "empty",
@@ -78,7 +87,7 @@ export function JudgeCourtBench() {
       <ChartCard
         variant="editorial"
         title={`Docket flow of the district judges in ${courtName || "one court"}, beside the court median`}
-        subtitle={`Counts and medians · ${courtName}${period ? ` · CJRA report of ${period}` : ""} · no row is ranked`}
+        subtitle={`Counts and medians · ${courtName}${period ? ` · CJRA report of ${period}` : ""}${model?.visiting ? ` · ${model.visiting} judges sitting by designation listed apart` : ""} · no row is ranked`}
         status={status}
         sources={[
           { label: CJRA_SOURCE.label, url: bench?.sourceUrl ?? CJRA_SOURCE.url },
@@ -111,16 +120,19 @@ export function JudgeCourtBench() {
         about={
           <div className="space-y-2">
             <p>
-              Judges listed as district judges in the court&apos;s latest CJRA report, in surname
-              order. CJRA counts are judge-reported lists of motions and cases pending past a
-              threshold, not a measure of speed or quality. Civil cases over three years include MDL
-              member cases, which districts report differently.
+              District judges of the court in its latest CJRA report, in surname order. Judges the
+              report marks as sitting by designation (VJ, CIR, CIT, FCR) are not the court&apos;s
+              own and are left out of the comparison and the median; the data table lists them.
+              CJRA counts are judge-reported lists of motions pending past a threshold, not a
+              measure of speed or quality.
             </p>
             <p>
-              Median days and product share come from the CourtListener collection, only for judges
-              linked to a person there by an exact crosswalk tier; they are not a complete caseload.
-              A court median needs at least three values. No row says which value leads, and ruling
-              outcomes are never compared here.
+              Civil cases over three years and the product share are in the data table only. The
+              first includes MDL member cases, which districts report differently; the second rests
+              on dockets with a recorded nature of suit, which cover very different parts of each
+              judge&apos;s caseload. Median days come from the case-law collection, only for judges
+              linked to a person there by an exact crosswalk tier. A court median needs at least
+              three values. No row says which value leads, and ruling outcomes are never compared.
             </p>
           </div>
         }
@@ -144,22 +156,39 @@ export function JudgeCourtBench() {
               {
                 key: "name",
                 label: "Judge",
-                value: (j) => j.name,
-                render: (j) =>
-                  j.profileId ? (
-                    <Link
-                      to="/judges/$id"
-                      params={{ id: j.profileId }}
-                      className="text-primary hover:underline"
-                    >
-                      {j.name}
-                    </Link>
-                  ) : (
-                    j.name
-                  ),
+                value: (j) => (j.visiting ? `${j.name} (${j.visiting})` : j.name),
+                render: (j) => (
+                  <>
+                    {j.profileId ? (
+                      <Link
+                        to="/judges/$id"
+                        params={{ id: j.profileId }}
+                        className="text-primary hover:underline"
+                      >
+                        {j.name}
+                      </Link>
+                    ) : (
+                      j.name
+                    )}
+                    {j.visiting ? (
+                      <span className="text-muted-foreground"> ({j.visiting})</span>
+                    ) : null}
+                  </>
+                ),
+              },
+              {
+                key: "sitting",
+                label: "Sitting as",
+                value: (j) =>
+                  j.visiting ? `${VISITING_LABELS[j.visiting]} (${j.visiting})` : "Judge of the court",
               },
               { key: "m6", label: "Motions > 6 months", align: "right", value: (j) => j.motions6m },
-              { key: "c3", label: "Civil > 3 years", align: "right", value: (j) => j.civil3y },
+              {
+                key: "c3",
+                label: "Civil > 3 years (incl. MDL member cases)",
+                align: "right",
+                value: (j) => j.civil3y,
+              },
               {
                 key: "days",
                 label: "Median days, civil",
@@ -167,7 +196,18 @@ export function JudgeCourtBench() {
                 value: (j) => j.medianDaysCivil,
               },
               { key: "dn", label: "n (days)", align: "right", value: (j) => j.medianDaysN },
-              { key: "ps", label: "Product share %", align: "right", value: (j) => j.productShare },
+              {
+                key: "cov",
+                label: "Nature of suit recorded, % of assigned",
+                align: "right",
+                value: (j) => j.nosCoveragePct,
+              },
+              {
+                key: "ps",
+                label: `Product share % of recorded (from ${NOS_COVERAGE_FLOOR}% coverage)`,
+                align: "right",
+                value: (j) => j.productShare,
+              },
             ]}
             source={{
               source: [{ label: CJRA_SOURCE.label, href: bench.sourceUrl ?? CJRA_SOURCE.url }],

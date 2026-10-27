@@ -79,7 +79,7 @@ export function JudgeExpertRulingsCard({ data }: { data: JudgeExpertRulings | nu
       status={{ kind: "ready" }}
       {...(period ? { period } : {})}
       actions={drawer}
-      footnotes={[RULINGS_CAPTION]}
+      footnotes={data.coverage ? [`Coverage: ${data.coverage}`, RULINGS_CAPTION] : [RULINGS_CAPTION]}
       about={
         <div className="space-y-2">
           <p>

@@ -78,6 +78,7 @@ const dockets = (over: Partial<NonNullable<JudgeActivity["dockets"]>> = {}) => (
   nosOther: 5231,
   productCount: 230,
   productShare: 4.2,
+  nosCoveragePct: 70.9,
   ...over,
 });
 
@@ -94,26 +95,85 @@ describe("glanceKpis", () => {
     expect(k[1]).toMatchObject({ value: "0", period: "Mar 31, 2026" });
     expect(k[2]!.value).toBe("35,696");
     expect(k[2]!.meta).toMatch(/includes MDL member cases/);
-    expect(k[3]!.meta).toMatch(/4\.2% product liability/);
     expect(k[4]!.meta).toMatch(/n = 55/);
   });
 
-  it("reads Not recorded (null) for a missing source, never 0, and adds the rulings tile only when published", () => {
+  it("states the product share with its own base and that base's coverage of assigned dockets", () => {
+    const k = glanceKpis({
+      cross: null,
+      cjra: null,
+      activity: { dockets: dockets(), referred: null, opinions: null },
+      clPersonId: 1234,
+      rulings: null,
+    });
+    expect(k[3]!.value).toBe("7,707");
+    expect(k[3]!.meta).toMatch(
+      /^4\.2% of 5,461 with a recorded nature of suit \(70\.9% of assigned\) are product liability/,
+    );
+    expect(k[3]!.meta.length).toBeLessThanOrEqual(140);
+    expect(k[3]!.source.label).not.toMatch(/collection/i);
+  });
+
+  it("suppresses the product share when its base covers less than half of assigned dockets", () => {
+    // Shipp: 59,460 assigned, 6,716 with a recorded nature of suit (11.3%)
+    const d = dockets({
+      assigned: 59460,
+      nosRecorded: 6716,
+      productCount: 3264,
+      productShare: 48.6,
+      nosCoveragePct: 11.3,
+    });
+    const input = {
+      cross: null,
+      cjra: null,
+      activity: { dockets: d, referred: null, opinions: null },
+      clPersonId: 2955,
+      rulings: null,
+    };
+    const k = glanceKpis(input);
+    expect(k[3]!.meta).not.toMatch(/48\.6/);
+    expect(k[3]!.meta).toMatch(/only 11\.3% of assigned; no product share shown/);
+    const figs = glanceFigures(k, input);
+    expect(figs.some((f) => f.value === 48.6)).toBe(false);
+    expect(figs.find((f) => /base of the product share/.test(f.label))?.value).toBe(11.3);
+  });
+
+  it("reads Not recorded (null) for a missing source, never 0, and leaves out a rulings tile of 0", () => {
     const k = glanceKpis({ cross: null, cjra: null, activity: null, clPersonId: null, rulings: 0 });
-    expect(k.slice(0, 5).every((x) => x.value === null)).toBe(true);
-    expect(k.at(-1)).toMatchObject({ id: "rulings", value: "0" });
+    expect(k.every((x) => x.value === null)).toBe(true);
+    expect(k.some((x) => x.id === "rulings")).toBe(false);
+    expect(k.find((x) => x.id === "dockets")!.meta).not.toMatch(/CourtListener/);
     expect(
       glanceHasData({ cross: null, cjra: null, activity: null, clPersonId: null, rulings: 0 }),
     ).toBe(false);
+    const r = glanceKpis({
+      cross: null,
+      cjra: null,
+      activity: null,
+      clPersonId: null,
+      rulings: 3,
+      rulingsNote: "Opinions in the selected MDL courts, 2015-2026",
+    }).at(-1)!;
+    expect(r).toMatchObject({ id: "rulings", value: "3" });
+    expect(r.meta).toBe("Opinions in the selected MDL courts, 2015-2026; not every ruling");
   });
 
-  it("says when the last listed report is not the latest edition", () => {
+  it("says when the last listed report is not the latest edition, for both CJRA tiles", () => {
     const c = cjra({
-      series: { ...cjra().series, motions_6m: [null, 2, 1, 3, null] },
+      series: {
+        ...cjra().series,
+        motions_6m: [null, 2, 1, 3, null],
+        civil_3y: [null, 10, 20, 30, null],
+      },
     });
     const k = glanceKpis({ cross: null, cjra: c, activity: null, clPersonId: null, rulings: null });
     expect(k[1]).toMatchObject({ value: "3", period: "Mar 31, 2017" });
     expect(k[1]!.meta).toMatch(/not listed in the latest report/);
+    expect(k[2]).toMatchObject({ value: "30", period: "Mar 31, 2017" });
+    expect(k[2]!.meta).toMatch(/not listed in the latest report/);
+    expect(glanceKpis({ cross: null, cjra: cjra(), activity: null, clPersonId: null, rulings: null })[2]!.meta).not.toMatch(
+      /not listed/,
+    );
   });
 });
 
@@ -178,6 +238,13 @@ describe("AI context", () => {
     expect(
       ctx.figures.some((f) => f.label === "MDL 2738 actions pending" && f.value === "69,340"),
     ).toBe(true);
+    expect(ctx.figures.some((f) => /share of the 5,461 dockets/.test(f.label))).toBe(true);
+  });
+
+  it("keeps the no-prediction clause whole when the name is long", () => {
+    const long = "The Honorable Bartholomew Fitzgerald Montgomery-Worthington Vanderbilt III";
+    const ctx = buildSectionContext({ title: "t", scope: glanceScope(long), figures: [] });
+    expect(ctx.scope).toMatch(/^Recorded figures only, not a prediction of how the judge will rule/);
   });
 
   it("writes report dates plainly", () => {
@@ -190,30 +257,42 @@ describe("same-court bench", () => {
   it("needs three values for a median and never leads a row", () => {
     expect(benchMedian([1, null, 3])).toBeNull();
     expect(benchMedian([1, 2, 3, 10])).toBe(2.5);
-    const m = benchModel(
-      {
-        courtId: "njd",
-        court: "D.N.J.",
-        period: "2026-03-31",
-        sourceUrl: null,
-        judges: [1, 2, 3].map((i) => ({
-          recordId: `j${i}`,
-          name: `Judge ${i}`,
-          profileId: null,
-          motions6m: i,
-          civil3y: i * 10,
-          medianDaysCivil: null,
-          medianDaysN: null,
-          productShare: null,
-          clLinked: false,
-        })),
-      },
-      "Mar 31, 2026",
-    );
+    const judge = (i: number, visiting: "VJ" | null = null) => ({
+      recordId: `j${i}`,
+      name: `Judge ${i}`,
+      profileId: null,
+      visiting,
+      motions6m: i,
+      civil3y: i * 10,
+      medianDaysCivil: null,
+      medianDaysN: null,
+      productShare: null,
+      nosCoveragePct: null,
+      clLinked: false,
+    });
+    const bench = {
+      courtId: "njd",
+      court: "D.N.J.",
+      period: "2026-03-31",
+      sourceUrl: null,
+      judges: [judge(1), judge(2), judge(3), judge(100, "VJ")],
+    };
+    const m = benchModel(bench, "Mar 31, 2026")!;
     expect(m.columns[0]!.label).toBe("Court median");
+    expect(m.columns[0]!.sub).toBe("of 3 judges of the court");
+    // the visiting judge is neither a column nor part of the median
     expect(m.medians.motions6m.value).toBe(2);
+    expect(m.medians.motions6m.n).toBe(3);
+    expect(m.own).toBe(3);
+    expect(m.visiting).toBe(1);
     expect(m.medians.medianDaysCivil.value).toBeNull();
     expect(m.groups.flatMap((g) => g.rows).every((r) => r.lead === "none")).toBe(true);
     expect(m.columns.slice(1).map((c) => c.id)).toEqual(["j1", "j2", "j3"]);
+    // civil > 3 years and the product share are not compared across judges
+    expect(m.groups.flatMap((g) => g.rows).map((r) => r.label)).toEqual([
+      "Motions pending > 6 months",
+      "Median days to termination, civil",
+    ]);
+    expect(benchModel({ ...bench, judges: [judge(100, "VJ")] }, null)).toBeNull();
   });
 });

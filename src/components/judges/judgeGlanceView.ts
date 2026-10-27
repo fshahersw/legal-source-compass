@@ -7,7 +7,11 @@ import type { FigureInput } from "@/components/kit";
 import type { PeriodAxis, TrendSeriesInput } from "@/components/charts/series";
 import type { TrendEvent } from "@/components/charts/editorial";
 import type { JudgeCrossProfile } from "@/lib/external/judgeCross.functions";
-import type { JudgeActivity } from "@/lib/external/judgeCourtListener.functions";
+import {
+  NOS_COVERAGE_FLOOR,
+  shownProductShare,
+  type JudgeActivity,
+} from "@/lib/external/judgeCourtListener.functions";
 import {
   CJRA_LABELS,
   lastPoint,
@@ -40,10 +44,15 @@ export type GlanceInput = {
   cross: JudgeCrossProfile | null;
   cjra: JudgeCjra | null;
   activity: JudgeActivity | null;
-  /** CourtListener person id when the crosswalk links one exactly. */
+  /** Case-law person id when the crosswalk links one exactly. */
   clPersonId: number | null;
-  /** null: the rulings dataset is not published (the tile is left out); else the count. */
+  /**
+   * null: the rulings dataset is not published; else the count. The tile is left out at 0 too, because 0 may only mean
+   * the dataset does not cover this judge's court or dockets.
+   */
   rulings: number | null;
+  /** Coverage note from the rulings dataset's published metadata; never a hard-coded provenance. */
+  rulingsNote?: string | null | undefined;
 };
 
 const JPML = {
@@ -54,10 +63,23 @@ const CJRA = {
   label: "U.S. Courts, CJRA Appendix A",
   href: "https://www.uscourts.gov/data-news/reports/statistical-reports/civil-justice-reform-act-report",
 };
-const clSource = (personId: number | null) => ({
-  label: "CourtListener collection",
-  ...(personId !== null ? { href: `https://www.courtlistener.com/person/${personId}/` } : {}),
-});
+// prose says "case-law collection"; the source name stays only on the link label, as on the service panel
+const clSource = (personId: number | null) =>
+  personId !== null
+    ? { label: "CourtListener person page", href: `https://www.courtlistener.com/person/${personId}/` }
+    : { label: "Case-law collection" };
+/**
+ * Tile meta for assigned dockets: the product share always with its own base and that base's coverage, and only when
+ * the base covers enough of the caseload. Kept under the 140-character note limit of the AI context.
+ */
+export function docketsMeta(d: NonNullable<JudgeActivity["dockets"]>): string {
+  const shown = shownProductShare(d);
+  if (shown !== null && d.nosRecorded !== null && d.nosCoveragePct !== null)
+    return `${shown}% of ${fmtCount(d.nosRecorded)} with a recorded nature of suit (${d.nosCoveragePct}% of assigned) are product liability or pharma · source's collection`;
+  if (d.productShare !== null && d.nosCoveragePct !== null)
+    return `Nature of suit recorded for only ${d.nosCoveragePct}% of assigned; no product share shown (needs ${NOS_COVERAGE_FLOOR}%) · source's collection`;
+  return "source's collection, not complete caseload";
+}
 
 /** Whether the CJRA civil_3y count is driven by MDL member cases: the judge holds pending MDLs or the report says so. */
 export function civil3yIncludesMdl(
@@ -99,7 +121,7 @@ export function glanceKpis(g: GlanceInput): GlanceKpi[] {
     label: "Civil cases pending > 3 years",
     value: c3 ? fmtCount(c3.value) : null,
     meta: c3
-      ? `CJRA report of ${shortDate(c3.period)}${civil3yIncludesMdl(g.cjra, x) ? " · includes MDL member cases" : ""}`
+      ? `CJRA report of ${shortDate(c3.period)}${g.cjra && c3.period !== g.cjra.latestPeriod ? " (not listed in the latest report)" : ""}${civil3yIncludesMdl(g.cjra, x) ? " · includes MDL member cases" : ""}`
       : "No CJRA report is linked to this judge",
     source: CJRA,
     ...(c3 ? { period: shortDate(c3.period) } : {}),
@@ -109,9 +131,7 @@ export function glanceKpis(g: GlanceInput): GlanceKpi[] {
     id: "dockets",
     label: "Assigned dockets",
     value: d ? fmtCount(d.assigned) : null,
-    meta: d
-      ? `${d.productShare !== null ? `${d.productShare}% product liability or pharma · ` : ""}source's collection, not complete caseload`
-      : "No CourtListener docket record is linked",
+    meta: d ? docketsMeta(d) : "No case-law docket record is linked",
     source: clSource(g.clPersonId),
     ...(d?.firstYear && d.lastYear ? { period: `${d.firstYear}–${d.lastYear}` } : {}),
   });
@@ -126,15 +146,15 @@ export function glanceKpis(g: GlanceInput): GlanceKpi[] {
           : "civil dockets with both dates"
         : d
           ? "Not enough dated civil dockets in the collection"
-          : "No CourtListener docket record is linked",
+          : "No case-law docket record is linked",
     source: clSource(g.clPersonId),
   });
-  if (g.rulings !== null)
+  if (g.rulings !== null && g.rulings > 0)
     out.push({
       id: "rulings",
       label: "Recorded expert-admissibility rulings",
       value: fmtCount(g.rulings),
-      meta: "Found in published opinions and MDL filings; not every ruling",
+      meta: g.rulingsNote ? `${g.rulingsNote}; not every ruling` : "Recorded in this corpus; not every ruling",
       source: { label: "Judge expert rulings (corpus)" },
     });
   return out;
@@ -224,11 +244,18 @@ export function glanceFigures(kpis: readonly GlanceKpi[], g: GlanceInput): Figur
     note: k.meta,
   }));
   const d = g.activity?.dockets;
-  if (d?.productShare != null)
+  if (d?.nosCoveragePct != null)
     figs.push({
-      label:
-        "Product liability and health-care / pharma injury share of dockets with a recorded nature of suit",
-      value: d.productShare,
+      label: "Assigned dockets with a recorded nature of suit (base of the product share)",
+      value: d.nosCoveragePct,
+      unit: "% of assigned",
+      decimals: 1,
+    });
+  const shown = shownProductShare(d);
+  if (shown !== null && d?.nosRecorded != null)
+    figs.push({
+      label: `Product liability and health-care / pharma injury share of the ${fmtCount(d.nosRecorded)} dockets with a recorded nature of suit`,
+      value: shown,
       unit: "%",
       decimals: 1,
     });
@@ -249,7 +276,10 @@ export const GLANCE_QUESTIONS = [
   "Which sources and dates are these figures from?",
 ] as const;
 
-/** Scope line sent with the AI context: what the figures are, and what they are not. */
+/**
+ * Scope line sent with the AI context: what the figures are, and what they are not. The clause comes first because
+ * buildSectionContext cuts the scope at 120 characters, and a long name must not cut it.
+ */
 export function glanceScope(name: string): string {
-  return `${name} · recorded figures only; not a prediction of how the judge will rule`;
+  return `Recorded figures only, not a prediction of how the judge will rule · ${name}`;
 }
