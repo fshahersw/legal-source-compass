@@ -15,6 +15,7 @@ import {
 import { HowToRead } from "@/components/analysis/HowToRead";
 import { AiSummary, AskAiButton, buildSectionContext } from "@/components/kit";
 import { stateStandoutFigures } from "./placeAi";
+import { OutreachAndExposure } from "./profile/OutreachAndExposure";
 import { ANALYSIS_MEASURES } from "./analysisMeasures";
 import { ChartCard } from "@/components/fda-analytics/FdaCharts";
 import { useCorpus } from "@/lib/corpus/store";
@@ -171,6 +172,12 @@ export function StateAnalysisView({
           </div>
         </section>
       ) : null}
+      <OutreachAndExposure
+        usps={usps}
+        stateName={stateName}
+        counties={counties.data?.counties ?? null}
+        districts={analysis.data?.districts ?? []}
+      />
       <HowToRead measures={ANALYSIS_MEASURES} />
     </div>
   );
