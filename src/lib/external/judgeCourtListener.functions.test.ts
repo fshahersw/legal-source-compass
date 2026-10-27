@@ -12,9 +12,12 @@ import { restGet } from "./rest.server";
 import {
   getJudgeCourtListener,
   JUDGE_ID,
+  NOS_COVERAGE_FLOOR,
   parseCrosswalk,
   parseJudgeActivity,
   parseNosGroups,
+  serviceRunsPast,
+  shownProductShare,
 } from "./judgeCourtListener.functions";
 
 // Shapes copied from published judge_cl_crosswalk and clb_judge_dockets rows.
@@ -307,7 +310,43 @@ describe("parseNosGroups", () => {
       134,
     )!;
     expect(a.dockets?.productShare).toBe(4.2);
+    // a base larger than the assigned count does not reconcile: no coverage, so the share is not shown
+    expect(a.dockets?.nosCoveragePct).toBeNull();
+    expect(shownProductShare(a.dockets)).toBeNull();
     expect(parseJudgeActivity(ACTIVITY, 134)?.dockets?.productShare).toBeNull();
+  });
+
+  it("states the coverage of the share's base and hides the share below the floor", () => {
+    // clb_judge_dockets id=48: 7,707 assigned, 5,461 with a recorded nature of suit
+    const a = parseJudgeActivity(
+      {
+        ...ACTIVITY,
+        dockets: { ...ACTIVITY.dockets, assigned: 7707, nos_recorded: 5461, nos_groups: GROUPS_48 },
+      },
+      134,
+    )!;
+    expect(a.dockets?.nosCoveragePct).toBe(70.9);
+    expect(shownProductShare(a.dockets)).toBe(4.2);
+    // Shipp (CL 2955): 6,716 of 59,460 assigned carry a nature of suit (11.3%)
+    expect(shownProductShare({ productShare: 48.6, nosCoveragePct: 11.3 })).toBeNull();
+    expect(shownProductShare({ productShare: 40, nosCoveragePct: NOS_COVERAGE_FLOOR })).toBe(40);
+    expect(shownProductShare(null)).toBeNull();
+  });
+});
+
+describe("serviceRunsPast", () => {
+  const pos = (start: string | null, end: string | null) => ({
+    courtId: "ilnd",
+    court: "District Court, N.D. Illinois",
+    start,
+    end,
+  });
+  it("is true for service ending later or still open, false for a judge who left", () => {
+    expect(serviceRunsPast([pos("1985-07-10", null)], 2012)).toBe(true);
+    expect(serviceRunsPast([pos("1985-07-10", "2020-01-01")], 2012)).toBe(true);
+    expect(serviceRunsPast([pos("1960-01-01", "1990-05-01")], 1991)).toBe(false);
+    expect(serviceRunsPast([pos(null, null)], 2012)).toBe(false);
+    expect(serviceRunsPast([], 2012)).toBe(false);
   });
 });
 

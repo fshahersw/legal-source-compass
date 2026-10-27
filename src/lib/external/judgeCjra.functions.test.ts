@@ -132,6 +132,51 @@ describe("benchFromCjraRows", () => {
     expect(bench.judges[1]!.profileId).toBeNull();
     expect(bench.judges[0]!.civil3y).toBe(35696);
     expect(bench.judges[0]!.medianDaysCivil).toBeNull();
+    expect(bench.judges.every((j) => j.visiting === null)).toBe(true);
+  });
+
+  it("flags judges the latest report prints as sitting by designation", () => {
+    // njd-sanchez-juan-r, printed "SANCHEZ, JUAN R. (VJ)": an E.D. Pa. judge sitting in New Jersey
+    const vj = row(
+      { id: "njd-sanchez-juan-r", title: "Juan R. Sanchez" },
+      {
+        printed_names: ["SANCHEZ, JUAN R. (VJ)"],
+        match: { status: "none", profile: null },
+        designations: { "2025-09-30": ["VJ"], "2026-03-31": ["VJ"] },
+      },
+    );
+    const cj = row(
+      { id: "njd-bumb-renee-m", title: "Renée Marie Bumb" },
+      {
+        printed_names: ["BUMB, RENEE M. (CJ)"],
+        match: { status: "unique", profile: "22222222222222222222222222222222" },
+        designations: { "2026-03-31": ["CJ"] },
+      },
+    );
+    const old = row(
+      { id: "njd-old-visitor", title: "Old Visitor" },
+      {
+        printed_names: ["VISITOR, OLD"],
+        match: { status: "none", profile: null },
+        // visiting in an earlier report only: the latest report lists the judge as the court's own
+        designations: { "2025-03-31": ["CIR"] },
+      },
+    );
+    const bench = benchFromCjraRows("njd", [row(), vj, cj, old]);
+    const by = new Map(bench.judges.map((j) => [j.recordId, j]));
+    expect(by.get("njd-sanchez-juan-r")!.visiting).toBe("VJ");
+    expect(by.get("njd-bumb-renee-m")!.visiting).toBeNull();
+    expect(by.get("njd-old-visitor")!.visiting).toBeNull();
+    expect(by.get("njd-shipp-michael-a")!.visiting).toBeNull();
+  });
+
+  it("links a profile only when exactly one row in the whole dataset claims it", () => {
+    // cand-rogers-yvonne-gonzalez (active) also has an inactive row naming the same profile
+    const claims = new Map([[SHIPP, 2]]);
+    expect(benchFromCjraRows("njd", [row()], claims).judges[0]!.profileId).toBeNull();
+    expect(
+      benchFromCjraRows("njd", [row()], new Map([[SHIPP, 1]])).judges[0]!.profileId,
+    ).toBe(SHIPP);
   });
 });
 
@@ -141,6 +186,7 @@ describe("getCourtBench", () => {
     mocked.mockReset();
     mocked
       .mockResolvedValueOnce({ rows: [row()], total: null })
+      .mockResolvedValueOnce({ rows: [{ p: SHIPP }], total: null })
       .mockResolvedValueOnce({
         rows: [
           {
@@ -179,8 +225,30 @@ describe("getCourtBench", () => {
       judges: { medianDaysCivil: number | null; productShare: number | null; clLinked: boolean }[];
     }>;
     const b = await handler({ data: { court: "njd" } });
-    expect(b.judges[0]).toMatchObject({ medianDaysCivil: 300, productShare: 40, clLinked: true });
+    // 10 of 50 assigned carry a nature of suit (20%): below the floor, so no product share
+    expect(b.judges[0]).toMatchObject({
+      medianDaysCivil: 300,
+      productShare: null,
+      nosCoveragePct: 20,
+      clLinked: true,
+    });
     expect(mocked.mock.calls[0]![0]).toContain("dataset=eq.court_cjra_judges");
-    expect(mocked.mock.calls[1]![0]).toContain(`id=in.(${SHIPP})`);
+    expect(mocked.mock.calls[1]![0]).toContain(`item->match->>profile=in.(${SHIPP})`);
+    expect(mocked.mock.calls[1]![0]).not.toContain("filters=cs.");
+    expect(mocked.mock.calls[2]![0]).toContain(`id=in.(${SHIPP})`);
+  });
+
+  it("drops the profile link when another row anywhere in the dataset claims it", async () => {
+    const mocked = vi.mocked(restGet);
+    mocked.mockReset();
+    mocked
+      .mockResolvedValueOnce({ rows: [row()], total: null })
+      .mockResolvedValueOnce({ rows: [{ p: SHIPP }, { p: SHIPP }], total: null });
+    const handler = getCourtBench as unknown as (a: {
+      data: { court: string };
+    }) => Promise<{ judges: { profileId: string | null }[] }>;
+    const b = await handler({ data: { court: "njd" } });
+    expect(b.judges[0]!.profileId).toBeNull();
+    expect(mocked).toHaveBeenCalledTimes(2);
   });
 });

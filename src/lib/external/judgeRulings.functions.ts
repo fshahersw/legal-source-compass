@@ -47,6 +47,8 @@ export type JudgeExpertRulings = {
   rulings: ExpertRuling[];
   /** The dataset's published precision note (hand-checked sample), when present. */
   precision: string | null;
+  /** What the dataset covers (sources, courts, dockets), as its published metadata states it; null when not stated. */
+  coverage: string | null;
 };
 
 type Json = Record<string, unknown>;
@@ -116,5 +118,7 @@ export const getJudgeExpertRulings = createServerFn({ method: "GET" })
       label: str(meta.rows[0]!.label),
       rulings,
       precision: str(obj(m?.["summary"])?.["precision"]) ?? str(m?.["precision"]),
+      coverage:
+        str(obj(m?.["summary"])?.["coverage"]) ?? str(m?.["coverage"]) ?? str(m?.["description"]),
     };
   });

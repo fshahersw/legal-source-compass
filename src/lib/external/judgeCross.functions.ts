@@ -581,6 +581,8 @@ const FJC_NID = /^[1-9][0-9]{0,11}$/;
  * Fallback for cross profiles published without a judge_profile link (238 rows on 2026-10-27): the page's crosswalk
  * row gives its FJC nid; it is accepted only when exactly one crosswalk row carries that nid (so the nid maps 1:1 to this
  * judges id) and the cross profile with that id names the same nid and carries no judge_profile link of its own.
+ * Both lookups by id use the index; the unindexed scan for other crosswalk rows with the nid runs only when an unlinked
+ * cross profile exists for it (238 of about 10,700 judges), so most pages never pay for it.
  */
 async function profileByNid(id: string): Promise<{ row: Row; nid: string } | null> {
   const cw = await restGet<{ id: string; nid: unknown }[]>(
@@ -588,19 +590,17 @@ async function profileByNid(id: string): Promise<{ row: Row; nid: string } | nul
   );
   const nid = cw.rows.length === 1 && cw.rows[0]!.id === id ? cw.rows[0]!.nid : null;
   if (typeof nid !== "string" || !FJC_NID.test(nid)) return null;
-  const [owners, profile] = await Promise.all([
-    restGet<{ id: string }[]>(
-      `corpus_records?select=id&dataset=eq.judge_cl_crosswalk&item->profile->>fjc_nid=eq.${nid}&limit=2`,
-    ),
-    restGet<(Row & { filters: Json | null })[]>(
-      `corpus_records?select=id,filters,item:item->cross&dataset=eq.judge_cross_profiles&id=eq.${nid}&limit=2`,
-    ),
-  ]);
-  if (owners.rows.length !== 1 || owners.rows[0]!.id !== id) return null;
+  const profile = await restGet<(Row & { filters: Json | null })[]>(
+    `corpus_records?select=id,filters,item:item->cross&dataset=eq.judge_cross_profiles&id=eq.${nid}&limit=2`,
+  );
   if (profile.rows.length !== 1) return null;
   const row = profile.rows[0]!;
   if (arr(row.filters?.["judge_profile"]).length !== 0) return null;
   if (str(row.item?.["nid"]) !== nid) return null;
+  const owners = await restGet<{ id: string }[]>(
+    `corpus_records?select=id&dataset=eq.judge_cl_crosswalk&item->profile->>fjc_nid=eq.${nid}&limit=2`,
+  );
+  if (owners.rows.length !== 1 || owners.rows[0]!.id !== id) return null;
   return { row, nid };
 }
 

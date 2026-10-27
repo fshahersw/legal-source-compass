@@ -66,4 +66,32 @@ describe("getJudgeExpertRulings", () => {
       "corpus_datasets?select=label,metadata&id=eq.judge_expert_rulings",
     );
   });
+
+  it("takes coverage and precision only from the dataset's published metadata", async () => {
+    const mocked = vi.mocked(restGet);
+    mocked.mockReset();
+    mocked
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            label: "Judge expert rulings",
+            metadata: { summary: { coverage: "Opinions in 12 MDL courts", precision: "96%" } },
+          },
+        ],
+        total: null,
+      })
+      .mockResolvedValueOnce({ rows: [], total: null });
+    const handler = getJudgeExpertRulings as unknown as (a: {
+      data: { id: string };
+    }) => Promise<{ coverage: string | null; precision: string | null; rulings: unknown[] }>;
+    const r = await handler({ data: { id: ID } });
+    expect(r).toMatchObject({ coverage: "Opinions in 12 MDL courts", precision: "96%" });
+    expect(r.rulings).toEqual([]);
+
+    mocked.mockReset();
+    mocked
+      .mockResolvedValueOnce({ rows: [{ label: null, metadata: {} }], total: null })
+      .mockResolvedValueOnce({ rows: [], total: null });
+    expect((await handler({ data: { id: ID } })).coverage).toBeNull();
+  });
 });

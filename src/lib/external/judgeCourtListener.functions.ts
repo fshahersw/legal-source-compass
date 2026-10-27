@@ -56,6 +56,20 @@ export type CourtCount = { courtId: string; name: string; n: number; link: strin
 export type NosGroup = { key: string; label: string; n: number };
 /** The source's group key for product liability and health-care / pharmaceutical personal injury. */
 export const PRODUCT_GROUP = "product";
+/**
+ * Minimum share of assigned dockets that must carry a recorded nature of suit before the product share is shown. Below
+ * it the share describes a small, unrepresentative slice (an MDL judge's member cases often carry none), so it reads
+ * Not recorded and is never compared across judges.
+ */
+export const NOS_COVERAGE_FLOOR = 50;
+
+/** The product share when its base covers at least NOS_COVERAGE_FLOOR % of assigned dockets; else null. */
+export function shownProductShare(
+  d: { productShare: number | null; nosCoveragePct: number | null } | null | undefined,
+): number | null {
+  if (!d || d.productShare === null || d.nosCoveragePct === null) return null;
+  return d.nosCoveragePct >= NOS_COVERAGE_FLOOR ? d.productShare : null;
+}
 export type JudgeActivity = {
   dockets: {
     assigned: number;
@@ -78,6 +92,8 @@ export type JudgeActivity = {
     productCount: number | null;
     /** productCount as a % of nosRecorded (one decimal); null when not recorded. */
     productShare: number | null;
+    /** nosRecorded as a % of assigned (one decimal): how much of the caseload productShare covers; null when unknown. */
+    nosCoveragePct: number | null;
   } | null;
   referred: number | null;
   opinions: {
@@ -121,6 +137,17 @@ const date = (v: unknown): string | null => {
   return s && /^\d{4}(-\d{2}(-\d{2})?)?$/.test(s) ? s : null;
 };
 const COURT_LINK = /^\/courts\/[a-z0-9_-]{1,40}$/;
+
+/**
+ * True when the recorded service on the matched positions runs past `year`: a position ends in a later year, or has a
+ * start and no end (still serving, as the source records it). A judge who left the bench by then returns false, so a
+ * stop in attributed opinions is not described as an attribution gap.
+ */
+export function serviceRunsPast(positions: readonly MatchedPosition[], year: number): boolean {
+  return positions.some((p) =>
+    p.end ? Number(p.end.slice(0, 4)) > year : p.start !== null,
+  );
+}
 
 export function parseCrosswalk(raw: unknown, judgeId: string): Crosswalk | null {
   const p = obj(raw);
@@ -256,6 +283,7 @@ export function parseJudgeActivity(raw: unknown, personId: number): JudgeActivit
   const assigned = count(d?.["assigned"]);
   if (d && assigned !== null && assigned > 0) {
     const dur = obj(d["duration_civil"]);
+    const nos = parseNosGroups(d["nos_groups"], d["nos_recorded"]);
     dockets = {
       assigned,
       terminatedPct: pct(d["terminated_pct"]),
@@ -267,7 +295,11 @@ export function parseJudgeActivity(raw: unknown, personId: number): JudgeActivit
       medianDaysN: count(dur?.["n"]),
       courts: courtCounts(d["courts"], "dockets", assigned),
       byYear: years(d["by_year"], "dockets"),
-      ...parseNosGroups(d["nos_groups"], d["nos_recorded"]),
+      ...nos,
+      nosCoveragePct:
+        nos.nosRecorded !== null && nos.nosRecorded <= assigned
+          ? Math.round((nos.nosRecorded / assigned) * 1000) / 10
+          : null,
     };
   }
   const o = obj(p["opinions"]);

@@ -11,7 +11,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { restGet } from "./rest.server";
-import { parseCrosswalk, parseJudgeActivity, JUDGE_ID } from "./judgeCourtListener.functions";
+import {
+  parseCrosswalk,
+  parseJudgeActivity,
+  shownProductShare,
+  JUDGE_ID,
+} from "./judgeCourtListener.functions";
 
 export const CJRA_SERIES = [
   "motions_6m",
@@ -154,18 +159,40 @@ export const getJudgeCjra = createServerFn({ method: "GET" })
 
 // ------------------------------------------------------------------ same-court comparison
 
+/**
+ * Designations the CJRA report prints after a judge sitting in a court that is not their own: visiting judge (VJ),
+ * circuit judge (CIR), Court of International Trade (CIT) and Court of Federal Claims (FCR) judges sitting by
+ * designation. They are not the court's district judges and never enter its median or judge count.
+ */
+export const VISITING_DESIGNATIONS = ["VJ", "CIR", "CIT", "FCR"] as const;
+export type VisitingDesignation = (typeof VISITING_DESIGNATIONS)[number];
+export const VISITING_LABELS: Record<VisitingDesignation, string> = {
+  VJ: "Visiting judge",
+  CIR: "Circuit judge sitting by designation",
+  CIT: "Court of International Trade judge sitting by designation",
+  FCR: "Court of Federal Claims judge sitting by designation",
+};
+
 export type BenchJudge = {
   recordId: string;
   /** Name as the CJRA row carries it (the FJC name when linked, else as printed). */
   name: string;
-  /** judges id when the CJRA match is unique and no other row in the court claims it; else null. */
+  /**
+   * judges id when the CJRA match is unique and no other row in the whole dataset claims it (the rule getJudgeCjra
+   * applies); else null.
+   */
   profileId: string | null;
+  /** Visiting designation the latest report prints for this row (VJ, CIR, CIT, FCR); null for the court's own judges. */
+  visiting: VisitingDesignation | null;
   motions6m: number | null;
   civil3y: number | null;
   medianDaysCivil: number | null;
   medianDaysN: number | null;
+  /** Product share of dockets with a recorded nature of suit; null below the coverage floor (see shownProductShare). */
   productShare: number | null;
-  /** True when the CourtListener person is linked through an exact crosswalk tier. */
+  /** Dockets with a recorded nature of suit as a % of assigned: the coverage of productShare's base. */
+  nosCoveragePct: number | null;
+  /** True when the case-law person is linked through an exact crosswalk tier. */
   clLinked: boolean;
 };
 export type CourtBench = {
@@ -184,14 +211,34 @@ const at = (row: Json | null, key: CjraSeriesKey, i: number): number | null => {
   return s && i >= 0 && i < s.length ? point(s[i]) : null;
 };
 
-/** District judges listed in the latest CJRA report for one court, alphabetical by surname as printed. */
-export function benchFromCjraRows(courtId: string, rows: readonly CjraRow[]): CourtBench {
-  const profiles = new Map<string, number>();
-  for (const r of rows) {
-    const m = obj(obj(r.item)?.["match"]);
-    if (m?.["status"] === "unique" && typeof m["profile"] === "string")
-      profiles.set(m["profile"], (profiles.get(m["profile"]) ?? 0) + 1);
-  }
+const VISITING = new Set<string>(VISITING_DESIGNATIONS);
+
+/** The visiting designation printed for a row in one report period, else null. */
+function visitingAt(it: Json, period: string): VisitingDesignation | null {
+  const d = obj(it["designations"])?.[period];
+  for (const code of Array.isArray(d) ? d : [])
+    if (typeof code === "string" && VISITING.has(code)) return code as VisitingDesignation;
+  return null;
+}
+
+/**
+ * Judges listed in the latest CJRA report for one court, alphabetical by surname as printed; visiting judges are
+ * flagged (`visiting`) so callers keep them apart from the court's own judges. `claims` counts, across the whole
+ * dataset, the rows naming each profile; a profile is linked only when exactly one row claims it. Without `claims` the
+ * rows given are counted (the same rule over a smaller set).
+ */
+export function benchFromCjraRows(
+  courtId: string,
+  rows: readonly CjraRow[],
+  claims?: ReadonlyMap<string, number>,
+): CourtBench {
+  const profiles = new Map<string, number>(claims ?? []);
+  if (!claims)
+    for (const r of rows) {
+      const m = obj(obj(r.item)?.["match"]);
+      if (typeof m?.["profile"] === "string")
+        profiles.set(m["profile"], (profiles.get(m["profile"]) ?? 0) + 1);
+    }
   let period: string | null = null;
   let court: string | null = null;
   let sourceUrl: string | null = null;
@@ -214,11 +261,13 @@ export function benchFromCjraRows(courtId: string, rows: readonly CjraRow[]): Co
       recordId: r.id,
       name: str(r.title) ?? str(cells?.["judge"]) ?? r.id,
       profileId: pid && profiles.get(pid) === 1 && JUDGE_ID.test(pid) ? pid : null,
+      visiting: visitingAt(it, p),
       motions6m: at(it, "motions_6m", last),
       civil3y: at(it, "civil_3y", last),
       medianDaysCivil: null,
       medianDaysN: null,
       productShare: null,
+      nosCoveragePct: null,
       clLinked: false,
       sort: strs(it["printed_names"])[0] ?? r.id,
     });
@@ -242,7 +291,23 @@ export const getCourtBench = createServerFn({ method: "GET" })
     const cjra = await restGet<CjraRow[]>(
       `corpus_records?${SELECT}&dataset=eq.court_cjra_judges&filters=cs.${filter}&order=ordinal.asc&limit=120`,
     );
-    const bench = benchFromCjraRows(data.court, cjra.rows);
+    const candidates = [
+      ...new Set(
+        cjra.rows
+          .map((r) => obj(obj(r.item)?.["match"])?.["profile"])
+          .filter((p): p is string => typeof p === "string" && JUDGE_ID.test(p)),
+      ),
+    ];
+    // count every row in the dataset that claims each profile (inactive rows too), as getJudgeCjra does
+    const claims = new Map<string, number>();
+    if (candidates.length) {
+      const c = await restGet<{ p: unknown }[]>(
+        `corpus_records?select=p:item->match->>profile&dataset=eq.court_cjra_judges&item->match->>profile=in.(${candidates.join(",")})&limit=${candidates.length * 3 + 1}`,
+      );
+      for (const r of c.rows)
+        if (typeof r.p === "string") claims.set(r.p, (claims.get(r.p) ?? 0) + 1);
+    }
+    const bench = benchFromCjraRows(data.court, cjra.rows, claims);
     const ids = bench.judges.map((j) => j.profileId).filter((x): x is string => !!x);
     if (!ids.length) return bench;
     const cw = await restGet<{ id: string; p: unknown }[]>(
@@ -277,7 +342,8 @@ export const getCourtBench = createServerFn({ method: "GET" })
           clLinked: true,
           medianDaysCivil: d?.medianDaysCivil ?? null,
           medianDaysN: d?.medianDaysN ?? null,
-          productShare: d?.productShare ?? null,
+          productShare: shownProductShare(d),
+          nosCoveragePct: d?.nosCoveragePct ?? null,
         };
       }),
     };
