@@ -239,16 +239,17 @@ async function liveRun({ totals }) {
     ),
     restGet(
       c,
-      `corpus_records?select=id,summary:detail->summary&dataset=eq.mdls&id=in.(${ids.join(",")})&limit=100`,
+      `corpus_records?select=id,summary:detail->summary,cl_court_id:detail->cl_court_id,court_cl_court_id:detail->court->cl_court_id,master_docket:detail->master_docket&dataset=eq.mdls&id=in.(${ids.join(",")})&limit=100`,
     ),
   ]);
+  const text = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
   const registry = new Map();
   for (const row of regRows) {
     const mdl = /^sw-matter:(\d{1,6})$/.exec(row.id)?.[1];
     const parsed = mdl ? app.registry.parseRegistryRecord(row, mdl) : null;
     if (mdl && parsed) registry.set(mdl, parsed);
   }
-  const summaries = new Map(mdlRows.map((r) => [r.id, r.summary]));
+  const summaries = new Map(mdlRows.map((r) => [r.id, r]));
   const run = {};
   // Two at a time: the v1 body costs seconds per call, and this gate must not load the database.
   let next = 0;
@@ -256,14 +257,20 @@ async function liveRun({ totals }) {
     [0, 1].map(async () => {
       while (next < ids.length) {
         const mdl = ids[next++];
-        const s = summaries.get(mdl);
-        const derived = s
+        const r = summaries.get(mdl);
+        const s = r?.summary && typeof r.summary === "object" ? r.summary : {};
+        // The matter header's order (parseMdlDetail): record-level keys, then the court block, then the summary; a
+        // matter without an MDL record uses the registry's own overview keys.
+        const reg = registry.get(mdl) ?? null;
+        const derived = r
           ? app.keys.matterCaseKeys(
-              typeof s.cl_court_id === "string" ? s.cl_court_id : null,
-              typeof s.master_docket === "string" ? s.master_docket : null,
+              text(r.cl_court_id) ?? text(r.court_cl_court_id) ?? text(s.cl_court_id),
+              text(r.master_docket) ?? text(s.master_docket),
             ).all
-          : [];
-        const plan = app.registry.caseIdPlan(registry.get(mdl) ?? null, derived);
+          : reg
+            ? (app.registry.overviewFromRegistry(reg)?.keys.all ?? [])
+            : [];
+        const plan = app.registry.caseIdPlan(reg, derived);
         if (!plan.length) {
           run[mdl] = {
             asked: [],
