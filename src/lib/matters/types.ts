@@ -1,4 +1,16 @@
 /** Payload shapes shared by the matter server functions and the matter UI (no server code lives here). */
+import type { MdlLens } from "@/lib/external/mdlLens.functions";
+import type { CompanyLink, FinPoint } from "@/components/companies/companyData";
+import type { DatedEntry, DocketDatesSummary } from "./docketDates";
+import type {
+  ClassifiedEntry,
+  CourtPageMatch,
+  DocketRole,
+  KindCount,
+  LedgerSequence,
+  ORDERS_RULE_VERSION,
+} from "./orders";
+import type { JpmlPoint, WhatChanged } from "./whatChanged";
 import type { CasesPage, CaseRow, RegistryLabels } from "./cases";
 import type { DocumentsPage, MatterDocument, RegistrySummary } from "./documents";
 import type { DocketEntry } from "./entries";
@@ -263,3 +275,214 @@ export type MdlVelocityPayload =
       /** False when the matter registry could not be read: "in our registry" is then unknown, never "no". */
       registryRead: boolean;
     });
+/* ------------------------------------------------------------------ MDL command page (command.functions.ts) */
+
+/** What the collected master-docket text covers for one MDL, so gaps are visible rather than silent. */
+export type EntryCoverage = {
+  /** Entries the projection holds for the MDL (sw_docket_entries_v1); null when it could not be counted. */
+  total: number | null;
+  /** Entries published without their text, by the projection's own reason; never classified. */
+  withheld: { reason: string; count: number }[];
+  /** null when the withheld entries could not be read (shown "Not recorded"). */
+  withheldTotal: number | null;
+  /** Entries published with no text at all (not withheld); null when not counted. */
+  noText: number | null;
+  /** Latest filing date in the collected entries; later docket activity is not collected. */
+  collectedThrough: string | null;
+  /** Candidate entries the anchored prefilters returned and the classifier read. */
+  candidatesRead: number;
+};
+
+export type Rule702Summary = {
+  /** Order entries whose own title rules on a Rule 702 / Daubert motion. */
+  rulings: number;
+  byOutcome: { granted: number; denied: number; granted_in_part: number; not_stated: number };
+  /** Motion entries naming Rule 702 / Daubert (counted apart, never as rulings). */
+  motions: number;
+};
+
+export type KeyOrdersPayload = {
+  mdl: string;
+  rule: typeof ORDERS_RULE_VERSION;
+  dataset: "sw_docket_entries_v1";
+  coverage: EntryCoverage;
+  /** Classified entries that carry at least one kind, oldest first. */
+  entries: ClassifiedEntry[];
+  ledger: Record<"cmo" | "pto", LedgerSequence>;
+  counts: KindCount[];
+  rule702: Rule702Summary;
+  readAt: string;
+};
+
+/** A date set on the docket with the entry it was read from and that entry's role. */
+export type DocketDateRow = DatedEntry & { entryRole: DocketRole };
+
+export type DocketDatesPayload = {
+  mdl: string;
+  rows: DocketDateRow[];
+  collectedThrough: string | null;
+  readAt: string;
+};
+
+/** Documents-layer files of one docket entry, joined on mdl + court + master docket number + entry number. */
+export type OrderDocument = {
+  id: string;
+  entryNumber: number;
+  attachment: number | null;
+  title: string | null;
+  docType: string | null;
+  pageCount: number | null;
+  pagesWithText: number | null;
+  textStatus: string | null;
+  sourceUrl: string | null;
+};
+
+export type OrderDocumentsPayload =
+  | {
+      connected: true;
+      master: { docketKey: string; courtId: string; docketNumber: string };
+      /** Keyed by the docket entry number as text. */
+      byEntry: Record<string, OrderDocument[]>;
+    }
+  | { connected: false; reason: string };
+
+/** One sw_matter_regulatory_links_v1 row: a topical association, never MDL membership. */
+export type RegulatoryLink = {
+  id: string;
+  title: string;
+  fdaId: string | null;
+  /** The link record's own date; the dataset does not state whether it is a report or an initiation date. */
+  date: string | null;
+  firm: string | null;
+  classification: string | null;
+  signal: string | null;
+  linkBasis: string | null;
+  association: string | null;
+  fdaKind: string | null;
+  fdaRecord: string | null;
+  sourceUrl: string | null;
+};
+
+export type RegulatoryLinksPayload = {
+  mdl: string;
+  rows: RegulatoryLink[];
+  /** The selection rule the dataset publishes for this MDL's links; null when none. */
+  rule: string | null;
+  caveats: string[];
+};
+
+export type DefendantRow = {
+  id: string;
+  /** As printed; null when the projection withheld it. */
+  name: string | null;
+  types: string[];
+  dateTerminated: string | null;
+  counselCount: number | null;
+  /** Firm lines of the party's active counsel, as printed (never merged). */
+  firms: string[];
+};
+
+export type DefendantRosterPayload = {
+  mdl: string;
+  /** Parties whose printed party type is exactly "Defendant". */
+  defendants: DefendantRow[];
+  /** Parties listed with "Defendant" and another type ("Defendant / Plaintiff"), kept apart. */
+  mixed: DefendantRow[];
+  /** Firm lines as printed, ranked by exact-"Defendant" parties they represent (active counsel only). */
+  firms: { firm: string; parties: number }[];
+  /** Terminated exact-"Defendant" parties per month of termination (yyyy-mm). */
+  terminatedByMonth: { month: string; count: number }[];
+  /** The registry's own party capture: parties published and whether the capture is complete. */
+  capture: { published: number | null; complete: boolean | null };
+  /** "N of M parties published" style note; says when the capture is incomplete. */
+  captureNote: string;
+};
+
+/** A typed docket event from corpus_workspace_docket_links (the source's own classification). */
+export type TypedEvent = {
+  documentType: string;
+  date: string | null;
+  dateBasis: string | null;
+  entryNumber: string | null;
+  evidenceUrl: string | null;
+  linkageBasis: string | null;
+  sourceDataset: string;
+  sourceRecordId: string;
+  /** "mdl": the row carries this MDL number; "master_docket": a blank-MDL row on this MDL's exact master docket. */
+  attribution: "mdl" | "master_docket";
+};
+
+export type TypedEventsPayload = {
+  mdl: string;
+  events: TypedEvent[];
+  byType: {
+    type: string;
+    count: number;
+    first: string | null;
+    last: string | null;
+    undated: number;
+  }[];
+  /** First and last event date collected; nothing after `last` is collected. */
+  window: { first: string | null; last: string | null };
+  /** The master docket used for blank-MDL rows; null when none was used. */
+  masterDocket: { courtId: string; docketNumber: string } | null;
+  blankMdlAttributed: number;
+  /** Every linked event on the same attribution, typed or not; null when it could not be counted. */
+  linkedTotal: number | null;
+};
+
+export type SecFinancialSeries = { label: string; points: FinPoint[] };
+
+export type SecDefendant = {
+  cik: string;
+  name: string;
+  link: CompanyLink;
+  /** Company-wide figures from the registrant's own XBRL facts; never attributed to this MDL. */
+  accrual: SecFinancialSeries | null;
+  legalPayments: SecFinancialSeries | null;
+  possibleLoss: SecFinancialSeries | null;
+  financialsSourceUrl: string | null;
+  financialsRetrieved: string | null;
+};
+
+/** Why a tier A/B registrant is not among the defendants: a dismissal, or the role its filing excerpt states. */
+export type SecOtherGroup = "dismissed" | "plaintiff" | "not_named" | "unclear";
+
+export type SecOtherRegistrant = SecDefendant & { group: SecOtherGroup };
+
+export type SecDefendantsPayload = {
+  mdl: string;
+  /**
+   * Tier A/B links (the filing cites the MDL number or caption), not flagged for review, whose excerpt reads the
+   * company as a defendant and reports no dismissal.
+   */
+  named: SecDefendant[];
+  /** Tier C links and links flagged for review: kept apart, labelled "requires review". */
+  review: SecDefendant[];
+  /** Tier A/B links that are not defendant links (dismissed, claimant, not named, role not stated), each grouped. */
+  other: SecOtherRegistrant[];
+  caveats: string[];
+};
+
+export type MdlCommandMode = "registry" | "recorded";
+
+export type MdlCommandPayload = {
+  mdl: string;
+  mode: MdlCommandMode;
+  /** False when neither the registry nor any lens record holds this MDL number. */
+  found: boolean;
+  overview: MatterOverviewPayload | null;
+  lens: MdlLens | null;
+  orders: KeyOrdersPayload | null;
+  dates: DocketDatesPayload | null;
+  /** Upcoming and summary figures relative to `asOf`. */
+  datesSummary: DocketDatesSummary | null;
+  courtPageOrders: CourtPageMatch[];
+  whatChanged: WhatChanged;
+  /** JPML monthly-report points used for the deltas (jpml_mdl_pending_series). */
+  jpmlPoints: JpmlPoint[];
+  jpmlSourceUrl: string | null;
+  asOf: string;
+  /** Sections whose read failed; the page shows them as unavailable rather than empty. */
+  errors: string[];
+};
