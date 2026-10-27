@@ -2,7 +2,8 @@
  * MDL block: where the MDL's exposure is found by state. For an MDL whose title names a drug, Medicare Part D claims by
  * prescriber state (latest year; a total missing a product CMS hid is shown as "at least") and the national claims per
  * year; for the AFFF MDL (2873), the share of tested large public water systems that found PFAS, by state. Renders
- * nothing when no published dataset covers the MDL. Not mounted yet: see the de-exposure report.
+ * nothing when no published dataset covers the MDL. Mounted in the MDL command page's JPML section (JpmlSection),
+ * after the JPML actions series, where the former case lens (/matters/lens/$mdl, now a redirect) showed it.
  */
 import { useQuery } from "@tanstack/react-query";
 import { ChartCard } from "@/components/charts/ChartCard";
