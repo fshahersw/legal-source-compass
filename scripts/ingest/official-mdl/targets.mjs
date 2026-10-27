@@ -261,6 +261,21 @@ export const MATTERS = {
     pages: [{ id: 'alnd-2406-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.alnd.uscourts.gov/blue-crossblue-shield-mdl-2406' }],
     index_pages: ['alnd-mdl-cases'],
   },
+  // W.D. Tenn. MDL hub (one page; rows scoped per matter via listing_href_substring).
+  '3127': {
+    name: 'In re Evolve Bank & Trust Customer Data Security Breach Litigation', court_id: 'tnwd', host: 'www.tnwd.uscourts.gov', tier: 2,
+    case_number: { literal: '2:24-md-3127', page_id: 'tnwd-mdl-hub', note: 'printed as the lead docket number in the court MDL hub section for this matter' },
+    printed_mdl_literal: 'MDL 3127', listing_href_substring: '24-3127',
+    pages: [{ id: 'tnwd-mdl-hub', role: 'mdl_page', family: 'njd-body', url: 'https://www.tnwd.uscourts.gov/mdl-cases' }],
+    index_pages: [],
+  },
+  '3035': {
+    name: 'In re AME Church Employee Retirement Fund Litigation', court_id: 'tnwd', host: 'www.tnwd.uscourts.gov', tier: 2,
+    case_number: { literal: '1:22-md-3035', page_id: 'tnwd-mdl-hub', note: 'printed as the lead docket number in the court MDL hub section for this matter' },
+    printed_mdl_literal: 'MDL 3035', listing_href_substring: '22-3035',
+    pages: [{ id: 'tnwd-mdl-hub', role: 'mdl_page', family: 'njd-body', url: 'https://www.tnwd.uscourts.gov/mdl-cases' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
