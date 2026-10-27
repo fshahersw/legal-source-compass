@@ -54,6 +54,20 @@ export function ExclusionsTrendsSection() {
   const totals = (d?.leieTotals ?? []).filter((r) => Number(r.year) >= FROM);
   const lastComplete = [...(t?.leie ?? [])].reverse().find((r) => !r.partial) ?? null;
   const partialYear = (t?.leie ?? []).find((r) => r.partial) ?? null;
+  // Until the breakdown RPC is applied, the yearly LEIE totals (insights layer) still answer KPIs 1 and 3.
+  const totalLast =
+    [...(d?.leieTotals ?? [])].reverse().find((r) => !r.partial && r.value !== null) ?? null;
+  const totalPartial = (d?.leieTotals ?? []).find((r) => r.partial && r.value !== null) ?? null;
+  const kpiLast = lastComplete
+    ? { year: lastComplete.year, value: lastComplete.total }
+    : totalLast?.value != null
+      ? { year: totalLast.year, value: totalLast.value }
+      : null;
+  const kpiPartial = partialYear
+    ? { year: partialYear.year, value: partialYear.total }
+    : totalPartial?.value != null
+      ? { year: totalPartial.year, value: totalPartial.value }
+      : null;
   const samLast = [...(t?.sam ?? [])].reverse().find((r) => !r.partial) ?? null;
   const status = q.isPending
     ? ({ kind: "loading" } as const)
@@ -62,7 +76,9 @@ export function ExclusionsTrendsSection() {
       : ({ kind: "ready" } as const);
   const partialNote = partialYear
     ? `${partialYear.year} is partial: exclusions through ${t?.asOf}.`
-    : undefined;
+    : kpiPartial
+      ? `${kpiPartial.year} is partial: the year is in progress.`
+      : undefined;
   const context = useMemo(
     () =>
       d
@@ -110,8 +126,8 @@ export function ExclusionsTrendsSection() {
         <KpiCard
           as="li"
           label="LEIE exclusions taking effect"
-          value={lastComplete ? fmt(lastComplete.total) : null}
-          meta={lastComplete ? `${lastComplete.year}, still listed` : undefined}
+          value={kpiLast ? fmt(kpiLast.value) : null}
+          meta={kpiLast ? `${kpiLast.year}, still listed` : undefined}
           state={q.isPending ? "loading" : "ready"}
           source={{ source: { label: "HHS-OIG LEIE", href: LEIE.url } }}
         />
@@ -119,19 +135,21 @@ export function ExclusionsTrendsSection() {
           as="li"
           label="Health-care fraud and controlled-substance felonies"
           value={lastComplete ? fmt(lastComplete["1128a3"] + lastComplete["1128a4"]) : null}
-          meta={lastComplete ? `${lastComplete.year}, 1128(a)(3) and (a)(4)` : undefined}
+          meta={
+            lastComplete
+              ? `${lastComplete.year}, 1128(a)(3) and (a)(4)`
+              : "Not recorded until the exclusions RPC is applied"
+          }
           state={q.isPending ? "loading" : "ready"}
           source={{ source: { label: "HHS-OIG LEIE", href: LEIE.url } }}
         />
         <KpiCard
           as="li"
           label={
-            partialYear
-              ? `LEIE exclusions, ${partialYear.year} so far`
-              : "LEIE exclusions, this year"
+            kpiPartial ? `LEIE exclusions, ${kpiPartial.year} so far` : "LEIE exclusions, this year"
           }
-          value={partialYear ? fmt(partialYear.total) : null}
-          meta={t ? `through ${t.asOf}` : undefined}
+          value={kpiPartial ? fmt(kpiPartial.value) : null}
+          meta={t ? `through ${t.asOf}` : kpiPartial ? "year in progress" : undefined}
           partial={partialNote}
           state={q.isPending ? "loading" : "ready"}
           source={{ source: { label: "HHS-OIG LEIE", href: LEIE.url } }}
@@ -326,10 +344,6 @@ export function MalpracticeBenchmarksSection() {
     value: y.median2025,
     partial: y.partial,
   }));
-  const topAllegation =
-    [...(n?.allegations ?? [])]
-      .filter((a) => a.median !== null && a.label !== "Not recorded")
-      .sort((a, b) => (b.median ?? 0) - (a.median ?? 0))[0] ?? null;
   const context = useMemo(
     () =>
       n
@@ -451,12 +465,8 @@ export function MalpracticeBenchmarksSection() {
         </ChartCard>
         <ChartCard
           variant="editorial"
-          title={
-            topAllegation
-              ? `${topAllegation.label} claims have the highest median payment`
-              : "Median payment by allegation group"
-          }
-          subtitle="Median payment by allegation group, all years · USD"
+          title="Median payment by allegation group, all years (unadjusted)"
+          subtitle="Nominal USD of each payment year · most-reported groups first; groups span different years, so they are not ranked"
           status={
             status.kind === "ready" && !(n?.allegations.length ?? 0)
               ? { kind: "empty", reason: "Not recorded: no allegation groups were read." }
@@ -491,7 +501,8 @@ export function MalpracticeBenchmarksSection() {
             ariaLabel="Median malpractice payment by allegation group"
             items={[...(n?.allegations ?? [])]
               .filter((a) => a.median !== null)
-              .sort((a, b) => (b.median ?? 0) - (a.median ?? 0))
+              // most-reported groups first: nominal medians over different years are not ranked
+              .sort((a, b) => (b.reports ?? 0) - (a.reports ?? 0))
               .map((a) => ({
                 id: a.id,
                 label: a.label,
