@@ -266,7 +266,7 @@ export function PortfolioSection({ rows, rowsReady }: { rows: HubRow[]; rowsRead
         actions={
           <AskAiButton
             sectionId="portfolio"
-            title="Seeger Weiss portfolio"
+            title="Seeger Weiss priority matters"
             context={context}
             questions={[
               "Which matters are growing fastest, and is any of them slowing down?",
