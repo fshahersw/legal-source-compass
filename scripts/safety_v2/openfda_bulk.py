@@ -35,8 +35,9 @@ Accuracy rules (the same as openfda_build.py, which they mirror):
 - MAUDE: a report counts for a product code when a device's device_report_product_code is that code; an MDL group counts
   the reports its stored openFDA search matches, evaluated here with the search's own phrase semantics (standard
   tokenizer, lower case, phrases inside one value). Group results are used only where they equal the API's own series.
-- Breakdowns count each report once per distinct published term (the API's count=<field>.exact), keep the top N by count
-  then term, and record `returned` as the API would (N when more terms exist). Serious counts are exact here.
+- Breakdowns count each report once per distinct published term (the API's count=<field>.exact, which also counts the
+  empty string a report publishes, e.g. a blank manufacturer name: stored as '' and shown as Not recorded), keep the
+  top N by count then term, and record `returned` as the API would (N when more terms exist). Serious counts are exact here.
 - Raw zips are deleted after counting (--keep-zips keeps them); each one's URL, size, sha256 and record count stay in the
   partition aggregate and the manifest, so the input is verifiable against the export.
 """
@@ -301,7 +302,7 @@ def count_faers(records, targets, bd_grain):
                 continue
             if pts is None:
                 pts = {x.get("reactionmeddrapt") for x in patient.get("reaction") or []
-                       if isinstance(x.get("reactionmeddrapt"), str) and x.get("reactionmeddrapt")}
+                       if isinstance(x.get("reactionmeddrapt"), str)}
             periods = ["all"]
             if valid:
                 periods.append(day[:4] if grain == "year" else c.quarter_of(month_of(day)))
@@ -347,10 +348,10 @@ def count_maude(records, codes, groups):
         et = set(tokens(r.get("event_type")))
         flags = [1, int("death" in et), int("injury" in et), int("malfunction" in et)]
         terms = {
-            "device_problem": {x for x in (r.get("product_problems") or []) if isinstance(x, str) and x},
-            "patient_problem": {x for p in (r.get("patient") or []) for x in (p.get("patient_problems") or []) if isinstance(x, str) and x},
-            "manufacturer": {d.get("manufacturer_d_name") for d in devices if isinstance(d.get("manufacturer_d_name"), str) and d.get("manufacturer_d_name")},
-            "brand_name": {d.get("brand_name") for d in devices if isinstance(d.get("brand_name"), str) and d.get("brand_name")},
+            "device_problem": {x for x in (r.get("product_problems") or []) if isinstance(x, str)},
+            "patient_problem": {x for p in (r.get("patient") or []) for x in (p.get("patient_problems") or []) if isinstance(x, str)},
+            "manufacturer": {d.get("manufacturer_d_name") for d in devices if isinstance(d.get("manufacturer_d_name"), str)},
+            "brand_name": {d.get("brand_name") for d in devices if isinstance(d.get("brand_name"), str)},
         }
         for i in hit:
             if valid:

@@ -145,6 +145,15 @@ class CountTests(unittest.TestCase):
         self.assertNotIn("1", agg["bq"])
 
 
+    def test_blank_published_terms_are_counted_like_the_api(self):
+        recs = [{"date_received": "20240115", "device": [{"device_report_product_code": "DWJ", "manufacturer_d_name": ""}]},
+                {"date_received": "20240116", "device": [{"device_report_product_code": "DWJ"}]}]
+        agg = b.count_maude(recs, {"DWJ": 0}, {})
+        self.assertEqual(agg["bd"]["0"]["manufacturer"], {"": 1})  # a blank name is a term; a missing field is not
+        f = b.count_faers([faers("20240101", [["X"]], ["", "Rash"])], {"X": 0}, {0: "year"})
+        self.assertEqual(f["bd"]["0"]["all"], {"": [1, 0], "Rash": [1, 0]})
+
+
 class ReduceTests(unittest.TestCase):
     def test_top_terms_order_ties_and_returned(self):
         counts = {"B": [5, 1], "A": [5, 2], "C": [1, 0], "D": [9, 9]}
