@@ -11,6 +11,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { ilikeTerm, restGet } from "./rest.server";
+import { rankLargestResolutions, type LargestResult } from "./enforcementLargest";
 
 // ---------------------------------------------------------------- primitives
 
@@ -317,7 +318,7 @@ export function parseDojRelease(
 let dojOverviewCache: { at: number; value: DojOverview | null } | null = null;
 const TTL = 10 * 60 * 1000;
 
-async function readDojOverview(): Promise<DojOverview | null> {
+export async function readDojOverview(): Promise<DojOverview | null> {
   if (dojOverviewCache && Date.now() - dojOverviewCache.at < TTL) return dojOverviewCache.value;
   const { rows } = await restGet<{ o: unknown }[]>(
     "corpus_records?select=o:item->overview&dataset=eq.doj_press_releases&id=eq.doj-index:overview&limit=1",
@@ -382,11 +383,16 @@ export const getDojReleases = createServerFn({ method: "GET" })
     };
   });
 
-/** Releases whose largest stated resolution figure is $1 billion or more, across every yearly partition. */
+/**
+ * Largest resolutions across every yearly partition: releases whose headline figure is $1 billion or more, ranked by
+ * that figure with non-resolutions held back and repeats collapsed (rankLargestResolutions). The candidate read uses
+ * the indexed "$1B or more" bucket of the largest stated figure, which contains every release whose headline figure
+ * reaches $1B (a headline figure never exceeds the largest figure).
+ */
 export const getDojLargest = createServerFn({ method: "GET" }).handler(
-  async (): Promise<DojRelease[]> => {
+  async (): Promise<LargestResult> => {
     const overview = await readDojOverview();
-    if (!overview) return [];
+    if (!overview) return { entries: [], held: [], candidates: 0 };
     const list = overview.partitions.map((p) => p.dataset).join(",");
     const rows = await readAll<{
       dataset: unknown;
@@ -398,13 +404,13 @@ export const getDojLargest = createServerFn({ method: "GET" }).handler(
       `corpus_records?select=dataset,id,title,source_url,r:item->release&dataset=in.(${list})&filters=cs.${cs({ amount: ["1b_plus"] })}&order=dataset.asc,ordinal.asc`,
       5000,
     );
-    return rows
-      .flatMap((r) => {
+    return rankLargestResolutions(
+      rows.flatMap((r) => {
         const ds = str(r.dataset, 40);
         const p = ds && PARTITION.test(ds) ? parseDojRelease(r, ds) : null;
         return p ? [p] : [];
-      })
-      .sort((a, b) => (b.maxResolutionUsd ?? 0) - (a.maxResolutionUsd ?? 0));
+      }),
+    );
   },
 );
 
