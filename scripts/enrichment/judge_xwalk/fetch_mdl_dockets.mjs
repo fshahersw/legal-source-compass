@@ -45,16 +45,37 @@ export function resultRow(target, header, provenance, how) {
   };
 }
 
+/**
+ * Take the shared global rate lock (a directory with owner.json), exactly as the shared client does: a lock left by a process that is no
+ * longer running (a killed run) is released, a live owner's lock is never taken. Only the two known lock artifacts are removed.
+ */
+export async function acquireLock(lock, { pid = process.pid, isAlive = defaultIsAlive } = {}) {
+  await fs.mkdir(lock).catch(async (error) => {
+    if (error.code !== 'EEXIST') throw error;
+    const owner = JSON.parse(await fs.readFile(path.join(lock, 'owner.json'), 'utf8'));
+    if (isAlive(owner.pid)) throw new Error('Another API collector holds the global rate lock.');
+    await fs.unlink(path.join(lock, 'owner.json'));
+    await fs.rmdir(lock);
+    await fs.mkdir(lock);
+  });
+  await fs.writeFile(path.join(lock, 'owner.json'), JSON.stringify({ pid, createdAt: new Date().toISOString() }));
+  return lock;
+}
+
+function defaultIsAlive(pid) {
+  try { process.kill(pid, 0); return true; }
+  catch (check) { if (check.code === 'ESRCH') return false; throw check; }
+}
+
 class EnvKeyClient extends CourtListenerClient {
-  // Same lock, ledger, usage check and limits as the shared client; only the key source differs (environment, not a credentials file).
+  // Same lock (with dead-owner recovery), ledger, usage check and limits as the shared client; only the key source differs (environment, not a
+  // credentials file).
   async initialize() {
     const key = process.env.COURTLISTENER_API_KEY;
     if (!key) throw new Error('COURTLISTENER_API_KEY is not set');
     this.keys = { COURTLISTENER_API_KEY: key };
     await fs.mkdir(path.join(this.cache, 'api'), { recursive: true });
-    const lock = path.join(this.cache, 'api-collector.lock');
-    await fs.mkdir(lock);
-    this.lock = lock;
+    this.lock = await acquireLock(path.join(this.cache, 'api-collector.lock'));
     await fs.writeFile(path.join(lock, 'owner.json'), JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }));
     this.ledger = JSON.parse(await fs.readFile(path.join(this.cache, 'rate-ledger.json'), 'utf8').catch(() => '{"timestamps":[]}'));
     this.initialUsage = await this.usage();

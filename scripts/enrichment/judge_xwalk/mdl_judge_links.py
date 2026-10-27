@@ -56,6 +56,34 @@ def person_name(name):
     return f"{text} {suffix}".strip() if text else None
 
 
+SUFFIX_TOKENS = {"jr", "sr", "ii", "iii", "iv", "v"}
+
+
+def first_and_surname(text):
+    """(first given name, surname) of a 'Given ... Surname[, Suffix]' name, case-folded with accents and punctuation removed, or None."""
+    import re
+    import unicodedata
+    folded = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode().lower()
+    toks = [t for t in re.sub(r"[.,'’()]", " ", folded).split() if t]
+    while toks and toks[-1] in SUFFIX_TOKENS:
+        toks.pop()
+    return (toks[0], toks[-1]) if len(toks) >= 2 else None
+
+
+def names_differ(printed, published):
+    """True when the CourtListener assignee's published name names someone other than the JPML-printed judge: a different surname, or a
+    different first given name (exact strings after case folding; a lone initial only needs the same letter). Unknown names never differ."""
+    a, b = first_and_surname(printed), first_and_surname(published)
+    if not a or not b:
+        return False
+    if a[1] != b[1]:
+        return True
+    fa, fb = a[0], b[0]
+    if len(fa) == 1 or len(fb) == 1:
+        return fa[0] != fb[0]
+    return fa != fb
+
+
 def classify(m):
     """Decision for one mdls snapshot row: {outcome, profile, person, person_profile, tier, reason, ...}."""
     assigned = m.get("assigned") or []
@@ -91,15 +119,23 @@ def classify(m):
     out["link_evidence"] = {"confirmed": BASIS_DOCKET, "new": BASIS_DOCKET,
                             "kept_exact": "cl_person_native_bridge" if kind == "cl_person_native_bridge" else "jpml_exact_name_court"}.get(out["outcome"])
     out["review"] = {"conflict": "cl_assigned_to_differs", "review": "name_variant_unconfirmed"}.get(out["outcome"])
+    if out["outcome"] == "review" and person and not a_profile and names_differ(m.get("judge_name_as_printed"), out["person_name"]):
+        out["review"] = "cl_assigned_to_differs"  # the docket names someone else (e.g. MDL 3119: Matthew L. Garcia printed, Lorenzo F Garcia assigned)
     if out["outcome"] in ("kept_exact", "unlinked") and person and not a_profile:
         out["review"] = "cl_assigned_to_unresolved"  # the docket names a person no profile is established for; the link (if any) stands
-    # CourtListener person on the record: the docket assignee when there is one, else the person of a still-linked profile's own bridge
-    if person:
+    # judge_cl_person_id (and filters.cl_person_id, read as "presides over an MDL") is the CourtListener person of the linked judge only:
+    #   confirmed / new   the docket assignee, whose profile is the linked one;
+    #   kept_exact        the person the record already carried (its profile's own bridge, never an unresolved assignee);
+    #   unlinked          the docket assignee (no JPML-linked judge to contradict it);
+    #   review / conflict nobody: the assignee stays only in cl_assigned_to_id.
+    if out["outcome"] in ("confirmed", "new"):
         out["cl_person"], out["cl_person_basis"] = person, (
             "judge_profile_native_bridge+" + BASIS_DOCKET if out["outcome"] == "confirmed" and str(m.get("judge_cl_person_id") or "") == str(person)
             and "judge_profile_native_bridge" in (m.get("judge_cl_person_basis") or "") else BASIS_DOCKET)
-    elif out["profile"]:
+    elif out["outcome"] == "kept_exact":
         out["cl_person"], out["cl_person_basis"] = m.get("judge_cl_person_id"), m.get("judge_cl_person_basis")
+    elif out["outcome"] == "unlinked" and person:
+        out["cl_person"], out["cl_person_basis"] = person, BASIS_DOCKET
     else:
         out["cl_person"], out["cl_person_basis"] = None, None
     return out

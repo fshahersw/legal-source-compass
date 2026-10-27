@@ -143,13 +143,29 @@ class MdlJudgeLinks(unittest.TestCase):
         d = ML.classify(mdl("1663", "p", "middle_initial", None, person="576", basis="judge_profile_native_bridge"))
         self.assertEqual((d["outcome"], d["profile"], d["review"], d["cl_person"]), ("review", None, "name_variant_unconfirmed", None))
         d = ML.classify(mdl("3060", "p", "middle_initial", assignment("10140", ("p", "compatible_name_same_court"))))
-        self.assertEqual((d["outcome"], d["profile"], d["cl_person"]), ("review", None, "10140"))  # docket person kept, profile not linked
+        # the docket person stays only in cl_assigned_to_id: never judge_cl_person_id (read as "presides over an MDL") on a needs-review MDL
+        self.assertEqual((d["outcome"], d["profile"], d["cl_person"], d["person"], d["review"]), ("review", None, None, "10140", "name_variant_unconfirmed"))
+
+    def test_review_with_an_assignee_of_another_name_is_flagged_as_differing(self):
+        a = assignment("10116")
+        a[0]["name"] = {"first": "Lorenzo", "middle": "F", "last": "Garcia", "suffix": ""}
+        d = ML.classify(mdl("3119", "p", "middle_initial", a, printed="Matthew L. Garcia"))
+        self.assertEqual((d["outcome"], d["review"], d["cl_person"], d["person_name"]), ("review", "cl_assigned_to_differs", None, "Lorenzo F Garcia"))
+
+    def test_names_differ_compares_exact_first_and_surname(self):
+        self.assertTrue(ML.names_differ("Matthew L. Garcia", "Lorenzo F Garcia"))
+        self.assertTrue(ML.names_differ("Robert J. Shelby", "James O. Browning"))
+        self.assertFalse(ML.names_differ("Mary M. Rowland", "Mary M Rowland"))
+        self.assertFalse(ML.names_differ("Thomas W. Thrash, Jr", "Thomas Woodrow Thrash Jr."))
+        self.assertFalse(ML.names_differ("J. Philip Calabrese", "James Philip Calabrese"))  # a lone initial needs only the same letter
+        self.assertFalse(ML.names_differ("Jane Roe", None))  # unknown: never a disagreement
 
     def test_disagreeing_docket_assignment_links_neither(self):
         d = ML.classify(mdl("3051", "thrash", "exact", assignment("2787", ("ross", "exact_id")), person="3225"))
         self.assertEqual((d["outcome"], d["profile"], d["review"], d["person_profile"]), ("conflict", None, "cl_assigned_to_differs", "ross"))
+        self.assertIsNone(d["cl_person"])  # neither the JPML judge's bridge person nor the docket person
         d = ML.classify(mdl("2695", None, None, assignment("430", ("browning", "exact_id")), printed="Robert J. Shelby"))
-        self.assertEqual((d["outcome"], d["profile"]), ("conflict", None))
+        self.assertEqual((d["outcome"], d["profile"], d["cl_person"]), ("conflict", None, None))
 
     def test_new_link_only_when_no_judge_is_printed(self):
         d = ML.classify(mdl("2606", None, None, assignment("1829", ("kugler", "exact_id")), printed=None))
@@ -158,6 +174,7 @@ class MdlJudgeLinks(unittest.TestCase):
     def test_exact_name_link_stands_and_flags_an_unresolved_docket_person(self):
         d = ML.classify(mdl("3074", "p", "exact", assignment("1719")))
         self.assertEqual((d["outcome"], d["profile"], d["link_evidence"], d["review"]), ("kept_exact", "p", "jpml_exact_name_court", "cl_assigned_to_unresolved"))
+        self.assertIsNone(d["cl_person"])  # an unresolved assignee is never written as the linked judge's person
         d = ML.classify(mdl("1358", "p", "exact", None, person="733", basis="judge_profile_native_bridge"))
         self.assertEqual((d["outcome"], d["cl_person"]), ("kept_exact", "733"))
 
@@ -180,6 +197,9 @@ class BuildMdlJudgeLinks(unittest.TestCase):
         self.assertEqual(used, ["1663"])
         ds = BM.decisions(merged)
         self.assertEqual((ds[0]["outcome"], ds[0]["profile"], ds[0]["item_patch"]["cl_assigned_to_as_of"]), ("confirmed", "p", "2026-10-27"))
+        # the live header's source URL and sha256 travel onto the record and its judge link
+        self.assertEqual((ds[0]["item_patch"]["cl_assigned_to_source_url"], ds[0]["item_patch"]["cl_assigned_to_evidence_sha256"]), ("https://x", "f" * 64))
+        self.assertEqual((ds[0]["judge_links"][0]["source_url"], ds[0]["judge_links"][0]["evidence_sha256"]), ("https://x", "f" * 64))
         self.assertEqual(ds[1]["outcome"], "review")  # two dockets matched: never picked
 
     def test_patches_and_contract(self):
@@ -188,13 +208,20 @@ class BuildMdlJudgeLinks(unittest.TestCase):
         ds = BM.decisions(snap)
         by = {d["id"]: d for d in ds}
         self.assertEqual(by["1663"]["item_patch"]["judge_profile_id"], None)
-        self.assertNotIn("links", by["1663"]["judge_links"][0])
-        self.assertTrue(by["1663"]["judge_links"][0]["needs_review"])
+        # judge_links holds only a linked judge: review and conflict MDLs get [] and their candidates go to judge_link_candidates
+        self.assertEqual(by["1663"]["judge_links"], [])
+        self.assertNotIn("links", by["1663"]["judge_link_candidates"][0])
+        self.assertTrue(by["1663"]["judge_link_candidates"][0]["needs_review"])
         self.assertNotIn("cl_assigned_to_id", by["1663"]["item_patch"])  # no docket person: the recorded value stays
-        self.assertEqual(len(by["3051"]["judge_links"]), 2)
-        self.assertTrue(all("links" not in e for e in by["3051"]["judge_links"]))
+        self.assertEqual(by["3051"]["judge_links"], [])
+        self.assertEqual([e["relation"] for e in by["3051"]["judge_link_candidates"]], ["jpml_printed_judge", "courtlistener_docket_assignment"])
+        self.assertTrue(all("links" not in e and e["needs_review"] for e in by["3051"]["judge_link_candidates"]))
         self.assertEqual(by["2606"]["judge_links"][0]["links"], [{"url": "#judge/kugler", "label": "Judge profile"}])
+        self.assertIsNone(by["2738"]["judge_link_candidates"])
         sql = BM.render_sql(ds, ML.tally(ds, snap), {"mdls_judges": "x"})
+        self.assertIn("jsonb_build_object('judge_link_candidates', t.cands)", sql)
+        self.assertIn("'{listing,facets,judge_resolved}', fc.o", sql)  # the stored facet follows the changed filters
+        self.assertIn("'{listing,facets}', c.original_record->'listing_facets'", sql)  # and is restored by the rollback
         self.assertIn("md5(to_jsonb(r)::text) = c.original_record->>'row_md5'", sql)
         self.assertIn("('c', '1663', 'drop')", sql)
         self.assertIn("('kugler', '2606', 'add')", sql)

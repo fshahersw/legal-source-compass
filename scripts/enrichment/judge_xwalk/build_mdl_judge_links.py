@@ -70,30 +70,45 @@ def merge_live(snapshot, live_rows, crosswalk):
 
 
 def entry_for(d, m):
-    """New detail.judge_links for one decision (None = unchanged)."""
+    """New detail.judge_links for one decision (None = unchanged). judge_links holds only the linked judge (the MDL page and entity views read
+    it as the linked judge); a review or conflict MDL gets an empty list and its candidates go to detail.judge_link_candidates (candidates_for)."""
     old = (m.get("judge_links") or [None])[0]
     if d["outcome"] == "confirmed":
         e = dict(old or {})
         e.update({"basis": L.BASIS_DOCKET, "cl_person_id": d["person"], "name_match_kind": old.get("match_kind") if old else None,
-                  "evidence": "CourtListener docket assigned_to of the master docket -> judge_cl_crosswalk " + (d["person_profile_tier"] or "")})
+                  "evidence": "CourtListener docket assigned_to of the master docket -> judge_cl_crosswalk " + (d["person_profile_tier"] or ""),
+                  "evidence_sha256": d.get("evidence_sha256"), **({"source_url": d["source_url"]} if d.get("live") and d.get("source_url") else {})})
         return [e]
     if d["outcome"] == "new":
         return [{"display_name": d["person_profile_name"], "entity_id": d["person_profile_entity"], "basis": L.BASIS_DOCKET, "match_kind": L.BASIS_DOCKET,
                  "cl_person_id": d["person"], "relation": "transferee_judge",
                  "evidence": "CourtListener docket assigned_to of the master docket -> judge_cl_crosswalk " + (d["person_profile_tier"] or ""),
+                 "evidence_sha256": d.get("evidence_sha256"), **({"source_url": d["source_url"]} if d.get("live") and d.get("source_url") else {}),
                  "links": [{"url": f"#judge/{d['profile']}", "label": "Judge profile"}]}]
     if d["outcome"] in ("review", "conflict"):
-        out = []
-        if old:
-            e = {k: v for k, v in old.items() if k != "links"}
-            e.update({"needs_review": True, "review": d["review"], "candidate_profile_id": d["current_profile"]})
-            out.append(e)
-        if d["outcome"] == "conflict":
-            out.append({"display_name": d["person_name"] or d["person_profile_name"], "cl_person_id": d["person"], "basis": L.BASIS_DOCKET,
-                        "relation": "courtlistener_docket_assignment", "needs_review": True, "review": d["review"], "candidate_profile_id": d["person_profile"],
-                        "evidence": "CourtListener docket assigned_to of the master docket; differs from the judge printed in the JPML report"})
-        return out
+        return []
     return None
+
+
+def candidates_for(d, m):
+    """detail.judge_link_candidates of a review or conflict MDL (None for every other outcome): the former name-variant link (without its
+    profile link) and the CourtListener docket assignee, each marked needs_review. Neither is a link."""
+    if d["outcome"] not in ("review", "conflict"):
+        return None
+    old = (m.get("judge_links") or [None])[0]
+    out = []
+    if old:
+        e = {k: v for k, v in old.items() if k != "links"}
+        e.update({"needs_review": True, "review": d["review"], "candidate_profile_id": d["current_profile"], "relation": e.get("relation") or "jpml_printed_judge"})
+        out.append(e)
+    if d["person"]:
+        differs = d["outcome"] == "conflict" or d["review"] == "cl_assigned_to_differs"
+        out.append({"display_name": d["person_name"] or d["person_profile_name"], "cl_person_id": d["person"], "basis": L.BASIS_DOCKET,
+                    "relation": "courtlistener_docket_assignment", "needs_review": True, "review": d["review"], "candidate_profile_id": d["person_profile"],
+                    "evidence_sha256": d.get("evidence_sha256"), **({"source_url": d["source_url"]} if d.get("source_url") else {}),
+                    "evidence": "CourtListener docket assigned_to of the master docket; " + (
+                        "differs from the judge printed in the JPML report" if differs else "no judge profile is established for this person")})
+    return out
 
 
 def item_patch(d, m):
@@ -102,7 +117,9 @@ def item_patch(d, m):
     p = {"judge_profile_id": d["profile"], "judge_link_exact": linked, "judge_link_evidence": d["link_evidence"], "judge_link_review": d["review"],
          "judge_cl_person_id": d["cl_person"], "judge_cl_person_basis": d["cl_person_basis"]}
     if d["person"]:  # an MDL without a docket assignment keeps whatever cl_assigned_to_id it had
-        p.update(cl_assigned_to_id=d["person"], cl_assigned_to_as_of=(d.get("live_retrieved_at") or "")[:10] if d.get("live") else L.ASSIGNED_AS_OF)
+        p.update(cl_assigned_to_id=d["person"], cl_assigned_to_as_of=(d.get("live_retrieved_at") or "")[:10] if d.get("live") else L.ASSIGNED_AS_OF,
+                 cl_assigned_to_name_as_published=d.get("person_name"), cl_assigned_to_evidence_sha256=d.get("evidence_sha256"),
+                 cl_assigned_to_source_url=d.get("source_url") if d.get("live") else None)
     if d["outcome"] in ("confirmed", "new"):
         p["judge_link_basis"] = L.BASIS_DOCKET
     if d["outcome"] == "new":
@@ -123,23 +140,26 @@ def decisions(snapshot):
         d["old_cl_assigned_to_id"] = m.get("cl_assigned_to_id")
         d["item_patch"] = item_patch(d, m)
         d["judge_links"] = entry_for(d, m)
+        d["judge_link_candidates"] = candidates_for(d, m)
         d["entity"] = d["item_patch"].get("judge_entity_id", m.get("judge_entity_id"))
         ds.append(d)
     return ds
 
 
 def core_cte(vals):
-    return f"""with v(id, row_md5, patch, links, entity) as (values
+    return f"""with v(id, row_md5, patch, links, cands, entity) as (values
     {vals}
   ),
 t as materialized (
- select r.id, r.item, r.detail, r.filters, v.row_md5, v.patch::jsonb as patch, v.links::jsonb as links, v.entity, (md5(to_jsonb(r)::text) = v.row_md5) as unchanged
+ select r.id, r.item, r.detail, r.filters, v.row_md5, v.patch::jsonb as patch, v.links::jsonb as links, v.cands::jsonb as cands, v.entity,
+        (md5(to_jsonb(r)::text) = v.row_md5) as unchanged
  from v join public.corpus_records r on r.dataset = '{DATASET}' and r.id = v.id),
 y as (
  select t.*,
   t.item || t.patch as new_item,
   jsonb_set(t.detail, '{{summary}}', coalesce(t.detail->'summary', t.item) || t.patch)
-    || case when t.links is null then '{{}}'::jsonb else jsonb_build_object('judge_links', t.links) end as new_detail,
+    || case when t.links is null then '{{}}'::jsonb else jsonb_build_object('judge_links', t.links) end
+    || case when t.cands is null then '{{}}'::jsonb else jsonb_build_object('judge_link_candidates', t.cands) end as new_detail,
   t.filters || jsonb_build_object('cl_person_id', coalesce(t.patch->>'judge_cl_person_id', ''),
                                   'entity_id', case when t.entity is null then '[]'::jsonb else jsonb_build_array(t.entity) end)
             || case when t.patch ? 'judge_resolved' then jsonb_build_object('judge_resolved', t.patch->>'judge_resolved') else '{{}}'::jsonb end as new_filters
@@ -149,7 +169,9 @@ y as (
 def values_of(ds):
     rows = []
     for d in ds:
-        rows.append((d["id"], d["row_md5"], json.dumps(d["item_patch"], sort_keys=True), json.dumps(d["judge_links"], sort_keys=True) if d["judge_links"] is not None else None, d["entity"]))
+        rows.append((d["id"], d["row_md5"], json.dumps(d["item_patch"], sort_keys=True),
+                     json.dumps(d["judge_links"], sort_keys=True) if d["judge_links"] is not None else None,
+                     json.dumps(d["judge_link_candidates"], sort_keys=True) if d["judge_link_candidates"] is not None else None, d["entity"]))
     return Q.values(rows)
 
 
@@ -215,15 +237,19 @@ def render_sql(ds, tally_, inputs):
 --   the master docket's CourtListener assigned_to person (corpus_ingest.relationships, bulk 2026-09-30; or a live docket header whose court + docket
 --   number equals the JPML master docket exactly) -> judges profile through a unique judge_cl_crosswalk exact_id row (else a unique exact-name row).
 --   Name-variant links (middle initial, omitted middle name, first initial) that no identifier confirms are kept only as candidates marked needs review;
---   a docket assignment that differs from the JPML-printed judge is shown beside it and neither is linked.
--- New item fields (also in detail.summary): judge_link_exact, judge_link_evidence, judge_link_review, cl_assigned_to_as_of, judge_entity_id_candidate.
+--   a docket assignment that differs from the JPML-printed judge is shown beside it and neither is linked. detail.judge_links holds only the linked
+--   judge (empty for needs-review and differing MDLs); the candidates (former name-variant link, docket assignee) go to detail.judge_link_candidates.
+--   judge_cl_person_id / filters.cl_person_id name only the linked judge's CourtListener person (never on a needs-review or differing MDL; the
+--   assignee stays in cl_assigned_to_id). listing.facets.judge_resolved is recounted from the live filters.
+-- New item fields (also in detail.summary): judge_link_exact, judge_link_evidence, judge_link_review, cl_assigned_to_as_of, cl_assigned_to_name_as_published,
+--   cl_assigned_to_evidence_sha256, cl_assigned_to_source_url (live docket headers), judge_entity_id_candidate.
 -- judge_match_kind is unchanged (it records how the printed name was joined); consumers should read judge_link_exact.
 -- Counts: {json.dumps(tally_, sort_keys=True)}
 -- Inputs (sha256): {json.dumps(inputs, sort_keys=True)}
 -- Row guard everywhere: md5(to_jsonb(row)) equals the snapshot value. Execute statements 0-5 in order, then the verification SELECTs.
 --
 -- ROLLBACK (exact; mdls records, the mdls metadata copies, then the judges blocks):
-{Q.rollback_text(DATASET, ISSUE, RUN)}--   update public.corpus_datasets d set metadata = jsonb_set(jsonb_set(d.metadata - 'exact_judge_links_2026_10_27', '{{listing,results}}', c.original_record->'listing_results'), '{{filter_index}}', c.original_record->'filter_index'), updated_at = now()
+{Q.rollback_text(DATASET, ISSUE, RUN)}--   update public.corpus_datasets d set metadata = jsonb_set(jsonb_set(jsonb_set(d.metadata - 'exact_judge_links_2026_10_27', '{{listing,results}}', c.original_record->'listing_results'), '{{filter_index}}', c.original_record->'filter_index'), '{{listing,facets}}', c.original_record->'listing_facets'), updated_at = now()
 --     from corpus_ingest.cleanup_decisions c where c.dataset = 'corpus_datasets' and c.issue = '{ISSUE}' and c.run_id = '{RUN}'::uuid and d.id = c.record_id;
 --   update public.corpus_records r set detail = c.original_record->'detail' from corpus_ingest.cleanup_decisions c
 --    where c.dataset = 'judges' and c.issue = '{ISSUE}_judges_block' and c.run_id = '{RUN}'::uuid and r.dataset = 'judges' and r.id = c.record_id;
@@ -250,22 +276,27 @@ with old as (select d.id, d.metadata from public.corpus_datasets d where d.id = 
 live as (select r.id, r.title, r.ordinal, r.item, r.filters from public.corpus_records r where r.dataset = 'mdls'),
 oldfi as (select f.value->>'id' as id, f.value->>'search' as search from old, jsonb_array_elements(old.metadata->'filter_index') f),
 newres as (select jsonb_agg(l.item order by l.ordinal) as o from live l),
+newfacet as (
+ select coalesce(jsonb_agg(jsonb_build_array(g.v, g.n) order by g.n desc, g.v), '[]'::jsonb) as o
+ from (select l.filters->>'judge_resolved' as v, count(*) as n from live l where coalesce(l.filters->>'judge_resolved', '') <> '' group by 1) g),
 newfi as (
  select jsonb_agg(jsonb_build_object('id', l.id, 'item', l.item, 'filters', l.filters,
           'search', coalesce(o.search, lower(l.title) || ' ' || l.id || ' mdl-' || l.id || ' mdl ' || l.id)) order by l.ordinal) as o
  from live l left join oldfi o on o.id = l.id),
 aud as (
  insert into corpus_ingest.cleanup_decisions (dataset, record_id, issue, disposition, reason, evidence, original_record, replacement, run_id)
- select 'corpus_datasets', 'mdls', '{ISSUE}', 'label_override', 'listing.results and filter_index are exact copies of the live item/filters; regenerated after the exact judge links.',
+ select 'corpus_datasets', 'mdls', '{ISSUE}', 'label_override',
+  'listing.results and filter_index are exact copies of the live item/filters, and listing.facets.judge_resolved counts the live filters; regenerated after the exact judge links.',
   jsonb_build_object('contract', '{CONTRACT}'),
-  jsonb_build_object('id', 'mdls', 'listing_results', o.metadata->'listing'->'results', 'filter_index', o.metadata->'filter_index'), null, '{RUN}'::uuid
+  jsonb_build_object('id', 'mdls', 'listing_results', o.metadata->'listing'->'results', 'filter_index', o.metadata->'filter_index',
+                     'listing_facets', o.metadata->'listing'->'facets'), null, '{RUN}'::uuid
  from old o on conflict (dataset, record_id, issue) do nothing returning record_id),
 upd as (
  update public.corpus_datasets d
-    set metadata = jsonb_set(jsonb_set(o.metadata, '{{listing,results}}', nr.o), '{{filter_index}}', nf.o)
+    set metadata = jsonb_set(jsonb_set(jsonb_set(o.metadata, '{{listing,results}}', nr.o), '{{filter_index}}', nf.o), '{{listing,facets,judge_resolved}}', fc.o)
                    || jsonb_build_object('exact_judge_links_2026_10_27', {Q.lit(json.dumps({"contract": CONTRACT, "run_id": RUN, **tally_}, sort_keys=True))}::jsonb),
         updated_at = now()
-   from old o, newres nr, newfi nf, aud a
+   from old o, newres nr, newfi nf, newfacet fc, aud a
   where d.id = 'mdls'
  returning d.id)
 select (select count(*) from aud) as audit_rows, (select count(*) from upd) as datasets_updated;
@@ -292,8 +323,19 @@ select j.id, e->>'id' from public.corpus_records j, jsonb_array_elements(j.detai
  where j.dataset = 'judges' and e->>'id' like 'mdl:%'
    and exists (select 1 from corpus_ingest.cleanup_decisions c where c.issue = '{ISSUE}_judges_block' and c.record_id = j.id)
    and not exists (select 1 from public.corpus_records m where m.dataset = 'mdls' and 'mdl:' || m.id = e->>'id' and m.item->>'judge_profile_id' = j.id);
--- V5 MDL 3051 (JPML prints Thomas W. Thrash, Jr; the docket names Eleanor Louise Ross): not linked, both candidates listed
-select id, item->>'judge_profile_id', item->>'judge_link_review', jsonb_array_length(detail->'judge_links') from public.corpus_records where dataset = 'mdls' and id = '3051';
+-- V5 MDL 3051 (JPML prints Thomas W. Thrash, Jr; the docket names Eleanor Louise Ross) and 2695 (Robert J. Shelby vs James O. Browning): not linked,
+--    judge_links empty, both judges only in judge_link_candidates (3051: 2, 2695: 1, the docket assignee), filters.cl_person_id empty
+select id, item->>'judge_profile_id' as profile, item->>'judge_link_review' as review, jsonb_array_length(detail->'judge_links') as judge_links,
+       jsonb_array_length(detail->'judge_link_candidates') as candidates, filters->>'cl_person_id' as cl_person_filter, item->>'cl_assigned_to_id' as assignee
+from public.corpus_records where dataset = 'mdls' and id in ('2695', '3051') order by id;
+-- V6 needs-review MDLs (expected 0 rows): a name-variant or differing-assignee MDL has no judge_links entry, no judge_cl_person_id and no cl_person_id filter
+select id, item->>'judge_link_review' from public.corpus_records where dataset = 'mdls'
+ and item->>'judge_link_review' in ('name_variant_unconfirmed', 'cl_assigned_to_differs')
+ and (jsonb_array_length(coalesce(detail->'judge_links', '[]'::jsonb)) > 0 or item->>'judge_cl_person_id' is not null or coalesce(filters->>'cl_person_id', '') <> '');
+-- V7 the stored facet counts equal the live filters (expected 0 rows)
+select f.value->>0 as value, (f.value->>1)::int as stored, (select count(*) from public.corpus_records r where r.dataset = 'mdls' and r.filters->>'judge_resolved' = f.value->>0) as live
+from public.corpus_datasets d, jsonb_array_elements(d.metadata->'listing'->'facets'->'judge_resolved') f
+where d.id = 'mdls' and (f.value->>1)::int <> (select count(*) from public.corpus_records r where r.dataset = 'mdls' and r.filters->>'judge_resolved' = f.value->>0);
 """
     return "\n".join(x for x in [head, s0, s1, s2, s3, s5, verify] if x)
 
