@@ -192,6 +192,12 @@ class ReduceTests(unittest.TestCase):
         self.assertTrue(ids[1].startswith("faers:ibuprofen-tablet-film-coated-") and len(ids[1]) > len(ids[0]))
         self.assertEqual(ids[2], "faers:aspirin")
 
+    def test_validation_sample_is_deterministic(self):
+        rows = [{"k": str(i)} for i in range(50)]
+        a = b.sample(rows, 5, lambda r: r["k"])
+        self.assertEqual(a, b.sample(list(reversed(rows)), 5, lambda r: r["k"]))
+        self.assertEqual(len(a), 5)
+
     def test_compare_window(self):
         row = {"coverage_from": "2024-01", "coverage_to": "2024-03", "vals": [1, 0, 2]}
         self.assertEqual(b.compare_window(row, {"2024-01": [1], "2024-03": [2]}, 0), [])

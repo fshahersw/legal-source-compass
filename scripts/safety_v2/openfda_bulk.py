@@ -5,16 +5,25 @@ with scripts/safety_v2/load.py.
 
   python -I scripts/safety_v2/openfda_bulk.py <stream> --acq DIR [options]
     index     save https://api.fda.gov/download.json (one request) with its sha256: the partition list of every export
+    universe  re-rank the FAERS products with the count API (prefix searches: needs DATA_GOV_API_KEY, openFDA refuses
+              wildcard searches without a key); prints sha256 values to compare with the stored safety.subjects
+    api-plan  write <acq>/api/subjects/plan.json (MDL device groups + national:maude) for
+              openfda_build.py maude --outdir <acq>/api --keyless --skip-breakdowns (their series come from the count API)
     targets   write <acq>/targets.json from the inputs below (no network): the FAERS products and MAUDE subjects to count
-                --faers-universe F   JSON [[rank, reports_total, generic_name], ...] of the ranked FAERS products (the
-                                     openfda_build.py faers_universe output, checked against safety.subjects by sha256)
+                --faers-universe F   JSON [[rank, reports_total, generic_name], ...] or [generic_name, ...] in rank order
+                                     (the stored safety.subjects list, checked against it by sha256)
                 --maude-codes F      text file of the MAUDE product codes in rank order (safety.subjects device_code)
                 --existing F         JSON {"series_complete_ranks": [1, 450], "breakdown_ranks": [1, 450],
                                      "partial_series": {"faers:x": ["faers_reports", ...]}}: what is already loaded
     faers     count every drug/event partition (resumable; one aggregate file per partition under <acq>/faers/parts)
     maude     count every device/event partition (product codes and the MDL device groups of mdl_map.py)
     reduce-faers / reduce-maude   merge the partition aggregates into loader chunks under <acq>/load/<stream>
+    accept-groups   compare each MDL device group's offline series with the count API's (<acq>/api); reduce-maude
+              then writes bulk breakdowns only for the groups that matched every month
     ndc       NDC directory (drug/ndc bulk file) → subjects rows carrying pharm_class_epc and application_numbers keys
+              (--faers-universe [[rank, reports_total, name]] supplies the stored reports_total)
+    validate  re-ask the count API for a sample of built rows (--validate-stream faers|maude --n-series --n-breakdowns
+              --max-requests); writes <acq>/<stream>/validation.json
     --workers N (default 4)  --limit N (first N partitions only: a validation sample)  --keep-zips
 
 Accuracy rules (the same as openfda_build.py, which they mirror):
@@ -962,6 +971,57 @@ def accept_groups(args):
     print(json.dumps({"groups": len(report), "accepted": len(accepted), "rejected": [k for k, v in report.items() if not v["accepted"]]}))
 
 
+def load_rows(acq, stream, target):
+    index = Path(acq) / "load" / stream / "chunks" / "index.jsonl"
+    rows = []
+    for line in index.read_text().splitlines():
+        ch = json.loads(line)
+        if ch["target"] == target:
+            rows += c.read_chunk(index.parent / ch["file"])[0]
+    return rows
+
+
+def sample(rows, n, key):
+    """A deterministic spread sample: rows ordered by the sha256 of their key, first n."""
+    return sorted(rows, key=lambda r: hashlib.sha256(key(r).encode("utf-8")).hexdigest())[:n]
+
+
+def validate(args):
+    """Re-ask the count API for a sample of the built rows and compare. Series: every month of the row's window.
+    Breakdowns: the API's top min(limit, 100) terms (keyless requests are capped at 100 terms) against the row."""
+    acq, stream = Path(args.acq), args.validate_stream
+    run = api_run(args, f"validate-{stream}")
+    report = {"series": [], "breakdowns": []}
+    s_rows = load_rows(acq, stream, "series")
+    b_rows = load_rows(acq, stream, "breakdowns")
+    for r in sample(s_rows, args.n_series, lambda r: r["subject_id"] + r["series"]):
+        if not run.budget_left():
+            break
+        data, _ = run.get(r["query_url"])
+        months = c.day_counts_to_months((data or {}).get("results", []))
+        diffs = [(m, v, months.get(m, 0)) for m, v in zip(c.month_span(r["coverage_from"], r["coverage_to"]), r["vals"])
+                 if months.get(m, 0) != v]
+        report["series"].append({"subject_id": r["subject_id"], "series": r["series"], "months": len(r["vals"]),
+                                 "total": sum(r["vals"]), "differing_months": len(diffs), "diffs": diffs[:6]})
+    for r in sample(b_rows, args.n_breakdowns, lambda r: r["subject_id"] + r["dim"] + r["period"]):
+        if not run.budget_left():
+            break
+        k = min(r["limit_n"], 100)
+        data, _ = run.get(re.sub(r"limit=\d+", f"limit={k}", r["query_url"]))
+        api = [(str(x["term"])[:500], int(x["count"])) for x in (data or {}).get("results", [])]
+        ours = dict(zip(r["terms"], r["vals"]))
+        diffs = [(t, n, ours.get(t)) for t, n in api if ours.get(t) != n]
+        report["breakdowns"].append({"subject_id": r["subject_id"], "dim": r["dim"], "period": r["period"], "compared": len(api),
+                                     "differing_terms": len(diffs), "diffs": diffs[:6]})
+    run.close()
+    report["requests"] = run.http.requests
+    out = acq / stream / "validation.json"
+    out.write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
+    summary = {k: {"checked": len(v), "exact": sum(1 for x in v if not x.get("differing_months", x.get("differing_terms")))}
+               for k, v in report.items() if isinstance(v, list)}
+    print(json.dumps({"requests": run.http.requests, **summary}))
+
+
 def build_index(args):
     acq = Path(args.acq)
     acq.mkdir(parents=True, exist_ok=True)
@@ -974,7 +1034,10 @@ def build_index(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("stream", choices=["index", "universe", "api-plan", "targets", "faers", "maude", "reduce-faers",
-                                       "accept-groups", "reduce-maude", "ndc"])
+                                       "accept-groups", "reduce-maude", "ndc", "validate"])
+    ap.add_argument("--validate-stream", choices=["faers", "maude"], default="faers")
+    ap.add_argument("--n-series", type=int, default=20)
+    ap.add_argument("--n-breakdowns", type=int, default=10)
     ap.add_argument("--acq", required=True)
     ap.add_argument("--faers-products", type=int, default=2000)
     ap.add_argument("--interval", type=float, default=0.5)
@@ -992,7 +1055,7 @@ def main():
     ap.add_argument("--as-of", default=date.today().isoformat(), help="the stored subjects' as_of date (kept unchanged)")
     args = ap.parse_args()
     {"index": build_index, "universe": build_universe, "api-plan": build_api_plan, "accept-groups": accept_groups,
-     "targets": build_targets, "faers": lambda a: run_stream(a, "faers"), "maude": lambda a: run_stream(a, "maude"),
+     "targets": build_targets, "validate": validate, "faers": lambda a: run_stream(a, "faers"), "maude": lambda a: run_stream(a, "maude"),
      "reduce-faers": reduce_faers, "reduce-maude": reduce_maude, "ndc": build_ndc}[args.stream](args)
 
 
