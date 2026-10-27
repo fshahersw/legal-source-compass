@@ -1,3 +1,7 @@
+-- SUPERSEDED 2026-10-27, NOT APPLIED: release/documents-matter-case-scope (documents-v2-scope.sql) ships the same scope
+-- change and is live on corpussite. It also carries this branch's review fixes: litviz_refresh_v1 skips filings without
+-- an MDL (the not-null blocker), and exact master-docket keys from the mdls records link 1,595 filings on 13 dockets to
+-- their MDL. Do not apply or merge this file; it would replace the live refresh body.
 -- Rollback of documents-v2-docket-scope.sql: restores the v1 scope (only case ids a published page lists), removes the
 -- docket-scope rows (listed_by 'native_case_id') with their pages, page sets, extractions and links, and restores the
 -- v1 table constraints. Three steps, each its own transaction; run them in order.

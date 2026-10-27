@@ -1,3 +1,7 @@
+-- SUPERSEDED 2026-10-27, NOT APPLIED: release/documents-matter-case-scope (documents-v2-scope.sql) ships the same scope
+-- change and is live on corpussite. It also carries this branch's review fixes: litviz_refresh_v1 skips filings without
+-- an MDL (the not-null blocker), and exact master-docket keys from the mdls records link 1,595 filings on 13 dockets to
+-- their MDL. Do not apply or merge this file; it would replace the live refresh body.
 -- documents/2 docket scope — the documents layer also serves open filings of dockets that no published page lists.
 --
 -- Owner decision 2026-10-27: "dont withhold any data. If its accurate and valuable, USE IT". Until now scope rule 2 of
