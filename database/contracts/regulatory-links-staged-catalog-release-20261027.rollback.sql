@@ -1,3 +1,7 @@
+-- SUPERSEDED, DO NOT APPLY (2026-10-27): the same row was retired in production by
+-- release/dataset-regulatory-links-staged-empty (database/contracts/release-dataset-regulatory-links-staged-empty-v1.sql,
+-- ledger issue release20261027_retire_empty_staged_catalog), which also adds URL redirects. Use that branch's rollback.
+-- This file's preflight refuses anyway: the catalog row is gone.
 -- ROLLBACK for regulatory-links-staged-catalog-release/2026-10-27.1 (run 19a391c2-f6b8-4c10-8567-50e2ec054bea).
 -- Re-inserts the empty sw_matter_regulatory_links_v1_staged catalog row byte-for-byte from the ledger before-image
 -- (md5 of the row 4f60eb85ba4b4d5e6bac80ffd05b46cc, updated_at unchanged), removes this contract's ledger row and marks the run
