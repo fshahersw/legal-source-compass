@@ -6,6 +6,7 @@ import {
   fundTotal,
   largestOpenFunds,
   mdlFromCaseNumber,
+  mdlLinks,
   roleLabel,
   roleMix,
   summarize,
@@ -41,6 +42,7 @@ function row(id: string, over: Partial<OfficialSettlement> = {}): OfficialSettle
     claimUrl: null,
     confirmed: ["deadline"],
     leadUrl: null,
+    mdlLinks: [],
     ...over,
   };
 }
@@ -51,14 +53,16 @@ const ACU = row("acu", {
   deadline: "2027-04-08",
   amounts: [amt("$350", 350, "per_claimant"), amt("$150", 150, "per_claimant")],
   caseNumbers: ["2:19-ml-02905-JAK-JPR"],
+  mdlLinks: [{ mdl: 2905, caseNumber: "2:19-ml-02905-JAK-JPR" }],
 });
 const REALPAGE = row("realpage", {
   deadline: "2027-01-29",
   amounts: [amt("$359,925,000", 359925000, "fund_total")],
   caseNumbers: ["3:23-md-03071"],
+  mdlLinks: [{ mdl: 3071, caseNumber: "3:23-md-03071" }],
 });
 const SOON = row("soon", { deadline: "2026-11-05", amounts: [amt("$4.7 million", 4.7e6, "fund_total"), amt("$100", 100, "per_claimant")] });
-const PAST = row("past", { deadline: "2026-06-04", amounts: [amt("$100.00", 100, "per_claimant")], caseNumbers: ["1:23-md-03083-ADB-PGL"] });
+const PAST = row("past", { deadline: "2026-06-04", amounts: [amt("$100.00", 100, "per_claimant")], caseNumbers: ["1:23-md-03083-ADB-PGL"], mdlLinks: [{ mdl: 3083, caseNumber: "1:23-md-03083-ADB-PGL" }] });
 const NONE = row("none", { amounts: [amt("$409,000", 409000, "other", "distribution")], caseNumbers: ["1:24-cv-00001"] });
 
 describe("officialSettlementsModel", () => {
@@ -72,6 +76,15 @@ describe("officialSettlementsModel", () => {
     expect(mdlFromCaseNumber("2:19-ml-02905-JAK-JPR")).toBe(2905);
     expect(mdlFromCaseNumber("2:18-mn-2873-RMG")).toBe(2873);
     for (const s of ["1:24-cv-00001", "MDL No. 2905", "", null, undefined]) expect(mdlFromCaseNumber(s)).toBeNull();
+  });
+
+  it("links only the registry-verified MDLs the retype stored, never a bare docket-form number", () => {
+    const unverified = row("u", { caseNumbers: ["2:19-ml-02905-JAK-JPR"], mdlLinks: [] });
+    expect(mdlLinks(unverified)).toEqual([]);
+    expect(mdlLinks(row("n", { caseNumbers: ["2:19-ml-02905"], mdlLinks: null }))).toEqual([]);
+    // a stored link whose case number does not carry that MDL number is ignored
+    expect(mdlLinks(row("m", { mdlLinks: [{ mdl: 2906, caseNumber: "2:19-ml-02905" }] }))).toEqual([]);
+    expect(mdlLinks(ACU)).toEqual([{ mdl: 2905, caseNumber: "2:19-ml-02905-JAK-JPR" }]);
   });
 
   it("marks past deadlines as past and sorts open ones first, soonest first", () => {
@@ -90,7 +103,8 @@ describe("officialSettlementsModel", () => {
     const untyped = summarize(viewRows([row("a", { amounts: [amt("$5", 5, null)] })], TODAY));
     expect(untyped.withFund).toBeNull();
     expect(untyped.perClaimantOnly).toBeNull();
-    expect(roleLabel(amt("$5", 5, null))).toBe("Not typed yet");
+    expect(roleLabel(amt("$5", 5, null))).toBe("Role not typed yet");
+    expect(roleLabel(amt("$12.8 Million", 12.8e6, "other", "order_total"))).toBe("Other figure: Order total including a penalty");
     expect(roleLabel(amt("$409,000", 409000, "other", "distribution"))).toBe("Other figure: Agency distribution round");
   });
 

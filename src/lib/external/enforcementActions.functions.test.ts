@@ -410,6 +410,22 @@ describe("parseOfficialSettlement", () => {
     expect(typed.amounts[1]!.role).toBeNull();
     expect(parseOfficialSettlement(base)!.amounts[0]!.role).toBeNull();
   });
+  it("reads the registry-verified MDL links, and null before the retype", () => {
+    expect(parseOfficialSettlement(base)!.mdlLinks).toBeNull();
+    const linked = parseOfficialSettlement({
+      ...base,
+      s: {
+        ...base.s,
+        mdl_links: [
+          { mdl: 2905, case_number: "2:19-ml-02905-JAK-JPR", basis: "registry" },
+          { mdl: "2905", case_number: "x" },
+          { mdl: 3071 },
+        ],
+      },
+    })!;
+    expect(linked.mdlLinks).toEqual([{ mdl: 2905, caseNumber: "2:19-ml-02905-JAK-JPR" }]);
+    expect(parseOfficialSettlement({ ...base, s: { ...base.s, mdl_links: [] } })!.mdlLinks).toEqual([]);
+  });
 });
 
 describe("parseFacts", () => {

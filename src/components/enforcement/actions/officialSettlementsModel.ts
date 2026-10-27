@@ -1,6 +1,7 @@
 /**
  * Settlements confirmed on official pages, read for the page: typed amounts (fund total vs per claimant), deadline
- * status against today, exact MDL links from MDL docket-form case numbers, and the figures behind the KPIs and charts.
+ * status against today, MDL links verified against the MDL registry by the retype, and the figures behind the KPIs
+ * and charts.
  * Pure; no I/O. Rules mirror scripts/enrichment/enforcement_actions/settle_types.py.
  */
 import type {
@@ -25,6 +26,8 @@ export const OTHER_DETAIL_LABEL: Record<string, string> = {
   distribution: "Agency distribution round",
   estimate: "Estimate or alleged loss",
   threshold: "Eligibility threshold",
+  fund_addition: "Addition to a fund",
+  order_total: "Order total including a penalty",
   unclear: "Role not stated near the figure",
 };
 export const DEADLINE_LABEL: Record<DeadlineState, string> = {
@@ -34,9 +37,9 @@ export const DEADLINE_LABEL: Record<DeadlineState, string> = {
   none: "No deadline confirmed",
 };
 
-/** "Settlement fund total", "Per claimant", "Other figure: Service award"; "Not typed yet" before the retype. */
+/** "Settlement fund total", "Per claimant", "Other figure: Service award"; "Role not typed yet" before the retype. */
 export function roleLabel(a: Amount): string {
-  if (!a.role) return "Not typed yet";
+  if (!a.role) return "Role not typed yet";
   if (a.role !== "other") return ROLE_LABEL[a.role];
   const detail = OTHER_DETAIL_LABEL[a.detail ?? "unclear"] ?? OTHER_DETAIL_LABEL["unclear"];
   return `${ROLE_LABEL.other}: ${detail}`;
@@ -50,15 +53,16 @@ export function mdlFromCaseNumber(caseNumber: string | null | undefined): number
   return n >= 1 ? n : null;
 }
 
-export function mdlLinks(s: Pick<OfficialSettlement, "caseNumbers">): { mdl: number; caseNumber: string }[] {
+/** MDL links as the retype stored them: only where a case number on the page is that MDL's own master docket in the
+ * MDL registry (and its court, when named). A docket-form number alone never links here, and nothing links before the
+ * dataset is retyped; the case number still shows as written. */
+export function mdlLinks(s: Pick<OfficialSettlement, "mdlLinks">): { mdl: number; caseNumber: string }[] {
   const seen = new Set<number>();
   const out: { mdl: number; caseNumber: string }[] = [];
-  for (const c of s.caseNumbers) {
-    const n = mdlFromCaseNumber(c);
-    if (n != null && !seen.has(n)) {
-      seen.add(n);
-      out.push({ mdl: n, caseNumber: c });
-    }
+  for (const l of s.mdlLinks ?? []) {
+    if (mdlFromCaseNumber(l.caseNumber) !== l.mdl || seen.has(l.mdl)) continue;
+    seen.add(l.mdl);
+    out.push(l);
   }
   return out;
 }

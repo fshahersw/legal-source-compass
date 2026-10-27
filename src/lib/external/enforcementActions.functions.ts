@@ -741,7 +741,8 @@ export type OfficialSettlement = {
     status: string;
     /** Role typed from the amount's own sentence (retype_claims.py); null until the dataset is retyped. */
     role: SettlementAmountRole | null;
-    /** For role "other": fees_costs, service_award, penalty, distribution, estimate, threshold or unclear. */
+    /** For role "other": fees_costs, service_award, penalty, distribution, fund_addition, order_total, estimate,
+     * threshold or unclear. */
     detail: string | null;
     /** The wording that decided the role, as written on the page. */
     roleBasis: string | null;
@@ -751,6 +752,8 @@ export type OfficialSettlement = {
   claimUrl: string | null;
   confirmed: ConfirmedFact[];
   leadUrl: string | null;
+  /** MDLs whose registry master docket is a case number on the page (retype_claims.py); null until retyped. */
+  mdlLinks: { mdl: number; caseNumber: string }[] | null;
 };
 
 const FACTS: ConfirmedFact[] = ["deadline", "amount", "court", "case number"];
@@ -813,6 +816,14 @@ export function parseOfficialSettlement(row: {
     claimUrl: webUrl(s["claim_url"]),
     confirmed,
     leadUrl: webUrl(discovery?.["url"]),
+    mdlLinks: Array.isArray(s["mdl_links"])
+      ? arr(s["mdl_links"]).flatMap((x) => {
+          const o = obj(x);
+          const mdl = num(o?.["mdl"]);
+          const caseNumber = str(o?.["case_number"], 80);
+          return mdl != null && Number.isInteger(mdl) && mdl > 0 && caseNumber ? [{ mdl, caseNumber }] : [];
+        })
+      : null,
   };
 }
 

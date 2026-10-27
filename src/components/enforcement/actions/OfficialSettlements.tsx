@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { OfficialSettlement } from "@/lib/external/enforcementActions.functions";
 import { LoadingBlock, StateNote } from "../parts";
+import { CourtList } from "./bits";
 import { officialSettlementsQuery } from "./actionsView";
 import { fmtInt, fmtUsd, hostOf } from "./format";
 import {
@@ -77,20 +78,15 @@ const About = () => (
     </p>
     <p className="mt-2">
       Each dollar figure is typed from its own sentence: settlement fund total, per claimant,
-      aggregate cap or other (fees, awards, penalties, agency distribution rounds, estimates). The
+      aggregate cap or other (fees, awards, penalties, agency orders and distribution rounds,
+      estimates). The
       headline is the largest fund total; a per-claimant figure is never shown as the settlement
       amount, and figures are never summed.
     </p>
     <p className="mt-2">
-      An MDL is named only when a case number on the page is in MDL docket form (for example
-      2:19-ml-02905 is MDL 2905). Deadline status is computed against today.
-    </p>
-    <p className="mt-2">
-      Leads discovered via{" "}
-      <a href="https://settlesignal.com/" target="_blank" rel="noreferrer" className="underline">
-        SettleSignal (settlesignal.com)
-      </a>
-      , free to use with attribution; its own status and payout text are not shown.
+      An MDL is named only when a case number on the page is that MDL&apos;s own master docket in
+      the MDL registry (for example 2:19-ml-02905 is MDL 2905). Deadline status is computed against
+      today.
     </p>
   </>
 );
@@ -203,7 +199,7 @@ function Kpis({ s, today, footer }: { s: Summary; today: string; footer: Paramet
         as="li"
         label="Linked to an MDL"
         value={fmtInt(s.withMdl)}
-        meta="Case number in MDL docket form on the page"
+        meta="Case number on the page is the MDL's master docket"
       />
     </KpiGrid>
   );
@@ -240,7 +236,35 @@ function AmountLine({ r }: { r: SettlementView }) {
         <span className="text-muted-foreground"> · fund total not recorded</span>
       </span>
     );
+  const untyped = r.amounts.filter((a) => a.role == null);
+  if (untyped.length)
+    return (
+      <span title={untyped[0]!.sentence ?? undefined}>
+        <span className="font-medium text-foreground tabular-nums">
+          {untyped
+            .slice(0, 2)
+            .map((a) => a.asWritten)
+            .join(" / ")}
+        </span>
+        <span className="text-muted-foreground"> · role not typed yet</span>
+      </span>
+    );
   return <span>Fund total not recorded</span>;
+}
+
+function ClaimLink({ r }: { r: SettlementView }) {
+  if (!r.claimUrl) return null;
+  return (
+    <a
+      href={r.claimUrl}
+      target="_blank"
+      rel="noreferrer"
+      title="Claim form linked from the official page"
+      className="text-primary hover:underline"
+    >
+      Claim form
+    </a>
+  );
 }
 
 function MdlChips({ r }: { r: SettlementView }) {
@@ -300,6 +324,7 @@ function NextDeadlines({
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted-foreground">
                     <AmountLine r={r} />
                     <MdlChips r={r} />
+                    <ClaimLink r={r} />
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
@@ -492,10 +517,20 @@ function AllSettlements({
     },
     {
       key: "court",
-      label: "Court / case no.",
-      value: (r) => [r.courts[0]?.asWritten, ...r.caseNumbers.slice(0, 2)].filter(Boolean).join("; ") || null,
+      label: "Court",
+      value: (r) => r.courts.map((c) => c.asWritten).join("; ") || null,
+      render: (r): ReactNode =>
+        r.courts.length ? <CourtList courts={r.courts.slice(0, 2)} /> : <span className="text-muted-foreground">Not recorded</span>,
     },
+    { key: "case", label: "Case no.", value: (r) => r.caseNumbers.slice(0, 2).join("; ") || null },
     { key: "site", label: "Official page", value: (r) => r.officialHost ?? hostOf(r.officialUrl) },
+    {
+      key: "claim",
+      label: "Claim form",
+      value: (r) => r.claimUrl,
+      render: (r): ReactNode =>
+        r.claimUrl ? <ClaimLink r={r} /> : <span className="text-muted-foreground">Not recorded</span>,
+    },
   ];
   return (
     <DataDrawer
