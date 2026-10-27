@@ -273,7 +273,9 @@ def publish():
     packet = json.load(open(PACKET, encoding="utf-8"))
     if packet["dataset"] != DATASET:
         raise SystemExit("packet is for another dataset")
-    writer.publish(DATASET, packet["label"], packet["rows"], listing_block=packet["listing_block"], summary=packet["summary"])
+    # The export reads rows without their dataset column; corpus_writer.publish posts rows as given, so stamp it here.
+    rows = [{**r, "dataset": DATASET} for r in packet["rows"]]
+    writer.publish(DATASET, packet["label"], rows, listing_block=packet["listing_block"], summary=packet["summary"])
 
 
 def main(argv=None):
