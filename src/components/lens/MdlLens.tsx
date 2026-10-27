@@ -1373,7 +1373,10 @@ function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
   ];
   return (
     <div className="space-y-3">
-      <section className="rounded-xl border border-border bg-card shadow-xs" aria-label="MDL summary">
+      <section
+        className="rounded-xl border border-border bg-card shadow-xs"
+        aria-label="MDL summary"
+      >
         <div className="px-4 py-3">
           <p className="text-[11px] text-muted-foreground">
             MDL {mdl} ·{" "}
@@ -1454,7 +1457,10 @@ export function MdlLens({ mdl }: { mdl: number }) {
   const growth = growthPct(m.pending, m.change12m);
   return (
     <div className="space-y-3">
-      <section className="rounded-xl border border-border bg-card shadow-xs" aria-label="MDL summary">
+      <section
+        className="rounded-xl border border-border bg-card shadow-xs"
+        aria-label="MDL summary"
+      >
         <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <p className="text-[11px] text-muted-foreground">

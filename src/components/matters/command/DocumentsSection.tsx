@@ -17,7 +17,8 @@ export function DocumentsSection({
   search: MatterSearch;
   onSearch: (next: (prev: MatterSearch) => MatterSearch) => void;
 }) {
-  const open = search.entry !== undefined || search.view !== undefined || search.tab === "documents";
+  const open =
+    search.entry !== undefined || search.view !== undefined || search.tab === "documents";
   return (
     <div className="space-y-4">
       <FilingsPanel type="mdl" id={cmd.mdl} />

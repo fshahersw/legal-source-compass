@@ -620,7 +620,13 @@ describe("breadcrumbs: Section › sub-area › entity", () => {
         { label: "Seeger Weiss hub", to: "/matters/seeger-weiss" },
         { label: "MDL 2873" },
       ]),
-    ).toEqual([]);
+    ).toEqual([
+      { label: "Litigation", to: "/litigation" },
+      { label: "MDLs & mass torts", to: "/matters/analytics" },
+      { label: "Matters", to: "/matters" },
+      { label: "Seeger Weiss hub", to: "/matters/seeger-weiss" },
+      { label: "MDL 2873" },
+    ]);
   });
   it("law: Law & government › Federal law › U.S. Code › Title 42 › § 1983", () => {
     expect(

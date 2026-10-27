@@ -60,7 +60,11 @@ function Ledger({
       label: "Subject as printed",
       value: (r) => r.subject,
       render: (r) =>
-        r.missing ? <span className="text-muted-foreground">{NOT_IN_COLLECTED_TEXT}</span> : r.subject,
+        r.missing ? (
+          <span className="text-muted-foreground">{NOT_IN_COLLECTED_TEXT}</span>
+        ) : (
+          r.subject
+        ),
     },
     {
       key: "entry",
@@ -194,7 +198,9 @@ function KindCard({
             {rows.slice(0, 3).map((r) => (
               <li key={r.id} className="min-w-0">
                 <span className="tabular-nums text-muted-foreground">{day(r.date)}</span> ·{" "}
-                <Out href={r.sourceUrl}>{r.title.length > 160 ? `${r.title.slice(0, 159)}…` : r.title}</Out>
+                <Out href={r.sourceUrl}>
+                  {r.title.length > 160 ? `${r.title.slice(0, 159)}…` : r.title}
+                </Out>
               </li>
             ))}
           </ul>
@@ -207,10 +213,26 @@ function KindCard({
 }
 
 const SMALL_LEDGERS: { title: string; kinds: OrderKind[]; empty: string }[] = [
-  { title: "Bellwether orders", kinds: ["bellwether"], empty: "No bellwether order in the collected text." },
-  { title: "Fact sheet orders", kinds: ["pfs"], empty: "No fact sheet order in the collected text." },
-  { title: "Trial settings", kinds: ["trial_setting"], empty: "No trial setting in the collected text." },
-  { title: "Leadership orders", kinds: ["leadership"], empty: "No leadership order in the collected text." },
+  {
+    title: "Bellwether orders",
+    kinds: ["bellwether"],
+    empty: "No bellwether order in the collected text.",
+  },
+  {
+    title: "Fact sheet orders",
+    kinds: ["pfs"],
+    empty: "No fact sheet order in the collected text.",
+  },
+  {
+    title: "Trial settings",
+    kinds: ["trial_setting"],
+    empty: "No trial setting in the collected text.",
+  },
+  {
+    title: "Leadership orders",
+    kinds: ["leadership"],
+    empty: "No leadership order in the collected text.",
+  },
   {
     title: "Settlement, common-benefit and special-master orders",
     kinds: ["settlement", "common_benefit", "special_master"],
@@ -229,7 +251,10 @@ const SMALL_LEDGERS: { title: string; kinds: OrderKind[]; empty: string }[] = [
 ];
 
 export function KeyOrdersSection({ cmd }: { cmd: MdlCommandPayload }) {
-  const docs = useQuery({ ...mdlOrderDocumentsQuery(cmd.mdl), enabled: !!cmd.orders?.entries.length });
+  const docs = useQuery({
+    ...mdlOrderDocumentsQuery(cmd.mdl),
+    enabled: !!cmd.orders?.entries.length,
+  });
   if (!cmd.orders)
     return (
       <p className="text-body text-muted-foreground">
@@ -252,12 +277,20 @@ export function KeyOrdersSection({ cmd }: { cmd: MdlCommandPayload }) {
             : "Key docket entries by kind"
         }
         subtitle={`Entries per kind · master docket · rule ${ORDERS_RULE_VERSION}`}
-        status={items.length ? { kind: "ready" } : { kind: "empty", reason: "No entry in the collected text matches an order pattern." }}
+        status={
+          items.length
+            ? { kind: "ready" }
+            : { kind: "empty", reason: "No entry in the collected text matches an order pattern." }
+        }
         sources={[docket]}
         partial={collectedNote(o.coverage.collectedThrough)}
         table={{
           caption: `MDL ${cmd.mdl}: classified docket entries by kind`,
-          columns: [{ label: "Kind" }, { label: "Entries", align: "right" }, { label: "Latest", align: "right" }],
+          columns: [
+            { label: "Kind" },
+            { label: "Entries", align: "right" },
+            { label: "Latest", align: "right" },
+          ],
           rows: o.counts.map((c) => ({
             key: c.kind,
             cells: [ORDER_KIND_LABEL[c.kind], fmt(c.entries), c.latest ?? "Not recorded"],
@@ -271,7 +304,11 @@ export function KeyOrdersSection({ cmd }: { cmd: MdlCommandPayload }) {
           </p>
         }
       >
-        <RankBars items={items} format={fmt} ariaLabel={`Classified docket entries by kind, MDL ${cmd.mdl}`} />
+        <RankBars
+          items={items}
+          format={fmt}
+          ariaLabel={`Classified docket entries by kind, MDL ${cmd.mdl}`}
+        />
       </ChartCard>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -287,7 +324,12 @@ export function KeyOrdersSection({ cmd }: { cmd: MdlCommandPayload }) {
           label="Rule 702 rulings"
           cellBasis="basis-[calc(50%-1px)] xl:basis-[calc(20%-1px)]"
           items={[
-            { key: "rulings", label: "Rule 702 rulings", value: fmt(r.rulings), meta: "Order entries" },
+            {
+              key: "rulings",
+              label: "Rule 702 rulings",
+              value: fmt(r.rulings),
+              meta: "Order entries",
+            },
             { key: "denied", label: "Denied", value: fmt(r.byOutcome.denied) },
             { key: "granted", label: "Granted", value: fmt(r.byOutcome.granted) },
             { key: "part", label: "Granted in part", value: fmt(r.byOutcome.granted_in_part) },

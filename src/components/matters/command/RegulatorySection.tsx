@@ -55,8 +55,15 @@ function RegulatoryLinksCard({ mdl }: { mdl: string }) {
   const d = q.data;
   if (!d.rows.length) return null;
   const byClass = new Map<string, number>();
-  for (const r of d.rows) byClass.set(r.classification ?? "Not recorded", (byClass.get(r.classification ?? "Not recorded") ?? 0) + 1);
-  const dated = d.rows.filter((r) => r.date).map((r) => r.date!).sort();
+  for (const r of d.rows)
+    byClass.set(
+      r.classification ?? "Not recorded",
+      (byClass.get(r.classification ?? "Not recorded") ?? 0) + 1,
+    );
+  const dated = d.rows
+    .filter((r) => r.date)
+    .map((r) => r.date!)
+    .sort();
   return (
     <Card>
       <CardBody className="pt-4">
@@ -99,7 +106,10 @@ function RegulatoryLinksCard({ mdl }: { mdl: string }) {
       </CardBody>
       <CardFooter>
         <SourceFooter
-          source={{ label: "openFDA records (Seeger Weiss regulatory links)", href: "https://open.fda.gov/" }}
+          source={{
+            label: "openFDA records (Seeger Weiss regulatory links)",
+            href: "https://open.fda.gov/",
+          }}
           period={dated.length ? `${day(dated[0])} to ${day(dated.at(-1))}` : undefined}
           about={
             <>
@@ -142,7 +152,9 @@ function SecRow({ c }: { c: SecDefendant }) {
             <div key={label}>
               <dt className="text-muted-foreground">{label}</dt>
               <dd className="tabular-nums">
-                {p ? `${money(p.value, p.unit)} · FY${p.fy}${p.end ? ` (to ${day(p.end)})` : ""}` : "Not recorded"}
+                {p
+                  ? `${money(p.value, p.unit)} · FY${p.fy}${p.end ? ` (to ${day(p.end)})` : ""}`
+                  : "Not recorded"}
               </dd>
             </div>
           );
@@ -176,7 +188,11 @@ function SecDefendantsCard({ mdl }: { mdl: string }) {
         )}
         {d.review.length ? (
           <Note>
-            Requires review (weaker link): {d.review.slice(0, 5).map((c) => c.name).join(", ")}
+            Requires review (weaker link):{" "}
+            {d.review
+              .slice(0, 5)
+              .map((c) => c.name)
+              .join(", ")}
             {d.review.length > 5 ? ` and ${d.review.length - 5} more` : ""}.
           </Note>
         ) : null}

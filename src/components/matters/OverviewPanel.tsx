@@ -155,38 +155,38 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
 export function JpmlCountsPanel({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
   return (
-        <Panel title="JPML action counts" note="Each dated report counts actions in this MDL.">
-          {o.actions.snapshots.length ? (
-            <DataTable caption="JPML action counts by report date" narrow>
-              <thead>
-                <tr>
-                  <th className={th} scope="col">
-                    Report date
-                  </th>
-                  <th className={`${th} text-right`} scope="col">
-                    Total actions
-                  </th>
-                  <th className={`${th} text-right`} scope="col">
-                    Pending
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {o.actions.snapshots.map((s) => (
-                  <tr key={s.asOf}>
-                    <td className={`${td} font-mono`}>{s.asOf}</td>
-                    <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.total)}</td>
-                    <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.pending)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </DataTable>
-          ) : (
-            <p className="text-[13px] text-muted-foreground">
-              No dated JPML action reports are recorded for this MDL.
-            </p>
-          )}
-        </Panel>
+    <Panel title="JPML action counts" note="Each dated report counts actions in this MDL.">
+      {o.actions.snapshots.length ? (
+        <DataTable caption="JPML action counts by report date" narrow>
+          <thead>
+            <tr>
+              <th className={th} scope="col">
+                Report date
+              </th>
+              <th className={`${th} text-right`} scope="col">
+                Total actions
+              </th>
+              <th className={`${th} text-right`} scope="col">
+                Pending
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {o.actions.snapshots.map((s) => (
+              <tr key={s.asOf}>
+                <td className={`${td} font-mono`}>{s.asOf}</td>
+                <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.total)}</td>
+                <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.pending)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </DataTable>
+      ) : (
+        <p className="text-[13px] text-muted-foreground">
+          No dated JPML action reports are recorded for this MDL.
+        </p>
+      )}
+    </Panel>
   );
 }
 
@@ -210,55 +210,53 @@ export function CoverageDetails({ payload }: { payload: MatterOverviewPayload })
   const cases = o.cases;
   const counsel = o.counsel;
   return (
-      <details className="rounded-xl border border-border bg-card shadow-xs px-4 py-3 shadow-card">
-        <summary className="cursor-pointer font-medium">
-          Source & coverage details
-          {payload.master?.sourceAsOf ? (
-            <span className="ml-2 text-[12px] font-normal text-muted-foreground">
-              Selection snapshot {payload.master.sourceAsOf}
-            </span>
-          ) : null}
-        </summary>
-        <div className="mt-3 space-y-2">
-          {[
-            { title: "Cases", text: cases?.qualification },
-            { title: "Docket text", text: o.activity?.qualification },
-            { title: "Saved documents", text: o.docketDocuments?.qualification },
-            { title: "Counsel", text: counsel?.qualification },
-          ]
-            .filter((x) => x.text)
-            .map((x) => (
-              <Scope key={x.title} title={x.title}>
-                {x.text}
-              </Scope>
-            ))}
-          {!cases?.qualification &&
-          !o.activity?.qualification &&
-          !o.docketDocuments?.qualification &&
-          !counsel?.qualification ? (
-            <p className="text-[13px] text-muted-foreground">
-              No source qualifications are recorded for this matter's lists.
-            </p>
-          ) : null}
-          {payload.master?.sourceAsOf || payload.master?.sourceCheckedAt ? (
-            <p className="text-[12px] text-muted-foreground">
-              {payload.master.sourceAsOf
-                ? `Original selection snapshot: ${payload.master.sourceAsOf}. `
-                : ""}
-              {payload.master.sourceCheckedAt ? (
-                <>CourtListener checked — {payload.master.sourceCheckedAt.slice(0, 10)}. </>
-              ) : null}
-              Master-docket dates and filing information are from CourtListener metadata.{" "}
-              {o.masterDocket.clDocketId ? (
-                <LinkOut
-                  href={`https://www.courtlistener.com/docket/${o.masterDocket.clDocketId}/`}
-                >
-                  Open the live docket
-                </LinkOut>
-              ) : null}
-            </p>
-          ) : null}
-        </div>
-      </details>
+    <details className="rounded-xl border border-border bg-card shadow-xs px-4 py-3 shadow-card">
+      <summary className="cursor-pointer font-medium">
+        Source & coverage details
+        {payload.master?.sourceAsOf ? (
+          <span className="ml-2 text-[12px] font-normal text-muted-foreground">
+            Selection snapshot {payload.master.sourceAsOf}
+          </span>
+        ) : null}
+      </summary>
+      <div className="mt-3 space-y-2">
+        {[
+          { title: "Cases", text: cases?.qualification },
+          { title: "Docket text", text: o.activity?.qualification },
+          { title: "Saved documents", text: o.docketDocuments?.qualification },
+          { title: "Counsel", text: counsel?.qualification },
+        ]
+          .filter((x) => x.text)
+          .map((x) => (
+            <Scope key={x.title} title={x.title}>
+              {x.text}
+            </Scope>
+          ))}
+        {!cases?.qualification &&
+        !o.activity?.qualification &&
+        !o.docketDocuments?.qualification &&
+        !counsel?.qualification ? (
+          <p className="text-[13px] text-muted-foreground">
+            No source qualifications are recorded for this matter's lists.
+          </p>
+        ) : null}
+        {payload.master?.sourceAsOf || payload.master?.sourceCheckedAt ? (
+          <p className="text-[12px] text-muted-foreground">
+            {payload.master.sourceAsOf
+              ? `Original selection snapshot: ${payload.master.sourceAsOf}. `
+              : ""}
+            {payload.master.sourceCheckedAt ? (
+              <>CourtListener checked — {payload.master.sourceCheckedAt.slice(0, 10)}. </>
+            ) : null}
+            Master-docket dates and filing information are from CourtListener metadata.{" "}
+            {o.masterDocket.clDocketId ? (
+              <LinkOut href={`https://www.courtlistener.com/docket/${o.masterDocket.clDocketId}/`}>
+                Open the live docket
+              </LinkOut>
+            ) : null}
+          </p>
+        ) : null}
+      </div>
+    </details>
   );
 }

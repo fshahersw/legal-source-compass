@@ -6,62 +6,9 @@
  */
 import { AiSummary } from "@/components/kit/ai/AiSummary";
 import { AskAiButton } from "@/components/kit/ai/AskAiButton";
-import { buildSectionContext, type FigureInput } from "@/components/kit/ai/buildSectionContext";
-import type { Headline } from "@/components/matters/command/commandView";
+import { buildSectionContext } from "@/components/kit/ai/buildSectionContext";
+import { headlineFigures, type Headline } from "@/components/matters/command/commandView";
 import type { MdlCommandPayload } from "@/lib/matters/types";
-
-/** The figures behind the headline AI context (pure; every one is printed in the KPI row). */
-export function headlineFigures(cmd: MdlCommandPayload, h: Headline): FigureInput[] {
-  const figures: FigureInput[] = [];
-  if (h.pending)
-    figures.push({
-      label: "Actions pending (JPML)",
-      value: h.pending.value,
-      unit: "actions",
-      period: `report of ${h.pending.date}`,
-    });
-  if (h.added)
-    figures.push({
-      label: "Actions added between the last two JPML reports (difference of published totals)",
-      value: h.added.value,
-      unit: "actions",
-      period: `${h.added.from} to ${h.added.to} (${h.added.days} days)`,
-      note: h.added.negative ? "total fell: JPML re-count, not dismissals" : undefined,
-    });
-  if (h.numbered) {
-    figures.push({
-      label: "Distinct CMO and PTO numbers in the collected docket text",
-      value: h.numbered.distinct,
-      unit: "order numbers",
-      note: h.collectedThrough ? `docket text collected through ${h.collectedThrough}` : undefined,
-    });
-    if (h.numbered.latest)
-      figures.push({
-        label: "Latest numbered order",
-        value: h.numbered.latest.label,
-        period: h.numbered.latest.date ?? undefined,
-      });
-  }
-  if (h.next)
-    figures.push({
-      label: `Next date set on the docket${h.next.label ? ` (${h.next.label})` : ""}`,
-      value: h.next.date,
-      note: h.next.entryDate ? `as docketed on ${h.next.entryDate}` : undefined,
-    });
-  if (cmd.mode === "registry" && h.members !== null)
-    figures.push({
-      label: "Member dockets with evidence in the matter registry",
-      value: h.members,
-      unit: "dockets",
-      note: "partial count, not the size of the MDL",
-    });
-  if (h.rule702)
-    figures.push(
-      { label: "Rule 702 rulings (order entries)", value: h.rule702.rulings, unit: "orders" },
-      { label: "Rule 702 motions (counted apart)", value: h.rule702.motions, unit: "motions" },
-    );
-  return figures;
-}
 
 export function MatterAi({ cmd, h }: { cmd: MdlCommandPayload; h: Headline }) {
   const figures = headlineFigures(cmd, h);

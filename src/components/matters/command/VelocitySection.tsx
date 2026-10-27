@@ -73,8 +73,8 @@ export function VelocitySection({ cmd }: { cmd: MdlCommandPayload }) {
             })}
             about={
               <p>
-                Entries whose own text starts with "Conditional Transfer Order". One CTO can transfer
-                many actions; this counts orders, not actions.
+                Entries whose own text starts with "Conditional Transfer Order". One CTO can
+                transfer many actions; this counts orders, not actions.
               </p>
             }
           >

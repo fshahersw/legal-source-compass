@@ -3,7 +3,13 @@
  * timeline) and the AI summary of exactly those figures.
  */
 import { useMemo } from "react";
-import { ChartCard, TrendColumns, TrendLines, periodTable, trendTakeaway } from "@/components/charts/recharts";
+import {
+  ChartCard,
+  TrendColumns,
+  TrendLines,
+  periodTable,
+  trendTakeaway,
+} from "@/components/charts/recharts";
 import { Swimlanes } from "@/components/charts/Swimlanes";
 import { KpiCard, KpiGrid } from "@/components/kit";
 import { MatterAi } from "@/components/matters/MatterAi";
@@ -88,8 +94,16 @@ function Kpis({ cmd, h }: { cmd: MdlCommandPayload; h: Headline }) {
       as="li"
       label="Next date set on the docket"
       value={h.next ? day(h.next.date) : null}
-      meta={h.next ? (h.next.label ?? "Event not named in the entry") : "No date ahead in the collected text"}
-      footnote={h.next ? docketedNote(h.next.entryDate, h.collectedThrough) : collectedNote(h.collectedThrough)}
+      meta={
+        h.next
+          ? (h.next.label ?? "Event not named in the entry")
+          : "No date ahead in the collected text"
+      }
+      footnote={
+        h.next
+          ? docketedNote(h.next.entryDate, h.collectedThrough)
+          : collectedNote(h.collectedThrough)
+      }
       source={{ source: { label: docket.label, href: docket.url } }}
     />,
   ];
@@ -128,10 +142,15 @@ export function OverviewSection({ cmd }: { cmd: MdlCommandPayload }) {
   const h = useMemo(() => headline(cmd), [cmd]);
   const points = useMemo(() => sortedPoints(cmd.jpmlPoints), [cmd.jpmlPoints]);
   const added = useMemo(() => addedRows(cmd.jpmlPoints), [cmd.jpmlPoints]);
-  const swim = useMemo(() => (cmd.orders ? orderSwimlanes(cmd.orders.entries) : null), [cmd.orders]);
+  const swim = useMemo(
+    () => (cmd.orders ? orderSwimlanes(cmd.orders.entries) : null),
+    [cmd.orders],
+  );
   const jpml = jpmlSource(cmd);
   const docket = docketSource(cmd);
-  const period = points.length ? `${day(points[0]!.date)} to ${day(points.at(-1)!.date)}` : undefined;
+  const period = points.length
+    ? `${day(points[0]!.date)} to ${day(points.at(-1)!.date)}`
+    : undefined;
   const pendingTitle =
     trendTakeaway(
       "Actions pending",
@@ -150,14 +169,29 @@ export function OverviewSection({ cmd }: { cmd: MdlCommandPayload }) {
           variant="editorial"
           title={pendingTitle}
           subtitle={`Actions pending · MDL ${cmd.mdl} · monthly JPML reports`}
-          status={points.length >= 2 ? { kind: "ready" } : { kind: "empty", reason: "Fewer than two JPML reports list this MDL." }}
+          status={
+            points.length >= 2
+              ? { kind: "ready" }
+              : { kind: "empty", reason: "Fewer than two JPML reports list this MDL." }
+          }
           sources={[jpml]}
           period={period}
-          table={periodTable(points, "date", [{ key: "pending", label: "Actions pending" }, { key: "total", label: "Total actions" }], fmt, {
-            caption: `MDL ${cmd.mdl}: actions pending and total at each JPML report`,
-            xLabel: "Report date",
-          })}
-          about={<p>Counts as each monthly JPML report prints them. Total includes closed actions.</p>}
+          table={periodTable(
+            points,
+            "date",
+            [
+              { key: "pending", label: "Actions pending" },
+              { key: "total", label: "Total actions" },
+            ],
+            fmt,
+            {
+              caption: `MDL ${cmd.mdl}: actions pending and total at each JPML report`,
+              xLabel: "Report date",
+            },
+          )}
+          about={
+            <p>Counts as each monthly JPML report prints them. Total includes closed actions.</p>
+          }
         >
           <TrendLines
             rows={points}
@@ -172,13 +206,26 @@ export function OverviewSection({ cmd }: { cmd: MdlCommandPayload }) {
           variant="editorial"
           title={addedTitle}
           subtitle="Actions added between consecutive reports · difference of published totals"
-          status={added.length ? { kind: "ready" } : { kind: "empty", reason: "Fewer than two JPML reports list this MDL." }}
+          status={
+            added.length
+              ? { kind: "ready" }
+              : { kind: "empty", reason: "Fewer than two JPML reports list this MDL." }
+          }
           sources={[jpml]}
           period={period}
-          table={periodTable(added, "report", [{ key: "added", label: "Actions added since the prior report" }, { key: "days", label: "Days since the prior report" }], fmt, {
-            caption: `MDL ${cmd.mdl}: actions added between JPML reports`,
-            xLabel: "Report date",
-          })}
+          table={periodTable(
+            added,
+            "report",
+            [
+              { key: "added", label: "Actions added since the prior report" },
+              { key: "days", label: "Days since the prior report" },
+            ],
+            fmt,
+            {
+              caption: `MDL ${cmd.mdl}: actions added between JPML reports`,
+              xLabel: "Report date",
+            },
+          )}
           about={
             <p>
               Each bar is the report's total minus the prior report's total. A negative value is a
@@ -209,7 +256,11 @@ export function OverviewSection({ cmd }: { cmd: MdlCommandPayload }) {
             ? { kind: "error", message: "The docket text could not be read just now." }
             : swim
               ? { kind: "ready" }
-              : { kind: "empty", reason: "No classified order is in the collected master-docket text for this MDL." }
+              : {
+                  kind: "empty",
+                  reason:
+                    "No classified order is in the collected master-docket text for this MDL.",
+                }
         }
         sources={[docket]}
         partial={h.collectedThrough ? collectedNote(h.collectedThrough) : undefined}

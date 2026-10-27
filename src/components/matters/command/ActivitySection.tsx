@@ -61,7 +61,11 @@ function TypedEvents({ cmd }: { cmd: MdlCommandPayload }) {
               : { kind: "empty", reason: "No typed docket event is linked to this MDL." }
       }
       sources={[TYPED_SOURCE]}
-      partial={d?.window.last ? `Collected through ${day(d.window.last)}; later events are not collected.` : undefined}
+      partial={
+        d?.window.last
+          ? `Collected through ${day(d.window.last)}; later events are not collected.`
+          : undefined
+      }
       table={
         d
           ? {
@@ -75,7 +79,13 @@ function TypedEvents({ cmd }: { cmd: MdlCommandPayload }) {
               ],
               rows: d.byType.map((t) => ({
                 key: t.type,
-                cells: [t.type, fmt(t.count), t.first ?? "Not recorded", t.last ?? "Not recorded", fmt(t.undated)],
+                cells: [
+                  t.type,
+                  fmt(t.count),
+                  t.first ?? "Not recorded",
+                  t.last ?? "Not recorded",
+                  fmt(t.undated),
+                ],
               })),
             }
           : undefined
@@ -114,7 +124,10 @@ function TypedEvents({ cmd }: { cmd: MdlCommandPayload }) {
 
 export function ActivitySection({ cmd, open }: { cmd: MdlCommandPayload; open: boolean }) {
   const through = cmd.orders?.coverage.collectedThrough ?? null;
-  const years = useMemo(() => ordersPerYear(cmd.orders?.entries ?? [], through), [cmd.orders, through]);
+  const years = useMemo(
+    () => ordersPerYear(cmd.orders?.entries ?? [], through),
+    [cmd.orders, through],
+  );
   const docket = docketSource(cmd);
   const total = years.reduce(
     (a, r) => a + Object.values(r.values).reduce<number>((s, v) => s + (v ?? 0), 0),
@@ -132,12 +145,19 @@ export function ActivitySection({ cmd, open }: { cmd: MdlCommandPayload; open: b
               : "Key orders entered per year"
           }
           subtitle={`Court-entered key orders per year, by family · rule ${ORDERS_RULE_VERSION}`}
-          status={years.length ? { kind: "ready" } : { kind: "empty", reason: "No classified order in the collected docket text." }}
+          status={
+            years.length
+              ? { kind: "ready" }
+              : { kind: "empty", reason: "No classified order in the collected docket text." }
+          }
           sources={[docket]}
           partial={collectedNote(through)}
           table={{
             caption: `MDL ${cmd.mdl}: key orders entered per year by family`,
-            columns: [{ label: "Year" }, ...YEAR_GROUPS.map((g) => ({ label: g.label, align: "right" as const }))],
+            columns: [
+              { label: "Year" },
+              ...YEAR_GROUPS.map((g) => ({ label: g.label, align: "right" as const })),
+            ],
             rows: [...years].reverse().map((r) => ({
               key: r.period,
               cells: [
@@ -148,12 +168,18 @@ export function ActivitySection({ cmd, open }: { cmd: MdlCommandPayload; open: b
           }}
           about={
             <p>
-              Only entries the court entered (orders, judgments, verdicts) whose text starts with the
-              order's own wording; each counts once, in its first family. The last year is partial.
+              Only entries the court entered (orders, judgments, verdicts) whose text starts with
+              the order's own wording; each counts once, in its first family. The last year is
+              partial.
             </p>
           }
         >
-          <StackedBarsOverTime rows={years} keys={YEAR_GROUPS.map((g) => g.key)} labels={labels} format={fmt} />
+          <StackedBarsOverTime
+            rows={years}
+            keys={YEAR_GROUPS.map((g) => g.key)}
+            labels={labels}
+            format={fmt}
+          />
         </ChartCard>
       </div>
       <TypedEvents cmd={cmd} />

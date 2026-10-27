@@ -53,8 +53,14 @@ export function MdlIdentity({ cmd }: { cmd: MdlCommandPayload }) {
         )}
         {type ? <Chip>{type}</Chip> : null}
         {p?.sw.tier ? (
-          <Link to="/matters/seeger-weiss" className="rounded focus-visible:outline-2 focus-visible:outline-ring">
-            <Chip tone="primary" title="Seeger Weiss priority tier; orders the hub and never asserts a firm role.">
+          <Link
+            to="/matters/seeger-weiss"
+            className="rounded focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <Chip
+              tone="primary"
+              title="Seeger Weiss priority tier; orders the hub and never asserts a firm role."
+            >
               Seeger Weiss tier {p.sw.tier}
             </Chip>
           </Link>
@@ -66,46 +72,52 @@ export function MdlIdentity({ cmd }: { cmd: MdlCommandPayload }) {
         ) : null}
       </div>
       <div className="mt-3 flex gap-4">
-      {judgeProfile ? (
-        <JudgeHeadshot judgeId={judgeProfile.id} name={judgeProfile.name} recorded={null} />
-      ) : null}
-      <dl className="grid min-w-0 flex-1 content-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Fact label="Transferee court">
-          <span className="flex items-center gap-2">
-            {courtId ? <CourtArtwork courtId={courtId} title={courtName ?? courtId} compact /> : null}
-            {courtId ? (
-              <Link to="/courts/$id" params={{ id: courtId }} className="text-primary underline-offset-2 hover:underline">
-                {courtName ?? courtId}
+        {judgeProfile ? (
+          <JudgeHeadshot judgeId={judgeProfile.id} name={judgeProfile.name} recorded={null} />
+        ) : null}
+        <dl className="grid min-w-0 flex-1 content-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Fact label="Transferee court">
+            <span className="flex items-center gap-2">
+              {courtId ? (
+                <CourtArtwork courtId={courtId} title={courtName ?? courtId} compact />
+              ) : null}
+              {courtId ? (
+                <Link
+                  to="/courts/$id"
+                  params={{ id: courtId }}
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  {courtName ?? courtId}
+                </Link>
+              ) : (
+                (courtName ?? "Not recorded")
+              )}
+            </span>
+          </Fact>
+          <Fact label="Transferee judge">
+            {judgeProfile ? (
+              <Link
+                to="/judges/$id"
+                params={{ id: judgeProfile.id }}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {judgeProfile.name}
               </Link>
             ) : (
-              (courtName ?? "Not recorded")
+              (judgeName ?? "Not recorded")
             )}
-          </span>
-        </Fact>
-        <Fact label="Transferee judge">
-          {judgeProfile ? (
-            <Link
-              to="/judges/$id"
-              params={{ id: judgeProfile.id }}
-              className="text-primary underline-offset-2 hover:underline"
-            >
-              {judgeProfile.name}
-            </Link>
-          ) : (
-            (judgeName ?? "Not recorded")
-          )}
-        </Fact>
-        <Fact label="Master docket">
-          {master ? (
-            <Out href={clDocket ? `https://www.courtlistener.com/docket/${clDocket}/` : null}>
-              <span className="font-mono">{master}</span>
-            </Out>
-          ) : (
-            "Not recorded"
-          )}
-        </Fact>
-        <Fact label="Centralized (JPML transfer)">{day(transferred)}</Fact>
-      </dl>
+          </Fact>
+          <Fact label="Master docket">
+            {master ? (
+              <Out href={clDocket ? `https://www.courtlistener.com/docket/${clDocket}/` : null}>
+                <span className="font-mono">{master}</span>
+              </Out>
+            ) : (
+              "Not recorded"
+            )}
+          </Fact>
+          <Fact label="Centralized (JPML transfer)">{day(transferred)}</Fact>
+        </dl>
       </div>
     </section>
   );

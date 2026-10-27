@@ -65,7 +65,12 @@ export function MdlCommandPage({
     .join(" · ");
   const is = (id: MdlSectionId) => anchor === id;
   const sections: (ProfileSection & { id: MdlSectionId })[] = [
-    { id: "mdl-overview", title: "At a glance", label: "Overview", content: <OverviewSection cmd={cmd} /> },
+    {
+      id: "mdl-overview",
+      title: "At a glance",
+      label: "Overview",
+      content: <OverviewSection cmd={cmd} />,
+    },
     {
       id: "mdl-changes",
       title: "What changed",
@@ -133,7 +138,9 @@ export function MdlCommandPage({
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Matters", to: "/matters" },
-        ...(cmd.overview?.sw.tier ? [{ label: "Seeger Weiss hub", to: "/matters/seeger-weiss" }] : []),
+        ...(cmd.overview?.sw.tier
+          ? [{ label: "Seeger Weiss hub", to: "/matters/seeger-weiss" }]
+          : []),
         { label: `MDL ${cmd.mdl}` },
       ]}
       title={title}

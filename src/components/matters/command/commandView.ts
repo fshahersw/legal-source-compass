@@ -9,6 +9,7 @@
  */
 import type { SwimEvent, SwimGroup, SwimLane } from "@/components/charts/Swimlanes";
 import type { StackRow } from "@/components/charts/d3/maths";
+import type { FigureInput } from "@/components/kit/ai/buildSectionContext";
 import {
   NOT_IN_COLLECTED_TEXT,
   ORDER_KIND_LABEL,
@@ -130,7 +131,9 @@ export function headline(cmd: MdlCommandPayload): Headline {
             prior: null,
           }
         : null,
-    added: d ? { value: d.added, from: d.from, to: d.to, days: d.days, negative: d.negative } : null,
+    added: d
+      ? { value: d.added, from: d.from, to: d.to, days: d.days, negative: d.negative }
+      : null,
     numbered: o
       ? {
           distinct,
@@ -249,9 +252,7 @@ export function kindRows(
       sourceUrl: e.sourceUrl,
     });
   }
-  return out.sort(
-    (a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.id.localeCompare(b.id),
-  );
+  return out.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? "") || a.id.localeCompare(b.id));
 }
 
 /** Entries per kind for a ranked bar chart (the classifier's counts; motions and notices keep their own labels). */
@@ -263,11 +264,22 @@ export function kindItems(counts: readonly KindCount[]) {
 export const YEAR_GROUPS = [
   { key: "numbered", label: "CMOs and PTOs", kinds: ["cmo", "pto"] },
   { key: "cto", label: "Conditional transfer orders", kinds: ["cto"] },
-  { key: "trial", label: "Bellwether, trial and Rule 702", kinds: ["bellwether", "trial_setting", "rule702", "verdict"] },
+  {
+    key: "trial",
+    label: "Bellwether, trial and Rule 702",
+    kinds: ["bellwether", "trial_setting", "rule702", "verdict"],
+  },
   {
     key: "other",
     label: "Other key orders",
-    kinds: ["pfs", "leadership", "common_benefit", "special_master", "settlement", "bankruptcy_stay"],
+    kinds: [
+      "pfs",
+      "leadership",
+      "common_benefit",
+      "special_master",
+      "settlement",
+      "bankruptcy_stay",
+    ],
   },
 ] as const satisfies readonly { key: string; label: string; kinds: readonly OrderKind[] }[];
 
@@ -295,7 +307,8 @@ export function ordersPerYear(
   if (!years.length) return [];
   const first = Number(years[0]);
   const last = Number(years.at(-1));
-  const partialYear = collectedThrough && !collectedThrough.endsWith("-12-31") ? collectedThrough.slice(0, 4) : null;
+  const partialYear =
+    collectedThrough && !collectedThrough.endsWith("-12-31") ? collectedThrough.slice(0, 4) : null;
   const out: StackRow[] = [];
   for (let y = first; y <= last; y++) {
     const row = by.get(String(y)) ?? {};
@@ -328,23 +341,24 @@ export function ctoPerMonth(entries: readonly ClassifiedEntry[], collectedThroug
 
 /* ------------------------------------------------------------------ swimlanes */
 
-const LANES: readonly { id: string; group: string; label: string; kinds: readonly OrderKind[] }[] = [
-  { id: "cmo", group: "numbered", label: "Case management orders", kinds: ["cmo"] },
-  { id: "pto", group: "numbered", label: "Pretrial orders", kinds: ["pto"] },
-  { id: "leadership", group: "key", label: "Leadership", kinds: ["leadership"] },
-  { id: "pfs", group: "key", label: "Fact sheets", kinds: ["pfs"] },
-  { id: "bellwether", group: "key", label: "Bellwether", kinds: ["bellwether"] },
-  { id: "rule702", group: "key", label: "Rule 702 rulings", kinds: ["rule702"] },
-  {
-    id: "settlement",
-    group: "key",
-    label: "Settlement and common benefit",
-    kinds: ["settlement", "common_benefit"],
-  },
-  { id: "trial", group: "trial", label: "Trial settings", kinds: ["trial_setting"] },
-  { id: "verdict", group: "trial", label: "Verdicts", kinds: ["verdict"] },
-  { id: "stay", group: "trial", label: "Bankruptcy and stays", kinds: ["bankruptcy_stay"] },
-];
+const LANES: readonly { id: string; group: string; label: string; kinds: readonly OrderKind[] }[] =
+  [
+    { id: "cmo", group: "numbered", label: "Case management orders", kinds: ["cmo"] },
+    { id: "pto", group: "numbered", label: "Pretrial orders", kinds: ["pto"] },
+    { id: "leadership", group: "key", label: "Leadership", kinds: ["leadership"] },
+    { id: "pfs", group: "key", label: "Fact sheets", kinds: ["pfs"] },
+    { id: "bellwether", group: "key", label: "Bellwether", kinds: ["bellwether"] },
+    { id: "rule702", group: "key", label: "Rule 702 rulings", kinds: ["rule702"] },
+    {
+      id: "settlement",
+      group: "key",
+      label: "Settlement and common benefit",
+      kinds: ["settlement", "common_benefit"],
+    },
+    { id: "trial", group: "trial", label: "Trial settings", kinds: ["trial_setting"] },
+    { id: "verdict", group: "trial", label: "Verdicts", kinds: ["verdict"] },
+    { id: "stay", group: "trial", label: "Bankruptcy and stays", kinds: ["bankruptcy_stay"] },
+  ];
 
 export const SWIM_GROUPS: readonly SwimGroup[] = [
   { id: "numbered", label: "Numbered orders", slot: 0 },
@@ -395,4 +409,57 @@ export function orderSwimlanes(
     hi = new Date(d.getTime() + 30 * 86_400_000).toISOString().slice(0, 10);
   }
   return { lanes, domain: [lo, hi] };
+}
+
+/** The figures behind the headline AI context (pure; every one is printed in the KPI row). */
+export function headlineFigures(cmd: MdlCommandPayload, h: Headline): FigureInput[] {
+  const figures: FigureInput[] = [];
+  if (h.pending)
+    figures.push({
+      label: "Actions pending (JPML)",
+      value: h.pending.value,
+      unit: "actions",
+      period: `report of ${h.pending.date}`,
+    });
+  if (h.added)
+    figures.push({
+      label: "Actions added between the last two JPML reports (difference of published totals)",
+      value: h.added.value,
+      unit: "actions",
+      period: `${h.added.from} to ${h.added.to} (${h.added.days} days)`,
+      note: h.added.negative ? "total fell: JPML re-count, not dismissals" : undefined,
+    });
+  if (h.numbered) {
+    figures.push({
+      label: "Distinct CMO and PTO numbers in the collected docket text",
+      value: h.numbered.distinct,
+      unit: "order numbers",
+      note: h.collectedThrough ? `docket text collected through ${h.collectedThrough}` : undefined,
+    });
+    if (h.numbered.latest)
+      figures.push({
+        label: "Latest numbered order",
+        value: h.numbered.latest.label,
+        period: h.numbered.latest.date ?? undefined,
+      });
+  }
+  if (h.next)
+    figures.push({
+      label: `Next date set on the docket${h.next.label ? ` (${h.next.label})` : ""}`,
+      value: h.next.date,
+      note: h.next.entryDate ? `as docketed on ${h.next.entryDate}` : undefined,
+    });
+  if (cmd.mode === "registry" && h.members !== null)
+    figures.push({
+      label: "Member dockets with evidence in the matter registry",
+      value: h.members,
+      unit: "dockets",
+      note: "partial count, not the size of the MDL",
+    });
+  if (h.rule702)
+    figures.push(
+      { label: "Rule 702 rulings (order entries)", value: h.rule702.rulings, unit: "orders" },
+      { label: "Rule 702 motions (counted apart)", value: h.rule702.motions, unit: "motions" },
+    );
+  return figures;
 }

@@ -69,7 +69,9 @@ export function JpmlSection({ cmd }: { cmd: MdlCommandPayload }) {
         <p className="text-body text-muted-foreground">
           MDL {cmd.mdl} is not in the JPML monthly actions-pending reports recorded here, so no
           pending-action series is shown.
-          {lens?.judgeAmbiguous ? " More than one judge profile lists this MDL, so none is shown." : ""}
+          {lens?.judgeAmbiguous
+            ? " More than one judge profile lists this MDL, so none is shown."
+            : ""}
         </p>
       )}
       <Pairs cards={cards} />

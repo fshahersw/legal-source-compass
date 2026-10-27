@@ -45,7 +45,12 @@ export function DocketedDatesSection({ cmd }: { cmd: MdlCommandPayload }) {
         cellBasis="basis-[calc(50%-1px)] xl:basis-[calc(25%-1px)]"
         items={[
           { key: "total", label: "Dates read from the docket", value: fmt(s.total) },
-          { key: "ahead", label: `Still ahead of ${day(cmd.asOf)}`, value: fmt(s.ahead), meta: "Not vacated" },
+          {
+            key: "ahead",
+            label: `Still ahead of ${day(cmd.asOf)}`,
+            value: fmt(s.ahead),
+            meta: "Not vacated",
+          },
           { key: "vacated", label: "Docketed as vacated", value: fmt(s.vacated) },
           {
             key: "latest",

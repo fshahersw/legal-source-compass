@@ -3,7 +3,14 @@
  * newer than the collected docket, and settings docketed or vacated. The AI summary reads only these server-computed
  * figures (whatChanged.ts); it is labelled AI-generated and names no model or vendor.
  */
-import { AiSummary, AskAiButton, Card, CardBody, KpiStrip, buildSectionContext } from "@/components/kit";
+import {
+  AiSummary,
+  AskAiButton,
+  Card,
+  CardBody,
+  KpiStrip,
+  buildSectionContext,
+} from "@/components/kit";
 import { ORDER_KIND_LABEL } from "@/lib/matters/orders";
 import type { MdlCommandPayload } from "@/lib/matters/types";
 import { Note, Out, collectedNote, day, fmt, signed } from "./shared";
@@ -62,7 +69,9 @@ export function WhatChanged({ cmd }: { cmd: MdlCommandPayload }) {
                 {orders.slice(0, 10).map((o) => (
                   <li key={`${o.entryId}-${o.kind}`} className="flex flex-wrap gap-x-2">
                     <Out href={o.sourceUrl}>{o.printed}</Out>
-                    <span className="text-meta text-muted-foreground">{ORDER_KIND_LABEL[o.kind]}</span>
+                    <span className="text-meta text-muted-foreground">
+                      {ORDER_KIND_LABEL[o.kind]}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -71,13 +80,17 @@ export function WhatChanged({ cmd }: { cmd: MdlCommandPayload }) {
                 No classified order in the collected docket text for this window.
               </p>
             )}
-            {orders.length > 10 ? <Note>{fmt(orders.length - 10)} more in the key-orders section.</Note> : null}
+            {orders.length > 10 ? (
+              <Note>{fmt(orders.length - 10)} more in the key-orders section.</Note>
+            ) : null}
             <Note>{collectedNote(w.collectedThrough)}</Note>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="pt-4">
-            <h3 className="text-label text-foreground">Court-page orders newer than the docket text</h3>
+            <h3 className="text-label text-foreground">
+              Court-page orders newer than the docket text
+            </h3>
             {w.courtPageNewer.length ? (
               <ul className="mt-2 space-y-1.5 text-body">
                 {w.courtPageNewer.slice(0, 8).map((c) => (

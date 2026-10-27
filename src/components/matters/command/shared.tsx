@@ -32,7 +32,9 @@ export function docketSource(cmd: MdlCommandPayload): ChartSource {
   const cl = cmd.overview?.overview.masterDocket.clDocketId;
   return {
     label: "Master-docket entries (CourtListener RECAP)",
-    url: cl ? `https://www.courtlistener.com/docket/${cl}/` : "https://www.courtlistener.com/recap/",
+    url: cl
+      ? `https://www.courtlistener.com/docket/${cl}/`
+      : "https://www.courtlistener.com/recap/",
   };
 }
 
@@ -59,13 +61,7 @@ export function Out({ href, children }: { href: string | null | undefined; child
 }
 
 /** "Entry 2750" linked to the entry's page, or "Entry not numbered". */
-export function EntryLink({
-  n,
-  href,
-}: {
-  n: number | null;
-  href: string | null;
-}) {
+export function EntryLink({ n, href }: { n: number | null; href: string | null }) {
   return <Out href={href}>{n !== null ? `Entry ${n}` : "Entry not numbered"}</Out>;
 }
 
@@ -106,7 +102,10 @@ export function Disclosure({
 /** Shown in place of a section part whose server read failed. */
 export function Unavailable({ what }: { what: string }) {
   return (
-    <p role="alert" className="rounded-lg border border-border px-4 py-3 text-meta text-muted-foreground">
+    <p
+      role="alert"
+      className="rounded-lg border border-border px-4 py-3 text-meta text-muted-foreground"
+    >
       {what} could not be read just now.
     </p>
   );

@@ -41,7 +41,9 @@ function Coverage({ cmd }: { cmd: MdlCommandPayload }) {
     ["Classifier rule", ORDERS_RULE_VERSION],
     [
       "Court-page orders listed",
-      page ? `${fmt(page.latestOrders.length)} of ${fmt(page.ordersTotal)} on the page` : "No court page recorded",
+      page
+        ? `${fmt(page.latestOrders.length)} of ${fmt(page.ordersTotal)} on the page`
+        : "No court page recorded",
     ],
   ];
   return (
@@ -49,11 +51,16 @@ function Coverage({ cmd }: { cmd: MdlCommandPayload }) {
       <CardBody className="pt-4">
         <h3 className="text-label text-foreground">Docket text coverage</h3>
         <table className="mt-2 w-full text-body">
-          <caption className="sr-only">Coverage of the collected master-docket text, MDL {cmd.mdl}</caption>
+          <caption className="sr-only">
+            Coverage of the collected master-docket text, MDL {cmd.mdl}
+          </caption>
           <tbody>
             {rows.map(([k, v]) => (
               <tr key={k} className="border-t border-border first:border-t-0">
-                <th scope="row" className="whitespace-pre py-1.5 pr-3 text-left font-normal text-muted-foreground">
+                <th
+                  scope="row"
+                  className="whitespace-pre py-1.5 pr-3 text-left font-normal text-muted-foreground"
+                >
                   {k}
                 </th>
                 <td className="py-1.5 text-right tabular-nums">{v}</td>
@@ -76,7 +83,10 @@ export function SourcesSection({ cmd, open }: { cmd: MdlCommandPayload; open: bo
   return (
     <div className="space-y-4">
       {failed.length ? (
-        <p role="alert" className="rounded-lg border border-border px-4 py-3 text-meta text-muted-foreground">
+        <p
+          role="alert"
+          className="rounded-lg border border-border px-4 py-3 text-meta text-muted-foreground"
+        >
           Could not be read just now: {failed.join(", ")}. The rest of the page is complete.
         </p>
       ) : null}

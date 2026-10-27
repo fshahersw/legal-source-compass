@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { headlineFigures } from "@/components/matters/MatterAi";
 import { classifyDocketText, orderLedger, type ClassifiedEntry } from "@/lib/matters/orders";
 import type { MdlCommandPayload } from "@/lib/matters/types";
 import {
   addedRows,
   ctoPerMonth,
   headline,
+  headlineFigures,
   kindRows,
   ledgerRows,
   momentum,
@@ -163,7 +163,11 @@ describe("headline figures", () => {
     orders: {
       ledger,
       entries: ENTRIES,
-      rule702: { rulings: 2, motions: 5, byOutcome: { granted: 0, denied: 1, granted_in_part: 1, not_stated: 0 } },
+      rule702: {
+        rulings: 2,
+        motions: 5,
+        byOutcome: { granted: 0, denied: 1, granted_in_part: 1, not_stated: 0 },
+      },
       coverage: { collectedThrough: "2026-10-03" },
     },
     dates: null,
