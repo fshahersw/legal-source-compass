@@ -94,6 +94,15 @@ function Body({ d }: { d: JudgeDisclosures }) {
           </span>
         </p>
       ) : null}
+      {d.lastYear !== null && d.lastYear <= 2020 ? (
+        <p role="note" className="mx-3 mb-2 text-xs leading-5 text-muted-foreground">
+          <span className="font-medium text-foreground">
+            No reports after {d.lastYear} in this corpus.
+          </span>{" "}
+          Disclosure coverage ends in 2020, so current holdings are not shown and an empty list is
+          not a finding of no conflict.
+        </p>
+      ) : null}
       <div className="grid grid-cols-2 gap-2 px-3 pb-2 md:grid-cols-5">
         <Kpi
           label="Reports on file"
