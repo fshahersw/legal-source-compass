@@ -178,6 +178,13 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
         ],
       },
       {
+        to: "/safety/signals",
+        label: "Emerging torts (no open MDL linked)",
+        description:
+          "Top-ranked products, vehicles and JPML motions with rising safety records and no open MDL linked, every score part shown.",
+        elsewhere: "safety",
+      },
+      {
         to: "/courts/collection",
         label: "Dockets",
         description:
@@ -408,6 +415,7 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
       },
       {
         to: "/safety/signals",
+        search: { view: "mdl" },
         label: "Signals",
         description:
           "Mass-tort products next to adverse events, recalls and complaints; report growth.",
