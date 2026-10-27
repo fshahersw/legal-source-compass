@@ -1,5 +1,5 @@
 /**
- * Pure: classify one master-docket entry from its own docket text (rule version "orders/1").
+ * Pure: classify one master-docket entry from its own docket text (rule version "orders/2").
  *
  * Accuracy rules (feature brief "mdl-command", owner rules in AGENTS.md):
  *  - Only explicit docket text is read, and the order patterns are anchored at the start of the text. A docket entry
@@ -9,13 +9,17 @@
  *  - A Rule 702 / Daubert ruling is an order entry whose own printed title names Rule 702 or Daubert; its outcome comes
  *    only from the order verb printed at the start ("ORDER DENYING ...", "ORDER GRANTING IN PART AND DENYING IN PART
  *    ..."), otherwise it is null ("Outcome not stated in docket text"). Motions are a separate kind and never a ruling.
+ *    A compound order whose first verb rules on other motions states no Rule 702 outcome.
+ *  - Subject kinds (leadership, settlement, fact sheets, bellwether, common benefit, special master) are read only in
+ *    the order's own head clause: a numbered order's printed subject, or the clause after "ORDER <verb>" (APPOINTING,
+ *    REGARDING, GRANTING ...). Prose orders ("ORDER: The PSC is ORDERED to ...") get no subject kind (rule orders/2).
  *  - A withheld entry (the projection published it without its text) is never classified.
  *  - Missing numbers in a CMO/PTO sequence are reported as "Not in collected docket text", never assumed.
  *
  * Everything here is deterministic and tested against docket text seen in the corpus (orders.test.ts).
  */
 
-export const ORDERS_RULE_VERSION = "orders/1" as const;
+export const ORDERS_RULE_VERSION = "orders/2" as const;
 
 /** What kind of docket entry the text is. "order" = entered by the court: orders, judgments, verdicts, CTOs. */
 export type DocketRole = "order" | "filing" | "clerk_setting" | "withheld" | "unknown";
@@ -161,21 +165,107 @@ const MOTION_START =
 const MOTION_NOT_RULE702 =
   /\b(?:extension|extend\w*|seal(?:ing)?|leave\s+to\s+file|exceed|page\s+limits?|administrative|withdraw\w*|pro\s+hac\s+vice)\b/i;
 
-/** Procedure around a subject (extensions, page limits) does not make an order a PFS / bellwether / ... order. */
+/** Procedure around a subject (extensions, page limits, sealing) does not make an order a PFS / bellwether / ... order. */
 const SUBJECT_EXCLUDED =
-  /\b(?:extension\s+of\s+time|motion\s+for\s+(?:an\s+)?extension|to\s+extend|briefing\s+schedule|leave\s+to\s+file|to\s+exceed|page\s+limits?|pro\s+hac\s+vice)\b/i;
+  /\b(?:extension\s+of\s+time|motion\s+for\s+(?:an\s+)?extension|to\s+extend|briefing\s+schedule|leave\s+to\s+file|to\s+exceed|page\s+limits?|pro\s+hac\s+vice|(?:to|under)\s+seal|sealing)\b/i;
 
-const SUBJECT_KINDS: { kind: OrderKind; re: RegExp }[] = [
+/**
+ * The verb or preposition that opens an unnumbered order's own subject ("ORDER APPOINTING ...", "Order Regarding ...",
+ * "ORDER granting ... Motion to Approve ..."). An order whose text goes straight into prose ("ORDER: The PSC is
+ * ORDERED to ...", "Order [non-document] - The Court will hold a status conference ...") has no printed subject and is
+ * never given a subject kind (rule orders/2).
+ */
+const SUBJECT_HEAD = new RegExp(
+  String.raw`^[\s*]*(?:(?:MDL|MINUTE|OMNIBUS|STIPULATED|AGREED|AMENDED|CORRECTED|SUPPLEMENTAL)\s+)*` +
+    String.raw`(?:MEMORANDUM\s+(?:OPINION\s+)?(?:AND\s+|&\s+)?)?(?:OPINION\s+(?:AND\s+|&\s+)?)?ORDER\s*` +
+    String.raw`(?:\[non-document\]\s*)?(?:[-–—:]\s*)?` +
+    String.raw`(PRELIMINARILY\s+APPROVING|FINALLY\s+APPROVING|APPOINTING|REAPPOINTING|DESIGNATING|ESTABLISHING|CREATING|` +
+    String.raw`GOVERNING|CONCERNING|REGARDING|RE|ON|GRANTING|DENYING|APPROVING|ADOPTING|IMPLEMENTING|MODIFYING|AMENDING|` +
+    String.raw`SETTING|AUTHORIZING|CONFIRMING|ENTERING|FOR)\b\s*:?\s*`,
+  "i",
+);
+
+/** Verbs that appoint or organise; an unnumbered leadership order opens with one or its subject says so. */
+const APPOINT_VERB =
+  /^(?:APPOINTING|REAPPOINTING|DESIGNATING|ESTABLISHING|CREATING|CONFIRMING|APPROVING|GOVERNING)$/i;
+
+/** End of the first clause: a sentence end (not after "No." / "Inc." and the like), a semicolon or a spaced dash. */
+const CLAUSE_END =
+  /(?<!\b(?:No|Nos|Inc|Co|Corp|Dr|Mr|Ms|Mrs|v|vs|Doc|Dkt|ECF|St|Jr|Ltd|L\.L\.C|U\.S))\.\s+(?=[A-Z(["'])|;\s|\s[-–—]\s|\s\(Related\s+Doc/;
+const MAX_CLAUSE = 220;
+
+/** Each subject kind is read only inside the order's own head clause; `not` lists wording that is not that kind. */
+const SUBJECT_KINDS: { kind: OrderKind; re: RegExp; not?: RegExp; needs?: RegExp }[] = [
   { kind: "pfs", re: /\bfact\s+sheets?\b|\b[PD]FSs?\b/i },
   { kind: "bellwether", re: /\bbellwether/i },
   {
     kind: "leadership",
-    re: /\b(?:leadership|co-?\s?lead\s+counsel|lead\s+counsel|co-?\s?liaison\s+counsel|liaison\s+counsel|steering\s+committee|executive\s+committee|PSC|PEC)\b/i,
+    // Bare PSC / PEC acronyms are not read: orders addressed to the committee are not leadership orders.
+    re: /\b(?:leadership|co-?\s?leads?|lead\s+counsel|co-?\s?liaisons?|liaison\s+counsel|steering\s+committee|executive\s+committee)\b/i,
+    not: /\b(?:withdraw\w*|substitut\w*|pro\s+hac\s+vice|status\s+conference|discovery|depositions?|attend\w*|appear\w*)\b/i,
+    // Without an appointing verb the clause itself must say it appoints or organises the leadership.
+    needs:
+      /\b(?:appoint\w*|reappoint\w*|approv\w*|designat\w*|leadership\s+(?:structure|committee|development|slate|appointments?|applications?)|slate|structure|organi[sz]ation)\b/i,
   },
   { kind: "common_benefit", re: /\bcommon[-\s]benefit\b/i },
-  { kind: "special_master", re: /\bspecial\s+masters?\b/i },
-  { kind: "settlement", re: /\bsettlements?\b/i },
+  {
+    kind: "special_master",
+    re: /\bspecial\s+masters?\b/i,
+    not: /\b(?:discovery\s+rulings?|objections?|overrul\w*|affirm\w*|report\s+and\s+recommendations?|R\s?&\s?Rs?|referr\w*|refer)\b/i,
+  },
+  {
+    kind: "settlement",
+    re: /\bsettlements?\b/i,
+    not: /\b(?:settlement\s+(?:status\s+)?conferences?|settlement\s+weeks?|mediat\w*|ADR|status\s+conference|discovery)\b/i,
+  },
 ];
+
+/** The first clause of a subject: a leading parenthesis is read whole, otherwise up to the first clause end. */
+export function headClause(subject: string): string | null {
+  const s = subject.replace(/^[\s.:;,\-–—]+/, "").trim();
+  if (!s) return null;
+  if (s.startsWith("(")) {
+    const close = s.indexOf(")");
+    const inner = (close > 0 ? s.slice(1, close) : s.slice(1)).trim();
+    return inner ? inner.slice(0, MAX_CLAUSE) : null;
+  }
+  const end = CLAUSE_END.exec(s);
+  const out = (end ? s.slice(0, end.index) : s).replace(/[\s.,;:]+$/, "").trim();
+  return out ? out.slice(0, MAX_CLAUSE) : null;
+}
+
+/**
+ * The order's own head: for a numbered order, the first clause of its printed subject; otherwise the clause after
+ * "ORDER <verb>". Null when the order prints no subject (prose orders, bare "ORDER").
+ */
+export function orderHead(
+  title: string,
+  numbered: OrderTag | null,
+): { verb: string | null; clause: string } | null {
+  if (numbered) {
+    const clause = numbered.subject ? headClause(numbered.subject) : null;
+    return clause ? { verb: null, clause } : null;
+  }
+  const m = SUBJECT_HEAD.exec(title);
+  if (!m) return null;
+  const clause = headClause(title.slice(m[0].length));
+  return clause ? { verb: m[1]!.replace(/\s+/g, " ").toUpperCase(), clause } : null;
+}
+
+/** A clause that only schedules a hearing, briefing or conference about a subject is not an order on that subject. */
+const SCHEDULING_CLAUSE =
+  /^(?:(?:a|the)\s+)?(?:hearings?|briefing|responses?|status\s+conferences?|telephon\w*\s+conferences?|oral\s+argument)\b/i;
+
+function subjectKinds(head: { verb: string | null; clause: string }): OrderKind[] {
+  if (SUBJECT_EXCLUDED.test(head.clause) || SCHEDULING_CLAUSE.test(head.clause)) return [];
+  const out: OrderKind[] = [];
+  for (const { kind, re, not, needs } of SUBJECT_KINDS) {
+    if (!re.test(head.clause) || not?.test(head.clause)) continue;
+    if (needs && !(head.verb && APPOINT_VERB.test(head.verb)) && !needs.test(head.clause)) continue;
+    out.push(kind);
+  }
+  return out;
+}
 
 const TRIAL_SETTING =
   /\b((?:jury|bench)\s+(?:trial|selection))\b[^.;]{0,40}?\b(?:(?:is\s+)?(?:re)?set\s+for|continued\s+to|vacated)/i;
@@ -245,9 +335,19 @@ export function numberedOrder(text: string): OrderTag | null {
   };
 }
 
+/** A second ruling verb after the first means a compound order; its Rule 702 outcome is then not stated alone. */
+const OTHER_RULING_VERB =
+  /\b(?:grant(?:s|ed|ing)?|den(?:y|ies|ied|ying)|defer(?:s|red|ring)?|sustain(?:s|ed|ing)?|overrul(?:e|es|ed|ing))\b/i;
+
 function rulingOutcome(title: string): OrderOutcome {
   const m = RULING_VERB.exec(title);
   if (!m) return null;
+  // "ORDER granting the parties' preservation motions ..., and granting in part, denying in part ... Rule 702": the
+  // first verb rules on other motions, so the Rule 702 outcome is not stated by it.
+  const rest = title.slice(m.index + m[0].length);
+  if (OTHER_RULING_VERB.test(rest)) return null;
+  const at702 = rest.search(RULE702);
+  if (at702 > 0 && rest.slice(0, at702).includes(";")) return null;
   const verb = m[1]!.toUpperCase().replace(/\s+/g, " ");
   if (verb.includes("IN PART")) return "granted_in_part";
   return verb === "GRANTING" ? "granted" : "denied";
@@ -343,10 +443,12 @@ export function classifyDocketText(
   )
     tags.push(tag("rule702_motion", title));
 
-  // Subject kinds come only from the printed title of an entry that starts as an order.
-  if (orderStart && !SUBJECT_EXCLUDED.test(title)) {
-    for (const { kind, re } of SUBJECT_KINDS)
-      if (re.test(title)) tags.push(tag(kind, numbered?.subject ?? title));
+  // Subject kinds come only from the order's own head clause (numbered subject, or "ORDER <verb> ..."), never from
+  // words further on in the text.
+  if (orderStart) {
+    const head = orderHead(title, numbered);
+    if (head)
+      for (const kind of subjectKinds(head)) tags.push(tag(kind, numbered?.subject ?? title));
   }
 
   if (role === "order" || role === "clerk_setting") {

@@ -239,6 +239,13 @@ describe("classifyDocketText: Rule 702 / Daubert", () => {
     ).toEqual([]);
   });
 
+  it("states no outcome when the first verb rules on other motions (compound order, MDL 2885)", () => {
+    const t = tags(
+      "ORDER granting the parties' preservation motions 3320 & 3321, and granting in part, denying in part, and deferring in part on Plaintiffs' omnibus motion to exclude expert testimony and opinions under Rule 702 and Daubert in the Wave 1 cases 3319. Signed by JUDGE M CASEY RODGERS on 10/24/2022. (tvj)",
+    );
+    expect(t).toContainEqual(expect.objectContaining({ kind: "rule702", outcome: null }));
+  });
+
   it("states no outcome when the order title has no ruling verb", () => {
     const t = tags("ORDER RE DAUBERT MOTIONS ON GENERAL CAUSATION. Signed by Judge A on 1/2/2025.");
     expect(t).toContainEqual(expect.objectContaining({ kind: "rule702", outcome: null }));
@@ -306,6 +313,87 @@ describe("classifyDocketText: other key orders", () => {
 
   it("leaves procedure around a subject untagged (extension of time on fact sheets)", () => {
     expect(kinds(T.pfs_extension_2804)).not.toContain("pfs");
+  });
+
+  // Rule orders/2: subject kinds are read only in the order's own head clause. Text copied from
+  // sw_docket_entries_v1 (read-only, 2026-10-27), MDLs as noted.
+  const SUBJECT_NEGATIVES: Record<string, string> = {
+    psc_discovery_2846:
+      "ORDER - The parties have indicated that they need more time to find necessary data to resolve the PSCs discovery requests. The Court GRANTS the parties an additional SEVEN DAYS (7) to resolve this issue.",
+    psc_exhibits_2846:
+      "ORDER: The PSC is ORDERED to inform the Court whether it will withdraw or otherwise modify the exhibits submitted in support of its Motion to Enforce Subpoenas and Compel the Production of Documents by 1/29/2020.",
+    zoom_lead_2804:
+      "Order [non-document]: The Court will conduct a Zoom Status Conference on Wednesday, May 22, 2024 at 2:00 p.m. Required to attend are lead Plaintiff's counsel for all four PBM cases and general PEC representation; lead counsel and general counsel for Express Scripts and Optum Rx; and the Law Directors for the four bellwether citi",
+    reconsideration_pec_2804:
+      "Order [non-document] regarding 5322 Motion for reconsideration or, Alternatively, for Leave to File a Response to Plaintiffs and PEC's Sur-Reply re Motion to Disqualify filed by Defendant OptumRX, Inc. Motion for reconsideration is denied.",
+    zoom_pec_2804:
+      "Order - The Court will hold a Zoom status conference on June 22, 2022 at noon with the PEC and defense counsel from the remaining ten Distributor and Manufacturer Defendant Families most frequently named in MDL cases. Judge Dan Aaron Polster on 4/21/22. (P,R) (Entered: 04/21/2022)",
+    substitute_liaison_2804:
+      "Order [non-document] granting Defendant McKesson's Motion to Substitute Co-Liaison Counsel (Related Doc # 93). Judge Dan Aaron Polster (MDL 2804) on 1/26/18.(P,R)",
+    resign_psc_2846:
+      "ORDER - This matter is before the Court on attorney Nicholas R. Farnolos Motion to Resign from the Plaintiffs Steering Committee. (ECF No. 839 .) Attorney Farnolo is hereby ORDERED to file an amended motion clarifying his position.",
+    withdraw_liaison_3014:
+      "ORDER granting 345 Motion to Withdraw Documents from 166 MOTION to Appoint Counsel as Liaison Counsel; The Clerk is to remove documents at ECF 166-1 and 166-2 from public view.",
+    liaison_confer_3014:
+      "ORDER: Counsel for defendants and plaintiffs' liaison counsel shall meet and confer and file at least two business days prior to each status conference a joint notice.",
+    synthetic_settlement_conference:
+      "ORDER setting Settlement Conference for 3/3/2026. Signed by Judge X on 1/1/2026.",
+    settlement_hearing_3014:
+      "ORDER Setting Hearing on Motion re 2212 Unopposed MOTION for Settlement Preliminary Approval and Release of Economic Loss Claims: Motion Hearing set for 9/18/2023 at 3:00 PM in Courtroom 5A before Judge Joy Flowers Conti.",
+    settlement_pages_3014:
+      "ORDER granting 2411 Motion for Leave to File Excess Pages. The page limit for Settlement Class Counsels Motion for an Award of Attorneys' Fees and Costs is extended to 50 pages.",
+    appoint_counsel_settlement_3014:
+      "ORDER denying 2887 Motion to Appoint Counsel. As referenced in Co-lead Plaintiffs' Counsel response (ECF No. 2943 ), Fatir is receiving assistance from the settlement administrator.",
+    sm_objection_2804:
+      "Order Re Discovery Ruling No. 14, Part 5 overruling Cardinal's objection and affirming Special Master's ruling. Judge Dan Aaron Polster on 4/16/19. (P,R) (Entered: 04/16/2019)",
+    sm_extension_3014:
+      "ORDER granting 2210 Motion to Extend Time to September 28, 2023. Special Master Vanaskie's Reports and Recommendations due on or before September 28, 2023. Signed by Judge Joy Flowers Conti on 9/7/2023.",
+    bellwether_memo_2846:
+      "ORDER - This order memorializes developments in the first two bellwether cases, Johns v. C.R. Bard et al., and Milanesi, et al. v. C.R. Bard, Inc. et al. Signed by Judge Edmund A. Sargus",
+  };
+
+  it.each(Object.keys(SUBJECT_NEGATIVES))(
+    "does not read a subject kind from words past the order's head (%s)",
+    (key) => {
+      const k = kinds(SUBJECT_NEGATIVES[key]!);
+      for (const kind of [
+        "leadership",
+        "settlement",
+        "special_master",
+        "bellwether",
+        "pfs",
+        "common_benefit",
+      ] as const)
+        expect(k).not.toContain(kind);
+    },
+  );
+
+  it("reads subject kinds from the head clause after ORDER <verb>", () => {
+    expect(
+      kinds(
+        "Order [non-document] granting Physician Defendants' and Manufacturer and Distributor Defendants' Motions to Approve Liaison Counsel and Steering Committee (Related Doc # 23, 24). The Court Orders the addition of two representatives.",
+      ),
+    ).toEqual(["leadership"]);
+    expect(
+      kinds(
+        "Order re: Plaintiffs' Amended Motion to Approve Co-Leads, Co-Liaisons and Executive Committee 17, and objections thereto 18 19 20, directing Plaintiffs to apply the Court's principles",
+      ),
+    ).toEqual(["leadership"]);
+    expect(
+      kinds(
+        "ORDER PRELIMINARILY APPROVING PROPOSED CLASS SETTLEMENT AGREEMENT AND RELEASE OF MEDICAL MONITORING CLAIMS granting 2766, 2783 Motion for Settlement Preliminary Approval. Signed by Judge Joy Flowers Conti",
+      ),
+    ).toEqual(["settlement"]);
+    expect(
+      kinds(
+        "ORDER AMENDING THE ALLOCATION OF THE COMMON BENEFIT ASSESSMENT AS BETWEEN COMMON BENEFIT FEES AND COMMON BENEFIT EXPENSES SET FORTH IN PRETRIAL ORDER #24 granting 3195 Motion to Amend 717 Order. Signed by Judge Joy Flowers Conti",
+      ),
+    ).toEqual(["common_benefit"]);
+    expect(
+      kinds(
+        "Order Re: Reallocation of the Special Masters' Costs. Judge Dan Aaron Polster (MDL 2804) on 2/23/18. (P,R) (Entered: 02/23/2018)",
+      ),
+    ).toEqual(["special_master"]);
   });
 
   it("never classifies a withheld entry and marks empty text unknown", () => {

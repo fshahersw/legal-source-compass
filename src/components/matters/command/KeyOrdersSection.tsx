@@ -1,5 +1,5 @@
 /**
- * Key orders read from the master-docket text (rule orders/1): the entries per kind (replacing the former keyword
+ * Key orders read from the master-docket text (rule orders/2): the entries per kind (replacing the former keyword
  * "Docket entries by type" bar), the CMO / PTO ledgers with every gap shown as "Not in collected docket text", Rule
  * 702 rulings by the outcome their own title states, and the bellwether, fact-sheet, trial, settlement, verdict and
  * bankruptcy-stay ledgers. Long lists sit behind "View data".

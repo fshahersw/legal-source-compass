@@ -55,7 +55,7 @@ const entry = (id: string, date: string, text: string): ClassifiedEntry => {
 
 const orders = (entries: ClassifiedEntry[]): KeyOrdersPayload => ({
   mdl: "3047",
-  rule: "orders/1",
+  rule: "orders/2",
   dataset: "sw_docket_entries_v1",
   coverage: {
     total: 4035,

@@ -179,7 +179,7 @@ describe("loadKeyOrders", () => {
       candidatesRead: 1,
     });
     expect(k.ledger.cmo.highest).toBe(1);
-    expect(k.rule).toBe("orders/1");
+    expect(k.rule).toBe("orders/2");
     await expect(loadKeyOrders("0")).rejects.toThrow("Invalid MDL number.");
   });
 });
