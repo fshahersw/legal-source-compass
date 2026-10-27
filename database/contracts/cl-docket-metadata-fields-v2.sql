@@ -27,6 +27,11 @@
 -- ORDER: step 1 once; step 2 once per window (8 windows of 25,000 ordinals: 0-25000, 25000-50000, ...,
 -- 175000-200000; edit ONLY the two bounds in `win`); step 3 once after every window; step 4 (verify).
 -- Every step is idempotent: re-running a window skips rows that already carry the released fields.
+-- A window that times out rolls back atomically; rerun it with smaller bounds (any span of 1 to 25,000 is allowed).
+-- Step 3 expects 177 'Nature of suit' options (the 66 released rows with no recorded nature of suit get none) and the
+-- receipt rows_held_source_blocked = 15, rows_unreleased_other = 0.
+-- Lead decision 2026-10-27: CourtListener's blocked/date_blocked flag is the provider's own reported privacy restriction
+-- on the docket, so the 15 blocked rows keep no caption, judge or extra date fields (explicit source evidence).
 
 -- ===================================================================== step 1: backups
 begin;
@@ -189,6 +194,52 @@ select jsonb_build_object('contract', 'cl-docket-metadata-fields/2026-10-27.v2',
 
 -- ===================================================================== step 3: dataset metadata (once, after all windows)
 begin;
+-- 3a (review 2026-10-27): the header_and_upload_agree rows that received a caption (not CourtListener-blocked) also get the
+-- CourtListener header dates that were withheld only because the owner upload did not repeat them (a caution hold the
+-- 2026-10-27 decision releases). Values are copied from the same staged entity, labelled "(source)". Idempotent.
+with src as (
+  select r.id, r.item, r.detail, e.data as d
+  from public.corpus_records r
+  join corpus_ingest.entities e
+    on e.source_system = 'courtlistener' and e.entity_type = 'dockets' and r.id = 'cl:dockets:' || e.native_id
+  where r.dataset = 'cl_docket_metadata'
+    and r.filters ->> 'selection_basis' = 'header_and_upload_agree'
+    and r.item -> 'cells' ? 'case_name'
+    and r.item -> 'cells' ->> 'native_id' = e.native_id
+    and lower(coalesce(e.data ->> 'blocked', 'false')) in ('false', 'f', '0')
+    and nullif(e.data ->> 'date_blocked', '') is null
+    and (r.detail -> 'provenance' -> 'withheld_fields') ?| array['date_filed', 'date_terminated', 'date_last_filing']
+), x as (
+  select s.id, s.item, s.detail, s.d,
+         (s.detail -> 'provenance' -> 'withheld_fields') as wf,
+         (s.item -> 'cells')
+           || case when s.detail -> 'provenance' -> 'withheld_fields' ? 'date_filed'
+                   then jsonb_build_object('date_filed', nullif(s.d ->> 'date_filed', '')) else '{}'::jsonb end
+           || case when s.detail -> 'provenance' -> 'withheld_fields' ? 'date_terminated'
+                   then jsonb_build_object('date_terminated', nullif(s.d ->> 'date_terminated', '')) else '{}'::jsonb end
+           || case when s.detail -> 'provenance' -> 'withheld_fields' ? 'date_last_filing'
+                   then jsonb_build_object('date_last_filing', nullif(s.d ->> 'date_last_filing', '')) else '{}'::jsonb end as cells
+  from src s
+)
+update public.corpus_records r
+   set item = jsonb_set(x.item, '{cells}', x.cells),
+       text = jsonb_pretty(x.cells - 'name'),
+       detail = jsonb_set(jsonb_set(x.detail, '{facts}',
+         (select coalesce(jsonb_agg(case
+                    when f.v ->> 0 = 'Filed (agreed)' and x.wf ? 'date_filed'
+                      then jsonb_build_array('Filed (source)', x.cells ->> 'date_filed')
+                    when f.v ->> 0 = 'Terminated (agreed)' and x.wf ? 'date_terminated'
+                      then jsonb_build_array('Terminated (source)', x.cells ->> 'date_terminated')
+                    else f.v end order by f.o), '[]'::jsonb)
+            from jsonb_array_elements(x.detail -> 'facts') with ordinality f(v, o))
+         || case when x.wf ? 'date_last_filing'
+                 then jsonb_build_array(jsonb_build_array('Last filing (source)', x.cells ->> 'date_last_filing'))
+                 else '[]'::jsonb end),
+         '{provenance,withheld_fields}',
+         coalesce((select jsonb_agg(w.v) from jsonb_array_elements(x.wf) w(v)
+                   where w.v #>> '{}' not in ('date_filed', 'date_terminated', 'date_last_filing')), '[]'::jsonb))
+  from x
+ where r.dataset = 'cl_docket_metadata' and r.id = x.id;
 update public.corpus_datasets d
    set metadata = jsonb_set(jsonb_set(jsonb_set(d.metadata,
        '{qualification}', to_jsonb('Dated CourtListener docket headers selected by exact saved native IDs or explicit native FJC MDL numbers. Captions, cause, nature of suit, jury demand, jurisdiction type and assigned/referred judges are shown exactly as CourtListener records them. FJC associations are not a verified current MDL member-case census. 956 unconfirmed source candidates are outside this dataset. CourtListener-blocked or date-blocked dockets and quarantined courts carry no caption or judge fields. No document contents or PDFs.'::text)),
@@ -213,14 +264,23 @@ update public.corpus_datasets d
             'contract', 'cl-docket-metadata-fields/2026-10-27.v2',
             'rule', 'owner decision 2026-10-27; CourtListener blocked/date_blocked dockets stay held',
             'rows_with_caption', (select count(*) from public.corpus_records r where r.dataset = 'cl_docket_metadata' and r.item -> 'cells' ? 'case_name'),
-            'rows_held_source_blocked', (select count(*) from public.corpus_records r where r.dataset = 'cl_docket_metadata' and not (r.item -> 'cells' ? 'case_name')),
+            'rows_held_source_blocked', (select count(*) from public.corpus_records r
+                 join corpus_ingest.entities e on e.source_system = 'courtlistener' and e.entity_type = 'dockets' and r.id = 'cl:dockets:' || e.native_id
+                 where r.dataset = 'cl_docket_metadata' and not (r.item -> 'cells' ? 'case_name')
+                   and (lower(coalesce(e.data ->> 'blocked', 'false')) not in ('false', 'f', '0') or nullif(e.data ->> 'date_blocked', '') is not null)),
+            'rows_unreleased_other', (select count(*) from public.corpus_records r
+                 where r.dataset = 'cl_docket_metadata' and not (r.item -> 'cells' ? 'case_name')
+                   and not exists (select 1 from corpus_ingest.entities e
+                                   where e.source_system = 'courtlistener' and e.entity_type = 'dockets' and r.id = 'cl:dockets:' || e.native_id
+                                     and (lower(coalesce(e.data ->> 'blocked', 'false')) not in ('false', 'f', '0')
+                                          or nullif(e.data ->> 'date_blocked', '') is not null))),
             'released_at', now()))
  where d.id = 'cl_docket_metadata'
    and exists (select 1 from corpus_ingest.cl_docket_metadata_fields_dataset_backup_20261027 b where b.dataset = d.id);
 commit;
 
 -- ===================================================================== step 4: verify (read-only)
-set local statement_timeout = '120s';
+set statement_timeout = '120s';
 select
   count(*) as total,                                                             -- expect 186,940 (unchanged)
   count(*) filter (where title like 'Docket %') as docket_placeholder_titles,     -- expect 15 (CourtListener-blocked; was 186,940)

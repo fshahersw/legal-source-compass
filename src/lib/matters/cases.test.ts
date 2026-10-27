@@ -121,6 +121,11 @@ describe("FJC IDB cases and the master docket", () => {
       captionWithheld: true,
     });
     expect(row.evidenceDetail).toContain("2885");
+    const captioned = parseFjcCase({
+      cells: { native_id: "223", docket_number: "2:19-cv-2", court_id: "njd", case_name: "Doe v. 3M Company" },
+    })!;
+    expect(captioned.caption).toBe("Doe v. 3M Company");
+    expect(captioned.captionWithheld).toBe(false);
     expect(parseFjcCase({ cells: {} })).toBeNull();
     expect(parseFjcCase("x")).toBeNull();
   });

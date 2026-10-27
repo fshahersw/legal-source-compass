@@ -193,7 +193,14 @@ test("releases CourtListener header fields verbatim and keeps blocked dockets he
   await db.exec(STEPS["3"]);
   const meta = (await one(db, `select metadata from public.corpus_datasets where id='cl_docket_metadata'`)).metadata;
   assert.equal(meta.fields_release_2026_10_27.rows_with_caption, 3);
-  assert.equal(meta.fields_release_2026_10_27.rows_held_source_blocked, 4);
+  // Only the CourtListener-blocked rows count as source-blocked; quarantined / missing-entity rows are counted apart.
+  assert.equal(meta.fields_release_2026_10_27.rows_held_source_blocked, 2);
+  assert.equal(meta.fields_release_2026_10_27.rows_unreleased_other, 2);
+  // 3a: the agreed row with a caption gets its withheld header date from the same entity, labelled (source).
+  const agreed = await rec(db, "cl:dockets:105");
+  assert.deepEqual(agreed.detail.provenance.withheld_fields, []);
+  assert.ok(agreed.detail.facts.some((f) => f[0] === "Last filing (source)"));
+  assert.ok("date_last_filing" in agreed.item.cells);
   assert.equal(meta.schema_version, "courtlistener-docket-metadata-view/1");
   const nos = meta.listing.filters.find((f) => f.name === "nature_of_suit");
   assert.deepEqual(nos.options.map((o) => [o.value, o.count]), [
