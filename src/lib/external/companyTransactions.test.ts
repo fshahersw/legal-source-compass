@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   dealsByYear,
+  fillYears,
   matchTransactions,
+  narrowingWord,
   parseNotice,
   suspensionYears,
   uniqueKey,
@@ -60,9 +62,30 @@ describe("matchTransactions", () => {
   it("counts deals per year by role with empty years kept", () => {
     const years = dealsByYear(matchTransactions(rows, "pfizer", keyOf));
     expect(years).toEqual([
-      { year: "1999", acquirer: 1, target: 1 },
-      { year: "2000", acquirer: 1, target: 0 },
+      { year: "1999", acquirer: 1, target: 1, partial: false },
+      { year: "2000", acquirer: 1, target: 0, partial: false },
     ]);
+  });
+  it("runs to the series' latest notice and flags that year partial", () => {
+    const years = dealsByYear(matchTransactions(rows, "pfizer", keyOf), "2002-10-22");
+    expect(years.map((y) => [y.year, y.partial])).toEqual([
+      ["1999", false],
+      ["2000", false],
+      ["2001", false],
+      ["2002", true],
+    ]);
+    expect(
+      dealsByYear(matchTransactions(rows, "pfizer", keyOf), "2000-12-31").every((y) => !y.partial),
+    ).toBe(true);
+  });
+});
+
+describe("narrowingWord", () => {
+  it("narrows on the longest non-stop word, never on 'and' from an ampersand", () => {
+    expect(narrowingWord("a and b holdings")).toBe("holdings");
+    expect(narrowingWord("johnson and johnson")).toBe("johnson");
+    expect(narrowingWord("procter and gamble")).toBe("procter");
+    expect(narrowingWord("at and t")).toBeNull();
   });
 });
 
@@ -93,5 +116,26 @@ describe("suspensionYears", () => {
       2021, 2022, 2023, 2024,
     ]);
     expect(suspensionYears([{ year: 2020, count: 1 }])).toEqual([]);
+  });
+  it("counts years absent from the series as zero (2022 and 2023 have no notices)", () => {
+    const counts: [number, number][] = [
+      [2015, 900],
+      [2016, 950],
+      [2017, 1000],
+      [2018, 1100],
+      [2019, 1050],
+      [2020, 987],
+      [2021, 71],
+      [2024, 6],
+      [2025, 381],
+    ];
+    const cal = counts.map(([year, count]) => ({ year, count }));
+    expect(suspensionYears(cal)).toEqual([2021, 2022, 2023, 2024]);
+    expect(fillYears(cal).filter((c) => c.year >= 2021 && c.year <= 2024)).toEqual([
+      { year: 2021, count: 71 },
+      { year: 2022, count: 0 },
+      { year: 2023, count: 0 },
+      { year: 2024, count: 6 },
+    ]);
   });
 });

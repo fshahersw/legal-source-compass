@@ -68,6 +68,27 @@ export function matchTransactions(
   );
 }
 
+// Key words that do not narrow a title search: "&" becomes "and" in the key but stays "&" in FTC titles.
+const NARROW_STOP = new Set([
+  "and",
+  "the",
+  "for",
+  "of",
+  "company",
+  "companies",
+  "group",
+  "holding",
+]);
+
+/**
+ * The word used to narrow the candidate read (a title ilike): the longest word of the key that is not a stop word.
+ * It only narrows; every candidate is still matched on the whole exact key. Null when the key has no such word.
+ */
+export function narrowingWord(key: string): string | null {
+  const words = key.split(" ").filter((w) => w.length >= 3 && !NARROW_STOP.has(w));
+  return words.sort((a, b) => b.length - a.length || a.localeCompare(b))[0] ?? null;
+}
+
 /** Whether the key identifies exactly one profiled company (else the join is not made). */
 export function uniqueKey(
   key: string,
@@ -78,11 +99,28 @@ export function uniqueKey(
 }
 
 /**
+ * The yearly notice counts from the first to the last year, with a year that has no notices (absent from the
+ * series, e.g. 2022 and 2023) filled with 0 so it is counted, not skipped.
+ */
+export function fillYears(
+  calendar: readonly { year: number; count: number }[],
+): { year: number; count: number }[] {
+  const ys = calendar.map((c) => c.year).filter((y) => Number.isInteger(y));
+  if (!ys.length) return [];
+  const by = new Map<number, number>();
+  for (const c of calendar) by.set(c.year, (by.get(c.year) ?? 0) + c.count);
+  const out: { year: number; count: number }[] = [];
+  for (let y = Math.min(...ys); y <= Math.max(...ys); y++)
+    out.push({ year: y, count: by.get(y) ?? 0 });
+  return out;
+}
+
+/**
  * Years in which early-termination grants collapsed: a run of years each below a tenth of the median of every earlier
  * year (at least five earlier years). In the FTC series this is 2021–2024, when grants were suspended (71, 0, 0, 6).
  */
 export function suspensionYears(calendar: readonly { year: number; count: number }[]): number[] {
-  const sorted = [...calendar].sort((a, b) => a.year - b.year);
+  const sorted = fillYears(calendar);
   for (let i = 5; i < sorted.length; i++) {
     const prior = sorted
       .slice(0, i)
@@ -99,14 +137,20 @@ export function suspensionYears(calendar: readonly { year: number; count: number
   return [];
 }
 
-/** Deals per year by role, for the timeline chart (years from the first to the last notice). */
-export function dealsByYear(rows: readonly CompanyTransaction[]) {
+/**
+ * Deals per year by role, for the timeline chart (years from the first to the last notice). `asOf` is the latest
+ * notice date of the whole series: its year is flagged partial unless it is December 31.
+ */
+export function dealsByYear(rows: readonly CompanyTransaction[], asOf: string | null = null) {
   const years = rows.map((r) => Number(r.date?.slice(0, 4))).filter((y) => Number.isInteger(y));
   if (!years.length) return [];
   const lo = Math.min(...years);
-  const hi = Math.max(...years);
-  const out: { year: string; acquirer: number; target: number }[] = [];
-  for (let y = lo; y <= hi; y++) out.push({ year: String(y), acquirer: 0, target: 0 });
+  const asOfYear = asOf && /^\d{4}-\d{2}-\d{2}$/.test(asOf) ? Number(asOf.slice(0, 4)) : null;
+  const hi = Math.max(...years, asOfYear ?? -Infinity);
+  const partialYear = asOfYear !== null && !asOf!.endsWith("-12-31") ? asOfYear : null;
+  const out: { year: string; acquirer: number; target: number; partial: boolean }[] = [];
+  for (let y = lo; y <= hi; y++)
+    out.push({ year: String(y), acquirer: 0, target: 0, partial: y === partialYear });
   for (const r of rows) {
     const y = Number(r.date?.slice(0, 4));
     const row = out.find((o) => o.year === String(y));

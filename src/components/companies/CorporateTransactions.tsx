@@ -30,7 +30,8 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
   const q = useQuery(companyTransactionsQuery(cik));
   const d = q.data;
   const rows = d?.rows ?? [];
-  const years = dealsByYear(rows);
+  const years = dealsByYear(rows, d?.lastDate ?? null);
+  const partialYear = years.find((y) => y.partial)?.year ?? null;
   const suspended = span(d?.suspended ?? []);
   const asAcquirer = rows.filter((r) => r.role !== "target").length;
   const asTarget = rows.filter((r) => r.role !== "acquirer").length;
@@ -42,17 +43,22 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
     ? ({ kind: "loading" } as const)
     : q.isError
       ? ({ kind: "error", onRetry: () => void q.refetch() } as const)
-      : d?.status === "shared_key"
+      : d?.status === "too_broad"
         ? ({
             kind: "empty",
-            reason: `Another profiled company has the same normalised name as ${name}, so notices are not matched to either.`,
+            reason: `${name}'s name has no word distinctive enough to search the notices by, so they are not matched (not recorded, not a finding of no deals).`,
           } as const)
-        : !rows.length
+        : d?.status === "shared_key"
           ? ({
               kind: "empty",
-              reason: `No early termination notice names ${name} exactly (as acquirer or acquired party). Notices cover only filings granted early termination.`,
+              reason: `Another profiled company has the same normalised name as ${name}, so notices are not matched to either.`,
             } as const)
-          : ({ kind: "ready" } as const);
+          : !rows.length
+            ? ({
+                kind: "empty",
+                reason: `No early termination notice names ${name} exactly (as acquirer or acquired party). Notices cover only filings granted early termination.`,
+              } as const)
+            : ({ kind: "ready" } as const);
   return (
     <section aria-label="Corporate transactions" className="space-y-3">
       <h3 className="text-label font-semibold text-foreground">Corporate transactions</h3>
@@ -90,6 +96,11 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
         status={status}
         sources={[SOURCE]}
         period={d?.firstDate && d.lastDate ? `${d.firstDate} to ${d.lastDate}` : undefined}
+        partial={
+          partialYear
+            ? `${partialYear} is partial: notices are published through ${d?.lastDate}.`
+            : undefined
+        }
         notice={
           suspended ? (
             <p className="text-xs">
@@ -124,7 +135,7 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
           rows: [...years].reverse().map((y) => ({
             key: y.year,
             cells: [
-              `${y.year}${d?.suspended.includes(Number(y.year)) ? " (grants suspended)" : ""}`,
+              `${y.year}${d?.suspended.includes(Number(y.year)) ? " (grants suspended)" : ""}${y.partial ? " (partial)" : ""}`,
               fmt(y.acquirer),
               fmt(y.target),
             ],
@@ -175,6 +186,7 @@ export function CorporateTransactions({ cik, name }: { cik: string; name: string
             { key: "target", label: "As acquired party" },
           ]}
           format={fmt}
+          partialKey="partial"
           stacked
           ariaLabel={`Early termination notices naming ${name}, per year`}
         />
