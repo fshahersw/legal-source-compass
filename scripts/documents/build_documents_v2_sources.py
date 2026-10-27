@@ -87,5 +87,18 @@ NEW_RB = "-- 3. public.documents_refresh_v1 is the documents-v2-scope.sql functi
 if OLD_RB in rb_head:
     rb_head = rb_head.replace(OLD_RB, NEW_RB)
 assert NEW_RB in rb_head
+LOC_DELETE = "delete from documents.documents where source_system = 'courtlistener-public-locator';" + NL
+ORPHANS = ("do $orphans$" + NL + "begin" + NL
+           + "  -- citations rows of the removed filings (the citations run never prunes a document row that is gone)" + NL
+           + "  if to_regclass('citations.edges') is not null then" + NL
+           + "    delete from citations.edges e where e.citing_type = 'document'" + NL
+           + "       and not exists (select 1 from documents.documents d where d.id = e.citing_id);" + NL
+           + "  end if;" + NL
+           + "  if to_regclass('citations.document_links') is not null then" + NL
+           + "    delete from citations.document_links l where not exists (select 1 from documents.documents d where d.id = l.document_id);" + NL
+           + "  end if;" + NL + "end $orphans$;" + NL)
+if ORPHANS not in rb_head:
+    assert rb_head.count(LOC_DELETE) == 1
+    rb_head = rb_head.replace(LOC_DELETE, LOC_DELETE + ORPHANS)
 (ROOT / "database/contracts/documents-v2-sources.rollback.sql").write_text(rb_head + scope_refresh + GRANTS, encoding="utf-8", newline="\n")
 print("ok", len(fwd))

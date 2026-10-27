@@ -8,6 +8,17 @@ begin;
 delete from documents.links l using documents.documents d
  where d.id = l.document_id and d.source_system = 'courtlistener-public-locator';
 delete from documents.documents where source_system = 'courtlistener-public-locator';
+do $orphans$
+begin
+  -- citations rows of the removed filings (the citations run never prunes a document row that is gone)
+  if to_regclass('citations.edges') is not null then
+    delete from citations.edges e where e.citing_type = 'document'
+       and not exists (select 1 from documents.documents d where d.id = e.citing_id);
+  end if;
+  if to_regclass('citations.document_links') is not null then
+    delete from citations.document_links l where not exists (select 1 from documents.documents d where d.id = l.document_id);
+  end if;
+end $orphans$;
 
 alter table documents.documents drop constraint if exists documents_source_system_check;
 alter table documents.documents add constraint documents_source_system_check
