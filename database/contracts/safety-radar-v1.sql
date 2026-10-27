@@ -15,6 +15,8 @@
 --     (model year dropped), with crash/fire/injury and death counts and the monthly prior+recent values. Units with
 --     fewer than p_min_recent recent complaints are left out; one 'national' row carries the totals of distinct
 --     complaints. p_end must be a month the table fully covers (the builder passes the last complete month).
+--     Unit keys are upper(btrim(x)): btrim removes spaces at the ends only, inner whitespace is kept. The builder's
+--     fallback (build_emerging_tort_radar.nhtsa_windows_from_records / sql_key) builds the same keys.
 --
 -- Both: SECURITY DEFINER, search_path = '', revoked from public/anon/authenticated, granted to service_role only.
 -- Idempotent (create or replace), no DROP/DELETE/TRUNCATE. Offline test (pglite, synthetic rows):
@@ -111,6 +113,17 @@ begin
            coalesce(sum(u.injured) filter (where not u.is_recent), 0)::bigint as pi
       from u group by u.mk, u.md, u.cp
     having count(*) filter (where u.is_recent) >= p_min_recent
+  ), um as (
+    -- complaints per unit and month, aggregated once (only for the units kept above)
+    select u.mk, u.md, u.cp, u.mi, count(*) as n
+      from u join units k on k.mk = u.mk and k.md = u.md and k.cp = u.cp
+     group by u.mk, u.md, u.cp, u.mi
+  ), unit_months as (
+    select x.mk, x.md, x.cp, array_agg(coalesce(t.n, 0)::integer order by g.i) as months
+      from units x
+      cross join generate_series(1, 2 * p_months) g(i)
+      left join um t on t.mk = x.mk and t.md = x.md and t.cp = x.cp and t.mi = g.i
+     group by x.mk, x.md, x.cp
   )
   select 'national'::text, null::text, null::text, null::text,
          count(*) filter (where c.is_recent), count(*) filter (where not c.is_recent),
@@ -122,12 +135,8 @@ begin
             left join (select c2.mi, count(*) as n from c c2 group by c2.mi) t on t.mi = g.i)
     from c
   union all
-  select 'unit'::text, x.mk, x.md, x.cp, x.r, x.p, x.rs, x.ps, x.rd, x.pd, x.ri, x.pi,
-         (select array_agg(coalesce(t.n, 0)::integer order by g.i)
-            from generate_series(1, 2 * p_months) g(i)
-            left join (select u2.mi, count(*) as n from u u2
-                        where u2.mk = x.mk and u2.md = x.md and u2.cp = x.cp group by u2.mi) t on t.mi = g.i)
-    from units x;
+  select 'unit'::text, x.mk, x.md, x.cp, x.r, x.p, x.rs, x.ps, x.rd, x.pd, x.ri, x.pi, m.months
+    from units x join unit_months m on m.mk = x.mk and m.md = x.md and m.cp = x.cp;
 end $$;
 
 do $grants$
