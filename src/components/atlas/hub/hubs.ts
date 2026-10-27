@@ -178,6 +178,14 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
         ],
       },
       {
+        to: "/safety/signals",
+        label: "Emerging torts (no MDL linked)",
+        description:
+          "Top-ranked products, vehicles and JPML motions with rising safety records and no MDL linked, every score part shown.",
+        counts: [{ dataset: "agency_safety_tort_radar", label: "radar records, all MDL statuses" }],
+        elsewhere: "safety",
+      },
+      {
         to: "/courts/collection",
         label: "Dockets",
         description:
