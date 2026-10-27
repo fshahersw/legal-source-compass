@@ -1,6 +1,7 @@
 /**
- * /safety: CPSC recalls whose injury statement explicitly says someone died, drowned, suffocated, strangled or was
- * killed, including those CPSC's own death tag in the dataset marks "No".
+ * /safety: CPSC recalls reporting a death. The dataset's own death tag (Product-related) plus recalls tagged "No" whose
+ * injury statement or title says a person died. "Background / other product" rows (a death with another product) are
+ * shown apart and never counted as recalls reporting a death.
  */
 import { useQuery } from "@tanstack/react-query";
 import { ChartCard, TrendColumns, periodTable } from "@/components/charts/recharts";
@@ -13,6 +14,7 @@ import {
   Section,
   buildSectionContext,
 } from "@/components/kit";
+import { KIND_LABEL } from "@/lib/safety/cpscDeaths";
 import { cpscDeathsQuery } from "./sectionQueries";
 
 const SOURCE = {
@@ -21,6 +23,10 @@ const SOURCE = {
 };
 const fmt = (v: number) => v.toLocaleString("en-US");
 const ID = "cpsc-deaths";
+const SERIES = [
+  { key: "product", label: KIND_LABEL.product },
+  { key: "missed", label: KIND_LABEL.missed },
+];
 
 export function CpscDeathsSection() {
   const q = useQuery(cpscDeathsQuery);
@@ -37,24 +43,32 @@ export function CpscDeathsSection() {
         : ({ kind: "ready" } as const);
   const chartRows = years.map((y) => ({
     year: y.year,
-    tagged: y.recalls - y.untagged,
-    untagged: y.untagged,
+    product: y.product,
+    missed: y.missed,
     partial: y.partial,
   }));
   const context = d
     ? buildSectionContext({
         id: ID,
-        title: "CPSC recalls whose injury text reports a death",
+        title: "CPSC recalls reporting a death",
         period: d.dataThrough ? `through ${d.dataThrough}` : null,
         source: SOURCE.label,
         figures: [
-          { label: "Recalls whose injury statement says someone died", value: d.total },
-          { label: "Of these, tagged with no death mention in the dataset", value: d.untagged },
+          { label: "Recalls reporting a death", value: d.total },
+          { label: "Of these, tagged product-related in the dataset", value: d.tagged },
+          {
+            label: "Of these, tagged No or blank although the text reports a death",
+            value: d.untagged,
+          },
+          {
+            label: "Recalls tagged as a death with another product (not counted)",
+            value: d.background,
+          },
           { label: "CPSC recalls in the dataset", value: d.datasetTotal },
-          { label: "Latest such recall", value: d.latest ?? null },
+          { label: "Latest recall reporting a death", value: d.latest ?? null },
           ...years.slice(-6).map((y) => ({
             label: "Recalls reporting a death",
-            value: y.recalls,
+            value: y.product + y.missed,
             period: y.year,
             note: y.partial ? "partial year" : undefined,
           })),
@@ -65,25 +79,41 @@ export function CpscDeathsSection() {
     <Section
       id={ID}
       title="Consumer product recalls reporting deaths"
-      description="Recalls whose injury statement says someone died."
+      description="Recalls the dataset tags with a product-related death, plus those its tag missed."
       actions={<AskAiButton sectionId={ID} context={context} size="icon" />}
     >
-      <KpiGrid columns={4} label="CPSC death-mention figures">
+      <KpiGrid columns={5} label="CPSC death-mention figures">
         <KpiCard
           as="li"
           label="Recalls reporting a death"
           value={d ? fmt(d.total) : null}
-          meta={d?.datasetTotal ? `of ${fmt(d.datasetTotal)} CPSC recalls` : undefined}
+          meta={
+            d
+              ? `${fmt(d.tagged)} tagged product-related${d.datasetTotal ? ` · of ${fmt(d.datasetTotal)} CPSC recalls` : ""}`
+              : undefined
+          }
           state={state}
         />
         <KpiCard
           as="li"
           label="Missed by the death tag"
           value={d ? fmt(d.untagged) : null}
-          meta="Tagged “No” or blank in the dataset"
+          meta="Tagged “No” or blank; the text reports a death"
           state={state}
         />
-        <KpiCard as="li" label="Latest such recall" value={d?.latest ?? null} state={state} />
+        <KpiCard
+          as="li"
+          label="Death with another product"
+          value={d ? fmt(d.background) : null}
+          meta="Tagged background; not counted"
+          state={state}
+        />
+        <KpiCard
+          as="li"
+          label="Latest recall reporting a death"
+          value={d?.latest ?? null}
+          state={state}
+        />
         <KpiCard
           as="li"
           label="Data through"
@@ -95,8 +125,8 @@ export function CpscDeathsSection() {
       <ChartCard
         variant="editorial"
         className="mt-4"
-        title="CPSC recalls whose injury statement reports a death, by year"
-        subtitle={`Recalls per year · split by the dataset's own death tag${period ? ` · ${period}` : ""}`}
+        title="CPSC recalls reporting a death, by year"
+        subtitle={`Recalls per year · tagged product-related or missed by the tag${period ? ` · ${period}` : ""}`}
         status={status}
         sources={[SOURCE]}
         period={period}
@@ -108,32 +138,29 @@ export function CpscDeathsSection() {
         about={
           <ul className="list-disc space-y-1 pl-4">
             <li>
-              A recall counts when its injury statement says someone died, drowned, suffocated, was
-              strangled or was killed. Negated phrases (&quot;no one has died&quot;) and the
-              standard risk-of-death hazard wording do not count.
+              Tagged product-related: the dataset&apos;s death_mention cell starts with
+              &quot;Product-related&quot;.
+            </li>
+            <li>
+              Missed by the tag: the cell reads No or is blank, but the injury statement or title
+              says a person died, drowned, suffocated, was strangled or killed, or reports deaths.
+              Negated (&quot;no injuries or deaths have been reported&quot;), hypothetical (&quot;in
+              danger of being strangled&quot;, &quot;nearly suffocated&quot;) and animal deaths, and
+              the standard risk-of-death hazard wording, do not count.
+            </li>
+            <li>
+              Rows tagged &quot;Background / other product&quot; (a death with another product) are
+              left out of the count and listed apart in the data.
             </li>
             <li>A text mention, not a verified count of deaths caused by the product.</li>
-            <li>
-              &quot;Missed by the death tag&quot;: the dataset&apos;s death_mention cell reads No or
-              is blank although the text reports a death.
-            </li>
           </ul>
         }
-        table={periodTable(
-          chartRows,
-          "year",
-          [
-            { key: "tagged", label: "Tagged as a death mention" },
-            { key: "untagged", label: "Missed by the tag" },
-          ],
-          fmt,
-          {
-            caption: "CPSC recalls reporting a death per year",
-            xLabel: "Year",
-            partialKey: "partial",
-            total: true,
-          },
-        )}
+        table={periodTable(chartRows, "year", SERIES, fmt, {
+          caption: "CPSC recalls reporting a death per year",
+          xLabel: "Year",
+          partialKey: "partial",
+          total: true,
+        })}
       >
         <TrendColumns
           rows={chartRows}
@@ -141,17 +168,14 @@ export function CpscDeathsSection() {
           stacked
           partialKey="partial"
           format={fmt}
-          series={[
-            { key: "tagged", label: "Tagged as a death mention" },
-            { key: "untagged", label: "Missed by the tag" },
-          ]}
+          series={SERIES}
           ariaLabel="CPSC recalls reporting a death per year"
         />
       </ChartCard>
       <DataDrawer
-        title="CPSC recalls reporting a death"
-        description="Newest first. The excerpt is the sentence of the injury statement that reports the death."
-        triggerLabel={`See all ${d?.total ?? 0}`}
+        title="CPSC recalls reporting a death, and background deaths"
+        description="Newest first. Group says how each recall was counted; background rows are not counted. The excerpt is the sentence of the injury statement that mentions the death."
+        triggerLabel={`See all ${d?.recalls.length ?? 0}`}
         rows={d?.recalls ?? []}
         rowKey={(r) => r.id}
         searchable
@@ -176,7 +200,8 @@ export function CpscDeathsSection() {
               ),
           },
           { key: "title", label: "Title", value: (r) => r.title },
-          { key: "word", label: "Says", value: (r) => r.word },
+          { key: "group", label: "Group", value: (r) => KIND_LABEL[r.kind] },
+          { key: "word", label: "Says", value: (r) => r.word ?? "Not recorded" },
           { key: "tag", label: "Dataset tag", value: (r) => r.tag },
           { key: "excerpt", label: "Injury statement", value: (r) => r.excerpt },
         ]}

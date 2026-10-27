@@ -1,3 +1,4 @@
+import collections
 import datetime as dt
 import os
 import sys
@@ -94,6 +95,79 @@ class DetectorTest(unittest.TestCase):
         self.assertFalse(b.explicit_death("No one has died. Two minor burns were reported."))
         self.assertFalse(b.explicit_death("Risk of serious injury or death from drowning."))
         self.assertFalse(b.explicit_death(None))
+
+    def test_reports_death_drops_negated_hypothetical_and_animal_deaths(self):
+        # cpsc-api:10271 (tagged No): a hazard, not a death.
+        self.assertFalse(b.reports_death("In two of those reports, the child was trapped by his/her head and was in danger of being strangled."))
+        # cpsc-api:12089: an animal.
+        self.assertFalse(b.reports_death("One dog reportedly died from ingestion of the gel."))
+        self.assertFalse(b.reports_death("an 18-month-old girl nearly suffocated when a ball-half got stuck"))
+        self.assertFalse(b.reports_death("No collisions, crashes, injuries or deaths have been reported."))
+        self.assertFalse(b.reports_death("There have been no reports of injury or death and one report of minor property damage."))
+        # cpsc-api:09324: the negation belongs to another clause.
+        self.assertTrue(b.reports_death("The cord was not looped around the boy's neck but rather ran from ear to ear and strangled the child."))
+        # DEATH wording in the injury statement (regression: it used to be read from the title only).
+        self.assertTrue(b.reports_death("The recall follows reports of three deaths in the U.S."))
+        self.assertTrue(b.reports_death("Two deaths have been reported."))
+
+    def test_cpsc_death_kind_keeps_background_rows_apart(self):
+        # cpsc-api:99018: deaths in other bunk beds; never a recall reporting a death.
+        bunk = ("CPSC is not aware of any deaths associated with the beds being recalled by these five manufacturers. "
+                "However, since 1990, 39 children have died from becoming entrapped in wooden or metal bunk beds.")
+        self.assertEqual(b.cpsc_death_kind("Background / other product", bunk, "Bunk beds recalled"), "background")
+        self.assertIsNone(b.cpsc_death_kind("No", "None reported.", "Dresser recalled due to risk of serious injury or death"))
+        self.assertEqual(b.cpsc_death_kind("Product-related", "Three deaths.", "Cribs recalled"), "product")
+        self.assertEqual(b.cpsc_death_kind("Product-related (outside U.S. only)", "", ""), "product")
+        self.assertEqual(b.cpsc_death_kind("No", "A 4-year-old girl strangled in the loop of a blind cord.", ""), "missed")
+        self.assertIsNone(b.cpsc_death_kind("No", "the child was in danger of being strangled.", "Cribs recalled"))
+
+    def test_cpsc_death_kind_matches_the_page_on_the_shared_fixture(self):
+        # src/lib/safety/cpscDeaths.fixture.ts holds every live row tagged No whose injury text has a death-like word
+        # (21), the two title-only rows and the five Background rows with a death word; the page and this builder must
+        # classify them alike.
+        import ast
+        import re
+        path = os.path.join(os.path.dirname(__file__), "..", "..", "src", "lib", "safety", "cpscDeaths.fixture.ts")
+        with open(path, encoding="utf-8") as handle:
+            source = handle.read()
+        # A JS string literal in either quote style (the formatter picks the one with fewer escapes).
+        string = r'("(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\')'
+        rows = re.findall(rf'\br\(\s*"(\d+)",\s*"([^"]+)",\s*{string},\s*{string},?\s*\)', source)
+        self.assertEqual(len(rows), 28)
+        kinds = collections.defaultdict(list)
+        for number, tag, title, injuries in rows:
+            kinds[b.cpsc_death_kind(tag, ast.literal_eval(injuries), ast.literal_eval(title))].append(number)
+        missed = re.search(r"CPSC_MISSED_IDS = \[(.*?)\]", source, re.S).group(1)
+        self.assertEqual(kinds["missed"], re.findall(r'"(\d+)"', missed))
+        self.assertEqual(len(kinds["missed"]), 14)
+        self.assertIn("92122", kinds["missed"])
+        self.assertNotIn("10271", kinds["missed"])
+        self.assertEqual(len(kinds["background"]), 5)
+
+    def test_cpsc_fatality_flag_counts_tagged_rows_and_skips_background(self):
+        rows = []
+        for i in range(3):
+            rows.append({"id": f"cpsc-api:p{i}", "title": f"Cribs recalled {i}", "filters": {},
+                         "cells": {"date": f"2026-0{i + 1}-10", "hazard": "Suffocation", "death_mention": "Product-related"},
+                         "injuries": "The firm is aware of reports of three deaths.", "hazards": []})
+        rows.append({"id": "cpsc-api:bg", "title": "Lunch boxes recalled", "filters": {},
+                     "cells": {"date": "2026-04-10", "hazard": "Ingestion", "death_mention": "Background / other product"},
+                     "injuries": "One dog reportedly died from ingestion of the gel.", "hazards": []})
+        rows.append({"id": "cpsc-api:10271", "title": "Cribs recalled due to strangulation hazard", "filters": {},
+                     "cells": {"date": "2026-05-10", "hazard": "Strangulation", "death_mention": "No"},
+                     "injuries": "The child was trapped by his/her head and was in danger of being strangled.", "hazards": []})
+        insights = b.Builder({"agency_safety_cpsc_recalls_api": rows}).build()
+        fatal = next(i for i in insights if i["entity"] == "CPSC fatality-linked recalls")
+        self.assertEqual(fatal["metric"]["recent"], 3)
+        self.assertEqual(fatal["metric"]["untagged_by_source"], 0)
+        self.assertEqual(fatal["metric"]["background_excluded"], 1)
+        self.assertFalse(any(i["entity"] == "CPSC deaths missed by the death tag" for i in insights))
+
+    def test_packet_flag_never_falls_through_to_publishing(self):
+        with self.assertRaises(SystemExit):
+            b.main(["--packet"])
+        with self.assertRaises(SystemExit):
+            b.main(["--packet="])
 
     def test_cpsc_reads_the_api_dataset_and_flags_untagged_deaths(self):
         self.assertIn("agency_safety_cpsc_recalls_api", b.SOURCES)

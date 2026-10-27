@@ -19,15 +19,16 @@ Counting rules (2026-10-27)
   - FDA recall events are FDA's own recall events: product rows are grouped on detail.fields.event_id. A row without an
     event_id falls back to firm + initiation date + reason and is counted as its own event (reported in the packet).
   - CPSC themes and fatality flags read agency_safety_cpsc_recalls_api (the superseded _local snapshot stops 2026-08-20).
-  - A CPSC recall counts as fatality-linked only when its title reports deaths or its injury statement explicitly says
-    someone died, drowned, suffocated, strangled or was killed (negated phrases removed).
+  - A CPSC recall counts as fatality-linked when the dataset tags its death Product-related, or when the tag reads No or
+    is blank but the injury statement or title reports a person's death (negated, hypothetical and animal phrases
+    removed). "Background / other product" rows (a death with another product) are never counted.
   - Warning-letter themes carry the caveat that agency_safety_fda_warning_letters is an uneven 1,000-row sample.
 
 Usage: python build_safety_insights.py [--cache=DIR] [--dry-run] [--packet=DIR]
   --cache=DIR reads <DIR>/<dataset>.json snapshots instead of the live corpus (offline runs and tests).
   --dry-run prints the flags and publishes nothing.
-  --packet=DIR (with --dry-run) also writes the rows that would be published, a summary and the flag list to DIR,
-               for the lead to review before publishing. Nothing is written to the corpus.
+  --packet=DIR implies --dry-run and also writes the rows that would be published, a summary and the flag list to
+               DIR, for the lead to review before publishing. Nothing is written to the corpus.
 """
 import collections
 import datetime as dt
@@ -112,20 +113,51 @@ DEATH = re.compile(
     re.I,
 )
 # An injury statement that explicitly says someone died. CPSC's own death_mention tag misses some of these (e.g. the
-# 2025-07-21 above-ground pools recall, "nine children ... have drowned", is tagged "No").
-EXPLICIT_DEATH = re.compile(r"\b(?:died|drowned|suffocated|strangled|killed)\b", re.I)
-NEGATED_DEATH = re.compile(
-    r"\b(?:no one|nobody|no (?:children|child|consumers?|people|persons?|users?|infants?|deaths?))\b[^.;]{0,40}?"
-    r"\b(?:died|drowned|suffocated|strangled|killed)\b"
-    r"|\bnot (?:been )?(?:died|drowned|suffocated|strangled|killed)\b",
-    re.I,
+# 2025-07-21 above-ground pools recall, "nine children ... have drowned", is tagged "No"). Kept in step with
+# src/lib/safety/cpscDeaths.ts (reportsDeath / deathKind).
+_DEATH_WORD = r"died|drowned|suffocated|strangled|killed"
+EXPLICIT_DEATH = re.compile(rf"\b(?:{_DEATH_WORD})\b", re.I)
+_STOP = r"(?!\b(?:but|however|although|though|yet)\b)"
+DEATH_SCRUB = (
+    # Negations: "no one has died", "No injuries or deaths have been reported", "not aware of any deaths".
+    re.compile(rf"\b(?:no one|nobody|none|no|not|nor|never)\b(?:{_STOP}[^.;]){{0,80}}?\b(?:{_DEATH_WORD}|deaths?|fatalit(?:y|ies)|fatal)\b", re.I),
+    # Hypotheticals: "in danger of being strangled", "nearly suffocated", "could have died".
+    re.compile(rf"\b(?:(?:in )?danger of|(?:at )?risk of|threat of|nearly|almost|near|could|can|may|might|would)\s+(?:have\s+)?(?:been\s+|being\s+|be\s+)?(?:{_DEATH_WORD})\b", re.I),
+    # Deaths of animals: "One dog reportedly died".
+    re.compile(rf"\b(?:dogs?|cats?|pets?|puppy|puppies|kittens?|animals?|birds?|horses?)\b[^.;]{{0,40}}?\b(?:{_DEATH_WORD})\b", re.I),
 )
 
 
-def explicit_death(text):
-    """True when the text says someone died, drowned, suffocated, strangled or was killed, after negated phrases
-    ("no one has died") are removed. A text mention, not a verified count of deaths caused by the product."""
-    return bool(EXPLICIT_DEATH.search(NEGATED_DEATH.sub(" ", text or "")))
+def scrub_death_text(text):
+    """The text with negated, hypothetical and animal death phrases removed."""
+    for pattern in DEATH_SCRUB:
+        text = pattern.sub(" ", text)
+    return text
+
+
+def reports_death(text):
+    """True when the text says a person died, drowned, suffocated, strangled or was killed, or reports deaths
+    ("three deaths reported"), after negated, hypothetical and animal phrases are removed. A text mention, not a
+    verified count of deaths caused by the product."""
+    cleaned = scrub_death_text(text or "")
+    return bool(EXPLICIT_DEATH.search(cleaned) or DEATH.search(cleaned))
+
+
+explicit_death = reports_death
+
+
+def cpsc_death_kind(tag, injuries, title):
+    """'product' when the dataset tags the recall Product-related, 'background' for 'Background / other product'
+    (deaths with another product, or not of a person; never counted as a recall reporting a death), 'missed' when
+    the tag reads No or is blank but the injury statement or title reports a death, else None."""
+    tag = (tag or "").strip().lower()
+    if tag.startswith("product-related"):
+        return "product"
+    if tag.startswith("background"):
+        return "background"
+    if tag in ("", "no") and (reports_death(injuries) or reports_death(title)):
+        return "missed"
+    return None
 
 
 WARNING_THEMES = {
@@ -407,12 +439,12 @@ class Builder:
             hazard_text = " ".join(h if isinstance(h, str) else (h or {}).get("name") or "" for h in hazards) if isinstance(hazards, list) else str(hazards)
             injuries = row.get("injuries") or ""
             title = row.get("title") or ""
-            died = explicit_death(injuries) or bool(DEATH.search(title))
-            tagged = (cells.get("death_mention") or "").strip()
+            kind = cpsc_death_kind(cells.get("death_mention"), injuries, title)
+            died = kind in ("product", "missed")
             out.append({
                 "date": when, "text": " ".join(filter(None, [title, cells.get("hazard"), hazard_text])),
                 "firm": cells.get("firm") or "", "firm_norm": "", "class": "", "died": died,
-                "untagged_death": died and tagged.lower() in ("", "no"),
+                "untagged_death": kind == "missed", "background_death": kind == "background",
                 "rows": [{"id": row["id"], "title": title, "date": when.isoformat(),
                           "note": (injuries if died else (cells.get("hazard") or ""))[:200]}],
             })
@@ -432,13 +464,14 @@ class Builder:
             self.add(
                 kind="hazard_surge", agency="CPSC", entity="CPSC fatality-linked recalls",
                 headline=f"{len(recent)} CPSC recalls in 12 months report deaths",
-                summary=f"{len(recent)} recall notices published in the 12 months to {end.isoformat()} report deaths in the title or say in the injury statement that someone died, drowned, suffocated, strangled or was killed, as distinct from the standard risk-of-death hazard wording.",
+                summary=f"{len(recent)} recall notices published in the 12 months to {end.isoformat()} report a death: the dataset tags the death product-related, or the injury statement or title says a person died, drowned, suffocated, strangled or was killed. Deaths with another product (background) are not counted.",
                 score=45 + len(recent), serious=True,
                 metric={"recent": len(recent), "baseline": None, "ratio": None, "window": "12 months", "unit": "recalls citing deaths",
-                        "untagged_by_source": len(untagged)},
+                        "untagged_by_source": len([e for e in recent if e["untagged_death"]]),
+                        "background_excluded": len([e for e in events if e["background_death"] and e["date"] > end - dt.timedelta(days=365)])},
                 series=monthly([e["date"] for e in fatal], end, 24),
                 evidence_rows=evidence(dataset, [e["rows"][0] for e in sorted(recent, key=lambda e: -e["date"].toordinal())]),
-                method="CPSC recalls (API dataset) whose title reports deaths or whose injury statement explicitly says someone died, drowned, suffocated, strangled or was killed; negated phrases and the generic risk-of-death hazard phrase are excluded. A text mention, not a verified count.",
+                method="CPSC recalls (API dataset) whose death_mention tag starts with Product-related, plus recalls tagged No or blank whose injury statement or title reports a death (died, drowned, suffocated, strangled, killed, or deaths reported); negated, hypothetical (danger of, nearly) and animal phrases and the generic risk-of-death hazard phrase are excluded, and Background / other product rows are left out. A text mention, not a verified count.",
                 as_of=end, tags=["Fatality"],
             )
         if untagged:
@@ -450,7 +483,7 @@ class Builder:
                 metric={"recent": len(untagged), "baseline": None, "ratio": None, "window": "all recalls", "unit": "recalls"},
                 series=[],
                 evidence_rows=evidence(dataset, [e["rows"][0] for e in sorted(untagged, key=lambda e: -e["date"].toordinal())], 12),
-                method="Explicit death words (died, drowned, suffocated, strangled, killed) in the injury statement, or deaths reported in the title, on recalls whose death_mention cell is No or blank.",
+                method="Recalls whose death_mention cell is No or blank but whose injury statement or title reports a person's death (died, drowned, suffocated, strangled, killed, or deaths reported), after negated, hypothetical (danger of, nearly) and animal phrases are removed.",
                 as_of=end, tags=["Fatality", "Data quality"],
             )
 
@@ -930,7 +963,11 @@ def write_packet(directory, insights, rows, generated, data, fallback_rows):
 
 def main(argv):
     cache = next((a.split("=", 1)[1] for a in argv if a.startswith("--cache=")), None)
-    packet = next((a.split("=", 1)[1] for a in argv if a.startswith("--packet=")), None)
+    packet = next((a.split("=", 1)[1] if "=" in a else "" for a in argv if a.startswith("--packet")), None)
+    if packet is not None and not packet.strip():
+        # --packet without a directory is a mistake, never a reason to fall through to publishing.
+        raise SystemExit("--packet needs a directory: --packet=DIR (it implies --dry-run; nothing is published)")
+    dry_run = "--dry-run" in argv or packet is not None
     data = load(cache)
     builder = Builder(data)
     insights = builder.build()
@@ -939,7 +976,7 @@ def main(argv):
     severities = collections.Counter(i["severity"] for i in insights)
     print(json.dumps({"insights": len(insights), "kinds": counts, "severity": severities,
                       "fda_rows_without_event_id": builder.fallback_rows}, default=dict))
-    if "--dry-run" in argv:
+    if dry_run:
         for insight in insights[:40]:
             print(f"{insight['score']:5.1f} {insight['severity']:8} {insight['kind']:16} {insight['headline']}")
         if packet:

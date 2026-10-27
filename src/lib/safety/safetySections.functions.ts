@@ -20,7 +20,8 @@ import {
 import {
   buildCpscDeaths,
   CPSC_API_DATASET,
-  EXPLICIT_DEATH_PG,
+  DEATH_CANDIDATE_PG,
+  TITLE_DEATH_CANDIDATE_PG,
   type CpscDeathRow,
   type CpscDeathsPayload,
 } from "./cpscDeaths";
@@ -69,9 +70,21 @@ const CPSC_SELECT =
   "id,title,date:item->cells->>date,tag:item->cells->>death_mention,injuries:item->recall->>injuries,hazard:item->cells->>hazard,firm:item->cells->>firm,url:item->recall->>url";
 
 const readCpscDeaths = memoAsync(READ_TTL_MS, async (): Promise<CpscDeathsPayload> => {
-  const [rows, meta, through] = await Promise.all([
+  // Rows the dataset tags with a death (Product-related, Background), plus untagged rows whose injury statement or
+  // title has a death-like word; buildCpscDeaths decides which of the latter report a death.
+  const base = `corpus_records?select=${CPSC_SELECT}&dataset=eq.${CPSC_API_DATASET}`;
+  const re = encodeURIComponent(DEATH_CANDIDATE_PG);
+  const [tagged, byText, byTitle, meta, through] = await Promise.all([
     readAllRows<CpscDeathRow>(
-      `corpus_records?select=${CPSC_SELECT}&dataset=eq.${CPSC_API_DATASET}&item->recall->>injuries=imatch.${encodeURIComponent(EXPLICIT_DEATH_PG)}&order=ordinal.asc,id.asc`,
+      `${base}&item->cells->>death_mention=neq.No&order=ordinal.asc,id.asc`,
+      { max: 5_000 },
+    ),
+    readAllRows<CpscDeathRow>(
+      `${base}&item->recall->>injuries=imatch.${re}&order=ordinal.asc,id.asc`,
+      { max: 5_000 },
+    ),
+    readAllRows<CpscDeathRow>(
+      `${base}&item->cells->>death_mention=eq.No&title=imatch.${encodeURIComponent(TITLE_DEATH_CANDIDATE_PG)}&order=ordinal.asc,id.asc`,
       { max: 5_000 },
     ),
     restGet<{ imported_records: number | null }[]>(
@@ -80,7 +93,7 @@ const readCpscDeaths = memoAsync(READ_TTL_MS, async (): Promise<CpscDeathsPayloa
     latestDate(CPSC_API_DATASET, "item->cells->>date", "item->cells->>date"),
   ]);
   return buildCpscDeaths(
-    rows,
+    [...tagged, ...byText, ...byTitle],
     meta.rows[0]?.imported_records ?? null,
     through,
     new Date().toISOString(),
