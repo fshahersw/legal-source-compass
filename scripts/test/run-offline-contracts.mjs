@@ -33,6 +33,7 @@ const files = directories.flatMap((directory) =>
 );
 files.push(
   "scripts/admin/private-release-network.test.mjs",
+  "scripts/admin/register-pdf-assets-v2-contract.test.mjs",
   "scripts/legal/audit-private-archive-manifests.test.mjs",
   "scripts/admin/remove-owner-collections-20261005.test.mjs",
   "scripts/admin/remove-owner-storage-20261005.test.mjs",
