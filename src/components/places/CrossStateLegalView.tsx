@@ -23,9 +23,9 @@ import {
   type PlaceFormat,
 } from "./placeMetrics";
 
+// fjc_rate (filings coded to the county, incl. MDL) is not offered: it is not a residence measure.
 const STATE_KEYS = new Set([
   "fjc_core_rate",
-  "fjc_rate",
   "osha_rate",
   "cfpb_rate",
   "cfpb_noncredit_rate",

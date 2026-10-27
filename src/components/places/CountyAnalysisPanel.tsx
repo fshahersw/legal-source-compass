@@ -9,6 +9,8 @@ import { externalHref } from "@/lib/external/href";
 import { cn } from "@/lib/utils";
 import { ShareList, YearBars } from "./PlaceCharts";
 import { formatPlaceValue, METRIC_BY_KEY, NOT_RECORDED, type PlaceFormat } from "./placeMetrics";
+import { AiSummary, AskAiButton, buildSectionContext } from "@/components/kit";
+import { countyLegalFigures, MDL_DOMINANT_SHARE, mdlShareOfFilings } from "./placeAi";
 
 const NOS_LABEL: Record<string, string> = {
   contract: "Contract",
@@ -55,6 +57,8 @@ const PROFILE_KEYS = [
 ];
 const LEGAL_KEYS = [
   "fjc_core_rate",
+  // shown once the state_analysis packet carries it (key absent before)
+  "fjc_core_product_rate",
   "fjc_rate",
   "osha_rate",
   "cfpb_rate",
@@ -142,6 +146,19 @@ function Body({ c }: { c: CountyAnalysis }) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
     .map(([k, n]) => ({ label: NOS_LABEL[k] ?? k, value: n }));
+  const mdlShare = mdlShareOfFilings(c);
+  const legalKeys = LEGAL_KEYS.filter((k) => k !== "fjc_core_product_rate" || k in c.metrics);
+  const legalContext = l
+    ? buildSectionContext({
+        id: "county-legal",
+        title: `Legal activity in ${c.name}, ${c.state}`,
+        scope: `${c.name}, its state's counties, ${c.state} and the U.S.`,
+        period: "FY2021-FY2025 (CFPB: 2021-2025)",
+        source: "FJC Integrated Database; OSHA; CFPB; EPA ECHO; Census population estimates",
+        figures: countyLegalFigures(c),
+        maxFigures: 32,
+      })
+    : null;
   const lausYears = Object.keys(c.lausRate).sort();
   const beaYears = Object.keys(c.beaPerCapita).sort();
   return (
@@ -164,7 +181,7 @@ function Body({ c }: { c: CountyAnalysis }) {
           </span>
         </div>
         <div className="overflow-x-auto">
-          <CompareTable c={c} keys={LEGAL_KEYS} />
+          <CompareTable c={c} keys={legalKeys} />
         </div>
         {l?.screened.length ? (
           <div className="border-t border-border/70 px-3 py-2 text-[12px]">
@@ -204,8 +221,17 @@ function Body({ c }: { c: CountyAnalysis }) {
           </div>
           <div className="min-w-0">
             <h4 className="mb-1 text-[12px] font-semibold">
-              What residents sued over, FY2021-FY2025
+              Nature of suit of filings coded to the county, FY2021-FY2025
             </h4>
+            {mdlShare != null && mdlShare >= MDL_DOMINANT_SHARE ? (
+              <p className="mb-1.5 flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                <AlertTriangle className="mt-0.5 size-3 shrink-0 text-warning" aria-hidden />
+                <span>
+                  {mdlShare.toFixed(0)}% of these filings carry an MDL number. The FJC codes those to
+                  the court's or defendant's county, so this mix is not what residents sued over.
+                </span>
+              </p>
+            ) : null}
             <ShareList items={nos} />
           </div>
           <div className="min-w-0">
@@ -271,6 +297,24 @@ function Body({ c }: { c: CountyAnalysis }) {
               value={formatPlaceValue(l.echo["echo_snc"], "int")}
             />
           </dl>
+        ) : null}
+        {legalContext ? (
+          <div className="border-t border-border/70 px-3 py-3">
+            <AiSummary
+              context={legalContext}
+              actions={
+                <AskAiButton
+                  sectionId="county-legal"
+                  title={`Legal activity in ${c.name}`}
+                  context={legalContext}
+                  questions={[
+                    "How does this county compare with the state's median county?",
+                    "Why does the core rate leave out MDL-numbered filings?",
+                  ]}
+                />
+              }
+            />
+          </div>
         ) : null}
       </section>
       <section className="resource-panel" aria-label="People and economy">
@@ -500,6 +544,11 @@ function CompareTable({
               <th scope="row" className="px-3 py-1 text-left font-normal">
                 <span className="block">{def.label}</span>
                 <span className="block text-[10.5px] text-muted-foreground">{def.unit}</span>
+                {def.caveat ? (
+                  <span className="block max-w-md text-[10.5px] text-warning-foreground">
+                    {def.caveat}
+                  </span>
+                ) : null}
               </th>
               <td
                 className={cn(
