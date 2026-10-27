@@ -538,3 +538,16 @@ describe("orderLabel", () => {
     expect(orderLabel("pto", 28, "b")).toBe("PTO No. 28(b)");
   });
 });
+
+describe("prefilter patterns sent to Postgres", () => {
+  // PostgreSQL regular expressions reject a bounded repetition above 255 (RE_DUP_MAX) with
+  // "invalid repetition count(s)", which failed every orders and dates read on the live database.
+  it("never use a repetition bound above 255", () => {
+    for (const pattern of [...ORDER_PREFILTER_PATTERNS, DATE_PREFILTER_PATTERN]) {
+      for (const [, lo, hi] of pattern.matchAll(/\{(\d+)(?:,(\d*))?\}/g)) {
+        expect(Number(lo)).toBeLessThanOrEqual(255);
+        if (hi) expect(Number(hi)).toBeLessThanOrEqual(255);
+      }
+    }
+  });
+});
