@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { FreshnessBadge } from "@/components/freshness/FreshnessBadge";
 import { ExternalBadge } from "@/components/corpus/ExternalBadge";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
-import { datasetLabel } from "@/lib/external/groups";
+import { datasetLabel, datasetSuccessor } from "@/lib/external/groups";
 import { pageHead } from "@/lib/corpus/head";
 
 type S = { q?: string | undefined; f?: Record<string, string> | undefined };
@@ -28,6 +28,12 @@ export const Route = createFileRoute("/data/$dataset")({
           ) as Record<string, string>)
         : undefined,
   }),
+  // A retired collection id opens the collection its rows moved into (same search and filters).
+  beforeLoad: ({ params, search }) => {
+    const next = datasetSuccessor(params.dataset);
+    if (next)
+      throw redirect({ to: "/data/$dataset", params: { dataset: next }, search, replace: true });
+  },
   head: ({ params }) =>
     pageHead(
       datasetLabel(params.dataset, null),
