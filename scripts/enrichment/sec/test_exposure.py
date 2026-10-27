@@ -115,13 +115,28 @@ class RetypeTests(unittest.TestCase):
         self.assertEqual(chemours["pending_series"], [{"date": "2026-09-01", "pending": 15000, "mdls": 1}, {"date": "2026-10-01", "pending": 15264, "mdls": 1}])
         only_c = by_id["0000059478"]
         self.assertIsNone(only_c["item"]["summary"]["exposure"]["pending_actions"])
-        self.assertEqual(only_c["item"]["cells"]["pending"], "Not recorded")
+        # known state, not a gap: nothing is counted and the tier C link awaits review
+        self.assertEqual(only_c["item"]["cells"]["pending"], "None counted (1 link awaits review)")
         self.assertEqual(only_c["filters"]["tier"], ["none"])
         self.assertEqual(only_c["filters"]["flag"], ["none"])
         ov = by_id["summary:overview"]["item"]["overview"]
         self.assertEqual((ov["pending_actions_counted"], ov["pending_actions_counted_c"]), (15264, 0))
         self.assertEqual(report["tier_c_counted_after"], 0)
         self.assertEqual(report["tier_c_links_changed"], 2)
+
+
+
+class ListingAndLabelTests(unittest.TestCase):
+    def test_pending_label(self):
+        fmt = lambda n: "Not recorded" if n is None else f"{n:,}"
+        self.assertEqual(rt.pending_label({"pending_actions": 1234, "review_links": 2}, fmt), "1,234")
+        self.assertEqual(rt.pending_label({"pending_actions": None, "review_links": 3}, fmt), "None counted (3 links await review)")
+        self.assertEqual(rt.pending_label({"pending_actions": None, "review_links": 0}, fmt), "Not recorded")
+
+    def test_link_filters_added_once(self):
+        once = rt.add_link_filters({"filters": [{"name": "tier"}]})
+        twice = rt.add_link_filters(once)
+        self.assertEqual([f["name"] for f in twice["filters"]], ["tier", "counted", "review"])
 
 
 if __name__ == "__main__":

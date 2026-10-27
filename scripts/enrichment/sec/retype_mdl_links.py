@@ -99,6 +99,29 @@ def check_reproduces(profiles, total):
     return bad
 
 
+def pending_label(exposure, fmt):
+    """The pending-actions cell: a count, or, when no pending link is counted but some links await review, that known
+    state ("None counted (3 links await review)") instead of "Not recorded", which would read as missing data."""
+    if exposure["pending_actions"] is None and exposure.get("review_links"):
+        n = exposure["review_links"]
+        return f"None counted ({fmt(n)} link{'s' if n != 1 else ''} await{'s' if n == 1 else ''} review)"
+    return fmt(exposure["pending_actions"])
+
+
+FILTERS_ADDED = [
+    {"name": "counted", "type": "select", "label": "Counted in pending-action totals", "options": [{"label": "Counted", "value": "yes"}, {"label": "Not counted", "value": "no"}]},
+    {"name": "review", "type": "select", "label": "Requires review", "options": [{"label": "Requires review", "value": "yes"}, {"label": "No review note", "value": "no"}]},
+]
+
+
+def add_link_filters(listing):
+    """The listing with the counted and review filters, each added only when absent (a second retype adds nothing)."""
+    out = copy.deepcopy(listing or {})
+    have = {f.get("name") for f in out.get("filters") or []}
+    out.setdefault("filters", []).extend(copy.deepcopy(f) for f in FILTERS_ADDED if f["name"] not in have)
+    return out
+
+
 def retype_profile(profile, link_by_key, total):
     tier_label, flag_label, fmt = labels()
     out = copy.deepcopy(profile)
@@ -115,13 +138,14 @@ def retype_profile(profile, link_by_key, total):
     s["exposure"] = exposure
     s["flags"] = xp.exposure_flags(s.get("flags"), exposure, s.get("accrual_current"), s.get("accrual_yoy_pct"))
     s["pending_series"] = xp.pending_series(pending_links, {int(k[1]): v["series"] for k, v in link_by_key.items() if k[0] == cik})
-    out["item"]["cells"]["pending"] = fmt(exposure["pending_actions"])
+    out["item"]["cells"]["pending"] = pending_label(exposure, fmt)
     out["item"]["badges"] = [flag_label[f] for f in s["flags"]]
     out["filters"]["tier"] = [exposure["strongest_tier"] or "none"]
     out["filters"]["flag"] = s["flags"] or ["none"]
     for f in out["detail"]["facts"]:
         if f[0] == "Pending actions, linked MDLs where the company is a defendant":
-            f[1] = f"{fmt(exposure['pending_actions'])} (A/B {fmt(exposure['pending_actions_ab'])} · C {fmt(exposure['pending_actions_c'])})"
+            f[1] = (pending_label(exposure, fmt) if exposure["pending_actions"] is None and exposure.get("review_links") else
+                    f"{fmt(exposure['pending_actions'])} (A/B {fmt(exposure['pending_actions_ab'])} · C {fmt(exposure['pending_actions_c'])})")
     change = {"cik": cik, "company": out["title"], "pending_before": before.get("pending_actions"), "pending_after": exposure["pending_actions"],
               "pending_mdls_before": before.get("pending_mdls"), "pending_mdls_after": exposure["pending_mdls"],
               "tier_before": before.get("strongest_tier"), "tier_after": exposure["strongest_tier"],
@@ -223,12 +247,8 @@ def build(total=None):
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     for name, rows in ((LINKS, links), (PROFILES, profiles)):
         md = (exports[name].get("meta") or {}).get("metadata") or {}
-        listing = copy.deepcopy(md.get("listing") or {})
+        listing = add_link_filters(md.get("listing")) if name == LINKS else copy.deepcopy(md.get("listing") or {})
         listing.pop("total", None)
-        if name == LINKS:
-            listing.setdefault("filters", []).extend([
-                {"name": "counted", "type": "select", "label": "Counted in pending-action totals", "options": [{"label": "Counted", "value": "yes"}, {"label": "Not counted", "value": "no"}]},
-                {"name": "review", "type": "select", "label": "Requires review", "options": [{"label": "Requires review", "value": "yes"}, {"label": "No review note", "value": "no"}]}])
         summary = {**(md.get("summary") or {}), "tier_c_rule": xp.TIER_C_NOTE, "retyped_at": stamp}
         packet = {"dataset": name, "label": exports[name]["meta"]["label"], "listing_block": listing, "summary": summary, "rows": rows, "built_at": stamp}
         with open(os.path.join(BUILD, f"{name}.json"), "w", encoding="utf-8") as h:
