@@ -13,7 +13,7 @@
 --
 -- Dry run 2026-10-27 (scripts/admin/held-artifact-release-dryrun.mjs summary): 27,722 evaluated; 27,652 released
 --   (11,935,908,095 bytes): /supplement-files/court_documents 19,993, /files 7,074, source_documents 497, mdl-pdf 24,
---   agency_science_documents 23, court_statistics 18, /mdl-files 7, source-assets 6, settlement-pdf 4, court_spine 2,
+--   agency_science_documents 23, court_statistics 18, /mdl-files 7, source-assets 8 (archive 3, gapfill 5), settlement-pdf 4, court_spine 2,
 --   settlements 2. Kept: 48 /files from olls.info, 22 source_documents from content.naic.org.
 --
 -- Selection rule (statement 1), applied to held rows whose stored object exists with the catalogued size:

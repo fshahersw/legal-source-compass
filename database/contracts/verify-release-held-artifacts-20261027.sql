@@ -4,7 +4,8 @@ begin read only;
 set local statement_timeout = '290s';
 
 -- 1. Ready split by top-level route. Expected after = before with ready moved false -> true for: files 7,074,
---    supplement-files 20,535, library-assets 28, mdl-files 7, source-assets 6, api 0, agency-files 0.
+--    supplement-files 20,535, library-assets 28, mdl-files 7, source-assets 8, api 0, agency-files 0 (applied 2026-10-27: files f32433/t29671 before the
+--    trellis withdrawal, f32478/t29626 after it; supplement-files f8080/t26183; library-assets f24/t32; mdl-files t7; source-assets f267/t8).
 select split_part(route, '/', 2) as top, ready, count(*) as routes, sum(bytes) as bytes
 from public.corpus_artifacts group by 1, 2 order by 1, 2;
 
