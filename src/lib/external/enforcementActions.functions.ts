@@ -728,6 +728,8 @@ export const getSecActions = createServerFn({ method: "GET" })
 // ---------------------------------------------------------------- official settlements
 
 export type ConfirmedFact = "deadline" | "amount" | "court" | "case number";
+export type SettlementAmountRole = "fund_total" | "per_claimant" | "cap" | "other";
+const AMOUNT_ROLES: SettlementAmountRole[] = ["fund_total", "per_claimant", "cap", "other"];
 export type OfficialSettlement = {
   id: string;
   name: string;
@@ -744,12 +746,21 @@ export type OfficialSettlement = {
     valueUsd: number | null;
     sentence: string | null;
     status: string;
+    /** Role typed from the amount's own sentence (retype_claims.py); null until the dataset is retyped. */
+    role: SettlementAmountRole | null;
+    /** For role "other": fees_costs, service_award, penalty, distribution, fund_addition, order_total, estimate,
+     * threshold or unclear. */
+    detail: string | null;
+    /** The wording that decided the role, as written on the page. */
+    roleBasis: string | null;
   }[];
   courts: CourtRef[];
   caseNumbers: string[];
   claimUrl: string | null;
   confirmed: ConfirmedFact[];
   leadUrl: string | null;
+  /** MDLs whose registry master docket is a case number on the page (retype_claims.py); null until retyped. */
+  mdlLinks: { mdl: number; caseNumber: string }[] | null;
 };
 
 const FACTS: ConfirmedFact[] = ["deadline", "amount", "court", "case number"];
@@ -787,6 +798,7 @@ export function parseOfficialSettlement(row: {
       const o = obj(x);
       const asWritten = str(o?.["page_as_written"], 60);
       const status = str(o?.["status"], 40);
+      const role = str(o?.["role"], 20);
       return asWritten && status
         ? [
             {
@@ -794,6 +806,11 @@ export function parseOfficialSettlement(row: {
               valueUsd: num(o?.["value_usd"]),
               sentence: str(o?.["sentence"], 400),
               status,
+              role: AMOUNT_ROLES.includes(role as SettlementAmountRole)
+                ? (role as SettlementAmountRole)
+                : null,
+              detail: str(o?.["detail"], 40),
+              roleBasis: str(o?.["role_basis"], 200),
             },
           ]
         : [];
@@ -806,6 +823,14 @@ export function parseOfficialSettlement(row: {
     claimUrl: webUrl(s["claim_url"]),
     confirmed,
     leadUrl: webUrl(discovery?.["url"]),
+    mdlLinks: Array.isArray(s["mdl_links"])
+      ? arr(s["mdl_links"]).flatMap((x) => {
+          const o = obj(x);
+          const mdl = num(o?.["mdl"]);
+          const caseNumber = str(o?.["case_number"], 80);
+          return mdl != null && Number.isInteger(mdl) && mdl > 0 && caseNumber ? [{ mdl, caseNumber }] : [];
+        })
+      : null,
   };
 }
 
