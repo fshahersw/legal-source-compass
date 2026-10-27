@@ -105,22 +105,49 @@ export type DatedEntry = DocketDate & {
   sourceUrl: string | null;
 };
 
+/** A dated row with the role of the entry it was read from (orders.ts DocketRole; absent = not known). */
+export type RoledDate = DatedEntry & { entryRole?: string | null | undefined };
+
+/**
+ * Entry roles whose dates the court itself set: orders and clerk settings. A date printed in a party filing (a movant
+ * noticing its own hearing, CM/ECF "Responses due by" on a motion) is shown only with its own label, never as the
+ * MDL's next date.
+ */
+export const COURT_SET_ROLES: ReadonlySet<string> = new Set(["order", "clerk_setting"]);
+
+export const isCourtSet = (r: RoledDate): boolean => COURT_SET_ROLES.has(r.entryRole ?? "");
+
+export const PRINTED_IN_FILING = "Printed in a party filing";
+export const SET_BY_COURT = "Court order or clerk setting";
+
 export type DocketDatesSummary = {
-  /** Dates read from the collected text. */
+  /** Dates read from the collected text (every entry role). */
   total: number;
-  /** Not vacated and on or after `today`. */
+  /** Court-set dates (order or clerk setting), not vacated and on or after `today`. */
   ahead: number;
+  /** Dates ahead that only a party filing prints; listed apart, never the next date. */
+  aheadInFilings: number;
+  /** The soonest court-set date ahead. */
   next: DatedEntry | null;
+  /** The latest court-set date. */
   latest: DatedEntry | null;
   vacated: number;
   /** Latest filing date in the collected docket text; later changes are not collected. */
   collectedThrough: string | null;
 };
 
-/** Upcoming settings: not vacated, on or after `today` (yyyy-mm-dd), soonest first. */
-export function upcomingDates(rows: readonly DatedEntry[], today: string): DatedEntry[] {
+/**
+ * Upcoming settings: not vacated, on or after `today` (yyyy-mm-dd), soonest first. By default only dates the court set
+ * (order or clerk-setting entries); `courtSetOnly: false` keeps dates printed in party filings too.
+ */
+export function upcomingDates<T extends RoledDate>(
+  rows: readonly T[],
+  today: string,
+  opts: { courtSetOnly?: boolean } = {},
+): T[] {
+  const courtSetOnly = opts.courtSetOnly ?? true;
   return rows
-    .filter((r) => !r.vacated && r.date >= today)
+    .filter((r) => !r.vacated && r.date >= today && (!courtSetOnly || isCourtSet(r)))
     .sort(
       (a, b) =>
         a.date.localeCompare(b.date) ||
@@ -130,16 +157,19 @@ export function upcomingDates(rows: readonly DatedEntry[], today: string): Dated
 }
 
 export function summarizeDates(
-  rows: readonly DatedEntry[],
+  rows: readonly RoledDate[],
   today: string,
   collectedThrough: string | null,
 ): DocketDatesSummary {
   const ahead = upcomingDates(rows, today);
+  const aheadAll = upcomingDates(rows, today, { courtSetOnly: false });
   let latest: DatedEntry | null = null;
-  for (const r of rows) if (!r.vacated && (!latest || r.date > latest.date)) latest = r;
+  for (const r of rows)
+    if (!r.vacated && isCourtSet(r) && (!latest || r.date > latest.date)) latest = r;
   return {
     total: rows.length,
     ahead: ahead.length,
+    aheadInFilings: aheadAll.length - ahead.length,
     next: ahead[0] ?? null,
     latest,
     vacated: rows.filter((r) => r.vacated).length,

@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   docketedNote,
   extractDocketDates,
+  isCourtSet,
   summarizeDates,
   upcomingDates,
-  type DatedEntry,
+  type RoledDate,
 } from "./docketDates";
+import { classifyDocketText } from "./orders";
 
 // Docket text from sw_docket_entries_v1 (MDL 3047 entries 3062, 3428 and the 2142 stipulation order).
 const CMO35 =
@@ -65,7 +67,12 @@ describe("extractDocketDates", () => {
   });
 });
 
-const row = (date: string, vacated: boolean, id: string): DatedEntry => ({
+const row = (
+  date: string,
+  vacated: boolean,
+  id: string,
+  entryRole: string = "order",
+): RoledDate => ({
   date,
   printed: date,
   phrase: "set for",
@@ -77,12 +84,13 @@ const row = (date: string, vacated: boolean, id: string): DatedEntry => ({
   entryNumber: 1,
   entryDate: "2026-09-01",
   sourceUrl: null,
+  entryRole,
 });
 
 describe("upcoming and summary", () => {
   const rows = [
-    row("2026-11-16", false, "a"),
-    row("2027-02-08", false, "b"),
+    row("2026-11-20", false, "a"),
+    row("2027-02-08", false, "b", "clerk_setting"),
     row("2026-12-01", true, "c"),
     row("2026-01-01", false, "d"),
   ];
@@ -93,11 +101,38 @@ describe("upcoming and summary", () => {
     expect(summarizeDates(rows, "2026-10-27", "2026-10-03")).toMatchObject({
       total: 4,
       ahead: 2,
+      aheadInFilings: 0,
       vacated: 1,
       collectedThrough: "2026-10-03",
     });
     expect(summarizeDates(rows, "2026-10-27", null).next?.entryId).toBe("a");
     expect(summarizeDates(rows, "2026-10-27", null).latest?.entryId).toBe("b");
+  });
+
+  it("never takes the next date from a party filing (MDL 2741, Monsanto's own motion)", () => {
+    // sw_docket_entries_v1 mdl 2741 entry 22525, filed 2026-09-02 (read-only, 2026-10-27).
+    const text =
+      "Supplemental MOTION for Summary Judgment RE: Plaintiff Shedd 3:20-cv-03833 filed by Monsanto Company. Motion for Summary Judgment Hearing set for 11/16/2026 01:00 PM in San Francisco, Courtroom 03, 17th Floor before Judge Vince Chhabria. Responses due by 9/16/2026. Replies due by 9/23/2026.";
+    expect(classifyDocketText(text).role).toBe("filing");
+    const filed: RoledDate[] = extractDocketDates(text).map((d) => ({
+      ...d,
+      entryId: "22525",
+      entryNumber: 22525,
+      entryDate: "2026-09-02",
+      sourceUrl: null,
+      entryRole: classifyDocketText(text).role,
+    }));
+    expect(filed[0]).toMatchObject({ date: "2026-11-16" });
+    const all = [...rows, ...filed];
+    const s = summarizeDates(all, "2026-10-27", "2026-10-03");
+    expect(s.next?.entryId).toBe("a");
+    expect(s.aheadInFilings).toBe(1);
+    expect(upcomingDates(all, "2026-10-27").some((r) => r.entryId === "22525")).toBe(false);
+    expect(upcomingDates(all, "2026-10-27", { courtSetOnly: false }).map((r) => r.entryId)[0]).toBe(
+      "22525",
+    );
+    // A row whose role is not known is never the next date either.
+    expect(isCourtSet({ ...filed[0]!, entryRole: undefined })).toBe(false);
   });
   it("prints the docketing caveat", () => {
     expect(docketedNote("2026-05-21", "2026-10-03")).toBe(

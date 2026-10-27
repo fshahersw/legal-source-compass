@@ -1,10 +1,17 @@
 /**
- * Dates the court set on the docket, read verbatim ("due by", "set for", "continued to" + a date). Upcoming dates are
+ * Dates the court set on the docket, read verbatim ("due by", "set for", "continued to" + a date). Upcoming dates come
+ * only from orders and clerk settings (dates printed in party filings stay under View data) and are
  * relative to today and always say when they were docketed: later changes after the collected text are not known.
  * Nothing is projected forward.
  */
 import { Card, CardBody, DataDrawer, KpiStrip, type DataColumn } from "@/components/kit";
-import { docketedNote, upcomingDates } from "@/lib/matters/docketDates";
+import {
+  PRINTED_IN_FILING,
+  SET_BY_COURT,
+  docketedNote,
+  isCourtSet,
+  upcomingDates,
+} from "@/lib/matters/docketDates";
 import type { DocketDateRow, MdlCommandPayload } from "@/lib/matters/types";
 import { EntryLink, Note, collectedNote, day, docketSource, fmt } from "./shared";
 
@@ -15,6 +22,11 @@ const columns: DataColumn<DocketDateRow>[] = [
   { key: "phrase", label: "Phrase", value: (r) => r.phrase },
   { key: "vacated", label: "Vacated", value: (r) => (r.vacated ? "Vacated (as printed)" : "") },
   { key: "docketed", label: "Docketed on", value: (r) => r.entryDate },
+  {
+    key: "printedIn",
+    label: "Printed in",
+    value: (r) => (isCourtSet(r) ? SET_BY_COURT : PRINTED_IN_FILING),
+  },
   { key: "snippet", label: "Docket text", value: (r) => r.snippet },
   {
     key: "entry",
@@ -49,7 +61,7 @@ export function DocketedDatesSection({ cmd }: { cmd: MdlCommandPayload }) {
             key: "ahead",
             label: `Still ahead of ${day(cmd.asOf)}`,
             value: fmt(s.ahead),
-            meta: "Not vacated",
+            meta: "Set by the court, not vacated",
           },
           { key: "vacated", label: "Docketed as vacated", value: fmt(s.vacated) },
           {
@@ -98,6 +110,14 @@ export function DocketedDatesSection({ cmd }: { cmd: MdlCommandPayload }) {
             </p>
           )}
           {ahead.length > 8 ? <Note>{fmt(ahead.length - 8)} more under View data.</Note> : null}
+          {s.aheadInFilings > 0 ? (
+            <Note>
+              {fmt(s.aheadInFilings)} more{" "}
+              {s.aheadInFilings === 1 ? "date ahead is" : "dates ahead are"} printed only in party
+              filings (for example a hearing the movant noticed); they are under View data, marked
+              &ldquo;{PRINTED_IN_FILING}&rdquo;.
+            </Note>
+          ) : null}
           <Note>{collectedNote(s.collectedThrough)}</Note>
         </CardBody>
       </Card>
