@@ -1,5 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
-import { loadDocumentsPage, loadTimelineArchive, parseLegacyDocument } from "./source.server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  loadDocumentsPage,
+  loadHub,
+  loadHubPdfCounts,
+  loadMdlVelocity,
+  loadRegistryDocuments,
+  loadTimelineArchive,
+  parseLegacyDocument,
+  resetHubCachesForTests,
+} from "./source.server";
+import { caseIdPlan, parseRegistryRecord } from "./registry";
 import type { MatterOverviewPayload } from "./types";
 
 const item = (links: unknown) => ({
@@ -279,5 +289,217 @@ describe("verified PDF page assembly", () => {
       vi.unstubAllGlobals();
       vi.unstubAllEnvs();
     }
+  });
+});
+
+/* ------------------------------------------------------------------ hub */
+
+const json = (body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
+
+/** A registry record shaped like `sw_matters_v1` (only what the hub reads). */
+const registryRow = (mdl: string, pdfCaseIds: string[], members: number) => ({
+  id: `sw-matter:${mdl}`,
+  title: `IN RE: Matter ${mdl}`,
+  cells: { status: "pending" },
+  facts: [],
+  registry: {
+    schema: "sw-matter-registry/v1",
+    mdl,
+    pdf_case_ids: pdfCaseIds,
+    members: { rows: members },
+    jpml: { as_of: "2026-10-01", pending: 100, historical_total: 200, scope: "x" },
+  },
+});
+
+type HubFixture = {
+  /** Registry case ids per matter; a run-specific suffix keeps module caches from leaking between tests. */
+  plans: Record<string, string[]>;
+  /** Alias ids returned for a matter, or "fail" for a failed call. */
+  aliases?: Record<string, string[] | "fail">;
+  registryReady?: boolean;
+};
+
+/**
+ * PostgREST double for the hub: publication list, the three hub reads, the alias RPC and the PDF summary RPC. The
+ * summary is a pure function of the ids asked for, so a count that includes alias ids differs from one that does not.
+ */
+function hubFetch(fx: HubFixture) {
+  const calls = { alias: 0, docs: 0, rest: 0, rpc: 0 };
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = decodeURIComponent(String(input));
+    if (url.includes("/rpc/")) calls.rpc += 1;
+    else calls.rest += 1;
+    if (url.includes("/rpc/corpus_pdf_case_aliases_v1")) {
+      calls.alias += 1;
+      const body = JSON.parse(String(init?.body)) as { p_mdl: string };
+      const a = fx.aliases?.[body.p_mdl] ?? [];
+      return a === "fail" ? new Response("boom", { status: 500 }) : json(a);
+    }
+    if (url.includes("/rpc/corpus_matter_pdf_documents_v1")) {
+      calls.docs += 1;
+      const ids = (JSON.parse(String(init?.body)) as { p_native_case_ids: string[] })
+        .p_native_case_ids;
+      const total = 100 * ids.length + ids.filter((i) => i.startsWith("MDL ")).length * 7;
+      return json({ rows: [], summary: { total, open: ids.length, held: total - ids.length } });
+    }
+    if (url.includes("corpus_datasets?select=id,ready"))
+      return json(
+        ["mdls", "mdl_appearances", "sw_matters_v1"].map((id) => ({
+          id,
+          ready: id === "sw_matters_v1" ? fx.registryReady !== false : true,
+        })),
+      );
+    if (url.includes("corpus_datasets?select=ready,updated_at"))
+      return json([{ ready: true, updated_at: "2026-10-18T18:08:06Z" }]);
+    if (url.includes("dataset=eq.mdls")) return json([]);
+    if (url.includes("dataset=eq.mdl_appearances")) return json([{ filters: { mdl: ["3140"] } }]);
+    if (url.includes("dataset=eq.sw_matters_v1"))
+      return json(
+        Object.entries(fx.plans).map(([mdl, ids]) => registryRow(mdl, ids, ids.length * 10)),
+      );
+    if (url.includes("dataset=eq.jpml_pending_history_mdls"))
+      return json([
+        {
+          id: "3140",
+          title: "IN RE: Depo-Provera",
+          source_url: "https://www.jpml.uscourts.gov/sites/jpml/files/report-2026-10.pdf",
+          type: "Products Liability",
+          series: [
+            { date: "2025-10-01", total: 1000, pending: 900 },
+            { date: "2026-07-01", total: 5000, pending: 4900 },
+            { date: "2026-10-01", total: 6000, pending: 5800 },
+          ],
+        },
+        {
+          id: "3084",
+          title: "IN RE: Uber",
+          source_url: "https://www.jpml.uscourts.gov/sites/jpml/files/report-2026-10.pdf",
+          type: "Products Liability",
+          series: [
+            { date: "2025-10-01", total: 100, pending: 100 },
+            { date: "2026-10-01", total: 300, pending: 290 },
+          ],
+        },
+      ]);
+    throw new Error(`unexpected request ${url}`);
+  });
+  return { fetchMock, calls };
+}
+
+describe("matters hub", () => {
+  beforeEach(() => {
+    vi.stubEnv("EXTERNAL_SUPABASE_URL", "https://corpus.example");
+    vi.stubEnv("EXTERNAL_SUPABASE_KEY", "test-key");
+    resetHubCachesForTests();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("serves the table from three small reads, without any PDF registry call", async () => {
+    const { fetchMock, calls } = hubFetch({
+      plans: { "3140": ["flnd-3:2025-md-03140-t1"], "2545": ["ilnd-1:2014-cv-01748-t1"] },
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const rows = await loadHub();
+    expect(calls.rpc).toBe(0);
+    expect(fetchMock.mock.calls.length).toBeLessThanOrEqual(4);
+    expect(rows).toHaveLength(38);
+    const r3140 = rows.find((r) => r.mdl === "3140")!;
+    expect(r3140.registry).toBeNull();
+    expect(r3140.registryDockets).toBe(10);
+    expect(r3140.swAppearances).toBe(1);
+    expect(r3140).toMatchObject({ pendingActions: 100, totalActions: 200, asOf: "2026-10-01" });
+  });
+
+  it("counts each matter's PDFs exactly as its page header does, aliases included", async () => {
+    const plans = {
+      "3140": ["flnd-3:2025-md-03140-t2", "69674950-t2"],
+      "2545": ["ilnd-1:2014-cv-01748-t2"],
+      "3180": ["nyed-1:2025-md-03180-t2", "70000001-t2", "70000002-t2"],
+    };
+    const { fetchMock, calls } = hubFetch({ plans, aliases: { "2545": ["MDL 2545"] } });
+    vi.stubGlobal("fetch", fetchMock);
+    const counts = await loadHubPdfCounts();
+    // Parity target recorded for this fixture (the pre-split loadHub produced the same values).
+    expect(counts["3140"]).toEqual({ open: 2, held: 198, total: 200 });
+    expect(counts["2545"]).toEqual({ open: 2, held: 205, total: 207 });
+    expect(counts["3180"]).toEqual({ open: 3, held: 297, total: 300 });
+    expect(counts["3047"]).toBeNull(); // no registry record and no derived keys: unknown, never 0
+    // The header path: loadRegistryDocuments(caseIdPlan(registry, derived), true, mdl) on the same record.
+    for (const [mdl, ids] of Object.entries(plans)) {
+      const reg = parseRegistryRecord(registryRow(mdl, ids, 0), mdl);
+      const header = await loadRegistryDocuments(caseIdPlan(reg, []), true, mdl);
+      expect(header.connected).toBe(true);
+      if (!header.connected) continue;
+      const { open, held, total } = header.summary;
+      expect(counts[mdl]).toEqual({ open, held, total });
+    }
+    // Three alias calls and three summaries for the hub; the header reads above were served from the caches.
+    expect(calls.alias).toBe(3);
+    expect(calls.docs).toBe(3);
+  });
+
+  it("makes one alias call for a matter's summary and its document rows", async () => {
+    const { fetchMock, calls } = hubFetch({ plans: {} });
+    vi.stubGlobal("fetch", fetchMock);
+    const plan = caseIdPlan(
+      parseRegistryRecord(registryRow("3081", ["azd-2:2023-md-03081-t3"], 0), "3081"),
+      [],
+    );
+    await loadRegistryDocuments(plan, true, "3081");
+    await loadRegistryDocuments(plan, false, "3081");
+    expect(calls.alias).toBe(1);
+    expect(calls.docs).toBe(2);
+  });
+
+  it("never remembers a failed alias call: the next read asks again and the counts are not kept", async () => {
+    const fx: HubFixture = {
+      plans: { "2545": ["ilnd-1:2014-cv-01748-t4"] },
+      aliases: { "2545": "fail" },
+    };
+    const { fetchMock, calls } = hubFetch(fx);
+    vi.stubGlobal("fetch", fetchMock);
+    const first = await loadHubPdfCounts();
+    // Served once on the unexpanded ids, as the page always has.
+    expect(first["2545"]).toEqual({ open: 1, held: 99, total: 100 });
+    fx.aliases = { "2545": ["MDL 2545"] };
+    const second = await loadHubPdfCounts();
+    expect(second["2545"]).toEqual({ open: 2, held: 205, total: 207 });
+    expect(calls.alias).toBe(2);
+  });
+
+  it("keeps a good count map for the next request", async () => {
+    const { fetchMock, calls } = hubFetch({ plans: { "3140": ["flnd-3:2025-md-03140-t5"] } });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadHubPdfCounts();
+    const before = fetchMock.mock.calls.length;
+    await loadHubPdfCounts();
+    expect(fetchMock.mock.calls.length).toBe(before);
+    expect(calls.docs).toBe(1);
+  });
+
+  it("flags MDLs outside the registry by exact number, and leaves the flag unknown when the registry is not read", async () => {
+    const { fetchMock } = hubFetch({ plans: { "3140": ["flnd-3:2025-md-03140-t6"] } });
+    vi.stubGlobal("fetch", fetchMock);
+    const v = await loadMdlVelocity();
+    expect(v.published).toBe(true);
+    if (!v.published) return;
+    expect(v.latestReport).toBe("2026-10-01");
+    expect(v.reportUrl).toBe("https://www.jpml.uscourts.gov/sites/jpml/files/report-2026-10.pdf");
+    const by = new Map(v.rows.map((r) => [r.mdl, r]));
+    expect(by.get("3140")).toMatchObject({ added12m: 5000, added3m: 1000, inRegistry: true });
+    expect(by.get("3084")).toMatchObject({ added12m: 200, window3: "partial", inRegistry: false });
+
+    resetHubCachesForTests();
+    const unread = hubFetch({ plans: {}, registryReady: false });
+    vi.stubGlobal("fetch", unread.fetchMock);
+    const u = await loadMdlVelocity();
+    expect(u.published && u.rows.every((r) => r.inRegistry === null)).toBe(true);
   });
 });

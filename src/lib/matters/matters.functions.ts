@@ -17,6 +17,8 @@ import {
   loadCasesScope,
   loadDocumentsPage,
   loadHub,
+  loadHubPdfCounts,
+  loadMdlVelocity,
   loadLegacyDocuments,
   loadRegistryCounsel,
   loadRegistryDocketDetail,
@@ -352,6 +354,19 @@ export const getMatterParties = createServerFn({ method: "GET" })
   });
 
 export const getMatterHub = createServerFn({ method: "GET" }).handler(async () => loadHub());
+
+/** Verified-PDF counts per hub matter, requested apart from the table so the table never waits for them. */
+export const getMatterHubPdfCounts = createServerFn({ method: "GET" }).handler(async () =>
+  loadHubPdfCounts(),
+);
+
+/** JPML filing velocity per MDL with the national and hub-portfolio pending series (hub and MDL analytics). */
+export const getMdlVelocity = createServerFn({ method: "GET" }).handler(async () =>
+  loadMdlVelocity().catch((e: unknown) => {
+    console.error("mdl velocity", e);
+    throw new Error("The JPML report series could not be read just now.");
+  }),
+);
 
 export const getMatterEntryDocuments = createServerFn({ method: "POST" })
   .inputValidator((d) =>
