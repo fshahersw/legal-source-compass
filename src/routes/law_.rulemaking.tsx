@@ -3,12 +3,18 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { RulemakingTabs } from "@/components/apiLaw/RulemakingTabs";
 import { HubLinks } from "@/components/atlas/hub/SectionHub";
 import { RulemakingActivity, rulemakingQuery } from "@/components/rulemaking/RulemakingActivity";
+import { MassTortRulemaking } from "@/components/rulemaking/MassTortRulemaking";
+import { rulemakingTrackerQuery } from "@/components/rulemaking/rulemakingQueries";
+import { SectionIndex } from "@/components/kit";
 import { pageHead } from "@/lib/corpus/head";
 
 /** Law & government › Rulemaking: Federal Register rulemaking by agency (formerly a tab of the Enforcement page). */
 export const Route = createFileRoute("/law_/rulemaking")({
   loader: ({ context }) => {
-    const warm = context.queryClient.prefetchQuery(rulemakingQuery);
+    const warm = Promise.all([
+      context.queryClient.prefetchQuery(rulemakingTrackerQuery),
+      context.queryClient.prefetchQuery(rulemakingQuery),
+    ]);
     return typeof window === "undefined" ? warm : undefined;
   },
   head: () =>
@@ -27,8 +33,17 @@ function Page() {
       breadcrumbs={[]}
     >
       <RulemakingTabs active="activity" />
-      <div className="space-y-5">
-        <RulemakingActivity />
+      <SectionIndex
+        items={[
+          { id: "mass-tort-rulemaking", label: "Mass-tort agencies" },
+          { id: "rulemaking-activity", label: "All agencies" },
+        ]}
+      />
+      <div className="stack-block space-y-5">
+        <MassTortRulemaking />
+        <div id="rulemaking-activity" className="scroll-mt-16">
+          <RulemakingActivity />
+        </div>
         <HubLinks
           title="Rules, the agenda and documents"
           links={[
@@ -36,7 +51,7 @@ function Page() {
               to: "/data/unified_agenda_pipeline",
               label: "Unified Agenda",
               description:
-                "Regulatory and deregulatory actions agencies plan, one row per RIN (publication 202510).",
+                "Actions agencies plan, one row per RIN. Only the October 2025 edition (202510) is held; its projected dates are as printed then.",
               counts: [{ dataset: "unified_agenda_pipeline", label: "actions" }],
             },
             {
