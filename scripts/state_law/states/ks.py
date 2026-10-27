@@ -143,13 +143,25 @@ def acquire(ctx: lib.RunContext) -> None:
         if ctx.sample is not None:
             entries = [e for e in entries if e[0] and e[0]["number"] == "5"]
         ctx.prefetch(e[3] for e in entries)  # retained runs: read ahead
+        listed = {lib.norm_number(e[1]) for e in entries if e[1]}
+        emitted: set[str] = set()
         for article, number, caption, url in entries:
             if not ctx.want_more():
                 break
             page = ctx.get(url, fallback_fresh=True)
             parsed = parse_section(page)
             if number and lib.norm_number(number) != lib.norm_number(parsed["number"]):
-                raise RuntimeError(f"{url} prints {parsed['number']!r}, chapter list says {number!r}")
+                # The chapter list prints reserved ranges ("23-4,102 through 23-4,124. Reserved") and links them to the
+                # next section's page. A reserved range is no section: skip it; the linked section is read from its
+                # own entry (or here, once, when the list has none).
+                if re.search(r"through.*Reserved", number, re.I) or re.search(r"Reserved", caption or "", re.I):
+                    if lib.norm_number(parsed["number"]) in listed or lib.norm_number(parsed["number"]) in emitted:
+                        continue
+                else:
+                    raise RuntimeError(f"{url} prints {parsed['number']!r}, chapter list says {number!r}")
+            if lib.norm_number(parsed["number"]) in emitted:
+                continue
+            emitted.add(lib.norm_number(parsed["number"]))
             status = marker = None
             also: list[lib.Fetched] = []
             if not parsed["text"]:  # the history on the page ("Repealed, L. 1981, …"), else the chapter list's caption
