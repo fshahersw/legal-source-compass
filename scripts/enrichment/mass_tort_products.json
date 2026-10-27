@@ -261,6 +261,31 @@
    "recall": "product_description:\"spinal cord stimulat\"+AND+recalling_firm:\"Boston Scientific\""
   },
   {
+   "mdl": 3194,
+   "product": "Abbott spinal cord stimulators",
+   "kind": "device",
+   "maude": "device.generic_name:\"spinal cord\"+AND+device.manufacturer_d_name:\"ABBOTT\"",
+   "recall": "product_description:\"spinal cord stimulat\"+AND+recalling_firm:\"Abbott\"",
+   "jpml_evidence": {"dataset": "mdl_intel_hearing_orders", "record_id": "matter:2026-09-24:3194:A", "outcome": "Centralized (transfer order)", "order_date": "2026-10-02", "order_url": "https://www.jpml.uscourts.gov/sites/jpml/files/MDL-3194-Transfer_Order-9-26.pdf"}
+  },
+  {
+   "mdl": 3195,
+   "product": "Nevro spinal cord stimulators",
+   "kind": "device",
+   "maude": "device.generic_name:\"spinal cord\"+AND+device.manufacturer_d_name:\"NEVRO\"",
+   "recall": "product_description:\"spinal cord stimulat\"+AND+recalling_firm:\"Nevro\"",
+   "jpml_evidence": {"dataset": "mdl_intel_hearing_orders", "record_id": "matter:2026-09-24:3195:A", "outcome": "Centralized (transfer order)", "order_date": "2026-10-02", "order_url": "https://www.jpml.uscourts.gov/sites/jpml/files/MDL-3195-Transfer_Order-9-26.pdf"}
+  },
+  {
+   "mdl": 2738,
+   "product": "Talcum powder (Johnson & Johnson)",
+   "kind": "cosmetic",
+   "caers": "products.name_brand:\"TALCUM POWDER\"",
+   "recall": null,
+   "note": "CAERS does not carry the maker reliably: counts reports whose product name contains 'talcum powder' (any maker); Johnson & Johnson products reported under another name are not counted.",
+   "jpml_evidence": {"dataset": "mdl_intel_hearing_orders", "record_id": "order:USCOURTS-jpml-1_16-F-02738-0", "outcome": "Transfer order", "order_date": "2016-10-04", "order_url": "https://www.govinfo.gov/content/pkg/USCOURTS-jpml-1_16-F-02738/pdf/USCOURTS-jpml-1_16-F-02738-0.pdf"}
+  },
+  {
    "mdl": 3026,
    "product": "Preterm infant formula (cow's-milk based)",
    "kind": "food",
