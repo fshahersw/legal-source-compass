@@ -10,6 +10,14 @@ begin;
 set local statement_timeout = '300s';
 set local lock_timeout = '10s';
 
+-- the rows this rollback reverts (the fold's own marker); the postcondition checks only these rows, so as-of dates
+-- that later releases add to other focused rows never block the inverse
+create temporary table _cl_fold_rb on commit drop as
+  select o.id, (o.detail #>> '{facets,labels,label_overlay,source_as_of_folded}') = 'true' as had_as_of
+    from public.corpus_records o
+   where o.dataset = 'focused' and o.detail #> '{facets,labels}' ? 'label_overlay'
+     and o.detail #>> '{facets,labels,label_overlay,contract}' = 'coverage-labels-fold-v1';
+
 with tgt as (
   select o.id,
     (o.detail #>> '{facets,labels,label_overlay,source_as_of_folded}') = 'true' as had_as_of,
@@ -48,9 +56,10 @@ declare v_left bigint; v_asof bigint; v_cat bigint;
 begin
   select count(*) into v_left from public.corpus_records
    where dataset = 'focused' and detail #> '{facets,labels}' ? 'label_overlay';
-  select count(*) into v_asof from public.corpus_records
-   where dataset = 'focused' and (detail #>> '{facets,dates,source_as_of,value}' is not null
-                                  or filters ->> 'source_as_of' is not null);
+  select count(*) into v_asof from public.corpus_records r join _cl_fold_rb t on t.id = r.id
+   where r.dataset = 'focused' and t.had_as_of
+     and (r.detail #>> '{facets,dates,source_as_of,value}' is not null or r.filters ->> 'source_as_of' is not null
+          or r.detail ->> 'source_as_of' is not null);
   select count(*) into v_cat from public.corpus_datasets
    where id = 'coverage_labels' and ready = false and label = 'Coverage labels'
      and not (metadata ? 'qualification') and not (metadata ? 'publication');

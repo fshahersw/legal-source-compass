@@ -26,9 +26,14 @@
 --     Each date was checked against the published record's own stored text on 2026-10-27: every Nevada page holds
 --     exactly one distinct "[Rev. M/D/YYYY" stamp and it equals the value (950/950); every Wisconsin page holds
 --     "35.18" and the same date spelled out (470/470). The precondition below repeats that check.
---   * facets.labels: law_body_class_confidence (high 5,513 / medium 3,017 / low 1,479 on focused twins),
---     law_body_class_basis (the classifier's own plain-words basis), law_body_class_detail (e.g.
---     repeal_or_reserved_stub), rule_set_detail and rule_set_basis, plus label_overlay provenance.
+--   * facets.labels: law_body_class_confidence and law_body_class_basis (the classifier's own plain-words basis),
+--     law_body_class_detail (e.g. repeal_or_reserved_stub), rule_set_detail and rule_set_basis, plus label_overlay
+--     provenance. Review fix 2026-10-27: confidence and basis are NOT copied for the classes 'form' (204 rows) and
+--     'notice' (957 rows). Those classes misfire on statute and court-rule pages (form|high: 108 of 162 on
+--     statute/rule publisher paths, e.g. olls.info/crs titles, ndlegis.gov/cencode chapters, vacodefull titles,
+--     Nevada session-law volumes; notice|high: 710 of 784), so a "high" confidence would make a wrong class look
+--     authoritative. label_overlay.class_confidence_omitted marks those rows; 8,848 rows get a confidence.
+--     Correcting the published law_body_class on those rows is a separate follow-up.
 -- The coverage_labels rows themselves stay in place (nothing deleted) and stay ready=false with a qualification that
 -- says where their facts are published. Raw classifier feature vectors (link_ratio, function_ratio, ...) are not
 -- copied: class_basis already states them in words.
@@ -79,8 +84,8 @@ begin
   src as (
     select c.id,
       jsonb_strip_nulls(jsonb_build_object(
-        'law_body_class_confidence', c.item -> 'confidence',
-        'law_body_class_basis', c.item -> 'class_basis',
+        'law_body_class_confidence', case when c.item ->> 'law_body_class' in ('form', 'notice') then null else c.item -> 'confidence' end,
+        'law_body_class_basis', case when c.item ->> 'law_body_class' in ('form', 'notice') then null else c.item -> 'class_basis' end,
         'law_body_class_detail', c.item -> 'class_detail',
         'rule_set_detail', c.item -> 'rule_set_detail',
         'rule_set_basis', c.item -> 'rule_set_basis'))
@@ -88,6 +93,7 @@ begin
         'dataset', 'coverage_labels',
         'manifest_sha256', 'e24f575c2076e2c674ae399a030f181bac32fd5f7f71bdfe1a3b215416f77daa',
         'contract', 'coverage-labels-fold-v1',
+        'class_confidence_omitted', coalesce(c.item ->> 'law_body_class' in ('form', 'notice'), false),
         'source_as_of_folded', (c.item #>> '{temporal,source_as_of}') is not null)) as add_labels,
       c.item #>> '{temporal,source_as_of}' as as_of,
       c.item #>> '{temporal,source_as_of_basis}' as as_of_basis
@@ -116,8 +122,8 @@ with
 src as (
   select c.id,
     jsonb_strip_nulls(jsonb_build_object(
-      'law_body_class_confidence', c.item -> 'confidence',
-      'law_body_class_basis', c.item -> 'class_basis',
+      'law_body_class_confidence', case when c.item ->> 'law_body_class' in ('form', 'notice') then null else c.item -> 'confidence' end,
+      'law_body_class_basis', case when c.item ->> 'law_body_class' in ('form', 'notice') then null else c.item -> 'class_basis' end,
       'law_body_class_detail', c.item -> 'class_detail',
       'rule_set_detail', c.item -> 'rule_set_detail',
       'rule_set_basis', c.item -> 'rule_set_basis'))
@@ -125,6 +131,7 @@ src as (
       'dataset', 'coverage_labels',
       'manifest_sha256', 'e24f575c2076e2c674ae399a030f181bac32fd5f7f71bdfe1a3b215416f77daa',
       'contract', 'coverage-labels-fold-v1',
+      'class_confidence_omitted', coalesce(c.item ->> 'law_body_class' in ('form', 'notice'), false),
       'source_as_of_folded', (c.item #>> '{temporal,source_as_of}') is not null)) as add_labels,
     c.item #>> '{temporal,source_as_of}' as as_of,
     c.item #>> '{temporal,source_as_of_basis}' as as_of_basis
@@ -208,6 +215,15 @@ begin
   if v_asof <> 1420 or v_filters <> 1420 or v_top <> 1420 then
     raise exception 'as-of folded facets %, filters %, detail % (expected 1420)', v_asof, v_filters, v_top; end if;
   if v_cat <> 1 then raise exception 'catalog row not annotated'; end if;
+  select count(*) filter (where detail #> '{facets,labels}' ? 'law_body_class_confidence'),
+         count(*) filter (where detail #>> '{facets,labels,law_body_class}' in ('form', 'notice')
+                            and (detail #> '{facets,labels}' ? 'law_body_class_confidence'
+                                 or detail #> '{facets,labels}' ? 'law_body_class_basis'))
+    into v_labels, v_asof
+    from public.corpus_records
+   where dataset = 'focused' and detail #>> '{facets,labels,label_overlay,contract}' = 'coverage-labels-fold-v1';
+  if v_labels <> 8848 or v_asof <> 0 then
+    raise exception 'confidence folded on % rows (expected 8848), % form/notice rows carry confidence or basis', v_labels, v_asof; end if;
 end
 $post$;
 

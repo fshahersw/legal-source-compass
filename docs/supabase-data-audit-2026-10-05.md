@@ -148,7 +148,7 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | MDL case inventory | mdl_case_inventory | Matters and dockets | 4,159 | 36.87 MB | Available |
 | Source documents | source_documents | Sources and captured pages | 612 | 35.17 MB | Available |
 | CourtListener education records — September 2026 snapshot | cl_educations | Judges and people | 12,777 | 33.90 MB | Available |
-| Coverage labels | coverage_labels | Sources and captured pages | 10,013 | 27.42 MB | Held |
+| Coverage labels | coverage_labels | Sources and captured pages | 10,013 | 27.42 MB | Overlay stays unlisted (ids collide with focused); its facts were folded onto 10,009 published focused records 2026-10-27 (coverage-labels-fold-v1): 1,420 as-of dates, page-type detail, confidence on 8,848 |
 | Counsel directory | counsel_directory | Matters and dockets | 4,585 | 24.46 MB | Available |
 | Federal Register — August 21–October 2, 2026 metadata | regulatory_backfill | Law | 3,139 | 21.95 MB | Available |
 | Court directory | court_spine | Courts and court resources | 5,411 | 19.56 MB | Available |

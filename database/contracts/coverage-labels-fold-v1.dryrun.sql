@@ -8,8 +8,8 @@ with
 src as (
   select c.id,
     jsonb_strip_nulls(jsonb_build_object(
-      'law_body_class_confidence', c.item -> 'confidence',
-      'law_body_class_basis', c.item -> 'class_basis',
+      'law_body_class_confidence', case when c.item ->> 'law_body_class' in ('form', 'notice') then null else c.item -> 'confidence' end,
+      'law_body_class_basis', case when c.item ->> 'law_body_class' in ('form', 'notice') then null else c.item -> 'class_basis' end,
       'law_body_class_detail', c.item -> 'class_detail',
       'rule_set_detail', c.item -> 'rule_set_detail',
       'rule_set_basis', c.item -> 'rule_set_basis'))
@@ -17,6 +17,7 @@ src as (
       'dataset', 'coverage_labels',
       'manifest_sha256', 'e24f575c2076e2c674ae399a030f181bac32fd5f7f71bdfe1a3b215416f77daa',
       'contract', 'coverage-labels-fold-v1',
+      'class_confidence_omitted', coalesce(c.item ->> 'law_body_class' in ('form', 'notice'), false),
       'source_as_of_folded', (c.item #>> '{temporal,source_as_of}') is not null)) as add_labels,
     c.item #>> '{temporal,source_as_of}' as as_of,
     c.item #>> '{temporal,source_as_of_basis}' as as_of_basis

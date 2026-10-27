@@ -3,7 +3,7 @@
 -- state 'after'); after coverage-labels-fold-v1.rollback.sql it returns 'before' again.
 --   before: folded 0, folded_as_of 0, facet_as_of 0, filter_as_of 0, detail_as_of 757, catalog_status null
 --   after:  folded 10009, folded_as_of 1420 (NV 950, WI 470), facet_as_of 1420, filter_as_of 1420, detail_as_of 2177,
---           with_confidence 10009, item_facets_equal 10009, catalog_status 'folded_into_published_records'
+--           with_confidence 8848 (form/notice rows carry no confidence), item_facets_equal 10009, catalog_status 'folded_into_published_records'
 -- In both states: overlay_rows 10013, overlay_ready false, focused rows 17416.
 set local statement_timeout = '120s';
 with f as (
