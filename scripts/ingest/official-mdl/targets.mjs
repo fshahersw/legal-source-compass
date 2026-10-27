@@ -363,6 +363,13 @@ export const MATTERS = {
     pages: [{ id: 'flmd-3006-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.flmd.uscourts.gov/cases-of-interest/tasigna-nilotinib-products-liability-litigation-mdl-no-3006' }],
     index_pages: [],
   },
+  // S.D. Fla. MDL 3015 (J&J aerosol sunscreen; dedicated case page with direct PDFs under /sites/flsd/files/).
+  '3015': {
+    name: 'In re Johnson & Johnson Aerosol Sunscreen Marketing, Sales Practices and Products Liability Litigation', court_id: 'flsd', host: 'www.flsd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3015',
+    pages: [{ id: 'flsd-3015-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.flsd.uscourts.gov/21-md-3015-singhal-%E2%80%93-re-johnson-johnson-aerosol-sunscreen-marketing-sales-practices-and-products' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
