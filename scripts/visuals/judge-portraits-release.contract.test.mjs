@@ -68,7 +68,18 @@ const snapshot = async (db) =>
       "select id, md5(item::text) im, md5(detail::text) dm from public.corpus_records where dataset = 'judges' order by id",
     )
   ).rows;
-const lastRow = (results) => results.filter((r) => r.rows && r.rows.length).at(-1).rows[0];
+// The fixture rows are synthetic, so the rollback's enforced md5 readback (production pre-images) cannot pass here;
+// the restore itself is checked by snapshot, and the enforcement by a separate test.
+const ROLLBACK_UNVERIFIED = ROLLBACK.replace(/do \$verify\$[\s\S]*?\$verify\$;/, "");
+const counts = async (db) =>
+  (
+    await db.query(
+      `select (select count(*)::int from public.corpus_records where dataset = 'judges'
+                 and item->>'photo_url' like '/supplement-files/judge_portraits/portrait-%') bound,
+              (select count(*)::int from public.corpus_artifacts where ready) artifacts,
+              (select count(*)::int from public.corpus_datasets where id = 'judge_portraits') legacy_row`,
+    )
+  ).rows[0];
 
 test("the contract names 22 distinct judge pages", () => {
   assert.equal(judgeIds.length, 22);
@@ -85,11 +96,8 @@ test("the embedded legacy catalog row is the production row exactly", async () =
 
 test("apply binds every page, adds one artifact per index path and retires the empty catalog row", async () => {
   const db = await fresh();
-  const verify = lastRow(await db.exec(APPLY));
-  assert.deepEqual(
-    { bound: Number(verify.bound), artifacts: Number(verify.artifacts), legacy_row: Number(verify.legacy_row) },
-    { bound: 22, artifacts: 14, legacy_row: 0 },
-  );
+  await db.exec(APPLY); // the enforced verify block raises unless bound = 22, artifacts = 14, legacy_row = 0
+  assert.deepEqual(await counts(db), { bound: 22, artifacts: 16, legacy_row: 0 });
   const { rows } = await db.query(
     `select count(*)::int n, count(distinct item->>'photo_url')::int urls,
             count(*) filter (where item->>'photo_url' = detail->>'photo_url')::int same,
@@ -108,13 +116,25 @@ test("apply binds every page, adds one artifact per index path and retires the e
   assert.equal(orphan.rows[0].n, 0);
 });
 
-test("apply never overwrites a photo that is already recorded", async () => {
+test("apply never overwrites a recorded photo, and a partial result aborts the whole transaction", async () => {
   const keep = judgeIds[5];
   const db = await fresh({ withPhoto: keep });
-  const verify = lastRow(await db.exec(APPLY));
-  assert.equal(Number(verify.bound), 21);
+  const before = await snapshot(db);
+  await assert.rejects(db.exec(APPLY), /check failed: bound=21, artifacts=14, legacy_row=0/);
+  await db.exec("rollback").catch(() => {});
+  assert.deepEqual(await snapshot(db), before);
   const { rows } = await db.query("select item->>'photo_url' u from public.corpus_records where id = $1", [keep]);
   assert.equal(rows[0].u, "/judge-images/existing.jpg");
+  assert.deepEqual(await counts(db), { bound: 0, artifacts: 2, legacy_row: 1 });
+});
+
+test("a second apply changes nothing (artifact insert is idempotent, updates are guarded)", async () => {
+  const db = await fresh();
+  await db.exec(APPLY);
+  const after = await snapshot(db);
+  await db.exec(APPLY);
+  assert.deepEqual(await snapshot(db), after);
+  assert.deepEqual(await counts(db), { bound: 22, artifacts: 16, legacy_row: 0 });
 });
 
 test("rollback restores every row byte for byte and the catalog row", async () => {
@@ -122,7 +142,7 @@ test("rollback restores every row byte for byte and the catalog row", async () =
   const before = await snapshot(db);
   await db.exec(APPLY);
   assert.notDeepEqual(await snapshot(db), before);
-  await db.exec(ROLLBACK);
+  await db.exec(ROLLBACK_UNVERIFIED);
   assert.deepEqual(await snapshot(db), before);
   const art = await db.query("select count(*)::int n from public.corpus_artifacts");
   assert.equal(art.rows[0].n, 2);
@@ -130,4 +150,13 @@ test("rollback restores every row byte for byte and the catalog row", async () =
     "select md5(to_jsonb(d)::text) m from public.corpus_datasets d where id = 'judge_portraits'",
   );
   assert.equal(rows[0].m, LEGACY_MD5);
+});
+
+test("the rollback's readback is enforced: rows that are not the production pre-images abort it", async () => {
+  const db = await fresh();
+  await db.exec(APPLY);
+  const after = await snapshot(db);
+  await assert.rejects(db.exec(ROLLBACK), /rollback check failed: restored=0, artifacts_left=0, legacy_row=1/);
+  await db.exec("rollback").catch(() => {});
+  assert.deepEqual(await snapshot(db), after);
 });

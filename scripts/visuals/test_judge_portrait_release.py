@@ -173,7 +173,9 @@ class SqlTests(unittest.TestCase):
         apply, rollback = jpr.render_sql({"rows": rows, "sha256": "0" * 64, "legacy_catalog_row": "{}"})
         self.assertEqual(apply.count("'moore-roy-1947.jpeg'"), 1)  # one artifact row for two judge pages
         self.assertEqual(apply.count("coalesce(item->>'photo_url', '') = ''"), 3)
-        self.assertIn("expect bound = 3, artifacts = 1", apply)
+        self.assertIn("bound = 3, artifacts = 1", apply)
+        self.assertIn("if v_bound <> 3 or v_artifacts <> 1 or v_legacy <> 0 then", apply)
+        self.assertIn("on conflict (route) do nothing;", apply)
         self.assertEqual(rollback.count(jpr.route_for("moore-roy-1947")), 3)  # rollback list, artifact delete, verify
 
     def test_quotes_are_escaped(self):

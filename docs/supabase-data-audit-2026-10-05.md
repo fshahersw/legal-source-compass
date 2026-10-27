@@ -197,7 +197,7 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | Seeger Weiss matter registry — dockets in matters (superseded rows, not served) | sw_matter_dockets_v1_superseded | Matters and dockets | 2 | 8.75 KB | Held |
 | State codes | state_codes | Law | 2 | 5.89 KB | Available |
 | Library files | library_assets | Sources and captured pages | 1 | 336 B | Held |
-| Judge portraits | judge_portraits | Judges and people | 0 | 0 B | Held |
+| Judge portraits | judge_portraits | Judges and people | 0 | 0 B | Retired 2026-10-27 (empty; ledger release20261027_judge_portraits_retire_empty_catalog); 22 more judge pages got FLP portraits (judge-portraits-release-20261027, run 7f3c2a91) |
 | Seeger Weiss matter registry — regulatory evidence links, staged extension (not published) | sw_matter_regulatory_links_v1_staged | Matters and dockets | 0 | 0 B | Held |
 | Verdict reports | verdict_reports | Matters and dockets | 0 | 0 B | Held |
 
