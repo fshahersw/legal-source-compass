@@ -1,0 +1,159 @@
+{
+ "about": "Free Law Project judge-pics portraits for judge pages that show no portrait, bound by an exact identifier chain. Captured 2026-10-27 from read-only SELECTs on corpussite (judge_cl_crosswalk, cl_people, judges, judge_portraits_open, corpus_artifacts) and src/lib/judges/portraits.server.json; see database/contracts/judge-portraits-release-20261027.sql for the queries. Owner decision 2026-10-27: an unrecorded licence is a caution hold, not source evidence, so it is released with the licence shown as not recorded.",
+ "index": {
+  "repo": "freelawproject/judge-pics",
+  "revision": "a5cf4252",
+  "file": "judge_pics/data/people.json",
+  "sha256": "2060775a99ad6c9a73ab5e6dc5bfc2b9a4fbcce6c77a78040b2915519626e3f0"
+ },
+ "release": [
+  {
+   "judge_id": "f0097aac0d7ac2f2a0b554349755b7c6",
+   "name": "Mark A. Kearney",
+   "person": 1719,
+   "path": "kearney-mark-1963",
+   "basis": "fjc_id",
+   "evidence": "CourtListener person 1719 records FJC judge id 3572; the judge profile records FJC judge id 3572 (node 1394691); no other CourtListener person carries 3572. The crosswalk row is tier withheld_for_review with no recorded reason.",
+   "pre_item_md5": "12dcad03a0c475de1f8577db443d7704",
+   "pre_detail_md5": "dcaa8450dcfe4e87d59ad3c6c5070ff5"
+  },
+  {
+   "judge_id": "3f33ffb7547dd6c437895f0a47f076a8",
+   "name": "Priscilla Richman",
+   "person": 2480,
+   "path": "owen-priscilla-1954-10-04",
+   "basis": "fjc_id",
+   "evidence": "CourtListener person 2480 (Priscilla Richman Owen) records FJC judge id 3087; the judge profile records FJC judge id 3087 (node 1392271); no other CourtListener person carries 3087. The crosswalk row is tier withheld_for_review with no recorded reason.",
+   "pre_item_md5": "b5dadeca624a52cc088dc3cdc77c11c7",
+   "pre_detail_md5": "9322913358c5749257e5c7a8c75491c6"
+  },
+  {
+   "judge_id": "ac559d72dd70225915e4518026aa2d6f",
+   "name": "Roy S. Moore",
+   "person": 3649,
+   "path": "moore-roy-1947",
+   "basis": "crosswalk:exact_name_same_state",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_state to CourtListener person 3649; the only judges record with this name (Alabama).",
+   "pre_item_md5": "c3e2d6bd3f0867171190ec603d10bde1",
+   "pre_detail_md5": "27f21f74b12a37506c1ccf6886ce6ff1"
+  },
+  {
+   "judge_id": "e13d7dd36d5768329595714a192cfd14",
+   "name": "Scott Donaldson",
+   "person": 6118,
+   "path": "donaldson-scott",
+   "basis": "crosswalk:exact_name_same_state",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_state to CourtListener person 6118; the only judges record with this name (Alabama).",
+   "pre_item_md5": "fb85b1720face09af88d3ac2531d9685",
+   "pre_detail_md5": "825b3dabd4dccb35d594e355e747a4cd"
+  },
+  {
+   "judge_id": "efb1eeb24549fae3e2a1260e57642953",
+   "name": "Craig S. Pittman",
+   "person": 6124,
+   "path": "pittman-craig-1956-09-06",
+   "basis": "crosswalk:exact_name_same_state",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_state to CourtListener person 6124; the only judges record with this name (Alabama).",
+   "pre_item_md5": "63f0f85ea809f07fb059347de44e44bd",
+   "pre_detail_md5": "54560fa93f7de2288a56ce46ef518109"
+  },
+  {
+   "judge_id": "e7180853701863c273aae182b00459fc",
+   "name": "Terri Willingham Thomas",
+   "person": 6130,
+   "path": "thomas-terri",
+   "basis": "crosswalk:exact_name_same_state",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_state to CourtListener person 6130; the only judges record with this name (Alabama).",
+   "pre_item_md5": "c4a9f327df01f46ee4811cb90d3ea814",
+   "pre_detail_md5": "5f599f51bca4b55a01b8fb241b8ad116"
+  },
+  {
+   "judge_id": "a466ee29f8ac4b8b3ff2093f1d988ab8",
+   "name": "Liles C. Burke",
+   "person": 6140,
+   "path": "burke-liles",
+   "basis": "crosswalk:exact_name_same_state",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_state to CourtListener person 6140; the only judges record with this name (Alabama).",
+   "pre_item_md5": "a528bb530c6292b31f4775b6425939b0",
+   "pre_detail_md5": "c13e750fd845bf6268ce4423ac4efbf1"
+  },
+  {
+   "judge_id": "b3783e53a3a3c73cf7f4235ae74f54a7",
+   "name": "J. Michael Joiner",
+   "person": 6149,
+   "path": "joiner-michael",
+   "basis": "crosswalk:exact_name_same_state",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_state to CourtListener person 6149; the only judges record with this name (Alabama).",
+   "pre_item_md5": "01e5a4764c7a5e342ae7c11a310b9e5b",
+   "pre_detail_md5": "9e853a31d04362225b5d4ab0cc281e73"
+  },
+  {
+   "judge_id": "eb4cbf99f4f0fdd57c94d76cc3c01cf3",
+   "name": "J. Elizabeth Kellum",
+   "person": 6150,
+   "path": "kellum-elizabeth",
+   "basis": "crosswalk:exact_name_same_state",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_state to CourtListener person 6150; the only judges record with this name (Alabama).",
+   "pre_item_md5": "6b1e55ba6a2b4b46af38b6d2e5f1db8e",
+   "pre_detail_md5": "86fed97c49d773405b65454b9db8866e"
+  },
+  {
+   "judge_id": "91fabbf511238c725ef85e2d09fb186c",
+   "name": "Jerry N. Jones",
+   "person": 6674,
+   "path": "jones-jerry-1961-10-22",
+   "basis": "crosswalk:exact_name_same_court",
+   "evidence": "judge_cl_crosswalk tier exact_name_same_court (Colorado Court of Appeals) to CourtListener person 6674; the only judges record with this name.",
+   "pre_item_md5": "63ecf8d7b4894bd3d497af9ed8e0973f",
+   "pre_detail_md5": "f761363079dc891f67758b08b9bab163"
+  }
+ ],
+ "accounting": {
+  "index_entries": 1249,
+  "distinct_people": 1244,
+  "already_shown": 1159,
+  "released_here": 10,
+  "held_accuracy": 9,
+  "no_judge_page": 66
+ },
+ "held": [
+  {
+   "persons": [
+    3640,
+    3650,
+    3652,
+    3671,
+    6131,
+    6169
+   ],
+   "judge_records": 12,
+   "reason": "Accuracy rule (names link only on a unique exact match): each of these six Alabama names (James Allen Main, Glenn Murdock, Tom Parker, Lyn Stuart, William C. Thompson, Mary Becker Windom) has two judges records with the same name in Alabama and no court or other identifier to tell them apart, so the portrait cannot be bound to one page."
+  },
+  {
+   "persons": [
+    3661
+   ],
+   "judge_records": 2,
+   "reason": "Accuracy rule: Greg Shaw has two Alabama judges records and the crosswalk tier is ambiguous."
+  },
+  {
+   "persons": [
+    6958
+   ],
+   "judge_records": 1,
+   "reason": "Accuracy rule: the CourtListener person (Barbara Lagoa, Florida District Court of Appeal) records no FJC id, so there is no shared identifier with the federal judge profile; a cross-system name match is not used."
+  },
+  {
+   "persons": [
+    0
+   ],
+   "judge_records": 0,
+   "reason": "Not a portrait of one person: the index entry group-ohio-2015-06-19 is a group photograph with person id 0."
+  },
+  {
+   "persons": "66 others (16 recorded as federal works, 14 as state works, 36 with no recorded licence)",
+   "judge_records": 0,
+   "reason": "No judge page to show them on: the CourtListener person (mostly N.D. Cal. magistrate judges, state appellate judges in Ohio, Colorado and Alabama, and historical judges) has no judges record bound by any exact tier and no judges record with the identical name."
+  }
+ ]
+}

@@ -55,8 +55,14 @@ published dataset has 240 because the later FJC fetches added the rest.
 - Agencies 6 (Agency for International Development) and 209 (Forest Service) have TIFF-only registry files, which
   Chrome and Firefox cannot draw. They need PNG renditions from the data side.
 - The 176 stored court logos are not uploaded to storage yet; fallback emblems show meanwhile.
-- 349 registry federal-judge portraits are held because their FJC page has not been fetched. FJC allows one request
-  every 30 seconds, so further fetches are slow by design.
+- The FJC fetches have since run: the published `judge_portraits_open` build (catalog metadata, read 2026-10-27) holds
+  one federal-judge portrait because its FJC page was not fetched. Its other holds are identity holds, not caution:
+  135 judge pages already have a portrait, 35 FJC rows have no single judge profile, 211 state or special-court judges
+  have no state in any recorded role or court, and 96 have no judges record with the exact name in the recorded state.
+- Free Law Project portraits (release 2026-10-27, `scripts/visuals/judge_portrait_release.py`): 10 judge pages without
+  a portrait get the portrait of the CourtListener person they are bound to by an exact identifier chain, including 8
+  official state-court portraits whose licence the index does not record (shown as "licence not recorded"). The empty
+  legacy `judge_portraits` catalog row is retired; its 1,174 stored portraits are served through `judges.photo_url`.
 
 ## Rebuild
 
