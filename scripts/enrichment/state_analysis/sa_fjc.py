@@ -32,6 +32,10 @@ IDB_PAGE = "https://www.fjc.gov/research/idb/civil-cases-filed-terminated-and-pe
 FY_SERIES = list(range(2016, 2026))  # FY2016-FY2025: complete fiscal years
 FY_WINDOW = (2021, 2025)  # the five-year window used for rates
 PRISONER = sorted(next(codes for key, _, codes in ic.NOS_GROUPS if key == "prisoner"))
+# "Core" filings: no prisoner petitions, no MDL-numbered cases, no U.S.-plaintiff cases (one definition for every query).
+CORE_SQL = "NOT v.prisoner AND NOT v.mdl AND coalesce(v.juris, 0) <> 1"
+# Bumped whenever county_counts gains or changes an output, so the build cache recomputes.
+COUNTS_VERSION = "nos_core-v1"
 
 
 def connect() -> duckdb.DuckDBPyConnection:
@@ -88,7 +92,7 @@ def county_counts(con: duckdb.DuckDBPyConnection) -> dict:
     lo, hi = FY_WINDOW
     q = f"""
         SELECT v.code, v.fy, count(*) AS n,
-               count(*) FILTER (WHERE NOT v.prisoner AND NOT v.mdl AND coalesce(v.juris, 0) <> 1) AS core
+               count(*) FILTER (WHERE {CORE_SQL}) AS core
         FROM cv v JOIN cty t ON t.fips = v.code AND t.usps = v.dist_usps
         WHERE v.fy BETWEEN {FY_SERIES[0]} AND {FY_SERIES[-1]}
         GROUP BY 1, 2
@@ -122,6 +126,16 @@ def county_counts(con: duckdb.DuckDBPyConnection) -> dict:
     """
     for code, grp, n in con.execute(q3).fetchall():
         out.setdefault(code, {"fy": {}, "core_fy": {}}).setdefault("nos", {})[grp] = int(n)
+    # NOS groups among core filings only (no prisoner petitions, no MDL-numbered cases, no U.S.-plaintiff cases). The
+    # IDB COUNTY of an MDL direct filing follows the court's or defendant's county, so only core filings speak to residence.
+    q3c = f"""
+        SELECT v.code, coalesce(g.grp, 'unmapped') AS grp, count(*)
+        FROM cv v JOIN cty t ON t.fips = v.code AND t.usps = v.dist_usps LEFT JOIN nosg g ON g.nos = v.nos
+        WHERE v.fy BETWEEN {lo} AND {hi} AND {CORE_SQL}
+        GROUP BY 1, 2
+    """
+    for code, grp, n in con.execute(q3c).fetchall():
+        out.setdefault(code, {"fy": {}, "core_fy": {}}).setdefault("nos_core", {})[grp] = int(n)
     # where residents filed: court id by county
     q4 = f"""
         SELECT v.code, v.court_id, count(*)

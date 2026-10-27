@@ -142,24 +142,25 @@ METRICS = [
            denominator="population", per=100000),
     metric("nhtsa_crash_complaints", "NHTSA complaints reporting a crash", "complaints", "int", GROUP_SAFETY, ["nhtsa"],
            "Unique complaints with CRASH = 'Y', by consumer STATE and year received.", short="Crash complaints", selectable=False),
-    metric("fda_recalls", "FDA enforcement-report entries (drug + device + food)", "entries", "int", GROUP_SAFETY, ["fda"],
+    metric("fda_recalls", "FDA enforcement-report entries (drug + device + food), by recalling firm's HQ state", "entries", "int", GROUP_SAFETY, ["fda"],
            "Count of openFDA enforcement-report product entries by the recalling firm's state and report_date year.",
            short="FDA recall entries",
            caveats=["Recalling-firm headquarters state — not where products were distributed or consumers were exposed.",
                     "Each product (recall number) is one entry; one recall event can list many products.", "Latest year is partial."]),
-    metric("fda_recall_rate", "FDA enforcement entries per 1 million residents", "per 1M", "rate", GROUP_SAFETY, ["fda", "census2020", "census2025"],
+    metric("fda_recall_rate", "FDA enforcement entries (recalling firm's HQ state) per 1 million residents", "per 1M", "rate", GROUP_SAFETY, ["fda", "census2020", "census2025"],
            "Computed: enforcement entries ÷ Census same-year population × 1,000,000.", short="FDA entries / 1M",
            denominator="population", per=1000000),
-    metric("fda_drug_recalls", "FDA drug enforcement entries", "entries", "int", GROUP_SAFETY, ["fda"],
+    metric("fda_drug_recalls", "FDA drug enforcement entries, by recalling firm's HQ state", "entries", "int", GROUP_SAFETY, ["fda"],
            "openFDA drug enforcement entries by recalling-firm state and report_date year.", short="Drug recall entries"),
-    metric("fda_device_recalls", "FDA device enforcement entries", "entries", "int", GROUP_SAFETY, ["fda"],
+    metric("fda_device_recalls", "FDA device enforcement entries, by recalling firm's HQ state", "entries", "int", GROUP_SAFETY, ["fda"],
            "openFDA device enforcement entries by recalling-firm state and report_date year.", short="Device recall entries"),
-    metric("fda_food_recalls", "FDA food enforcement entries", "entries", "int", GROUP_SAFETY, ["fda"],
+    metric("fda_food_recalls", "FDA food enforcement entries, by recalling firm's HQ state", "entries", "int", GROUP_SAFETY, ["fda"],
            "openFDA food enforcement entries by recalling-firm state and report_date year.", short="Food recall entries"),
-    metric("fda_class1_recalls", "FDA Class I enforcement entries (all product types)", "entries", "int", GROUP_SAFETY, ["fda"],
+    metric("fda_class1_recalls", "FDA Class I enforcement entries (all product types), by recalling firm's HQ state", "entries", "int", GROUP_SAFETY, ["fda"],
            "Entries classified Class I (reasonable probability of serious adverse health consequences or death).",
            short="Class I entries"),
 ]
+FDA_HQ_CAVEAT = "Recalling-firm headquarters state — not where products were distributed or consumers were exposed."
 CAUSE_ORDER = ["all_causes", "heart_disease", "cancer", "unintentional_injuries", "clrd", "stroke", "alzheimers_disease",
                "diabetes", "influenza_and_pneumonia", "kidney_disease", "suicide"]
 
@@ -323,7 +324,9 @@ def add_causes(causes):
         if slug not in causes:
             continue
         cause = causes[slug]
-        label = cause["name"]
+        span = p.year_span(cause["rate"]) or p.year_span(cause["deaths"])
+        # The NCHS leading-causes file stops in 2017: the span is part of the label so no reader takes it as current.
+        label = f"{cause['name']} ({span})" if span else cause["name"]
         METRICS.append(metric(f"cause_{slug}_rate", f"{label}: age-adjusted death rate", "per 100k (age-adjusted)", "rate",
                               GROUP_CAUSES, ["causes"], f"NCHS age-adjusted death rate per 100,000, cause '{cause['code']}'.",
                               short=f"{label} (age-adj.)", higher="worse"))
@@ -407,6 +410,10 @@ def main():
             m["caveats"].append(RATE_CAVEATS["vsrr"])
         if m["key"] == "fars_rate":
             m["caveats"].append(RATE_CAVEATS["fars_rate"])
+    # Every FDA metric counts by the recalling firm's headquarters state, never by where consumers were exposed.
+    for m in METRICS:
+        if m["key"].startswith("fda_") and FDA_HQ_CAVEAT not in m["caveats"]:
+            m["caveats"] = [FDA_HQ_CAVEAT] + list(m["caveats"])
     # CDC cell footnotes on a count apply equally to the rate computed from it.
     for rate, count in NUMERATOR.items():
         if count in notes:
