@@ -2,7 +2,8 @@
 
 Second path: plain row fetches from the slim tables (not the rest_work aggregates) and Python arithmetic (statistics.median, Counter),
 compared with what each build file displays. Also integrity checks over every row: link shapes, ids, and the disclosure attribution
-rule (no listed item may come from a report that fails the surname check or from a person marked as a conflict).
+rule (no listed item may come from a report whose file name carries another surname or from a person marked as a conflict; items of
+reports whose file name could not be read are listed with attribution 'not_checked').
 
     python3 -I -B verify_rest.py            -> private/build/courtlistener_rest/verify_rest.json, exit 1 on any mismatch
 """
