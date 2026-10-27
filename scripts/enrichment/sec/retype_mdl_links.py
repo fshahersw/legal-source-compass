@@ -264,7 +264,9 @@ def publish():
 
     for name in (LINKS, PROFILES):
         packet = json.load(open(os.path.join(BUILD, f"{name}.json"), encoding="utf-8"))
-        writer.publish(name, packet["label"], packet["rows"], listing_block=packet["listing_block"], summary=packet["summary"])
+        # Exported rows carry no dataset column; corpus_writer.publish posts rows as given, so stamp it here.
+        rows = [{**r, "dataset": name} for r in packet["rows"]]
+        writer.publish(name, packet["label"], rows, listing_block=packet["listing_block"], summary=packet["summary"])
 
 
 def main(argv=None):

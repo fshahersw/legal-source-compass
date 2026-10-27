@@ -5,6 +5,7 @@ import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { CaseMixChart } from "@/components/litviz/CaseMixChart";
 import { CaseTypeSunburst } from "@/components/litviz/CaseTypeSunburst";
 import { LitigationHeadline } from "@/components/litviz/LitigationHeadline";
+import { RadarTopFive } from "@/components/safety/radar/RadarTopFive";
 import { pageHead } from "@/lib/corpus/head";
 
 /** Litigation hub: headline counts and a link into every litigation sub-area. */
@@ -29,6 +30,7 @@ function Page() {
         lead={
           <div className="space-y-6">
             <LitigationHeadline />
+            <RadarTopFive />
             <CaseMixChart />
             <CaseTypeSunburst />
           </div>

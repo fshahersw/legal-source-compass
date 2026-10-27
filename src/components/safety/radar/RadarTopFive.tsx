@@ -1,8 +1,8 @@
 /**
  * "Top 5 emerging" tile for the Litigation hub: the five highest-ranked radar units with no open MDL linked (a unit
  * linked only to a closed MDL is marked "Earlier MDL closed: N"), each opening its evidence on /safety/signals.
- * Renders nothing until the radar dataset is published. Not mounted yet: the Litigation hub route
- * (src/routes/litigation.index.tsx, another workstream's file) passes it to SectionHub `lead` or `children`.
+ * Renders nothing until the radar dataset is published. Mounted in the Litigation hub's lead stack
+ * (src/routes/litigation.index.tsx).
  */
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
