@@ -13,21 +13,23 @@ from datetime import date
 from pathlib import Path
 
 import parse_jpml as pj
-from contact_redaction import redact, redact_lines
+from contact_redaction import tidy
 from extract_court_pages import clip, parse_date
 
-CONTACT_MARKER = "[contact removed]"
+CONTACT_MARKER = "[contact removed]"  # records built before 2026-10-27 carry it; nothing removes contact text any more
 CONTACT_METHOD = (
-    "Counsel are shown without contact fields (owner decision 2026-10-03): e-mail addresses, NANP phone/fax numbers, "
-    "street addresses, Suite / P.O. Box / floor fragments, a unit number right after a street name ('Road, #100'), "
-    "'City, ST ZIP' and contact labels with no value ('Facsimile: Not Available') are removed from court-page text by explicit "
-    "patterns. In counsel lists, lines starting with a street number, Suite or P.O. Box are dropped, as are lines that are "
-    "only 'City, State' (state spelled out), only a contact-field label ('Telephone', 'Name and Address'), premises "
-    "('Third and Fourth Floor', 'Plaza Seven Bldg.') or a building name printed above its street line ('Terminus 200'; "
-    "a firm name on the same line is kept). Counsel blocks that lost text are marked 'contact lines removed'; in quoted "
-    "sentences, and in a counsel line whose sentence points at the removed contact ('may be sent to …'), each removal is "
-    "shown as '[contact removed]'. Names, firms and roles are kept as printed."
+    "Court-page text is shown as the court prints it, counsel contact details included (lead decision 2026-10-27 applying the "
+    "owner decision 'dont withhold any data': professional contact details that courts publish for attorneys are public and "
+    "superseded 'counsel without contact fields' of 2026-10-03). Only whitespace and repeated punctuation are tidied."
 )
+
+
+def counsel_redact(text, category=None, marker=None):
+    """Text as printed (contact_redaction.tidy: whitespace and repeated punctuation only). Since the lead decision of 2026-10-27
+    counsel contact details are shown, so nothing is removed; the signature is kept for callers. Returns (text, False)."""
+    if not text:
+        return text, False
+    return tidy(text), False
 from common import ACQ, HERE, JPML, TODAY, cw, district_name, fmt, months_between, normalize_district, pct  # noqa: E402
 
 COURT_DATASET = "mdl_intel_court_pages"
@@ -114,14 +116,15 @@ def earliest_bellwether_activity(quotes, orders, transferred):
 
 
 def leadership_from_pages(items):
-    """Leadership blocks across an MDL's court pages: contact details removed (contact_redaction), lines longer than
+    """Leadership blocks across an MDL's court pages, lines as printed (tidied whitespace only), lines longer than
     LEAD_LINE_CHARS cut at a word boundary and marked, at most LEAD_LINE_CAP lines per heading with the remainder
     counted, and a block repeated on another page (same heading, same lines) kept once."""
     out, seen = [], set()
     for p in items:
         for b in p.get("leadership_blocks", []):
-            lines, removed = redact_lines(b["lines"])
-            heading, head_removed = redact(b["heading"])
+            lines = [t for t in (tidy(ln) for ln in b["lines"]) if t]
+            heading = tidy(b["heading"])
+            removed = head_removed = False
             if not lines or not heading:
                 continue
             key = (" ".join(heading.lower().split()), tuple(lines))
@@ -130,7 +133,7 @@ def leadership_from_pages(items):
             seen.add(key)
             shown = [clip(ln, LEAD_LINE_CHARS) for ln in lines[:LEAD_LINE_CAP]]
             beyond_extract = max(0, (b.get("lines_total") or len(b["lines"])) - len(b["lines"]))
-            group = redact(b["group"])[0] if b.get("group") else None
+            group = tidy(b["group"]) if b.get("group") else None
             out.append({
                 "heading": heading, "group": group or None, "lines": shown, "lines_not_shown": beyond_extract + len(lines) - len(shown),
                 "url": p["url"], "contact_lines_removed": removed or head_removed, "note": "contact lines removed" if removed or head_removed else None,
@@ -165,7 +168,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
         quotes, seen_q = [], set()
         for p in items:
             for q in p.get("quotes", []):
-                text, removed = redact(q["text"], marker=CONTACT_MARKER)
+                text, removed = counsel_redact(q["text"], q["category"], marker=CONTACT_MARKER)
                 if len(text.replace(CONTACT_MARKER, "").strip(" .,;:()")) < 15:
                     continue  # nothing but contact details
                 key = (q["category"], text)
@@ -179,7 +182,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
                 if o["url"] in seen_o:
                     continue
                 seen_o.add(o["url"])
-                orders.append(o | {"title": redact(o["title"])[0], "row_text": redact(o["row_text"], marker=CONTACT_MARKER)[0], "page": p["url"]})
+                orders.append(o | {"title": counsel_redact(o["title"])[0], "row_text": counsel_redact(o["row_text"], marker=CONTACT_MARKER)[0], "page": p["url"]})
         orders.sort(key=lambda o: (o["date"] or "", o["title"]), reverse=True)
         lead_blocks = leadership_from_pages(items)
         by_cat = collections.defaultdict(list)
@@ -242,7 +245,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
             ["Leadership statements quoted", fmt(rec["quote_counts"]["leadership"])], ["Bellwether / trial statements quoted", fmt(rec["quote_counts"]["bellwether"])],
             ["Settlement statements quoted", fmt(rec["quote_counts"]["settlement"])], ["Earliest quoted bellwether-trial date", bw_date or "Not recorded"], ["Status (JPML report 10/1/2026)", "Transferred" if status == "transferred" else "Not transferred as of the report" + (f" (transfer order filed {pending_order.get('filed')})" if pending_order.get("filed") else "")],
             ["Flags", ", ".join(flags) or "None"], ["Retrieved", items[0]["retrieved"] if items else TODAY],
-            ["Counsel contact details", "Removed — " + CONTACT_METHOD],
+            ["Counsel contact details", "Shown as printed — " + CONTACT_METHOD],
         ]
         links = [{"url": p["url"], "label": f"Court page: {p['title'][:60]}"} for p in items[:4]] + [{"url": BY_TYPE_URL, "label": "JPML pending MDLs by type (10/1/2026)"}, {"url": f"/matters/lens/{mdl}", "label": f"MDL {mdl} lens"}]
         title = r["title"].replace("IN RE:", "In re:").replace("IN Re:", "In re:")

@@ -176,11 +176,8 @@ export type LeadershipSection = {
 /** A stored leadership block (mdl_intel_court_pages item.court.leadership_blocks), already validated. */
 export type LeadershipBlock = Omit<LeadershipSection, "moreLines"> & { linesNotShown: number };
 
-// Defence in depth: counsel are shown without contact fields even if an older record still carried them.
-const CONTACT = "[contact removed]";
-const EMAIL_RE = /[\w.+'-]+@[\w-]+(?:\.[\w-]+)+/g;
-const PHONE_RE = /(?<![\d-])(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}(?![\d-])/g;
-const scrub = (s: string) => s.replace(EMAIL_RE, CONTACT).replace(PHONE_RE, CONTACT);
+// Lead decision 2026-10-27: counsel contact details that courts print are shown as printed (no client-side stripping).
+// Records built before then still carry "[contact removed]" markers and contact_lines_removed flags, which are passed on.
 /** Payload bounds for the court-page index (every MDL in one response); the lens shows the same sections. */
 const LEADERSHIP_SECTIONS = 12;
 const LEADERSHIP_LINES = 40;
@@ -401,16 +398,14 @@ function toCourt(v: unknown): CourtMdl | null {
       .map(obj)
       .filter((b): b is Json => !!b && !!str(b["heading"]))
       .map((b) => {
-        const raw = arr(b["lines"]).filter((l): l is string => typeof l === "string" && !!l);
-        const lines = raw.map(scrub);
+        const lines = arr(b["lines"]).filter((l): l is string => typeof l === "string" && !!l);
         return {
           heading: str(b["heading"])!,
           group: str(b["group"]),
           lines,
           linesNotShown: num(b["lines_not_shown"]) ?? 0,
           url: str(b["url"]) ?? "",
-          contactLinesRemoved:
-            b["contact_lines_removed"] === true || lines.some((l, i) => l !== raw[i]),
+          contactLinesRemoved: b["contact_lines_removed"] === true,
           updated: str(b["updated"]),
         };
       }),
@@ -424,13 +419,12 @@ function toCourt(v: unknown): CourtMdl | null {
       const text = str(qq?.["text"]);
       const url = str(qq?.["url"]);
       if (text && url) {
-        const clean = scrub(text);
         quotes.push({
           category: cat,
-          text: clean,
+          text,
           url,
           retrieved: str(qq?.["retrieved"]),
-          contactRemoved: qq?.["contact_details_removed"] === true || clean !== text,
+          contactRemoved: qq?.["contact_details_removed"] === true,
         });
       }
     }
