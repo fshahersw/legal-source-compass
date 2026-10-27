@@ -4,7 +4,10 @@ Source: the ORS page `https://www.oregonlegislature.gov/bills_laws/Pages/ORS.asp
 their chapter ranges and carries the edition statement ("The 2025 Edition does not include changes to the law made by
 the 2025 special session and the 2026 regular session ..."); each chapter is one HTML file
 `https://www.oregonlegislature.gov/bills_laws/ors/ors<NNN>.html` (Word-exported, windows-1252). The first chapter of a
-title prints the title's chapter list, which the module follows. robots.txt places no restriction on these paths.
+title prints the title's chapter list ("Chapter 12. …" then bare "14. …" lines, lettered chapters as "72A. …"); the
+module reads the listed chapters plus every whole number of the title's range (unlisted "Former Provisions" chapters
+print status entries only; numbers without a file answer 404 and are skipped; a listed chapter that is not served is
+ledgered as unavailable). robots.txt places no restriction on these paths.
 
 Parsing (`or-chapter-html/1`): a section starts at a paragraph whose bold run is `12.110 Actions for certain injuries
 ...` (number + catchline); the rest of that paragraph and the following paragraphs are its text, until the next bold
@@ -74,15 +77,34 @@ def parse_index(index_html: str):
 
 
 def title_chapters(raw: bytes):
-    """Chapter numbers printed in a title's chapter list at the top of its first chapter file."""
+    """Chapter numbers printed in a title's chapter list at the top of its first chapter file. The list prints
+    "Chapter 1. Courts and Judicial Officers Generally" and then one bare "2. Supreme Court; Court of Appeals" line per
+    further chapter (lettered chapters as "72A. …"), ending at a "_______________" rule."""
     text = lib.html_text(raw) if lib else sb.strip_tags(raw.decode("windows-1252", "replace"))
-    lines = text.split("\n")
-    out = []
-    for line in lines:
+    out: list[str] = []
+    in_list = False
+    for line in text.split("\n"):
+        line = line.strip()
         m = re.match(r"^Chapter\s+(\d+[A-Z]?)\.\s", line)
-        if m and m.group(1) not in out:
-            out.append(m.group(1))
+        if not m and in_list:
+            m = re.match(r"^(\d+[A-Z]?)\.\s", line)
+            if not m and line:
+                break
+        if m:
+            in_list = True
+            if m.group(1) not in out:
+                out.append(m.group(1))
     return out
+
+
+def title_chapter_numbers(group: dict, listed: list[str]) -> list[str]:
+    """Every chapter to read for a title: the chapters its list prints, the title's first chapter (a "Former
+    Provisions" chapter prints the list but is not in it), and every whole number in the title's printed range (former
+    provisions chapters inside the range are not listed either). Numbers that have no file answer 404 and are skipped."""
+    lo = int(re.match(r"\d+", group["start"]).group(0))
+    hi = int(re.match(r"\d+", group["end"]).group(0))
+    wanted = set(listed) | {group["start"]} | {str(n) for n in range(lo, hi + 1)}
+    return sorted(wanted, key=sb.natural_key)
 
 
 def parse_chapter(raw: bytes):
@@ -160,7 +182,7 @@ def parse_chapter(raw: bytes):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
-    index = ctx.get(INDEX_URL)
+    index = ctx.get(INDEX_URL, fallback_fresh=True)  # the 2026-10-06 capture kept chapter files, not the ORS page
     page = lib.norm_ws(lib.html_text(index.body))
     m = re.search(r"The 20\d\d Edition does not include changes to the law .*?for the most up-to-date version of the "
                   r"law\.", page)
@@ -172,18 +194,26 @@ def acquire(ctx):
     for g in groups:
         if only and not any(sb.natural_key(g["start"]) <= sb.natural_key(c) <= sb.natural_key(g["end"]) for c in only):
             continue
-        first = ctx.get(chapter_url(g["start"]), accept_status=(200, 404))
-        chapters = title_chapters(first.body) if first.status == 200 else []
-        if not chapters:
-            chapters = [g["start"]]
-            ctx.log(f"title {g['title']}: no chapter list printed; using chapter {g['start']} only")
+        first = ctx.get(chapter_url(g["start"]), fallback_fresh=True, accept_status=(200, 404))
+        listed = title_chapters(first.body) if first.status == 200 else []
+        if not listed:
+            ctx.log(f"title {g['title']}: no chapter list printed on chapter {g['start']}; reading its whole range")
+        chapters = title_chapter_numbers(g, listed)
         if only:
             chapters = [c for c in chapters if c in only]
         for chapter in chapters:
-            fetched = first if chapter == g["start"] and first.status == 200 else ctx.get(chapter_url(chapter),
-                                                                                          accept_status=(200, 404))
+            if chapter == g["start"]:
+                fetched = first
+            else:
+                fetched = ctx.get(chapter_url(chapter), fallback_fresh=True, accept_status=(200, 404))
             if fetched.status != 200:
-                ctx.log(f"chapter {chapter}: HTTP {fetched.status}")
+                if chapter in listed:
+                    # a chapter the title list prints but the publisher does not serve is ledgered, never dropped
+                    # silently; load.py refuses the edition until the gap is accepted and named in its note
+                    url = chapter_url(chapter)
+                    ctx._rejects.write({"state": "OR", "code": "ORS", "number": None,
+                                        "reason": f"unavailable: {url} returned HTTP {fetched.status}",
+                                        "source_url": url, "source_sha256": None})
                 continue
             parsed = parse_chapter(fetched.body)
             counts: dict[str, int] = {}

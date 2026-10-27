@@ -304,3 +304,15 @@ each LRB certificate date; NH, NM, OH, OK when the live source is reachable/deci
 - OK: the retained capture (2026-10-06) includes that day's robots.txt, which already disallowed `/` for all agents.
 - OH: robots.txt is the single line `User-agent: * Disallow: /`; standard parsers read no rule, its intent reads as
   disallow-all; no live crawl was run.
+
+## Release 2026-10-27 (state-codes-official-unprojected)
+
+Owner decision 2026-10-27 ("dont withhold any data. If its accurate and valuable, USE IT"): holds kept only on explicit
+source evidence. Packet: `private/acq/release-state-codes-official-unprojected/` (lead loads; workers never write).
+
+| | Decision | Why |
+|---|---|---|
+| NY | released: `ny.py` (ny-openleg-html/3) re-parses the retained nysenate.gov pages, never live | the capture is the official publisher's pages, obtained through a third-party fetch proxy (Firecrawl) that passed the publisher's browser check; the owner accepted those copies on 2026-10-07 (as for PA; recorded in `scripts/legal/state-codes/ny/capture.py`) and the same text is already served by the NY projection. Labelled "captured via fetch proxy from nysenate.gov" with that explanation in the terms note |
+| OH | **held** (lead 2026-10-27, review finding) | robots.txt is the single line `User-agent: * Disallow: /` (re-read 2026-10-27) and the 2026-10-07 capture was taken under it. The line is malformed for a parser, but its intent is the same explicit restriction as OK's, so OH and OK are held together until the owner decides; `oh.py` refuses a retained run without `--option owner_release=2026-10-27-robots` |
+| OR | released (live, or retained chapter files with the index read fresh) | no restriction; the title chapter lists' bare "2. …" lines are now read, plus every number in a title's range |
+| OK | **held** | explicit publisher restriction: robots.txt (2,215 bytes, sha256 a676c21f…884a) has `User-agent: *`, a blank line, `Disallow: /cgi-bin/`, `/WebApplication2/`, `/WebApplication21/`, then `Disallow: /` (one RFC 9309 group), plus `/*.pdf$`, `/cf_pdf/` and explicit `User-agent: ClaudeBot` / `Disallow: /` and `GPTBot` groups; the retained capture was taken under it. Needs the owner's call or the Legislative Service Bureau's permission |
