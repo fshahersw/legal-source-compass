@@ -161,9 +161,9 @@ function Panel({ f }: { f: JudgeMdlFlows }) {
       </div>
       <footer className="border-t border-border/70 px-4 py-2 text-[11px] leading-4 text-muted-foreground">
         A docket counts when the matter registry ties it to an MDL as an originating docket (JPML
- schedules, conditional transfer orders or federal records); judges are the the source
- assignments on the originating and master dockets. Counts cover the MDLs the registry holds,
- not every transfer.
+        schedules, conditional transfer orders or federal records); judges are the assigned judges
+        on the originating and master dockets. Counts cover the MDLs the registry holds, not every
+        transfer.
       </footer>
     </section>
   );
