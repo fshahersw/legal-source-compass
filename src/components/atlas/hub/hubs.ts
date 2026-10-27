@@ -234,14 +234,9 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
     ],
   },
   law: {
-    kpis: [
-      { dataset: "us_code_sections", label: "U.S. Code sections" },
-      { dataset: "ecfr_sections_full", label: "CFR sections, full current text" },
-      { dataset: "congress_bills", label: "Bills and resolutions in Congress since 2003" },
-      { dataset: "state_bills", label: "State bills, current and preceding session" },
-      { dataset: "state_constitution_sections", label: "State constitution sections" },
-      { dataset: "court_rule_sections", label: "Court rules, rule by rule" },
-    ],
+    // The landing opens with answer KPIs (src/components/law/LawAnswerKpis.tsx), not collection sizes; the record
+    // counts stay on the links below.
+    kpis: [],
     links: [
       {
         to: "/law",
@@ -278,15 +273,14 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
         to: "/law/rulemaking",
         label: "Rulemaking",
         description:
-          "Federal Register rules, proposed rules and notices by agency, and the Unified Agenda.",
-        counts: [{ dataset: "unified_agenda_pipeline", label: "Unified Agenda actions" }],
+          "Comment deadlines at FDA, NHTSA, CPSC, EPA and FTC, rules by agency, and the Unified Agenda.",
+        counts: [{ dataset: "regulations_gov_documents", label: "Regulations.gov documents" }],
       },
       {
         to: "/limitations",
         label: "Time limits",
         description:
-          "Statutes of limitation with cited rules, a guided calculator and state coverage.",
-        counts: [{ dataset: "limitation_periods", label: "limitation periods" }],
+          "Vetted limitation rules with cited statutes, a guided calculator and state coverage.",
       },
       {
         to: "/agencies",

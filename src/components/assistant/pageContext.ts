@@ -80,6 +80,27 @@ export function suggestionsFor(path: string): string[] {
       "How long have vacancies in MDL districts been open?",
       "How are vacancies linked to judges on this page?",
     ];
+  if (path.startsWith("/law/rulemaking"))
+    return [
+      "Which FDA, NHTSA or CPSC comment periods close this month?",
+      "Which open proposals matter for drug and device cases?",
+      "How far behind schedule is the agenda for these agencies?",
+      "How is a comment deadline counted here?",
+    ];
+  if (path.startsWith("/law/cfr"))
+    return [
+      "Which drug and device regulations changed in the last year?",
+      "Which Federal Register rule changed this section?",
+      "Which filings cite this section, and in which MDLs?",
+      "How is a substantive change counted?",
+    ];
+  if (path.startsWith("/law/legislation"))
+    return [
+      "Which states enacted litigation-funding laws?",
+      "Where are damages-limit bills moving this session?",
+      "When did Congress pay most attention to PFAS?",
+      "How are bills matched to a topic here?",
+    ];
   if (/^\/courts\/[^/]+$/.test(path))
     return [
       "Summarize this court: caseload, MDLs and judges",

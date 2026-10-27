@@ -7,6 +7,8 @@ import { DatasetCodeBrowser } from "@/components/corpus/DatasetCodeBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
 import { InForceCodeBrowser } from "@/components/law/InForceCodeBrowser";
+import { ProductLiabilityProvisions } from "@/components/law/ProductLiabilityProvisions";
+import { PRODUCT_LIABILITY_QUERY } from "@/components/law/lawQueries";
 import { ProjectionCodeBrowser } from "@/components/corpus/ProjectionCodeBrowser";
 import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { pageHead } from "@/lib/corpus/head";
@@ -201,6 +203,17 @@ function StateCodePage() {
       }
     >
       {tabs}
+      {place && view === "inforce" && inForce && !search.sec && !search.node && !search.lq ? (
+        <ProductLiabilityProvisions
+          state={usps}
+          stateName={place.name}
+          edition={inForce}
+          onOpen={(sec) => void navigate({ search: { view: "inforce", sec } })}
+          onSeeAll={() =>
+            void navigate({ search: { view: "inforce", lq: PRODUCT_LIABILITY_QUERY } })
+          }
+        />
+      ) : null}
       {place && view === "inforce" && inForce ? (
         <InForceCodeBrowser
           state={usps}
