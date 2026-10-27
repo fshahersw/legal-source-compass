@@ -34,6 +34,12 @@ test('the contract never publishes the overlay rows and never deletes or inserts
   assert.match(sql, /^\s*commit;/m);
 });
 
+test('the verify query only reads and pins the before/after counts', async () => {
+  const sql = strip(await read('coverage-labels-fold-v1-verify.sql'));
+  assert.doesNotMatch(sql, /\b(update\s+public|insert\s+into|delete\s+from|truncate|alter\s|create\s|drop\s)/i);
+  assert.match(sql, /f\.folded = 10009 and f\.folded_as_of = 1420/);
+});
+
 test('the dry run only reads', async () => {
   const sql = strip(await read('coverage-labels-fold-v1.dryrun.sql'));
   assert.doesNotMatch(sql, /\b(update\s+public|insert\s+into|delete\s+from|truncate|alter\s|create\s|drop\s)/i);
