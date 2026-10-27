@@ -651,3 +651,71 @@ test("status reports each family's latest build", async () => {
   await assert.rejects(() => db.query("select public.lawviz_refresh_v1('Bad Build')"));
   await db.close();
 });
+
+// ---------------------------------------------------------------- NHTSA and EPA calendar series
+const EXTRA = await fs.readFile(
+  path.resolve("database/contracts/lawviz-calendar-nhtsa-epa-v1.sql"),
+  "utf8",
+);
+
+test("nhtsa/epa contract: statement forms and privileges", () => {
+  assert.doesNotMatch(EXTRA, /;\s*(delete|drop|truncate)\b/i);
+  assert.doesNotMatch(EXTRA, /^\s*drop\s/im);
+  for (const m of EXTRA.matchAll(/create or replace function ([a-z_.0-9]+)\(/g)) {
+    const body = EXTRA.slice(m.index, EXTRA.indexOf("$$", EXTRA.indexOf("$$", m.index) + 2));
+    assert.match(body, /security definer set search_path = ''/, `${m[1]} must be security definer`);
+  }
+});
+
+test("nhtsa/epa calendar: series, agency views, undated recalls, idempotent", async () => {
+  const db = await fresh();
+  await db.exec(EXTRA);
+  await db.exec(EXTRA); // applies twice
+  const recall = (id, date) =>
+    db.query(
+      "insert into public.corpus_records(dataset,id,title,ordinal,item,filters) values ('agency_safety_nhtsa_recalls',$1,$1,1,$2,$3)",
+      [id, { kind: "recall" }, date === null ? { year: ["2022"] } : { date }],
+    );
+  await recall("22V001000", "2022-03-01");
+  await recall("22V002000", "2022-03-01");
+  await recall("22V003000", "2022-04-10");
+  await recall("22V004000", null);
+  await one(db, "select public.lawviz_refresh_v1('t1', 'calendar')");
+  await one(db, "select public.lawviz_refresh_v1('t2', 'calendar')"); // replaces, never duplicates
+  const cal = async (a, y) => (await one(db, "select public.lawviz_calendar_v1($1,$2) r", [a, y])).r;
+  const nhtsa = await cal("nhtsa", 2022);
+  assert.equal(nhtsa.status, "ok");
+  assert.deepEqual(
+    nhtsa.series.map((s) => s[0]),
+    ["fr_345", "nhtsa_recalls"],
+  );
+  const recalls = nhtsa.series.find((s) => s[0] === "nhtsa_recalls");
+  assert.equal(recalls[3], "2022-03-01");
+  assert.equal(recalls[4], "2022-04-10");
+  assert.equal(recalls[5], 3);
+  assert.equal(recalls[6], 1, "a recall without a date is counted apart");
+  assert.deepEqual(
+    nhtsa.days.filter((d) => d[0] === "nhtsa_recalls").map((d) => [d[1], d[2]]),
+    [
+      ["2022-03-01", 2],
+      ["2022-04-10", 1],
+    ],
+  );
+  const frNhtsa = nhtsa.series.find((s) => s[0] === "fr_345");
+  assert.equal(frNhtsa[3], null, "no NHTSA Federal Register document: no coverage window");
+  const epa = await cal("epa", 2022);
+  assert.deepEqual(
+    epa.series.map((s) => s[0]),
+    ["fr_145"],
+  );
+  assert.deepEqual(
+    epa.days.map((d) => [d[0], d[1], d[2]]),
+    [["fr_145", "2022-07-01", 1]],
+  );
+  const all = await cal("all", 2022);
+  assert.ok(all.series.some((s) => s[0] === "nhtsa_recalls"));
+  assert.ok(!all.series.some((s) => s[0] === "fr_345"), "agency-only series stay off the all view");
+  assert.equal((await cal("fda", 2022)).series.length, 4, "existing views unchanged");
+  assert.equal((await cal("osha", 2022)).status, "invalid");
+  await db.close();
+});
