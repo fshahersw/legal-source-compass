@@ -186,7 +186,7 @@ Schema relation totals do not sum exactly to pg_database_size because system cat
 | Official JPML and court HTML references — October 2026 | jpml_html_reference | Law | 93 | 573.91 KB | Available |
 | Complete large reader-text downloads | large_text_assets | Sources and captured pages | 155 | 405.78 KB | Held |
 | CourtListener directed citation mentions — scoped September 2026 snapshot | cl_citation_edges | Law | 201 | 403.01 KB | Available |
-| MDL crosswalk | mdl_crosswalk | Matters and dockets | 59 | 338.64 KB | Held |
+| MDL crosswalk | mdl_crosswalk | Matters and dockets | 59 | 338.64 KB | Published 2026-10-27 (contract mdl-crosswalk-release-v1, run b6a1e2c4-5d3f-4a7e-9c21-8f0d3e6a2715) |
 | Seeger Weiss matter registry — MDL matters | sw_matters_v1 | Matters and dockets | 38 | 325.69 KB | Available |
 | Selected mass-tort authorities and statutory access gaps — October 2026 | mass_tort_authority_evidence | Law | 25 | 204.49 KB | Available |
 | Judge vendor analysis previews | judge_vendor | Judges and people | 2 | 87.04 KB | Available |
