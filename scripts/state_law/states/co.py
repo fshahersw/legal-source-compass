@@ -10,6 +10,11 @@ The Office of Legislative Legal Services (OLLS) edits and publishes the Colorado
 - olls.info/crs/crs2026-title-NN.htm (HTML per title) is widely cited as the OLLS's own site, and this project holds
   a capture of it (47 title files, 2026-10). No government page found links to olls.info, so its operator is not
   confirmed, and the host reset connections when probed; it is not used until the owner confirms it is OLLS-operated.
+Re-checked 2026-10-27: leg.colorado.gov/laws/colorado-revised-statutes still links only LexisNexis; the OLLS agency
+page and its Revisor of Statutes page on content.leg.colorado.gov link no olls.info page; olls.info resolves to
+shared commercial hosting (DreamHost name servers), not the General Assembly's coleg.gov infrastructure; only
+third-party sites attribute it to the OLLS. Held under the statute source rule (official publisher only), not
+for caution: the publisher is unconfirmed (the Revisor of Statutes, OLLS, can confirm whether olls.info is theirs).
 Unblocking: confirm olls.info as an OLLS publication (then a parser over the retained crs2026 title files, retained
 mode), or a government-hosted current edition."""
 from __future__ import annotations

@@ -11,7 +11,16 @@ Public Acts through Public Act 104-433" (its aReadMe), so the current text is re
 Status: "(Repealed)" style catchlines -> repealed; a version or single text whose source note names a Public Act
 effective after the run date -> future_effective (the publisher's own warning, printed on every page); "(Text of
 Section before amendment by P.A. X)" -> in_force with effective.end; "(Text of Section WITH the changes made by
-P.A. 89-7, which has been held unconstitutional)" -> not_recorded with the marker.
+P.A. 89-7, which has been held unconstitutional)" -> not_recorded with the marker; its companion "(Text of Section
+WITHOUT the changes made by P.A. 89-7, …)" -> in_force (current_compilation), version label kept verbatim.
+
+Versions: a number printed more than once becomes @1, @2 … in print order, whether the publisher prints the versions in
+separate tables or one after the other in the same table (735 ILCS 5/13-213 prints the WITH and WITHOUT texts in one
+table, each with its own "Sec." line and "(Source: …)" line; `table_versions` splits them).
+
+Retained mode: every page is read with ctx.get(fallback_fresh=True), so `--option source=retained` re-parses this
+project's sha256-checked captures of 2026-10-06/07 (Chapters, Acts, Articles and FullText pages) and reads fresh,
+at the robots pace, only the pages the capture lacked.
 """
 from __future__ import annotations
 
@@ -176,62 +185,9 @@ def parse_act_page(ctx: lib.RunContext, page: lib.Fetched, chapter: str, chapter
         section_no = cite.group(3).strip()
         if section_no.endswith("heading"):
             continue
-        version_lines, i = [], 1
-        while i < len(lines) and VERSION_RE.match(joined(lines[i])):
-            version_lines.append(joined(lines[i]))
-            i += 1
-        if i >= len(lines):
-            continue
-        sec_runs = [r for r in lines[i] if r.strip()]
-        heading = None
-        body_first: list[str] = []
-        match = SEC_RE.match(lib.norm_ws(sec_runs[0]))
-        if match:
-            # second run = catchline when it reads like one; otherwise it is the section's first body text
-            if len(sec_runs) > 1 and is_catchline(sec_runs[1]):
-                heading = lib.norm_ws(sec_runs[1])
-                body_first = sec_runs[2:]
-            else:
-                body_first = sec_runs[1:]
-        else:
-            inline = SEC_INLINE_RE.match(joined(sec_runs))
-            if not inline:
-                continue
-            body_first = [inline.group(2)]
-        body = [joined(body_first)] if body_first else []
-        history = None
-        for line in lines[i + 1:]:
-            text_line = joined(line)
-            if SOURCE_RE.match(text_line):
-                history = text_line
-                break
-            body.append(text_line)
-        text = "\n".join(part for part in body if lib.norm_ws(part))
-        status = marker = None
-        effective = None
-        label = version_lines[-1] if version_lines else None
-        if label and "held unconstitutional" in label and " WITH " in f" {label} ":
-            status, marker = "not_recorded", label
-        if status is None and history:
-            future = [(d, m.group(0)) for m in EFF_RE.finditer(history)
-                      if (d := _eff_date(m.group(3), m.group(2), m.group(4))) and d > today]
-            before = label and re.search(r"before amendment by P\.A\.", label)
-            if future and not before:
-                when, frag = max(future)
-                status, marker = "future_effective", frag
-                effective = {"start": when.isoformat(), "end": None, "note": None}
-        if status is None and label and re.search(r"before amendment by P\.A\.\s*([0-9]+-[0-9]+)", label):
-            pa = re.search(r"P\.A\.\s*([0-9]+-[0-9]+)", label).group(1)
-            later = re.search(rf"P\.A\.\s*{re.escape(pa)}[^;)]*?eff\.\s*(\d{{1,2}})-(\d{{1,2}})-(\d{{2,4}})", page.text())
-            if later and (d := _eff_date(later.group(2), later.group(1), later.group(3))):
-                if d > today:
-                    effective = {"start": None, "end": d.isoformat(), "note": label}
-                else:
-                    status, marker = "not_recorded", label
-        pending.append(dict(number=f"{chapter}:{act}/{section_no}", heading=heading, text=text, history=history,
-                            status=status, marker=marker, effective=effective, version=label,
-                            path=base + list(context)))
-    # number versions: same number printed more than once -> @1, @2 …
+        for seg in table_versions(lines):
+            pending.append(_version_item(seg, page, chapter, act, section_no, today, base + list(context)))
+    # number versions: same number printed more than once -> @1, @2 … (in one table or in separate tables)
     totals: dict[str, int] = {}
     for item in pending:
         totals[item["number"]] = totals.get(item["number"], 0) + 1
@@ -248,6 +204,86 @@ def parse_act_page(ctx: lib.RunContext, page: lib.Fetched, chapter: str, chapter
                     version_index=seen[n] if multi else None)
         count += 1
     return count
+
+
+def table_versions(lines: list[list[str]]) -> list[dict]:
+    """The printed versions of one section table (line 0 = citation line). The publisher prints a second version of
+    the same section inside the same table when it keeps both texts — e.g. 735 ILCS 5/13-213: "(Text of Section WITH
+    the changes made by P.A. 89-7, which has been held unconstitutional)" … "(Source: P.A. 89-7, …)" then "(Text of
+    Section WITHOUT the changes made by P.A. 89-7, …)" "Sec. 13-213. …" … "(Source: …)". Each version is returned in
+    print order: {version_lines, heading, text, history}. A later version is read only when the line right after a
+    "(Source: …)" line is a "(Text of …)" version line; anything else after the source line is ignored as before."""
+    out: list[dict] = []
+    i = 1
+    while i < len(lines):
+        version_lines = []
+        while i < len(lines) and VERSION_RE.match(joined(lines[i])):
+            version_lines.append(joined(lines[i]))
+            i += 1
+        if i >= len(lines):
+            break
+        sec_runs = [r for r in lines[i] if r.strip()]
+        heading = None
+        body_first: list[str] = []
+        match = SEC_RE.match(lib.norm_ws(sec_runs[0]))
+        if match:
+            # second run = catchline when it reads like one; otherwise it is the section's first body text
+            if len(sec_runs) > 1 and is_catchline(sec_runs[1]):
+                heading = lib.norm_ws(sec_runs[1])
+                body_first = sec_runs[2:]
+            else:
+                body_first = sec_runs[1:]
+        else:
+            inline = SEC_INLINE_RE.match(joined(sec_runs))
+            if not inline:
+                break
+            body_first = [inline.group(2)]
+        body = [joined(body_first)] if body_first else []
+        history = None
+        j = i + 1
+        while j < len(lines):
+            text_line = joined(lines[j])
+            j += 1
+            if SOURCE_RE.match(text_line):
+                history = text_line
+                break
+            body.append(text_line)
+        out.append(dict(version_lines=version_lines, heading=heading, history=history,
+                        text="\n".join(part for part in body if lib.norm_ws(part))))
+        if history is not None and j < len(lines) and VERSION_RE.match(joined(lines[j])):
+            i = j
+            continue
+        break
+    return out
+
+
+def _version_item(seg: dict, page: lib.Fetched, chapter: str, act: str, section_no: str, today: dt.date,
+                  path: list[dict]) -> dict:
+    """Status, marker and effective dates of one printed version (rules in the module docstring)."""
+    history = seg["history"]
+    status = marker = None
+    effective = None
+    label = seg["version_lines"][-1] if seg["version_lines"] else None
+    if label and "held unconstitutional" in label and " WITH " in f" {label} ":
+        status, marker = "not_recorded", label
+    if status is None and history:
+        future = [(d, m.group(0)) for m in EFF_RE.finditer(history)
+                  if (d := _eff_date(m.group(3), m.group(2), m.group(4))) and d > today]
+        before = label and re.search(r"before amendment by P\.A\.", label)
+        if future and not before:
+            when, frag = max(future)
+            status, marker = "future_effective", frag
+            effective = {"start": when.isoformat(), "end": None, "note": None}
+    if status is None and label and re.search(r"before amendment by P\.A\.\s*([0-9]+-[0-9]+)", label):
+        pa = re.search(r"P\.A\.\s*([0-9]+-[0-9]+)", label).group(1)
+        later = re.search(rf"P\.A\.\s*{re.escape(pa)}[^;)]*?eff\.\s*(\d{{1,2}})-(\d{{1,2}})-(\d{{2,4}})", page.text())
+        if later and (d := _eff_date(later.group(2), later.group(1), later.group(3))):
+            if d > today:
+                effective = {"start": None, "end": d.isoformat(), "note": label}
+            else:
+                status, marker = "not_recorded", label
+    return dict(number=f"{chapter}:{act}/{section_no}", heading=seg["heading"], text=seg["text"], history=history,
+                status=status, marker=marker, effective=effective, version=label, path=path)
 
 
 def chapter_links(page: lib.Fetched) -> list[tuple[str, str, str]]:
@@ -288,7 +324,7 @@ SAMPLE = [("735", {"5", "110"})]
 
 
 def acquire(ctx: lib.RunContext) -> None:
-    chapters_page = ctx.fetch(CHAPTERS)
+    chapters_page = ctx.get(CHAPTERS, fallback_fresh=True)
     chapters = chapter_links(chapters_page)
     if len(chapters) < 60:
         raise RuntimeError(f"Chapters page lists {len(chapters)} chapters")
@@ -300,7 +336,7 @@ def acquire(ctx: lib.RunContext) -> None:
     for number, name, url in chapters:
         if not ctx.want_more():
             break
-        acts_page = ctx.fetch(url)
+        acts_page = ctx.get(url, fallback_fresh=True)
         acts = act_links(acts_page, number)
         if ctx.sample is not None:
             acts = [a for a in acts if a[0] in dict(SAMPLE)[number]]
@@ -308,7 +344,7 @@ def acquire(ctx: lib.RunContext) -> None:
         for act, act_name, articles_url in acts:
             if not ctx.want_more():
                 break
-            articles = ctx.fetch(articles_url)
+            articles = ctx.get(articles_url, fallback_fresh=True)
             if "billtext-host" in articles.text() and f"({number} ILCS {act}/" in articles.text():
                 target = None  # an act without articles prints its whole text on the Articles page itself
             elif ctx.sample is not None and act == "5":
@@ -316,7 +352,7 @@ def acquire(ctx: lib.RunContext) -> None:
                 target = SITE + limits[0] if limits and limits[0].startswith("/") else (limits[0] if limits else fulltext_url(articles))
             else:
                 target = fulltext_url(articles)
-            page = articles if target is None else ctx.fetch(target)
+            page = articles if target is None else ctx.get(target, fallback_fresh=True)
             if not stated:
                 notice = NOTICE_RE.search(lib.html_text(page.body))
                 ctx.edition(edition_label=None, currency_statement=notice.group(0) if notice else None,

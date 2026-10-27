@@ -404,6 +404,38 @@ class Texas(unittest.TestCase):
         self.assertTrue(by["21.253"]["text"].startswith("(a) The board may adopt rules."))
 
 
+class OregonChapterList(unittest.TestCase):
+    """The ORS title list prints "Chapter 1. …" then bare "2. …" lines (shape of ors001.html / ors011.html, read
+    2026-10-27). Reading only the "Chapter" line gave 7,041 sections from 59 chapters on a full run."""
+    CH1 = ("<html><body><p>Oregon Revised Statutes</p><p>TITLE 1</p><p>COURTS OF RECORD; COURT OFFICERS; JURIES</p>"
+           "<p>Chapter 1. Courts and Judicial Officers Generally</p><p>2. Supreme Court; Court of Appeals</p>"
+           "<p>3. Circuit Courts Generally</p><p>72A. Leases</p><p>10. Juries</p><p>_______________</p>"
+           "<p>Chapter 1 — Courts and Judicial Officers Generally</p><p>2025 EDITION</p>"
+           "<p>1.001 State policy for courts</p></body></html>").encode()
+    CH11 = ("<html><body><p>Oregon Revised Statutes</p><p>Chapter 11 (Former Provisions) — Forms of Actions and Suits</p>"
+            "<p>TITLE 2</p><p>PROCEDURE IN CIVIL PROCEEDINGS</p><p>Chapter 12. Limitations of Actions and Suits</p>"
+            "<p>14. Jurisdiction; Venue; Change of Judge</p><p>25. Child Support Services</p><p>_______________</p>"
+            "<p>11.010 [Repealed by 1979 c.284 §199]</p></body></html>").encode()
+
+    def test_list_lines_after_the_first(self):
+        orx = load("or")
+        self.assertEqual(orx.title_chapters(self.CH1), ["1", "2", "3", "72A", "10"])
+        self.assertEqual(orx.title_chapters(self.CH11), ["12", "14", "25"])
+
+    def test_numbers_cover_the_list_the_first_chapter_and_the_range(self):
+        orx = load("or")
+        group = {"title": "2", "name": "Procedure in Civil Proceedings", "start": "11", "end": "25"}
+        numbers = orx.title_chapter_numbers(group, orx.title_chapters(self.CH11))
+        self.assertEqual(numbers[0], "11")
+        self.assertIn("12", numbers)
+        self.assertIn("13", numbers)  # unlisted former-provisions numbers are probed (404 = no file)
+        self.assertEqual(numbers[-1], "25")
+        self.assertEqual(len(numbers), 15)
+        lettered = orx.title_chapter_numbers({"title": "1", "start": "1", "end": "10"}, ["1", "72A"])
+        self.assertIn("72A", lettered)
+        self.assertEqual(orx.chapter_url("72A"), "https://www.oregonlegislature.gov/bills_laws/ors/ors072a.html")
+
+
 class Metadata(unittest.TestCase):
     def test_all_modules_validate(self):
         for state in MINE:

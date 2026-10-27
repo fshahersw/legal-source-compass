@@ -144,6 +144,76 @@ class IllinoisTests(unittest.TestCase):
             self.assertTrue(verify_mod.verify(c.ctx.dir, pathlib.Path(tmp) / "raw")["ok"])
 
 
+class IllinoisSameTableVersionsTests(unittest.TestCase):
+    """735 ILCS 5/13-213 (and 12 more sections in the 2026-10 capture) print two versions in ONE table: the text WITH
+    the changes made by P.A. 89-7 (held unconstitutional) and the text WITHOUT them. Layout copied from ilga.gov's
+    Art. XIII page (2026-10-27): line breaks are <br>, every run is a <code><font>, a "&nbsp;" line separates them."""
+    F = "<code><font size='2' face='Courier New'>{}</font></code>"
+    WITH = "(Text of Section WITH the changes made by P.A. 89-7, which has been held\nunconstitutional)"
+    WITHOUT = "(Text of Section WITHOUT the changes made by P.A. 89-7, which has been held\nunconstitutional)"
+
+    def page(self) -> bytes:
+        f = self.F.format
+        nb = "<code>&nbsp;&nbsp;&nbsp;&nbsp;</code>"
+        rows = [nb + f("(735 ILCS 5/13-213)") + " " + f("(from Ch. 110, par. 13-213)"),
+                nb + f(self.WITH),
+                nb + f("Sec. 13-213. ") + f("Product liability; statute of repose."),
+                nb + f("(b) Subject to the provisions of subsections (c) through (g) no product liability action based on "
+                       "the doctrine of strict liability in tort shall be commenced except as provided in this Section."),
+                f("(Source: P.A. 89-7, eff. 3-9-95") + f(".)"),
+                "&nbsp;" + f(" "),
+                nb + f(self.WITHOUT),
+                nb + f("Sec. 13-213. ") + f("Product liability. "),
+                nb + f("(b) Subject to the provisions of subsections (c) and (d) no product liability action based on the "
+                       "doctrine of strict liability in tort shall be commenced except within the applicable limitations "
+                       "period."),
+                f("(Source: P.A. 85-907; 86-1329.)")]
+        table = "<table><tr><td><div align='justify'><p></p>" + "<br>".join(rows) + "</div></td></tr></table>"
+        after = ("<table><tr><td><div><code><font>(735 ILCS 5/13-214)</font></code><br><code><font>Sec. 13-214. </font>"
+                 "</code><code><font>Construction.</font></code><br><code><font>(a) Text.</font></code><br><code><font>"
+                 "(Source: P.A. 84-1043.)</font></code></div></td></tr></table>")
+        return ("<html><body><div class='billtext-host'>" + table + after + "</div></body></html>").encode()
+
+    def test_both_versions_are_emitted_in_print_order(self):
+        il = load("il")
+        with tempfile.TemporaryDirectory() as tmp:
+            c = Ctx(il, pathlib.Path(tmp))
+            page = c.record(fetched("https://www.ilga.gov/legislation/ILCS/details?x=3", self.page()))
+            n = il.parse_act_page(c.ctx, page, "735", "CIVIL PROCEDURE", "5", "Code of Civil Procedure.", dt.date(2026, 10, 27))
+            self.assertEqual(n, 3)
+            c.ctx.finish()
+            rows = list(lib.read_jsonl(c.ctx.dir / "sections.jsonl.gz"))
+            self.assertEqual([r["section_id"] for r in rows],
+                             ["IL:ILCS:735:5/13-213@1", "IL:ILCS:735:5/13-213@2", "IL:ILCS:735:5/13-214"])
+            with_, without, nxt = rows
+            label_with = "(Text of Section WITH the changes made by P.A. 89-7, which has been held unconstitutional)"
+            label_without = "(Text of Section WITHOUT the changes made by P.A. 89-7, which has been held unconstitutional)"
+            self.assertEqual(with_["version"], label_with)
+            self.assertEqual(with_["status"], "not_recorded")
+            self.assertEqual(with_["status_marker"], label_with)
+            self.assertEqual(with_["heading"], "Product liability; statute of repose.")
+            self.assertEqual(with_["history"], "(Source: P.A. 89-7, eff. 3-9-95.)")
+            self.assertTrue(with_["text"].startswith("(b) Subject to the provisions of subsections (c) through (g)"))
+            self.assertEqual(without["version"], label_without)
+            self.assertEqual(without["status"], "in_force")
+            self.assertEqual(without["heading"], "Product liability.")
+            self.assertEqual(without["history"], "(Source: P.A. 85-907; 86-1329.)")
+            self.assertIn("within the applicable limitations period.", without["text"])
+            self.assertNotIn("WITHOUT", with_["text"])
+            self.assertNotIn("Source", without["text"])
+            self.assertIsNone(nxt["version"])
+            self.assertEqual(nxt["text"], "(a) Text.")
+            self.assertTrue(verify_mod.verify(c.ctx.dir, pathlib.Path(tmp) / "raw")["ok"])
+
+    def test_lines_after_the_source_line_that_are_not_a_version_are_ignored(self):
+        il = load("il")
+        lines = [["(735 ILCS 5/1-101)"], ["Sec. 1-101. ", "Short title."], ["(a) Text."], ["(Source: P.A. 82-280.)"],
+                 ["Editor's note line."]]
+        out = il.table_versions(lines)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["text"], "(a) Text.")
+
+
 class MissouriChapterGuardTests(unittest.TestCase):
     def test_numbers_belong_to_their_chapter_page(self):
         mo = load("mo")

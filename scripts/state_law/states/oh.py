@@ -12,6 +12,11 @@ retained publisher originals (33,343 section pages captured 2026-10-07, content-
 `--option source=retained` (or `run.py --retained-index FILE`). A live crawl needs an explicit owner/lead decision
 (`--option live=owner-approved`). The acquisition is blocked otherwise, never bypassed.
 
+Release 2026-10-27 (owner decision "dont withhold any data. If its accurate and valuable, USE IT"): the file
+was re-read on 2026-10-27 (26 bytes, sha256 a71947fb70496190c01031170ef74a4f2ccd5aeaa65163ce5a3a3aaac011122e,
+unchanged) and still carries no rule any standard parser reads, so the retained edition is no longer held for
+caution; it is loaded from the retained originals. A live crawl still needs `--option live=owner-approved`.
+
 Parsing (`oh-section-page/1`): `<h1>Section 2305.10 | Bodily injury or injury to personal property.</h1>`
 (number, catchline), breadcrumbs (title, chapter), `laws-section-info` (`Effective:` date -> `effective.start`, later
 than the run date -> `future_effective`; `Latest Legislation:` -> history), `section.laws-body` paragraphs = text.
@@ -54,7 +59,8 @@ def _meta():
         parser=PARSER, min_interval_s=1.0,
         terms_note=("Statutory text is public domain (Georgia v. Public.Resource.Org, 2020). robots.txt is the single "
                     "line 'User-agent: * Disallow: /' (parsers read it as no rule; intent reads as disallow-all): live "
-                    "crawling needs an owner decision; retained originals (2026-10-07) are re-parsed instead."),
+                    "crawling needs an owner decision; retained originals (2026-10-07) are re-parsed instead and "
+                    "released 2026-10-27 under the owner's 'don't withhold accurate data' decision."),
         update_cadence="Sections are updated as LSC completes act review; re-run after each act effective-date wave.")
 
 
