@@ -35,6 +35,7 @@ import {
 import { subjectQuery, termPeriodsQuery } from "./queries";
 import { RecordList } from "./RecordList";
 import { ViewTabs } from "./ViewTabs";
+import { WatchSignal } from "@/components/safety/watch/WatchSignal";
 import { ReportingContext } from "./ReportingContext";
 import { RisingReactions } from "./RisingReactions";
 
@@ -129,6 +130,7 @@ function Profile({
   return (
     <div className="min-w-0 space-y-3">
       <Headline p={p} />
+      <WatchSignal id={p.subject.id} />
       <ViewTabs
         label="Product views"
         idPrefix="safety-product"

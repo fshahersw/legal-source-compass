@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Gavel, Pill, Search, Stethoscope } from "lucide-react";
+import { Activity, Gavel, Pill, Search, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StateNote } from "@/components/enforcement/parts";
@@ -13,8 +13,13 @@ import { formatCount, KIND_LABELS, NOT_RECORDED, type SafetySubjectRow } from ".
 import { PAGE_SIZE, subjectsQuery, type IndexView } from "./queries";
 import { ViewTabs } from "./ViewTabs";
 import { DeviceRiskMap } from "./DeviceRiskMap";
+import { ProductWatch } from "@/components/safety/watch/ProductWatch";
+
+/** The page's views: the product watch (default) and the three product lists. */
+export type ProductsView = IndexView | "watch";
 
 const TABS = [
+  { id: "watch" as const, label: "Watch: what is rising", Icon: Activity },
   { id: "mdl" as const, label: "Named in MDL titles", Icon: Gavel },
   { id: "drugs" as const, label: "Drugs (FAERS)", Icon: Pill },
   { id: "devices" as const, label: "Devices (MAUDE)", Icon: Stethoscope },
@@ -34,14 +39,15 @@ export function ProductsIndex({
   page,
   onChange,
 }: {
-  view: IndexView;
+  view: ProductsView;
   q: string;
   page: number;
-  onChange: (next: { view?: IndexView; q?: string; page?: number }) => void;
+  onChange: (next: { view?: ProductsView; q?: string; page?: number }) => void;
 }) {
   const [draft, setDraft] = useState(q);
   useEffect(() => setDraft(q), [q]);
-  const query = useQuery(subjectsQuery(view, q, page));
+  const listView: IndexView = view === "watch" ? "mdl" : view;
+  const query = useQuery({ ...subjectsQuery(listView, q, page), enabled: view !== "watch" });
   const data = query.data;
   const pages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
   return (
@@ -59,95 +65,137 @@ export function ProductsIndex({
         aria-labelledby={`safety-products-tab-${view}`}
         className="min-w-0 space-y-3"
       >
-        {view === "devices" && page === 1 && !q ? <DeviceRiskMap /> : null}
-        <p className="text-xs leading-5 text-muted-foreground">{NOTES[view]}</p>
-        <form
-          role="search"
-          className="flex max-w-md items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onChange({ q: draft.trim(), page: 1 });
-          }}
-        >
-          <label htmlFor="safety-products-q" className="sr-only">
-            Search products
-          </label>
-          <Input
-            id="safety-products-q"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder={
-              view === "devices" ? "Device name or product code" : "Product, brand or MDL product"
-            }
-            className="h-8 text-sm"
-            maxLength={100}
-          />
-          <Button type="submit" size="sm" variant="outline" className="h-8">
-            <Search className="size-3.5" aria-hidden />
-            Search
-          </Button>
-        </form>
-        {query.isLoading ? (
-          <div className="space-y-1.5" aria-busy="true" aria-label="Loading products">
-            {Array.from({ length: 8 }, (_, i) => (
-              <div key={i} className="h-8 animate-pulse rounded border border-border bg-muted/50" />
-            ))}
-          </div>
-        ) : query.error ? (
-          <StateNote
-            tone="error"
-            action={
-              <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
-                Retry
-              </Button>
-            }
-          >
-            The product list could not be loaded.
-          </StateNote>
-        ) : data === null ? (
-          <StateNote>
-            Product signal data are not loaded into the corpus yet (safety/1). The other safety
-            views are unaffected.
-          </StateNote>
-        ) : !data || data.rows.length === 0 ? (
-          <StateNote>
-            {q ? `No product matches “${q}”.` : "No products are recorded for this list yet."}
-          </StateNote>
+        {view === "watch" ? (
+          <ProductWatch />
         ) : (
-          <>
-            <ProductTable rows={data.rows} view={view} />
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-              <span>
-                {formatCount(data.total)} {data.total === 1 ? "product" : "products"}
-                {pages > 1 ? ` · page ${page} of ${pages}` : ""}
-              </span>
-              {pages > 1 ? (
-                <div className="flex gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7"
-                    disabled={page <= 1}
-                    onClick={() => onChange({ page: page - 1 })}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7"
-                    disabled={page >= pages}
-                    onClick={() => onChange({ page: page + 1 })}
-                  >
-                    Next
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </>
+          <ProductList
+            view={view}
+            q={q}
+            page={page}
+            draft={draft}
+            setDraft={setDraft}
+            onChange={onChange}
+            query={query}
+            data={data}
+            pages={pages}
+          />
         )}
       </div>
     </div>
+  );
+}
+
+function ProductList({
+  view,
+  q,
+  page,
+  draft,
+  setDraft,
+  onChange,
+  query,
+  data,
+  pages,
+}: {
+  view: IndexView;
+  q: string;
+  page: number;
+  draft: string;
+  setDraft: (v: string) => void;
+  onChange: (next: { view?: ProductsView; q?: string; page?: number }) => void;
+  query: { isLoading: boolean; error: unknown; refetch: () => unknown };
+  data: Awaited<ReturnType<ReturnType<typeof subjectsQuery>["queryFn"]>> | undefined;
+  pages: number;
+}) {
+  return (
+    <>
+      {view === "devices" && page === 1 && !q ? <DeviceRiskMap /> : null}
+      <p className="text-xs leading-5 text-muted-foreground">{NOTES[view]}</p>
+      <form
+        role="search"
+        className="flex max-w-md items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onChange({ q: draft.trim(), page: 1 });
+        }}
+      >
+        <label htmlFor="safety-products-q" className="sr-only">
+          Search products
+        </label>
+        <Input
+          id="safety-products-q"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={
+            view === "devices" ? "Device name or product code" : "Product, brand or MDL product"
+          }
+          className="h-8 text-sm"
+          maxLength={100}
+        />
+        <Button type="submit" size="sm" variant="outline" className="h-8">
+          <Search className="size-3.5" aria-hidden />
+          Search
+        </Button>
+      </form>
+      {query.isLoading ? (
+        <div className="space-y-1.5" aria-busy="true" aria-label="Loading products">
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className="h-8 animate-pulse rounded border border-border bg-muted/50" />
+          ))}
+        </div>
+      ) : query.error ? (
+        <StateNote
+          tone="error"
+          action={
+            <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
+              Retry
+            </Button>
+          }
+        >
+          The product list could not be loaded.
+        </StateNote>
+      ) : data === null ? (
+        <StateNote>
+          Product signal data are not loaded into the corpus yet (safety/1). The other safety views
+          are unaffected.
+        </StateNote>
+      ) : !data || data.rows.length === 0 ? (
+        <StateNote>
+          {q ? `No product matches “${q}”.` : "No products are recorded for this list yet."}
+        </StateNote>
+      ) : (
+        <>
+          <ProductTable rows={data.rows} view={view} />
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>
+              {formatCount(data.total)} {data.total === 1 ? "product" : "products"}
+              {pages > 1 ? ` · page ${page} of ${pages}` : ""}
+            </span>
+            {pages > 1 ? (
+              <div className="flex gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  disabled={page <= 1}
+                  onClick={() => onChange({ page: page - 1 })}
+                >
+                  Previous
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  disabled={page >= pages}
+                  onClick={() => onChange({ page: page + 1 })}
+                >
+                  Next
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
