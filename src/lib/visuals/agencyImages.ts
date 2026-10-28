@@ -9,7 +9,6 @@ import {
   optionalText,
   parseMarkImage,
   parseOpenImage,
-  text,
   yearOf,
   type MarkImage,
   type OpenImage,
@@ -21,7 +20,8 @@ export const MAX_AGENCY_PHOTOS = 3;
 export const MAX_AGENCY_MARKS = 3;
 
 export type AgencyPhoto = OpenImage & {
-  building: string;
+  /** The building as the source names it; null when the source records the photograph without a building name. */
+  building: string | null;
   photoDate: string | null;
   occupancyNote: string | null;
 };
@@ -29,11 +29,18 @@ export type AgencyPhoto = OpenImage & {
 export function parseAgencyPhoto(raw: unknown): AgencyPhoto | null {
   const p = obj(raw);
   const image = parseOpenImage(raw, { filePage: "source_page", credit: "credit_line" });
-  const building = text(p?.["building"], 300);
+  // A photograph the source files under this agency without naming the building is still shown, captioned only as
+  // the agency's building photograph (owner decision 2026-10-27: accurate records are not withheld).
+  const building = optionalText(p?.["building"], 300);
   const date = optionalText(p?.["photo_date"], 60);
   const note = optionalText(p?.["occupancy_note"], 400);
-  if (!image || !building || !date.ok || !note.ok) return null;
-  return { ...image, building, photoDate: date.value, occupancyNote: note.value };
+  if (!image || !building.ok || !date.ok || !note.ok) return null;
+  return {
+    ...image,
+    building: building.value,
+    photoDate: date.value,
+    occupancyNote: note.value,
+  };
 }
 
 export type AgencyImages = { photos: AgencyPhoto[]; marks: MarkImage[] };
@@ -95,7 +102,7 @@ export function parseAgencyImages(
  * ("photograph dated [between 1980 and 2006]"); no date reads "photograph date not recorded".
  */
 export function agencyPhotoCaption(p: Pick<AgencyPhoto, "building" | "photoDate">): string {
-  return `${p.building} · ${agencyPhotoWhen(p)}`;
+  return `${p.building ?? "Building photograph"} · ${agencyPhotoWhen(p)}`;
 }
 
 /** The date part of the caption: "photographed 2012". */

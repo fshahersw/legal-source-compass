@@ -140,11 +140,11 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>
-          {count(o.companies)} SEC registrants linked to MDLs · {count(o.links)} links · built{" "}
-          {o.asOf}
+          {count(o.companies)} companies whose SEC filings link them to an MDL ({count(o.links)}{" "}
+          links) · built {o.asOf}
         </span>
         <InfoPopover label="How companies are linked" showLabel>
           <p>
@@ -770,10 +770,23 @@ function FlagPanel({
   if (!keys.length) return null;
   return (
     <section className="rounded-md border border-border bg-surface p-3" aria-label="Cluster flags">
-      <h3 className="text-label font-semibold text-foreground">Cluster flags</h3>
-      <p className="text-xs text-muted-foreground">
-        Deterministic rules over the published numbers. Select a flag to filter the table.
-      </p>
+      <div className="flex items-center gap-1.5">
+        <h3 className="text-label font-semibold text-foreground">Cluster flags</h3>
+        <InfoPopover label="How each flag is set" title="Cluster flags">
+          <p className="mb-2">
+            Fixed rules over the published numbers. A flag is a lead to review, not a finding.
+          </p>
+          <dl className="space-y-1.5">
+            {keys.map((k) => (
+              <div key={k}>
+                <dt className="font-medium">{labels[k] ?? k}</dt>
+                <dd className="text-muted-foreground">{rules[k]}</dd>
+              </div>
+            ))}
+          </dl>
+        </InfoPopover>
+      </div>
+      <p className="text-xs text-muted-foreground">Select a flag to filter the table.</p>
       <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
         {keys.map((k) => (
           <button
@@ -781,6 +794,7 @@ function FlagPanel({
             type="button"
             aria-pressed={active === k}
             onClick={() => onPick(k)}
+            title={rules[k]}
             className={cn(
               "rounded-md border px-2.5 py-2 text-left hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring",
               active === k ? "border-primary ring-1 ring-primary/30" : "border-border",
@@ -791,9 +805,6 @@ function FlagPanel({
               <span className="font-mono text-base font-semibold tabular-nums">
                 {counts.get(k) ?? 0}
               </span>
-            </span>
-            <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
-              {rules[k]}
             </span>
           </button>
         ))}

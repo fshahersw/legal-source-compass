@@ -25,6 +25,7 @@ import {
   SearchBox,
 } from "./bits";
 import { dojOverviewQuery } from "./actionsView";
+import { DojFigureSizes } from "./DojFigureSizes";
 import { figureView, fmtInt, fmtUsd, headlineText } from "./format";
 import { DataDrawer } from "@/components/kit";
 import { HELD_LABEL, type HeldReason } from "@/lib/external/enforcementLargest";
@@ -147,6 +148,8 @@ function Body({ overview }: { overview: DojOverview }) {
           }
         />
       </div>
+
+      <DojFigureSizes overview={overview} />
 
       <p className="text-[11px] text-muted-foreground">
         The charts above count releases by release date; choose a year in the list below to read its

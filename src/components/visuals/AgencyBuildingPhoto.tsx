@@ -22,11 +22,15 @@ export function AgencyBuildingPhoto({ agencyId, name }: { agencyId: string; name
     <PhotoHeaderBand
       key={photo.display.url}
       image={photo}
-      alt={`Photograph of ${photo.building}, recorded by the source for ${name}`}
+      alt={
+        photo.building
+          ? `Photograph of ${photo.building}, recorded by the source for ${name}`
+          : `Building photograph recorded by the source for ${name}`
+      }
       eyebrow="Agency building"
       heading={
         <>
-          <span className="font-semibold">{photo.building}</span>
+          <span className="font-semibold">{photo.building ?? name}</span>
           <span className="text-muted-foreground"> · {agencyPhotoWhen(photo)}</span>
         </>
       }

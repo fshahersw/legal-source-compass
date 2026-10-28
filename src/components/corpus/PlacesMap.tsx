@@ -321,8 +321,12 @@ export function PlacesMap({
                       Highest and lowest 5 states against the median
                     </h3>
                     <p className="mb-2 text-xs text-muted-foreground">
-                      {def.label} · {metric?.yearLabel ?? ""} · {def.unit} · {withValue} states with
-                      a value
+                      {/* The unit is printed once: many labels already end with it. */}
+                      {def.label} · {metric?.yearLabel ?? ""}
+                      {def.unit && !def.label.toLowerCase().includes(def.unit.toLowerCase())
+                        ? ` · ${def.unit}`
+                        : ""}{" "}
+                      · {withValue} states with a value
                     </p>
                     <DivergingDots
                       items={picks.map((r) => ({ label: r.name, value: r.value }))}

@@ -24,6 +24,12 @@ describe("parseAgencyImages", () => {
     expect(p!.licenseUrl).toBe("https://www.loc.gov/rr/print/res/482_high.html");
   });
 
+  it("keeps a photograph the source records without a building name", () => {
+    const [p] = parseAgencyImages("160", [{ ...fbi, building: null }])!.photos;
+    expect(p!.building).toBeNull();
+    expect(agencyPhotoCaption(p!)).toMatch(/^Building photograph · photograph/);
+  });
+
   it("keeps at most three, drops duplicates and failures, and needs a valid agency id", () => {
     const dup = [fbi, fbi, { ...fbi, building: "" }, fbi];
     expect(parseAgencyImages("160", dup)!.photos).toHaveLength(1);

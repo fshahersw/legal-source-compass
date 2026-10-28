@@ -385,6 +385,7 @@ function Body({ data }: { data: OshaData }) {
                 stateAction="Rate for"
                 formatValue={(v) => v.toLocaleString("en-US", { maximumFractionDigits: 1 })}
                 legendNote="Shading scales with the rate across the 50 states and DC."
+                missing="unrecorded"
                 onState={(fips) => {
                   const code = uspsByFips.get(fips);
                   if (code) void navigate({ to: "/places/$state", params: { state: code } });

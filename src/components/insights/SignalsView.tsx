@@ -44,6 +44,7 @@ import {
 } from "./bridge/mdl";
 import { DEFAULT_FEATURES, clusterInput, clusterStates } from "./clusters";
 import { FilingWaves } from "./FilingWaves";
+import { hasPending } from "@/lib/external/mdlSeries";
 
 const count = metricFormatter("count");
 const STATE_NAME = new Map(STATES.map((s) => [s.usps, s.name] as const));
@@ -570,6 +571,7 @@ function Origins() {
     () =>
       [...(mdl.data?.mdls ?? [])]
         .filter((r) => r.status === "pending")
+        .filter(hasPending)
         .sort((a, b) => b.pending - a.pending)
         .slice(0, 8)
         .map((r) => r.mdl),

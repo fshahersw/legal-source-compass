@@ -27,7 +27,7 @@ import {
 import { isBridgeMetric, joinCross } from "./data";
 import { fixtureCatalog, fixtureLayer } from "./fixtures";
 import { INSIGHTS_FIXTURES } from "./fixtureMode";
-import { kpiFromBlock, kpiFromFacts, notableMovements, type Kpi } from "./kpis";
+import { kpiFromBlock, kpiFromFacts, notableMovements, repeatedTileIds, type Kpi } from "./kpis";
 
 const smDef = (over: Partial<SmDef>): SmDef => ({
   key: "overdose_rate",
@@ -511,5 +511,91 @@ describe("KPI board model", () => {
       { ...base, id: "d", title: "D", changePercent: null },
     ];
     expect(notableMovements(tiles).map((t) => t.id)).toEqual(["b", "a"]);
+  });
+
+  it("drops a tile that repeats an earlier one's figure, period and change in the same area", () => {
+    const base = kpiFromBlock(block, "A", "courts");
+    const tiles: Kpi[] = [
+      {
+        ...base,
+        id: "hub:federal-register",
+        topic: "law",
+        value: "2,441",
+        periodText: "2025",
+        changePercent: -24.8,
+      },
+      {
+        ...base,
+        id: "metric:fr_final_rules",
+        topic: "law",
+        value: "2,441",
+        periodText: "2025",
+        changePercent: -24.81,
+      },
+      {
+        ...base,
+        id: "metric:fr_documents",
+        topic: "law",
+        value: "23,690",
+        periodText: "2025",
+        changePercent: -23.2,
+      },
+    ];
+    expect([...repeatedTileIds(tiles)]).toEqual(["metric:fr_final_rules"]);
+  });
+
+  it("keeps same-figure tiles from different areas, periods or changes, and never merges missing values", () => {
+    const base = kpiFromBlock(block, "A", "courts");
+    const tiles: Kpi[] = [
+      { ...base, id: "a", topic: "law", value: "2,441", periodText: "2025", changePercent: -24.8 },
+      {
+        ...base,
+        id: "b",
+        topic: "government",
+        value: "2,441",
+        periodText: "2025",
+        changePercent: -24.8,
+      },
+      { ...base, id: "c", topic: "law", value: "2,441", periodText: "2024", changePercent: -24.8 },
+      { ...base, id: "d", topic: "law", value: "2,441", periodText: "2025", changePercent: 3 },
+      { ...base, id: "e", topic: "law", value: null, periodText: null, changePercent: null },
+      { ...base, id: "f", topic: "law", value: null, periodText: null, changePercent: null },
+    ];
+    expect(repeatedTileIds(tiles).size).toBe(0);
+  });
+
+  it("compares a Congress-term count with the same year of the last Congress, not the year before", () => {
+    const base = fixtureCatalog.find((m) => m.id === "fixture_cfpb_per_100k")!;
+    const def = {
+      ...base,
+      id: "congress_bills_introduced",
+      periodType: "year" as const,
+      format: "count" as const,
+    };
+    const fact = (period: string, value: number, partial = false) => ({
+      metricId: def.id,
+      entityType: "nation" as const,
+      entityId: "US",
+      period,
+      periodStart: `${period}-01-01`,
+      periodEnd: `${period}-12-31`,
+      value,
+      partial,
+      moe: null,
+      n: null,
+      notRecordedReason: null,
+    });
+    const facts = [
+      fact("2023", 10626),
+      fact("2024", 5943),
+      fact("2025", 10727),
+      fact("2026", 6236, true),
+    ];
+    const k = kpiFromFacts(def, facts, { to: "/insights/trends" });
+    // 2025 against 2023 (+0.95%), not against 2024 (+80.5%)
+    expect(k.changePercent).toBeCloseTo(((10727 - 10626) / 10626) * 100, 6);
+    expect(k.changeText).toContain("vs 2023, the same year of the last Congress");
+    const other = kpiFromFacts({ ...def, id: "fr_documents" }, facts, { to: "/insights/trends" });
+    expect(other.changePercent).toBeCloseTo(((10727 - 5943) / 5943) * 100, 6);
   });
 });

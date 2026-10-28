@@ -298,10 +298,12 @@ export function KpiGrid({
   children: ReactNode;
 }) {
   const count = Children.toArray(children).length;
+  // No `m-0`: preflight already zeroes list margins, and an explicit margin would cancel the gap a parent
+  // `space-y-*` puts after the grid (the next block would sit flush against the cards).
   return (
     <ul
       aria-label={label}
-      className={cn("m-0 grid list-none gap-3 p-0", kpiGridClass(count, columns), className)}
+      className={cn("grid list-none gap-3 p-0", kpiGridClass(count, columns), className)}
     >
       {children}
     </ul>

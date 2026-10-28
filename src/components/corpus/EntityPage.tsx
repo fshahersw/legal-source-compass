@@ -1,5 +1,13 @@
 import { cn } from "@/lib/utils";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import {
+  isSourceIdKey,
+  isStorageMetaKey,
+  splitProvenanceLabel,
+  splitProviderKey,
+  splitProviderValue,
+  subtitleWithoutIds,
+} from "./recordDisplay";
 import { InfoPopover } from "@/components/kit/InfoPopover";
 import { Fragment, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
@@ -89,7 +97,9 @@ export function EntityPage({
     links: shownLinks.filter((_, i) => outcomes[i] === o.outcome),
   })).filter((g) => g.links.length);
   // Facts the page header already prints (the title, or one part of the subtitle) move to "More details".
-  const printed = new Set([v.title, ...(v.subtitle ? v.subtitle.split(" · ") : [])].map((t) => t.trim()));
+  const printed = new Set(
+    [v.title, ...(v.subtitle ? v.subtitle.split(" · ") : [])].map((t) => t.trim()),
+  );
   const repeats = ([, val]: (typeof v.facts)[number]) =>
     typeof val === "string" && printed.has(val.trim());
   // Same value under another key (State / States / Location) is printed once; counters of empty lists and
@@ -104,7 +114,7 @@ export function EntityPage({
   };
   const isNoise = ([k, val]: (typeof v.facts)[number]) =>
     /\bcount$/i.test(k) && String(val) === "0";
-  const isId = ([k]: (typeof v.facts)[number]) => /^record id$/i.test(k);
+  const isId = ([k]: (typeof v.facts)[number]) => isSourceIdKey(k) || isStorageMetaKey(k);
   const moved = v.facts.filter((f) => isNoise(f) || isId(f));
   const facts = v.facts.filter((f) => !isNoise(f) && !isId(f) && !dupe(f));
   const key = facts.slice(0, 8).filter((f) => !repeats(f));
@@ -114,6 +124,8 @@ export function EntityPage({
   const photo = !lead && v.photo ? v.photo : null;
   const rest = [...facts.slice(0, 8).filter(repeats), ...facts.slice(8)];
   const technical = [...moved, ...v.technical];
+  // Source identifiers stay in the technical details, not the header line.
+  const subtitle = subtitleWithoutIds(v.subtitle);
   const nav = [
     ...(docket
       ? [
@@ -127,7 +139,7 @@ export function EntityPage({
     <AppShell
       breadcrumbs={[...crumbs, { label: v.title }]}
       title={v.title}
-      {...(v.subtitle ? { description: v.subtitle } : {})}
+      {...(subtitle ? { description: subtitle } : {})}
     >
       {v.qualification ? (
         <div className="mb-3 flex items-center text-xs text-muted-foreground">
@@ -152,21 +164,40 @@ export function EntityPage({
           ) : null}
           {key.length ? (
             <dl className="grid flex-1 content-start grid-cols-1 gap-x-6 gap-y-2.5 text-[13px] sm:grid-cols-2">
-              {key.map(([k, val], i) => (
-                <div key={i} className="min-w-0">
-                  <dt className="text-[11px] text-muted-foreground">{k}</dt>
-                  <dd className="break-words">{displayValue(val)}</dd>
-                </div>
-              ))}
+              {key.map(([k, val], i) => {
+                // Provider names and provenance notes move into tooltips; the recorded value is unchanged.
+                const name = splitProviderKey(k);
+                const shown = typeof val === "string" ? splitProviderValue(val) : null;
+                return (
+                  <div key={i} className="min-w-0">
+                    <dt
+                      className="text-[11px] text-muted-foreground"
+                      title={name.note ?? undefined}
+                    >
+                      {name.text}
+                    </dt>
+                    <dd className="break-words" title={shown?.note ?? undefined}>
+                      {displayValue(shown ? shown.text : val)}
+                    </dd>
+                  </div>
+                );
+              })}
             </dl>
           ) : null}
         </div>
       ) : null}
       {visibleLinks.length || queryGroups.length ? (
         <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1">
-          {visibleLinks.map((l) => (
-            <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />
-          ))}
+          {visibleLinks.map((l) => {
+            const { text, note } = splitProvenanceLabel(l.label);
+            return note ? (
+              <span key={l.url} title={note}>
+                <CorpusLink url={l.url} label={text} aliases={aliases} />
+              </span>
+            ) : (
+              <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />
+            );
+          })}
           {queryGroups.map((g) => (
             <span key={g.outcome} className="text-[12px] text-muted-foreground" title={g.title}>
               {g.heading}:{" "}
@@ -308,7 +339,9 @@ function Section({
         <h2 className="text-[15px] font-semibold">{label}</h2>
         {right}
       </div>
-      <div className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">{children}</div>
+      <div className="rounded-xl border border-border bg-card shadow-xs p-3 shadow-card">
+        {children}
+      </div>
     </section>
   );
 }

@@ -149,6 +149,22 @@ export function kpiFromBlock(block: TrendBlockData, title: string, topic: Topic)
   };
 }
 
+/**
+ * Calendar-year counts of congressional work. Congress sits in two-year terms and these counts follow the term: the
+ * first year of a Congress has far more bills and bill texts introduced (2023: 10,626 bills, 2024: 5,943), the second
+ * more laws enacted and committee reports. A year is therefore compared with the same year of the previous Congress,
+ * never with the year before it, so the term cycle is not read as a trend.
+ */
+export const CONGRESS_TERM_METRICS: ReadonlySet<string> = new Set([
+  "congress_bills_introduced",
+  "public_laws_enacted",
+  "congress_amendments_submitted",
+  "congress_committee_reports_issued",
+  "congress_hearings_published",
+  "bill_text_versions_published",
+  "bill_enrolled_versions_published",
+]);
+
 /** A tile from a nation-level contract metric and its facts. */
 export function kpiFromFacts(def: MetricDef, facts: readonly Fact[], href: Kpi["href"]): Kpi {
   const fmt = metricFormatter(def.format);
@@ -164,16 +180,18 @@ export function kpiFromFacts(def: MetricDef, facts: readonly Fact[], href: Kpi["
   };
   const aligned = alignToAxis(series, keys);
   const li = lastCompleteIndex(aligned);
-  const change = changeVsPrevious(aligned, keys);
+  const termYears = def.periodType === "year" && CONGRESS_TERM_METRICS.has(def.id);
+  const lag = termYears ? 2 : 1;
+  const change = changeVsPrevious(aligned, keys, lag);
   const partial = sorted.find((f) => f.partial && f.value !== null);
   const source = def.sourceLinks[0] ?? { label: "Source not recorded", url: "/sources" };
   let changeNote: string | null = null;
   if (li < 0) changeNote = "No complete period is recorded.";
   else if (!change)
     changeNote =
-      li === 0
+      li < lag
         ? "No earlier period to compare with."
-        : `${periodLabel(keys[li - 1]!, def.periodType)} is not recorded as a complete period, so no change is shown.`;
+        : `${periodLabel(keys[li - lag]!, def.periodType)} is not recorded as a complete period, so no change is shown.`;
   return {
     id: `metric:${def.id}`,
     topic: def.topic,
@@ -183,7 +201,7 @@ export function kpiFromFacts(def: MetricDef, facts: readonly Fact[], href: Kpi["
     periodText: li >= 0 ? periodLabel(keys[li]!, def.periodType) : null,
     seriesLabel: "United States",
     changeText: change
-      ? `${fmt.delta(change.absolute)}${change.percent === null ? "" : ` (${formatPercentChange(change.percent)})`} vs ${periodLabel(change.previousKey, def.periodType)}`
+      ? `${fmt.delta(change.absolute)}${change.percent === null ? "" : ` (${formatPercentChange(change.percent)})`} vs ${periodLabel(change.previousKey, def.periodType)}${termYears ? ", the same year of the last Congress" : ""}`
       : null,
     changeNote,
     changePercent: change?.percent ?? null,
@@ -198,11 +216,29 @@ export function kpiFromFacts(def: MetricDef, facts: readonly Fact[], href: Kpi["
   };
 }
 
+/**
+ * Tiles that repeat an earlier tile: the same area, the same latest value for the same period and the same change.
+ * The board reads one series from the Analytics hub and others from the data layer, and a few of those are the same
+ * published figure (e.g. federal civil filings, final rules); the first tile in board order is kept. Partial or
+ * unrecorded values never match, so two tiles that merely lack data are not merged.
+ */
+export function repeatedTileIds(kpis: readonly Kpi[]): Set<string> {
+  const seen = new Set<string>();
+  const repeats = new Set<string>();
+  for (const k of kpis) {
+    if (k.value === null || k.periodText === null || k.changePercent === null) continue;
+    const key = `${k.topic}|${k.value}|${k.periodText}|${k.changePercent.toFixed(1)}`;
+    if (seen.has(key)) repeats.add(k.id);
+    else seen.add(key);
+  }
+  return repeats;
+}
+
 /** The rule behind "notable movements", stated on the page. */
 export const MOVEMENT_RULE = {
   minCompletePeriods: 5,
   count: 6,
-  text: "The largest changes, in percent, between each tile's latest complete period and the period before it, among tiles with at least five complete periods. Partial periods never count; a change from zero has no percentage and is left out.",
+  text: "The largest changes, in percent, between each tile's latest complete period and the period before it (for counts of congressional work, the same year of the previous Congress), among tiles with at least five complete periods. Partial periods never count; a change from zero has no percentage and is left out.",
 } as const;
 
 /** Largest absolute percentage changes among tiles with enough history (deterministic; ties by title). */

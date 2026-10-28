@@ -140,17 +140,19 @@ export type ChangeSummary = {
 export function changeVsPrevious(
   aligned: readonly (TrendDatum | undefined)[],
   keys: readonly string[],
+  /** How many periods back the comparison period sits (2 compares a year with the same year of the last Congress). */
+  lag = 1,
 ): ChangeSummary | null {
   const i = lastCompleteIndex(aligned);
-  if (i < 1) return null;
+  if (i < lag) return null;
   const cur = aligned[i]!;
-  const prev = aligned[i - 1];
+  const prev = aligned[i - lag];
   if (!recorded(prev) || prev.partial) return null;
   const absolute = (cur.value as number) - prev.value;
   return {
     latestKey: keys[i]!,
     latest: cur.value as number,
-    previousKey: keys[i - 1]!,
+    previousKey: keys[i - lag]!,
     previous: prev.value,
     absolute,
     percent: prev.value === 0 ? null : (absolute / Math.abs(prev.value)) * 100,

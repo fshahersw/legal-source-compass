@@ -6,6 +6,7 @@ import { CaseMixChart } from "@/components/litviz/CaseMixChart";
 import { CaseTypeSunburst } from "@/components/litviz/CaseTypeSunburst";
 import { ClearanceRateChart } from "@/components/litviz/ClearanceRateChart";
 import { LitigationHeadline } from "@/components/litviz/LitigationHeadline";
+import { MdlMomentumScatter } from "@/components/litviz/MdlMomentumScatter";
 import { RadarTopFive } from "@/components/safety/radar/RadarTopFive";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -30,7 +31,10 @@ function Page() {
         section="litigation"
         lead={
           <div className="space-y-6">
-            <LitigationHeadline />
+            <div className="grid gap-4 xl:grid-cols-2">
+              <LitigationHeadline />
+              <MdlMomentumScatter />
+            </div>
             <ClearanceRateChart />
             <RadarTopFive />
             <CaseMixChart />

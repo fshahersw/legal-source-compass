@@ -7,10 +7,13 @@ import { stateFromGeometry } from "@/lib/corpus/stateHub";
 import {
   classIndex,
   competitionRank,
+  formatMapValue,
   quantileBreaks,
   type MapFormat,
 } from "@/lib/external/mapMetricsModel";
 import { legendClasses, readout, shadeOf, type Readout } from "./mapView";
+import { TILE_BY_USPS, TILE_COLS, TILE_ROWS, tileInk } from "./tileGrid";
+import { cn } from "@/lib/utils";
 
 export type MapArea = {
   /** Values keyed by state FIPS (states) or five-digit FIPS (counties). */
@@ -25,6 +28,11 @@ export type MapArea = {
 type Tip = { x: number; y: number; read: Readout; id: string };
 const RANK_SCOPE_STATES = "states and DC";
 const RANK_SCOPE_COUNTIES = "counties";
+/** Tile cell in viewBox units: 11 × 88 by 8 × 76 keeps the tile view the same shape as the geographic map. */
+const CELL_W = 88;
+const CELL_H = 76;
+const TILE_GAP = 5;
+const INK = { low: "var(--map-ink-low)", high: "var(--map-ink-high)", none: "var(--foreground)" };
 
 const fillFor = (shade: number | null, hatch: string) =>
   shade == null ? `url(#${hatch})` : `color-mix(in srgb,var(--map-high) ${shade}%,var(--map-low))`;
@@ -66,6 +74,7 @@ const CountyPaths = memo(function CountyPaths({
 
 /**
  * Choropleth of one honest metric. States by default; with a county layer, counties shaded by their own quantile classes.
+ * The state layer can also be read as equal-size tiles, so small states and DC are as visible as large ones.
  * Missing values are hatched and counted in the legend, never drawn as the lowest class. Every state is a focusable
  * button; counties are reached by pointer, and the "show data" table beside the map lists every area for keyboard and
  * screen-reader use.
@@ -98,7 +107,9 @@ export function MetricMap({
   const titleId = useId();
   const box = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<Tip | null>(null);
+  const [view, setView] = useState<"map" | "tiles">("map");
   const showCounties = counties != null;
+  const tiles = view === "tiles" && !showCounties;
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [k, setK] = useState(1);
@@ -132,7 +143,7 @@ export function MetricMap({
     if (svg && zoomRef.current)
       select(svg).transition().duration(300).call(zoomRef.current.scaleBy, f);
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   function fitTo(el: SVGGraphicsElement) {
     const svg = svgRef.current;
     if (!svg || !zoomRef.current) return;
@@ -239,6 +250,52 @@ export function MetricMap({
     });
   }
 
+  /** Pointer, focus and keyboard behaviour shared by a state's map path and its tile. */
+  function stateProps(
+    id: { fips: string; usps: string; name: string },
+    read: Readout,
+    isSelected: boolean,
+  ) {
+    return {
+      "data-state": id.usps,
+      "data-fips": id.fips,
+      role: "button",
+      tabIndex: 0,
+      "aria-label": `${stateAction} ${id.name}. ${read.value}${read.rank ? `. ${read.rank}` : ""}`,
+      "aria-pressed": isSelected,
+      onMouseEnter: (e: React.MouseEvent<SVGElement>) => {
+        const p = place(e.clientX, e.clientY);
+        setTip({ ...p, read, id: id.fips });
+        onHoverState?.(id.usps);
+      },
+      onMouseMove: (e: React.MouseEvent<SVGElement>) => {
+        const p = place(e.clientX, e.clientY);
+        setTip((t) => (t && t.id === id.fips ? { ...t, ...p } : t));
+      },
+      onMouseLeave: () => {
+        setTip(null);
+        onHoverState?.(null);
+      },
+      onFocus: (e: React.FocusEvent<SVGElement>) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const p = place(r.left + r.width / 2, r.top + r.height / 2);
+        setTip({ ...p, read, id: id.fips });
+        onHoverState?.(id.usps);
+      },
+      onBlur: () => {
+        setTip(null);
+        onHoverState?.(null);
+      },
+      onClick: () => onState(id.fips),
+      onKeyDown: (e: React.KeyboardEvent<SVGElement>) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onState(id.fips);
+        }
+      },
+    } as const;
+  }
+
   const shapes = stateIdentity.map(({ shape, id }) => {
     const value = states.values[id.fips];
     const idx = classIndex(value, stateBreaks);
@@ -258,11 +315,66 @@ export function MetricMap({
         <span id={titleId} className="truncate text-xs font-medium">
           {title}
         </span>
-        <span className="shrink-0 text-[11px] text-muted-foreground">
+        <span className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
           {active.yearLabel} · {active.unit}
+          {!showCounties ? (
+            <span
+              role="group"
+              aria-label="Map view"
+              className="flex rounded-md border border-border bg-muted p-px"
+            >
+              {(["map", "tiles"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={view === v}
+                  onClick={() => {
+                    setTip(null);
+                    setView(v);
+                  }}
+                  className={cn(
+                    "rounded-[5px] px-2 py-0.5 text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+                    view === v
+                      ? "bg-surface font-medium text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {v === "map" ? "Map" : "Tiles"}
+                </button>
+              ))}
+            </span>
+          ) : null}
         </span>
       </div>
-      <div className="absolute right-2 top-11 z-10 flex flex-col overflow-hidden rounded-md border border-border bg-popover text-xs shadow-sm">
+      {/* one hatch pattern for both views and the legend (a pattern inside a hidden svg would not paint) */}
+      <svg width="0" height="0" aria-hidden className="absolute">
+        <defs>
+          <pattern
+            id={hatch}
+            width="6"
+            height="6"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width="6" height="6" fill="var(--muted)" />
+            <line
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="6"
+              stroke="var(--muted-foreground)"
+              strokeOpacity="0.45"
+              strokeWidth="1.5"
+            />
+          </pattern>
+        </defs>
+      </svg>
+      <div
+        className={cn(
+          "absolute right-2 top-11 z-10 flex flex-col overflow-hidden rounded-md border border-border bg-popover text-xs shadow-sm",
+          tiles && "hidden",
+        )}
+      >
         <button
           type="button"
           aria-label="Zoom in"
@@ -294,29 +406,11 @@ export function MetricMap({
         ref={svgRef}
         viewBox="0 0 975 610"
         className="h-auto min-h-52 w-full p-3"
+        style={tiles ? { display: "none" } : undefined}
         role="group"
         aria-labelledby={titleId}
+        data-view="map"
       >
-        <defs>
-          <pattern
-            id={hatch}
-            width="6"
-            height="6"
-            patternUnits="userSpaceOnUse"
-            patternTransform="rotate(45)"
-          >
-            <rect width="6" height="6" fill="var(--muted)" />
-            <line
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="6"
-              stroke="var(--muted-foreground)"
-              strokeOpacity="0.45"
-              strokeWidth="1.5"
-            />
-          </pattern>
-        </defs>
         <g transform={transform}>
           {showCounties ? (
             <>
@@ -346,12 +440,7 @@ export function MetricMap({
               <path
                 key={id.fips}
                 d={shape.d}
-                data-state={id.usps}
-                data-fips={id.fips}
-                role="button"
-                tabIndex={0}
-                aria-label={`${stateAction} ${id.name}. ${read.value}${read.rank ? `. ${read.rank}` : ""}`}
-                aria-pressed={isSelected}
+                {...(tiles ? {} : stateProps(id, read, isSelected))}
                 className="outline-none transition-[stroke] duration-150 focus-visible:[stroke:var(--map-focus)] focus-visible:[stroke-width:2.4]"
                 vectorEffect="non-scaling-stroke"
                 style={{
@@ -363,36 +452,6 @@ export function MetricMap({
                   strokeWidth: isSelected ? 2.4 : 0.9,
                   cursor: "pointer",
                 }}
-                onMouseEnter={(e) => {
-                  const p = place(e.clientX, e.clientY);
-                  setTip({ ...p, read, id: id.fips });
-                  onHoverState?.(id.usps);
-                }}
-                onMouseMove={(e) => {
-                  const p = place(e.clientX, e.clientY);
-                  setTip((t) => (t && t.id === id.fips ? { ...t, ...p } : t));
-                }}
-                onMouseLeave={() => {
-                  setTip(null);
-                  onHoverState?.(null);
-                }}
-                onFocus={(e) => {
-                  const r = e.currentTarget.getBoundingClientRect();
-                  const p = place(r.left + r.width / 2, r.top + r.height / 2);
-                  setTip({ ...p, read, id: id.fips });
-                  onHoverState?.(id.usps);
-                }}
-                onBlur={() => {
-                  setTip(null);
-                  onHoverState?.(null);
-                }}
-                onClick={() => onState(id.fips)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onState(id.fips);
-                  }
-                }}
               >
                 <title>{`${id.name}: ${read.value}`}</title>
               </path>
@@ -400,6 +459,70 @@ export function MetricMap({
           )}
         </g>
       </svg>
+      {tiles ? (
+        <svg
+          viewBox={`0 0 ${TILE_COLS * CELL_W} ${TILE_ROWS * CELL_H}`}
+          className="h-auto min-h-52 w-full p-3"
+          role="group"
+          aria-labelledby={titleId}
+          data-view="tiles"
+        >
+          {shapes.map(({ id, value, idx, isSelected, read }) => {
+            const t = TILE_BY_USPS.get(id.usps);
+            if (!t) return null;
+            const shade = idx == null || value == null ? null : shadeOf(idx, stateBreaks.length);
+            const x = t.col * CELL_W + TILE_GAP / 2;
+            const y = t.row * CELL_H + TILE_GAP / 2;
+            const w = CELL_W - TILE_GAP;
+            const h = CELL_H - TILE_GAP;
+            const ink = INK[tileInk(shade)];
+            return (
+              <g
+                key={id.fips}
+                {...stateProps(id, read, isSelected)}
+                className="group cursor-pointer outline-none"
+              >
+                <rect
+                  x={x}
+                  y={y}
+                  width={w}
+                  height={h}
+                  rx={7}
+                  stroke={isSelected ? "var(--map-active)" : "var(--surface)"}
+                  strokeWidth={isSelected ? 3 : 1}
+                  style={{ fill: fillFor(shade, hatch) }}
+                  className="transition-[stroke] duration-150 group-hover:[stroke:var(--map-active)] group-focus-visible:[stroke:var(--map-focus)] group-focus-visible:[stroke-width:3]"
+                />
+                <text
+                  x={x + w / 2}
+                  y={y + h / 2 + (value == null ? 6 : -2)}
+                  textAnchor="middle"
+                  fontSize={19}
+                  fontWeight={600}
+                  fill={ink}
+                  className="pointer-events-none select-none"
+                >
+                  {id.usps}
+                </text>
+                {value != null ? (
+                  <text
+                    x={x + w / 2}
+                    y={y + h / 2 + 17}
+                    textAnchor="middle"
+                    fontSize={12.5}
+                    fill={ink}
+                    fillOpacity={0.85}
+                    className="pointer-events-none select-none tabular-nums max-sm:hidden"
+                  >
+                    {formatMapValue(value, states.format)}
+                  </text>
+                ) : null}
+                <title>{`${id.name}: ${read.value}`}</title>
+              </g>
+            );
+          })}
+        </svg>
+      ) : null}
       {tip ? (
         <div
           aria-hidden
@@ -432,7 +555,9 @@ export function MetricMap({
             <span className="text-muted-foreground">
               {showCounties
                 ? "Hover a county for its value; select one to open its page."
-                : "Select a state to open it. Ctrl + scroll or the buttons zoom, drag to pan."}
+                : tiles
+                  ? "Every state is the same size here. Select one to open it."
+                  : "Select a state to open it. Ctrl + scroll or the buttons zoom, drag to pan."}
             </span>
           )}
         </div>

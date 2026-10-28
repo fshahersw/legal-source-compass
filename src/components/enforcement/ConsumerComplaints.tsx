@@ -428,6 +428,7 @@ function Body({ data }: { data: ConsumerData }) {
               stateAction="Value for"
               formatValue={(v) => v.toLocaleString("en-US", { maximumFractionDigits: 1 })}
               legendNote="Shading scales with the selected metric across the 50 states and DC."
+              missing="unrecorded"
               onState={(fips) => {
                 const code = uspsByFips.get(fips);
                 if (code) void navigate({ to: "/places/$state", params: { state: code } });

@@ -45,6 +45,7 @@ import {
   TOPIC_LABEL,
   TOPIC_ORDER,
   kpiFromFacts,
+  repeatedTileIds,
   notableMovements,
   type Kpi,
 } from "./kpis";
@@ -340,7 +341,11 @@ export function OverviewBoard() {
       });
     else states.push({ kind: "ok", kpi: kpiFromFacts(m, q.data, href) });
   });
-  const loaded = states.flatMap((s) => (s.kind === "ok" ? [s.kpi] : []));
+  // Say each figure once: a data-layer tile that repeats a hub tile's figure (same area, period, value, change) is
+  // left out, from the area lists and from "What moved most".
+  const repeats = repeatedTileIds(states.flatMap((s) => (s.kind === "ok" ? [s.kpi] : [])));
+  const shownStates = states.filter((s) => s.kind !== "ok" || !repeats.has(s.kpi.id));
+  const loaded = shownStates.flatMap((s) => (s.kind === "ok" ? [s.kpi] : []));
   const pending = states.filter((s) => s.kind === "loading").length;
   const headlines = HEADLINE_BLOCKS.flatMap((id) => {
     const s = states.find((t) => tileKey(t) === id || tileKey(t) === `hub:${id}`);
@@ -348,7 +353,7 @@ export function OverviewBoard() {
   });
   const headlineContext = kpiContext("Headline figures", headlines);
   const topics = TOPIC_ORDER.flatMap((t) => {
-    const tiles = states.filter((s) => tileTopic(s) === t && !isHeadline(s));
+    const tiles = shownStates.filter((s) => tileTopic(s) === t && !isHeadline(s));
     return tiles.length ? [{ topic: t, tiles }] : [];
   });
   const index = [

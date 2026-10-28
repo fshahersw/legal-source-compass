@@ -8,6 +8,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { CFR_TITLE } from "@/lib/external/ecfrFull";
 import { getCfrCollection, getCfrTitleParts } from "@/lib/external/ecfrFull.functions";
 import { AgenciesForTitlePanel } from "@/components/authorities/AgencyPanels";
+import { CfrPartsConcentration } from "@/components/law/CfrPartsConcentration";
 
 export const Route = createFileRoute("/law_/cfr/$title/")({
   head: ({ params }) =>
@@ -73,6 +74,14 @@ function CfrTitlePage() {
           </Link>
         </p>
       ) : (
+        <>
+        <div className="mb-4">
+          <CfrPartsConcentration
+            title={title}
+            parts={q.data.parts}
+            asOf={coll.data?.upToDateAsOf[0] ?? null}
+          />
+        </div>
         <section aria-label="Parts" className="rounded-xl border border-border bg-card shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-4 py-2">
             <h2 className="m-0 text-heading font-semibold text-foreground">Parts</h2>
@@ -120,6 +129,7 @@ function CfrTitlePage() {
             {q.data.dropped ? ` · ${q.data.dropped} stored rows could not be read` : ""}
           </p>
         </section>
+        </>
       )}
     </AppShell>
   );

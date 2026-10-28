@@ -1,9 +1,10 @@
 /**
  * Courts & judges lead chart: the slowest and fastest federal districts by median days from filing to disposition,
- * against the national median (FJC IDB civil cases, latest complete fiscal year). Each row links nowhere by itself;
- * the table lists the same districts with their court ids.
+ * against the median district (FJC IDB civil cases, latest complete fiscal year). A district name links to its court
+ * profile only when the district's own record links that profile; otherwise it stays plain text.
  */
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { ChartCard } from "@/components/charts/ChartCard";
 import { DivergingDots } from "@/components/charts/d3/charts";
 import { AiSummary } from "@/components/kit/ai/AiSummary";
@@ -22,6 +23,7 @@ const days = (v: number) => `${Math.round(v).toLocaleString("en-US")} days`;
 const short = (name: string) => name.replace(/^District Court, /, "");
 
 export function DistrictSpeedChart() {
+  const navigate = useNavigate();
   const districts = useQuery(districtsQuery);
   const national = useQuery(nationalQuery);
   const fy = national.data?.latestFy ?? null;
@@ -119,7 +121,14 @@ export function DistrictSpeedChart() {
       >
         {speed ? (
           <DivergingDots
-            items={picks.map((d) => ({ label: short(d.name), value: d.value }))}
+            items={picks.map((d) =>
+              d.hasCourtPage
+                ? { label: short(d.name), value: d.value, href: `/courts/${d.id}` }
+                : { label: short(d.name), value: d.value, note: "No court page recorded" },
+            )}
+            onNavigate={(href) =>
+              void navigate({ to: "/courts/$id", params: { id: href.slice("/courts/".length) } })
+            }
             baseline={speed.baseline}
             baselineLabel="Median district"
             format={(v) => Math.round(v).toLocaleString("en-US")}

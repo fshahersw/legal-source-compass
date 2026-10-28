@@ -1,5 +1,6 @@
 import type { MdlRow } from "@/lib/external/mdlAnalytics.functions";
 import type { MassTortSignal } from "@/lib/external/massTortSignals.functions";
+import { hasPending } from "@/lib/external/mdlSeries";
 
 /** Regulator by product type, as recorded on the product signal (not inferred from the MDL caption). */
 export const REGULATOR: Record<MassTortSignal["kind"], { short: string; name: string }> = {
@@ -21,6 +22,7 @@ export const n = (v: number | null | undefined, digits = 0) =>
 export function peerRanking(all: readonly MdlRow[], mdl: number, type: string | null) {
   const peers = all
     .filter((m) => m.status === "pending" && (type ? m.type === type : true))
+    .filter(hasPending)
     .sort((a, b) => b.pending - a.pending);
   const index = peers.findIndex((m) => m.mdl === mdl);
   const growth = peers

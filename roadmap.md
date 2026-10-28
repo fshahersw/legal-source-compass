@@ -3,7 +3,19 @@
 ## Uploaded executive brief (2026-10-28)
 - [x] Prepare evidence-based sprint plan: visual declutter, chart accuracy, maps, hierarchy/registry imagery, and compatible corpus enrichment; preserve Time Limits and existing acquisition checkpoints.
 - [x] First sprint: four state modes with legacy directory destinations; compact balanced hub figures; richer bounded chart AI context; complete-year civil clearance flow panels and corrected district-median AI label.
-- [ ] Next sprint: MDL missing-value validation/momentum, district profile links, map tile mode, law trees and exact-ID imagery; source compatibility remains required. Time Limits and acquisition checkpoints untouched.
+- [x] Sprint 2–4: MDL missing-value validation/momentum, district profile links, map tile mode, law trees and exact-ID imagery; Time Limits and acquisition checkpoints untouched.
+
+## Executive brief — Sprints 2–4 (uploaded 2026-10-28 07:21 UTC; use Firecrawl/Tavily as needed)
+- [x] S2.1 MDL data validation (no missing→0, validated series points) + momentum scatter (log pending, exact same-month 12-month change, zero-pending drawer, links to MDL pages) + tests
+- [x] S2.2 District speed chart: district names link to court profiles when an exact court record exists
+- [x] S2.3 Clearance ratio: zero-filing years null, partial years excluded from callouts (verify + tests)
+- [x] S3.1 Map: Geographic | Equal-area tiles switch (50 states + DC), shared class breaks and missing hatch, keyboard navigation + tests (national MetricMap; the state-dashboard choropleth still map-only)
+- [x] S3.2 Law structure: U.S. Code title icicle (exact partition, click opens the container) and CFR largest-parts chart; state codes load their tree lazily, so a full-structure view needs a totals endpoint first
+- [x] S3.3 Court/agency hierarchy contrast: court tiers already AA in both themes; agency components fit narrow columns; official org-chart links for 11 agencies bound by exact Federal Register id, with the publisher's printed date (DHS, State, SEC) or "undated"
+- [x] S4.1 Exact-ID imagery coverage: 160 courthouse, 240 judge-portrait, 218 agency (61 with photos), 55 capitol records; 19 sampled pages bind by exact id with 0 broken images; 18 agency photos hidden only for a blank building name now show with a neutral caption
+- [x] S4.2 Enforcement penalty distributions: EPA log-scale histogram by case type with record medians (published ≥$100K cases, national cases merged once); DOJ share of releases by size of largest stated figure per year (shares, since archive coverage jumps)
+- [x] S5 Overflow check at 1039×635 and 390×844 on 9 key pages: none left (Texas health-condition picker fixed; EPA chart labels thin out on phones)
+- [x] S6 Verification: 61 test files / 560 tests, typecheck clean; browser checks of new charts in light and dark, both viewports, no page errors
 
 ## Comprehensive platform scan (2026-10-28)
 - [x] Read-only audit: pages and workflows, visual cohesion, accessibility, chart/data integrity, AI/server security, automated tests; evidence and prioritized findings saved without application changes; hosted deployment and exhaustive legal/security certification remain unverified.
@@ -88,18 +100,21 @@
 - [x] Agency profiles: AI summary under the headline figures; overview in five sections (Rulemaking, Pipeline, Money, Law and structure, Data) behind the sticky index; "Rules & notices" and "All documents" merged into one Documents tab (recent 12, then browse all)
 - [x] MDL profiles: seven tabs folded into four views (Overview + lifecycle, Cases & parties, Docket & documents, Evidence & sources; every former ?tab= opens its part first); AI summary under the header; two figures repeated from the header removed from "Membership & coverage"
 - [x] Desktop + phone checks of the 13 main pages (no sideways scroll, no page errors, 2026-10-24); demoted blocks listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md
-- [ ] Places: confirm the median reference line on the state comparison chart is visible in both themes (looked faint in one screenshot)
-- [ ] Sunburst: keyboard focus for ring segments (the case-type list already works with the keyboard)
-- [ ] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)
+- [x] Places: median reference line now uses the reference ink, dashed, readable in dark mode; unit no longer printed twice
+- [x] Sunburst: inner-ring segments are Tab stops that highlight like hover, with a focus outline
+- [x] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)
 
 ## Cleaner, richer visuals (plan 2026-10-28)
 - [x] Court diagram contrast in both themes; exact-bound courthouse/capitol section imagery; agency parent/component diagrams with marks and scope labels; verified CDC organization-chart, USAGov state-government and Census visualization references. Internal agency reporting structures beyond recorded relationships remain unacquired, not invented.
 - [x] Explore button replaced by an Ask AI icon that sends the chart's shown figures, page topic, period and source
 - [x] Enforcement calendar Weekdays/Months/3D start at coverage start (no pre-coverage zeros)
 - [x] Court structure diagram (federal + selectable state tiers, recorded types only) on Courts & judges and every state page
-- [~] Site-wide "say it once" declutter pass — state pages done (duplicate caseload block, tile captions, source prose, capitol card, bill lists, chart contrast); other sections next
-- [ ] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
-- [ ] Shared map with tile-grid mode and rate shading across Overview/Places/Courts/Litigation/Enforcement/Law
-- [ ] Law hierarchy trees (U.S. Code, CFR, state codes/constitutions)
-- [ ] Visual backfill: court/judge/place/company identity blocks
+- [~] Site-wide "say it once" declutter pass — state pages done (duplicate caseload block, tile captions, source prose, capitol card, bill lists, chart contrast); EPA enforcement done (takeaways no longer repeat the KPI tiles, flag rules in info popovers, duplicate largest-case block removed); DOJ size chart recoloured so the $10M+ share reads at a glance and the FCA/health-care list titled accurately; Companies landing done (bare count row and duplicate tab card removed, flag rules in a popover, headline-figure rows regain their bottom gap site-wide); Insights done (four tiles that repeated another tile's exact figure, period and change are left out: civil filings, DOJ releases, population, final rules); section landings no longer repeat their header menu as "In this section" cards (links the menu lacks, and links to other sections, stay); Courts, Litigation and Law landing charts next
+- [x] Insights tiles for counts of congressional work (bills, laws, amendments, committee reports, hearings, bill texts) compare a year with the same year of the previous Congress; bills introduced 2025 now reads +0.9% vs 2023 instead of +80.5% vs 2024
+- [x] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
+- [x] Map/Tiles toggle on every national state map (Overview, Places, Insights rankings, EPA, OSHA, CFPB, agency spending, company payments, case analytics); rate maps hatch states with no figure instead of drawing them as the lowest value (EPA per-million no longer turns a missing rate into 0)
+- [ ] Law hierarchy trees: U.S. Code and CFR done; state codes/constitutions need a per-level totals endpoint
+- [x] Visual backfill: court/judge/place/company identity blocks — record identity boxes hold facts only (ids, registry keys, stored-file counts, provider flags and provider names moved to technical details or tooltips); profiles with no exact-ID photo show their recorded court mark or court-type emblem (checked: Cal. Supreme Court, Tex. App. 1st Dist.)
 - [ ] Wire unused accurate datasets into their sections
+
+- [ ] Court delay reports on district court pages: reader and tests are done (`src/lib/external/courtCjra.functions.ts`); the chart panel on the court page is not built yet (paused at the owner's request 2026-10-28)

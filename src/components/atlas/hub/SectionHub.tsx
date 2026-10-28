@@ -10,6 +10,7 @@ import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionItem } from "@/lib/atlas/navigation";
 import { recordCount, useCatalog } from "./catalog";
 import { HUBS, type HubCount, type HubLink } from "./hubs";
+import { linksNotInHeader } from "./hubLinkFilter";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
@@ -175,6 +176,7 @@ export function SectionHub({
   children?: ReactNode;
 }) {
   const hub = HUBS[section];
+  const links = linksNotInHeader(section, hub.links);
   return (
     <div className="stack-section">
       <HubKpis
@@ -183,7 +185,7 @@ export function SectionHub({
         label={`${sectionItem(section).label} figures`}
       />
       {lead}
-      {hub.links.length ? <HubLinks links={hub.links} deferred={deferred} /> : null}
+      {links.length ? <HubLinks links={links} deferred={deferred} /> : null}
       <WhatChangedSlot section={section} />
       {children}
     </div>

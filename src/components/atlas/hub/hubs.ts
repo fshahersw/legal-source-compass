@@ -437,23 +437,10 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
     ],
   },
   companies: {
-    kpis: [
-      { dataset: "company_sec_profiles", label: "Companies profiled from their SEC filings" },
-      { dataset: "company_sec_mdl_links", label: "Company–MDL links from SEC filings" },
-      {
-        dataset: "company_payments_manufacturers",
-        label: "Manufacturers in the Open Payments ranking",
-      },
-      { dataset: "company_adverse_manufacturers", label: "Manufacturers matched to MAUDE reports" },
-    ],
-    links: [
-      {
-        to: "/companies/payments",
-        label: "Industry payments",
-        description:
-          "What drug and device manufacturers paid clinicians, 2017–2025 (CMS Open Payments).",
-        counts: [{ dataset: "company_payments_manufacturers", label: "manufacturers" }],
-      },
-    ],
+    // The Companies page opens with its own answer figures (CompaniesDashboard); the four bare record counts and the
+    // single "Industry payments" link (already a header tab) repeated them. Restore from
+    // docs/audits/2026-10-24-ui-refresh-moved-blocks.md.
+    kpis: [],
+    links: [],
   },
 };

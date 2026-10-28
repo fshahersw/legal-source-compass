@@ -219,15 +219,19 @@ export function StackedBarsOverTime({
   labels,
   height = 260,
   format = (v: number) => v.toLocaleString("en-US"),
+  fills,
 }: {
   rows: readonly StackRow[];
   keys: readonly string[];
   labels?: Record<string, string>;
   height?: number;
   format?: (v: number) => string;
+  /** Per-key fill (chart-token expressions), e.g. a sequential ramp for ordered size bands; default = series slots. */
+  fills?: Record<string, string> | undefined;
 }) {
   const [box, W] = useWidth<HTMLDivElement>();
   const shown = keys.slice(0, 6);
+  const fillOf = (k: string, i: number) => fills?.[k] ?? seriesVar(i);
   const { layers, max } = stackLayers(rows, shown);
   const y = scaleLinear()
     .domain([0, max || 1])
@@ -278,7 +282,7 @@ export function StackedBarsOverTime({
               width={x.bandwidth()}
               y={y(d[1])}
               height={Math.max(0, y(d[0]) - y(d[1]))}
-              style={{ fill: seriesVar(i), opacity: rows[j]!.partial ? 0.4 : 1 }}
+              style={{ fill: fillOf(l.key, i), opacity: rows[j]!.partial ? 0.4 : 1 }}
             >
               <title>{`${rows[j]!.period}${rows[j]!.partial ? " (unfinished)" : ""} · ${labels?.[l.key] ?? l.key}: ${
                 rows[j]!.values[l.key] == null ? "Not recorded" : format(d[1] - d[0])
@@ -308,7 +312,7 @@ export function StackedBarsOverTime({
       >
         {shown.map((k, i) => (
           <span key={k} className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 rounded-sm" style={{ background: seriesVar(i) }} />
+            <span className="size-2.5 rounded-sm" style={{ background: fillOf(k, i) }} />
             {labels?.[k] ?? k}
           </span>
         ))}
@@ -327,8 +331,14 @@ export function DivergingDots({
   format = (v: number) => v.toLocaleString("en-US"),
   showBaselineValue = true,
   labelWidth = 180,
+  onNavigate,
 }: {
-  items: readonly { label: string; value: number | null }[];
+  /**
+   * `href` makes the row label a link (client-side via `onNavigate`, a real href for open-in-new-tab); `note` is the
+   * hover text of an unlinked label ("No court page recorded").
+   */
+  items: readonly { label: string; value: number | null; href?: string; note?: string }[];
+  onNavigate?: (href: string) => void;
   baseline: number;
   baselineLabel: string;
   format?: (v: number) => string;
@@ -364,9 +374,16 @@ export function DivergingDots({
           x2={x(baseline)}
           y1={18}
           y2={height - 4}
-          style={{ stroke: "var(--chart-axis)" }}
+          // The reference ink (foreground), dashed, so the baseline reads in both themes like other charts' references.
+          style={{ stroke: "var(--chart-reference, var(--chart-axis))", strokeWidth: 1.25 }}
+          strokeDasharray="4 3"
         />
-        <text x={x(baseline)} y={11} textAnchor="middle" className={TICK}>
+        <text
+          x={x(baseline)}
+          y={11}
+          textAnchor="middle"
+          className="fill-foreground text-[11px] font-medium tabular-nums"
+        >
           {baselineLabel}
           {showBaselineValue ? ` ${format(baseline)}` : ""}
         </text>
@@ -385,16 +402,41 @@ export function DivergingDots({
                   opacity={0.35}
                 />
               ) : null}
-              <text
-                x={gutter}
-                y={cy}
-                dy="0.32em"
-                textAnchor="end"
-                className="fill-foreground text-xs"
-              >
-                <title>{it.label}</title>
-                {clip(it.label, chars)}
-              </text>
+              {it.href ? (
+                <a
+                  href={it.href}
+                  aria-label={`${it.label}: open profile`}
+                  onClick={(e) => {
+                    if (!onNavigate || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)
+                      return;
+                    e.preventDefault();
+                    onNavigate(it.href!);
+                  }}
+                  className="outline-none [&:focus-visible>text]:underline"
+                >
+                  <text
+                    x={gutter}
+                    y={cy}
+                    dy="0.32em"
+                    textAnchor="end"
+                    className="fill-foreground text-xs underline decoration-muted-foreground/60 decoration-dotted underline-offset-2 hover:decoration-solid"
+                  >
+                    <title>{it.label}</title>
+                    {clip(it.label, chars)}
+                  </text>
+                </a>
+              ) : (
+                <text
+                  x={gutter}
+                  y={cy}
+                  dy="0.32em"
+                  textAnchor="end"
+                  className="fill-foreground text-xs"
+                >
+                  <title>{it.note ? `${it.label} · ${it.note}` : it.label}</title>
+                  {clip(it.label, chars)}
+                </text>
+              )}
               {it.value == null ? (
                 <text
                   x={x(baseline) + 8}
@@ -479,7 +521,7 @@ export function Sunburst({
       style={chartTokens}
       viewBox={`${-r} ${-r} ${size} ${size}`}
       className="mx-auto block w-full max-w-sm"
-      role="img"
+      role="group"
       aria-label={`Breakdown of ${root.name}`}
     >
       {nodes
@@ -487,6 +529,9 @@ export function Sunburst({
         .map((n, i) => {
           const t = top(n);
           const slot = t?.data.slot ?? Math.min(5, Math.max(0, tops.indexOf(t!)));
+          // Inner-ring segments are keyboard stops (Tab), focusing one highlights it like hovering does; outer rings
+          // stay pointer-only, their figures are in the title and the table.
+          const keyboard = n.depth === 1;
           return (
             <path
               key={i}
@@ -495,6 +540,17 @@ export function Sunburst({
               opacity={focus && t?.data.name !== focus ? 0.25 : 1 - (n.depth - 1) * 0.22}
               onMouseEnter={() => setFocus(t?.data.name ?? null)}
               onMouseLeave={() => setFocus(null)}
+              {...(keyboard
+                ? {
+                    tabIndex: 0,
+                    role: "img",
+                    "aria-label": `${n.data.name}: ${(n.value ?? 0).toLocaleString("en-US")}`,
+                    onFocus: () => setFocus(n.data.name),
+                    onBlur: () => setFocus(null),
+                    className:
+                      "outline-none focus-visible:[stroke:var(--foreground)] focus-visible:[stroke-width:2.5]",
+                  }
+                : { "aria-hidden": true })}
             >
               <title>{`${n
                 .ancestors()

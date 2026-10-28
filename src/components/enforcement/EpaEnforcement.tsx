@@ -19,6 +19,8 @@ import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
 import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { UsMap } from "@/components/corpus/UsMap";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
+import { EpaPenaltySizes } from "./EpaPenaltySizes";
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { useCorpus } from "@/lib/corpus/store";
 import {
   getEpaCases,
@@ -696,15 +698,22 @@ function EpaBody({
   const tableRows = rows.filter((r) => r.kind === "state" || r.kind === "territory");
   const otherCodes = data.profiles.filter((p) => p.kind === "other" || p.kind === "unrecorded");
   const mapRows = rows.filter((r) => r.kind === "state" && r.fips);
+  // A state without a population base has no per-million rate: it is left out (hatched), never drawn as zero.
   const values = new Map(
-    mapRows.map((r) => [
-      r.fips!,
-      metric === "penalty"
-        ? Math.round(r.sums.fedPenalty / 1e5) / 10
-        : metric === "cases"
-          ? r.sums.cases
-          : Math.round((r.perMillion ?? 0) * 10) / 10,
-    ]),
+    mapRows.flatMap((r): [string, number][] =>
+      metric === "perMillion" && r.perMillion == null
+        ? []
+        : [
+            [
+              r.fips!,
+              metric === "penalty"
+                ? Math.round(r.sums.fedPenalty / 1e5) / 10
+                : metric === "cases"
+                  ? r.sums.cases
+                  : Math.round(r.perMillion! * 10) / 10,
+            ],
+          ],
+    ),
   );
   const detail = useQuery({
     queryKey: ["epa-state-detail", state],
@@ -730,6 +739,7 @@ function EpaBody({
   const scopeName = selected ? selected.name : "all states";
   const minCaseFy = Math.max(win.from, 2017);
   const detailPending = !!selected && detail.isLoading;
+  const cases = useQuery(epaCasesQuery);
   const topState = selected
     ? null
     : (rows
@@ -830,8 +840,9 @@ function EpaBody({
           : ""}
       </p>
 
+      {/* The window's total penalties and cases are already the KPI tiles above; the takeaways keep what they add. */}
       <KeyTakeaways
-        items={takeaways}
+        items={takeaways.filter((t) => t.id !== "penalties" && t.id !== "cases")}
         scope={`${win.label} · ${selected ? selected.name : "United States"} · flag lines always compare all states`}
       />
       <HowToRead measures={EPA_MEASURES} />
@@ -881,6 +892,7 @@ function EpaBody({
                   v.toLocaleString("en-US", { maximumFractionDigits: metric === "cases" ? 0 : 1 })
                 }
                 legendNote="Shading scales with the selected ECHO metric for states; territories and unrecorded codes are listed in the table."
+                missing="unrecorded"
                 selectedState={state}
                 onState={(fips) => {
                   const hit = mapRows.find((r) => r.fips === fips);
@@ -899,6 +911,7 @@ function EpaBody({
         </Panel>
         <Panel
           id="epa-flags"
+          className="self-start"
           title="Flags"
           subtitle="Deterministic rules over the published counts"
           footnote="A flag is a lead to review, not a finding."
@@ -907,8 +920,10 @@ function EpaBody({
             <div>
               <p className="flex items-center gap-1 font-medium">
                 <Flag className="size-3.5 text-warning" aria-hidden /> Case surge · FY{latest}
+                <InfoPopover label="How the surge flag is set" title="Case surge">
+                  <p>{SURGE_RULE}</p>
+                </InfoPopover>
               </p>
-              <p className="text-[11px] text-muted-foreground">{SURGE_RULE}</p>
               {surges.length ? (
                 <>
                   <ul
@@ -950,8 +965,10 @@ function EpaBody({
             <div>
               <p className="flex items-center gap-1 font-medium">
                 <Flag className="size-3.5 text-warning" aria-hidden /> Per-capita outliers · FY2025
+                <InfoPopover label="How the per-capita flag is set" title="Per-capita outliers">
+                  <p>{PER_CAPITA_RULE}</p>
+                </InfoPopover>
               </p>
-              <p className="text-[11px] text-muted-foreground">{PER_CAPITA_RULE}</p>
               {outliers.length ? (
                 <ul className="mt-1 space-y-0.5">
                   {outliers.map((r) => (
@@ -973,23 +990,6 @@ function EpaBody({
                 <p className="mt-1 text-muted-foreground">No state exceeds the fence.</p>
               )}
             </div>
-            {topCase ? (
-              <div>
-                <p className="font-medium">
-                  Largest case · {selected ? selected.name : "United States"}, all years
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {topCase.name} ({topCase.records.join(" + ")}; settled {topCase.settled ?? "—"}) —{" "}
-                  {usd(topCase.fedPenalty, 2)}
-                  {topCase.records.length > 1
-                    ? ` across ${topCase.records.length} regional records that split one national penalty`
-                    : ""}
-                  {profile.totals.fedPenalty
-                    ? `, ${((topCase.fedPenalty / profile.totals.fedPenalty) * 100).toFixed(0)}% of all settled federal penalties recorded for ${selected ? selected.name : "the U.S."}.`
-                    : "."}
-                </p>
-              </div>
-            ) : null}
           </div>
         </Panel>
       </div>
@@ -1022,6 +1022,18 @@ function EpaBody({
           )}
         </Panel>
       </div>
+
+      <EpaPenaltySizes
+        rows={cases.data}
+        pending={cases.isPending}
+        error={cases.isError}
+        onRetry={() => void cases.refetch()}
+        fromFy={minCaseFy}
+        toFy={win.to}
+        state={selected?.code}
+        scopeName={selected ? selected.name : "United States"}
+        sourceHref={data.source}
+      />
 
       <Panel
         id="epa-states"

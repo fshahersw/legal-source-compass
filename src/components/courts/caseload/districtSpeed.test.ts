@@ -36,4 +36,16 @@ describe("districtSpeed", () => {
     expect(districtSpeed(rows, null)!.national).toBeNull();
     expect(districtSpeed(rows.slice(0, 3), 150, { n: 2 })).toBeNull();
   });
+
+  it("carries the court-page link only when the district record links its profile", () => {
+    const s = districtSpeed(
+      rows.map((r, i) => (i === 11 ? { ...r, hasCourtPage: true } : r)),
+      null,
+      { n: 2 },
+    )!;
+    expect(s.slowest.map((d) => [d.id, d.hasCourtPage])).toEqual([
+      ["d11", true],
+      ["d10", false],
+    ]);
+  });
 });
