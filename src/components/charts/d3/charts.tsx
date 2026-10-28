@@ -219,15 +219,19 @@ export function StackedBarsOverTime({
   labels,
   height = 260,
   format = (v: number) => v.toLocaleString("en-US"),
+  fills,
 }: {
   rows: readonly StackRow[];
   keys: readonly string[];
   labels?: Record<string, string>;
   height?: number;
   format?: (v: number) => string;
+  /** Per-key fill (chart-token expressions), e.g. a sequential ramp for ordered size bands; default = series slots. */
+  fills?: Record<string, string> | undefined;
 }) {
   const [box, W] = useWidth<HTMLDivElement>();
   const shown = keys.slice(0, 6);
+  const fillOf = (k: string, i: number) => fills?.[k] ?? seriesVar(i);
   const { layers, max } = stackLayers(rows, shown);
   const y = scaleLinear()
     .domain([0, max || 1])
@@ -278,7 +282,7 @@ export function StackedBarsOverTime({
               width={x.bandwidth()}
               y={y(d[1])}
               height={Math.max(0, y(d[0]) - y(d[1]))}
-              style={{ fill: seriesVar(i), opacity: rows[j]!.partial ? 0.4 : 1 }}
+              style={{ fill: fillOf(l.key, i), opacity: rows[j]!.partial ? 0.4 : 1 }}
             >
               <title>{`${rows[j]!.period}${rows[j]!.partial ? " (unfinished)" : ""} · ${labels?.[l.key] ?? l.key}: ${
                 rows[j]!.values[l.key] == null ? "Not recorded" : format(d[1] - d[0])
@@ -308,7 +312,7 @@ export function StackedBarsOverTime({
       >
         {shown.map((k, i) => (
           <span key={k} className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 rounded-sm" style={{ background: seriesVar(i) }} />
+            <span className="size-2.5 rounded-sm" style={{ background: fillOf(k, i) }} />
             {labels?.[k] ?? k}
           </span>
         ))}
