@@ -37,3 +37,16 @@ them. The adapter now refuses any page whose site status is 400 or above (`src/l
 
 Reversible: the next scheduled visit of Baxter re-reads both URLs and stores them if the site serves them.
 corpus_datasets counts restated from the table (2 rows).
+
+## company_price_history: one preferred-share series removed (2026-10-28, 14:40 UTC)
+
+EIDP, Inc. (CIK 0000030554) lists only preferred shares in its SEC filings, and the first price runs took its first
+listed ticker, the preferred series CTA-PB, as if it were the common stock. Removed. The adapter now skips preferred
+series when it picks a ticker (a registrant with only preferred shares gets no price row) and holds a company when the
+price endpoint names a different company for the ticker (`src/lib/ingest/sources/companyPrices.ts`).
+
+| id | title |
+|---|---|
+| px:0000030554 | EIDP, Inc.: daily share price (CTA-PB) |
+
+Reversible: not re-created by the adapter by design. corpus_datasets counts restated from the table (72 rows).

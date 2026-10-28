@@ -73,6 +73,7 @@ import {
 import { ReserveVsDocket } from "./ReserveVsDocket";
 import { AbilityToPay, DisclosureQuotes, ExposureStrip, NamedMdls } from "./DefendantDossier";
 import { IrFigures, MarketValue } from "./IrKpis";
+import { EventReactions, PriceEvents } from "./PriceEvents";
 import { Cell, ConsoleGrid } from "@/components/console/ConsoleGrid";
 import { CorporateTransactions } from "./CorporateTransactions";
 import {
@@ -337,6 +338,12 @@ function DossierPanels({ d, statements }: { d: CompanyDetail; statements: Statem
         </Cell>
         <Cell span={4}>
           <NamedMdls d={d} />
+        </Cell>
+        <Cell span={8}>
+          <PriceEvents cik={d.summary.profile.cik} company={d.summary.profile.name} />
+        </Cell>
+        <Cell span={4}>
+          <EventReactions cik={d.summary.profile.cik} />
         </Cell>
         <Cell span={8}>
           <IrFigures cik={d.summary.profile.cik} company={d.summary.profile.name} />

@@ -133,6 +133,11 @@ export interface SourceHttp {
       recordUrl?: string;
     },
   ): Promise<{ status: number; text: string; record: RequestRecord }>;
+  /** The raw body (ZIP archives and other binary files). Optional for test doubles that only read text. */
+  getBytes?(
+    url: string,
+    init?: { headers?: Record<string, string>; recordUrl?: string },
+  ): Promise<{ status: number; bytes: Uint8Array; record: RequestRecord }>;
   readonly requests: RequestRecord[];
   readonly remaining: number;
 }

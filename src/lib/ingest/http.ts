@@ -98,15 +98,26 @@ export function politeHttp(opts: HttpOptions): SourceHttp {
     return send(url, { ...init, method: "GET" });
   }
 
-  async function send(
+  type Init = {
+    method?: "GET" | "POST";
+    headers?: Record<string, string>;
+    body?: string;
+    recordUrl?: string;
+  };
+
+  async function send(url: string, init: Init = {}) {
+    const r = await request(url, init);
+    return { status: r.status, text: new TextDecoder("utf-8").decode(r.bytes), record: r.record };
+  }
+
+  async function getBytes(
     url: string,
-    init: {
-      method?: "GET" | "POST";
-      headers?: Record<string, string>;
-      body?: string;
-      recordUrl?: string;
-    } = {},
+    init: { headers?: Record<string, string>; recordUrl?: string } = {},
   ) {
+    return request(url, { ...init, method: "GET" });
+  }
+
+  async function request(url: string, init: Init) {
     const host = new URL(url).host;
     // A write is never repeated blindly: POST gets one attempt (a 429/503 still reports the wait to the run).
     const tries = (init.method ?? "GET") === "GET" ? attempts : 1;
@@ -161,13 +172,14 @@ export function politeHttp(opts: HttpOptions): SourceHttp {
         retrieved_at: new Date(clock()).toISOString().replace(/\.\d{3}Z$/, "Z"),
       };
       requests.push(record);
-      return { status: res.status, text: new TextDecoder("utf-8").decode(buf), record };
+      return { status: res.status, bytes: buf, record };
     }
   }
 
   return {
     getText,
     send,
+    getBytes,
     requests,
     get remaining() {
       return Math.max(0, opts.maxRequests - used);

@@ -8,6 +8,8 @@ import { CIK, TRADEMARK_NOTE } from "@/lib/visuals/companyLogos";
 import { cn } from "@/lib/utils";
 import { companyfactsUrl, edgarCompanyUrl, NOT_RECORDED, type CompanySummary } from "./companyData";
 import { fiscalYearEnd, stateName, tickerLine, type StatementsProfile } from "./companyStatements";
+import { companyPricesQuery } from "./companyQueries";
+import { firstOnOrAfter, moneyText, shiftDate, signedPct } from "./companyPrices";
 
 /** The open-licence logo of this CIK, read only when no site icon is stored (dataset company_logos_open). */
 function useOpenLogo(cik: string | undefined, hasSiteIcon: boolean) {
@@ -186,9 +188,7 @@ export function CompanyFacts({
             <Fact label="Filer category">{p?.category ?? NOT_RECORDED}</Fact>
             <Fact label="Business address">{address || NOT_RECORDED}</Fact>
             <Fact label="Market price">
-              <span className="text-muted-foreground" title={p?.priceNote ?? undefined}>
-                No price source connected
-              </span>
+              <LatestClose cik={cik} />
             </Fact>
             <Fact label="SEC filings">
               <a
@@ -265,5 +265,25 @@ function OpenLogoCredit({ cik, hasSiteIcon }: { cik: string; hasSiteIcon: boolea
       <OpenImageCredit image={open} label="Logo" compact className="text-[11px]" />
       <p className="m-0">{TRADEMARK_NOTE}</p>
     </div>
+  );
+}
+
+/** The latest stored close (company_price_history) with its change over a year; "Not recorded" until a run stores it. */
+function LatestClose({ cik }: { cik: string }) {
+  const q = useQuery(companyPricesQuery(cik));
+  const s = q.data?.series ?? null;
+  if (q.isLoading) return <span className="text-muted-foreground">Loading</span>;
+  const last = s?.points[s.points.length - 1];
+  if (!s || !last) return <span className="text-muted-foreground">{NOT_RECORDED}</span>;
+  const yearAgo = s.points[Math.max(0, firstOnOrAfter(s.points, shiftDate(last[0], -365)) - 1)];
+  const change = yearAgo && yearAgo[0] < last[0] ? last[1] / yearAgo[1] - 1 : null;
+  return (
+    <span className="tabular-nums">
+      {moneyText(last[1], s.currency)}
+      <span className="text-muted-foreground">
+        {` on ${last[0]}`}
+        {change !== null ? ` · ${signedPct(change)} over a year` : ""}
+      </span>
+    </span>
   );
 }
