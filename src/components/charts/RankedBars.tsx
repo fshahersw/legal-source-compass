@@ -3,10 +3,12 @@
  * peer median) labelled inline, and a focus highlight: with `highlight`, that bar keeps the accent and the others are
  * muted, so "where does this one sit" reads at a glance. Entities without a value are not drawn as zero: they are
  * listed under the chart as not recorded. Values may be negative (residuals): bars then grow from a zero line, the
- * negative arm in the diverging orange. Ranks use competition ranking (ties share a rank).
+ * negative arm in the diverging orange. Ranks use competition ranking (ties share a rank); the rank is read in the
+ * tooltip and by screen readers. Every bar carries its value, so there is no value axis: names right-aligned against
+ * 12 px bars with a 2 px rounded end, the value in strong ink after each bar.
  */
 import { useMemo, useState } from "react";
-import { ChartCanvas, axisText, textWidth, type TipSpec } from "./canvas";
+import { ChartCanvas, textWidth, type TipSpec } from "./canvas";
 import type { ValueFormatter } from "./format";
 import { seriesVar } from "./palette";
 import { linearScale, niceDomain } from "./scale";
@@ -56,7 +58,7 @@ export function RankedBars({
   highlight = null,
   ascending = false,
   diverging = false,
-  rowHeight = 22,
+  rowHeight = 24,
   width,
   onSelect,
   limit,
@@ -91,10 +93,10 @@ export function RankedBars({
   const values = [...shown.map((r) => r.value), ...references.map((r) => r.value)];
   const domainFor = (plot: number) =>
     niceDomain(values, { zero: true, count: Math.max(2, Math.min(5, Math.floor(plot / 70))) });
-  const labelW = Math.min(190, Math.max(60, ...shown.map((r) => textWidth(r.label, 12) + 28)));
-  const valueW = Math.max(44, ...shown.map((r) => textWidth(formatter.full(r.value), 12) + 10));
-  const top = references.length ? 14 + references.length * 13 : 8;
-  const height = top + shown.length * rowHeight + 22;
+  const labelW = Math.min(180, Math.max(56, ...shown.map((r) => textWidth(r.label, 11.5) + 12)));
+  const valueW = Math.max(44, ...shown.map((r) => textWidth(formatter.full(r.value), 11) + 12));
+  const top = references.length ? 14 + references.length * 13 : 2;
+  const height = top + shown.length * rowHeight + 4;
   const describe = (i: number) => {
     const r = shown[i]!;
     return `Rank ${r.rank} of ${ranked.length}: ${r.label}, ${formatter.full(r.value)}${unit ? ` ${unit}` : ""}.`;
@@ -112,30 +114,26 @@ export function RankedBars({
         orientation="vertical"
       >
         {(w) => {
-          const { domain, ticks } = domainFor(w - labelW - valueW);
+          const { domain } = domainFor(w - labelW - valueW);
           const x = linearScale(domain, [labelW, Math.max(labelW + 40, w - valueW)]);
           const zeroX = x(0);
+          const signed = shown.some((r) => r.value < 0);
+          const maxChars = Math.max(4, Math.floor((labelW - 10) / (11.5 * 0.56)));
           const marks = (
             <>
-              {ticks.map((t) => (
-                <g key={t}>
-                  <line
-                    x1={x(t)}
-                    x2={x(t)}
-                    y1={top - 4}
-                    y2={height - 18}
-                    stroke={t === 0 ? "var(--border-strong)" : "var(--chart-grid)"}
-                    strokeOpacity={t === 0 ? 1 : 0.55}
-                    shapeRendering="crispEdges"
-                  />
-                  <text x={x(t)} y={height - 6} textAnchor="middle" {...axisText}>
-                    {formatter.tick(t)}
-                  </text>
-                </g>
-              ))}
+              {signed ? (
+                <line
+                  x1={zeroX}
+                  x2={zeroX}
+                  y1={top - 2}
+                  y2={height - 2}
+                  stroke="var(--chart-baseline)"
+                  shapeRendering="crispEdges"
+                />
+              ) : null}
               {shown.map((r, i) => {
                 const yy = top + i * rowHeight;
-                const bh = Math.min(24, rowHeight - 8);
+                const bh = Math.min(12, rowHeight - 8);
                 const x1 = x(r.value);
                 const isHi = highlight === r.id;
                 const fill = diverging
@@ -143,7 +141,7 @@ export function RankedBars({
                     ? "var(--chart-2)"
                     : "var(--chart-1)"
                   : highlight && !isHi
-                    ? "var(--chart-muted-mark)"
+                    ? "var(--chart-base)"
                     : "var(--chart-1)";
                 const left = Math.min(zeroX, x1);
                 const bw = Math.abs(x1 - zeroX);
@@ -161,27 +159,23 @@ export function RankedBars({
                       y={yy}
                       width={w}
                       height={rowHeight}
+                      rx={4}
                       fill={active === i ? "var(--muted)" : "transparent"}
                     />
                     <text
-                      x={4}
+                      x={labelW - 8}
                       y={yy + rowHeight / 2}
                       dy="0.32em"
-                      fontSize={11}
-                      fill="var(--chart-axis)"
-                      className="tabular-nums"
-                    >
-                      {r.rank}
-                    </text>
-                    <text
-                      x={24}
-                      y={yy + rowHeight / 2}
-                      dy="0.32em"
-                      fontSize={12}
+                      textAnchor="end"
+                      fontSize={11.5}
                       fontWeight={isHi ? 600 : 400}
-                      fill="var(--chart-ink)"
+                      fill={
+                        isHi || !highlight
+                          ? "var(--chart-ink)"
+                          : "color-mix(in srgb, var(--chart-ink) 78%, var(--chart-surface))"
+                      }
                     >
-                      {truncate(r.label, Math.floor((labelW - 28) / 6.7))}
+                      {truncate(r.label, maxChars)}
                     </text>
                     {bw >= 0.5 ? (
                       <path
@@ -190,16 +184,13 @@ export function RankedBars({
                       />
                     ) : null}
                     <text
-                      x={r.value < 0 ? left - 5 : Math.max(x1, zeroX) + 5}
+                      x={r.value < 0 ? left - 6 : Math.max(x1, zeroX) + 6}
                       y={yy + rowHeight / 2}
                       dy="0.32em"
-                      fontSize={12}
-                      fontWeight={isHi ? 600 : 400}
+                      fontSize={11}
+                      fontWeight={600}
                       textAnchor={r.value < 0 ? "end" : "start"}
-                      fill="var(--chart-ink)"
-                      stroke="var(--chart-surface)"
-                      strokeWidth={3}
-                      paintOrder="stroke"
+                      fill={highlight && !isHi ? "var(--chart-axis)" : "var(--chart-ink)"}
                       className="tabular-nums"
                     >
                       {formatter.full(r.value)}
@@ -213,10 +204,11 @@ export function RankedBars({
                     x1={x(ref.value)}
                     x2={x(ref.value)}
                     y1={top - 6}
-                    y2={height - 18}
+                    y2={height - 2}
                     stroke="var(--chart-reference)"
-                    strokeWidth={1.25}
-                    strokeDasharray={ri === 0 ? undefined : "4 3"}
+                    strokeOpacity={0.55}
+                    strokeWidth={1}
+                    strokeDasharray={ri === 0 ? "4 4" : "2 3"}
                   />
                   <text
                     x={x(ref.value)}
@@ -271,9 +263,9 @@ export function RankedBars({
   );
 }
 
-/** A horizontal bar with a 4 px rounded data end and a square baseline end. */
+/** A horizontal bar with a 2 px rounded data end and a square baseline end. */
 function barPath(x: number, y: number, w: number, h: number, end: "left" | "right"): string {
-  const r = Math.min(4, w, h / 2);
+  const r = Math.min(2, w, h / 2);
   if (end === "right")
     return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
   return `M${x + w},${y}H${x + r}Q${x},${y} ${x},${y + r}V${y + h - r}Q${x},${y + h} ${x + r},${y + h}H${x + w}Z`;

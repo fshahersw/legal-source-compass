@@ -80,10 +80,10 @@ describe("theme props and content", () => {
   });
 
   it("rounds only the data end of bars and caps their thickness", () => {
-    expect(barProps().radius).toEqual([4, 4, 0, 0]);
-    expect(barProps({ horizontal: true }).radius).toEqual([0, 4, 4, 0]);
+    expect(barProps().radius).toEqual([2, 2, 0, 0]);
+    expect(barProps({ horizontal: true }).radius).toEqual([0, 2, 2, 0]);
     expect(barProps({ stacked: true }).radius).toBe(0);
-    expect(barProps({ stacked: true, top: true }).radius).toEqual([4, 4, 0, 0]);
+    expect(barProps({ stacked: true, top: true }).radius).toEqual([2, 2, 0, 0]);
     expect(barProps().maxBarSize).toBe(24);
   });
 
@@ -92,10 +92,10 @@ describe("theme props and content", () => {
     expect(y.ticks).toEqual([0, 10, 20, 30, 40, 50]);
     expect(y.domain).toEqual([0, 50]);
     expect(yValueAxis(niceAxis([0, 13]), tickText).ticks).toEqual([0, 5, 10, 15]);
-    expect(y.tick.fontSize).toBe(12);
+    expect(y.tick.fontSize).toBe(11);
   });
 
-  it("renders a tooltip where the value leads and missing values read Not recorded", () => {
+  it("renders a tooltip row as key, label and value, and missing values read Not recorded", () => {
     const out = html(
       createElement(ThemedTooltip, {
         active: true,
@@ -108,7 +108,7 @@ describe("theme props and content", () => {
       }),
     );
     expect(out).toContain("FY2025");
-    expect(out.indexOf("1,204 cases")).toBeLessThan(out.indexOf("Filed"));
+    expect(out.indexOf("Filed")).toBeLessThan(out.indexOf("1,204 cases"));
     expect(out).toContain("Not recorded");
     expect(html(createElement(ThemedTooltip, { active: false, payload: [] }))).toBe("");
     expect(tooltipProps({ cursor: "bar" }).cursor).toEqual({

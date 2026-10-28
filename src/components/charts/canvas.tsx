@@ -43,8 +43,8 @@ export function useMeasuredWidth<T extends HTMLElement>(): [
   return [ref, width];
 }
 
-/** Axis tick font size (px): the chart standard's muted 12 px ticks. */
-export const AXIS_FONT = 12;
+/** Axis tick font size (px): muted 11 px ticks, so the data, not the scale, carries the weight. */
+export const AXIS_FONT = 11;
 
 /** Rough rendered width of a label (Public Sans averages about 0.56 em per character); default size: axis ticks. */
 export function textWidth(text: string, fontSize = AXIS_FONT): number {
@@ -67,7 +67,28 @@ export type TooltipContent = {
   footer?: string | undefined;
 };
 
-/** Tooltip box: values lead, labels follow; series keyed by a short line in the series colour. */
+/**
+ * The tooltip box every chart shares: an inverted ink panel (page ink as the fill, page background as the text, so it
+ * reads as a layer above the plot in both themes), 7 px radius, a soft drop shadow. Muted text inside it uses the
+ * background colour at reduced opacity.
+ */
+export const TOOLTIP_BOX =
+  "pointer-events-none rounded-[7px] bg-foreground px-[9px] py-[7px] text-[11.5px] leading-4 text-background shadow-[0_6px_24px_rgba(0,0,0,0.2)]";
+/** Secondary text inside the tooltip box. */
+export const TOOLTIP_MUTED = "text-background/65";
+
+/** The series key in a tooltip row: a 8 px square in the series colour. */
+export function TooltipSwatch({ color }: { color: string }) {
+  return (
+    <span
+      aria-hidden
+      className="inline-block size-2 shrink-0 translate-y-[-0.5px] self-center rounded-[2px]"
+      style={{ background: color }}
+    />
+  );
+}
+
+/** Tooltip box: title, then one row per series (key square, label, value at the right edge). */
 export function ChartTooltip({
   content,
   x,
@@ -79,36 +100,34 @@ export function ChartTooltip({
   y: number;
   containerWidth: number;
 }) {
-  const boxWidth = 220;
+  const boxWidth = 240;
   const left = x + 14 + boxWidth > containerWidth ? Math.max(4, x - 14 - boxWidth) : x + 14;
   return (
     <div
       aria-hidden
       data-chart-tooltip=""
-      className="pointer-events-none absolute z-20 w-max min-w-32 max-w-[220px] rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs leading-4 text-popover-foreground shadow-md"
+      className={cn(TOOLTIP_BOX, "absolute z-20 w-max min-w-36 max-w-[240px]")}
       style={{ left, top: Math.max(0, y - 10) }}
     >
       <p className="font-semibold">{content.title}</p>
-      {content.subtitle ? <p className="text-muted-foreground">{content.subtitle}</p> : null}
+      {content.subtitle ? <p className={TOOLTIP_MUTED}>{content.subtitle}</p> : null}
       {content.rows.length ? (
         <ul className="mt-1 space-y-0.5">
           {content.rows.map((r) => (
-            <li key={r.key} className="flex items-baseline gap-1.5">
-              {r.color ? (
-                <span
-                  aria-hidden
-                  className="inline-block h-0.5 w-2.5 shrink-0 translate-y-[-2px] rounded-full"
-                  style={{ background: r.color }}
-                />
-              ) : null}
-              <span className="font-semibold tabular-nums">{r.value}</span>
-              <span className="min-w-0 truncate text-muted-foreground">{r.label}</span>
-              {r.note ? <span className="text-muted-foreground">{r.note}</span> : null}
+            <li key={r.key} className="flex items-baseline gap-2">
+              {r.color ? <TooltipSwatch color={r.color} /> : null}
+              {r.label ? (
+                <span className={cn("min-w-0 flex-1 truncate", TOOLTIP_MUTED)}>{r.label}</span>
+              ) : (
+                <span className="flex-1" />
+              )}
+              <span className="ml-auto shrink-0 font-semibold tabular-nums">{r.value}</span>
+              {r.note ? <span className={cn("shrink-0", TOOLTIP_MUTED)}>{r.note}</span> : null}
             </li>
           ))}
         </ul>
       ) : null}
-      {content.footer ? <p className="mt-1 text-muted-foreground">{content.footer}</p> : null}
+      {content.footer ? <p className={cn("mt-1", TOOLTIP_MUTED)}>{content.footer}</p> : null}
     </div>
   );
 }

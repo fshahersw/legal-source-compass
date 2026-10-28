@@ -17,8 +17,8 @@
  *
  * Standard (WORKER_RULES_UI, dataviz): hairline solid grid, muted 12 px ticks, nice ticks with compact units, a
  * crosshair on lines and per-mark hover on bars, tooltips where the value leads, legends above the plot and direct
- * labels for up to four series, labelled reference lines, thin marks (2 px lines, bars at most 24 px with a 4 px
- * rounded data end), categorical colours in fixed order from palette.ts.
+ * labels for up to four series, labelled reference lines, thin marks (2 px lines, bars at most 24 px with a 2 px
+ * rounded data end), categorical colours in fixed order from palette.ts; a single line carries a faint area to zero.
  */
 import { createElement, type CSSProperties } from "react";
 import { MAX_SERIES, slotColor } from "../palette";
@@ -36,7 +36,7 @@ export function seriesColor(index: number): string {
 /** The single-series accent (slot 1). */
 export const ACCENT = seriesColor(0);
 /** De-emphasised marks: context bars and lines beside the one that matters. */
-export const MUTED_MARK = "color-mix(in srgb, var(--muted-foreground) 40%, var(--surface))";
+export const MUTED_MARK = "var(--chart-base, light-dark(#b6bcc8, #566074))";
 /** A comparison series drawn as context (national total, median district). */
 export const CONTEXT_MARK = "var(--muted-foreground)";
 /** "Other" (a folded tail): neutral grey, never a categorical slot. */
@@ -126,7 +126,7 @@ export function yCategoryAxis(width: number, overrides: Record<string, unknown> 
   };
 }
 
-/** A 1.75 px line (1.25 px for context series), no dots unless the series is short, a ringed active dot. Gaps stay gaps. */
+/** A 2 px line (1.25 px for context series), no dots unless the series is short, a ringed active dot. Gaps stay gaps. */
 export function lineProps(
   color: string,
   options: {
@@ -138,19 +138,19 @@ export function lineProps(
   return {
     type: "linear" as const,
     stroke: color,
-    strokeWidth: options.muted ? 1.25 : 1.75,
+    strokeWidth: options.muted ? 1.25 : 2,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     ...(options.dashed ? { strokeDasharray: "4 3" } : {}),
     dot: options.dots ? { r: 2.5, fill: color, stroke: "var(--surface)", strokeWidth: 1 } : false,
-    activeDot: { r: 4, fill: color, stroke: "var(--surface)", strokeWidth: 2 },
+    activeDot: { r: 4, fill: color, stroke: "var(--surface)", strokeWidth: 1.5 },
     isAnimationActive: false,
     connectNulls: false,
   };
 }
 
 /**
- * Bar marks: at most 24 px thick, 4 px rounded data end, square at the baseline. In a stack only the top segment is
+ * Bar marks: at most 24 px thick, 2 px rounded data end, square at the baseline. In a stack only the top segment is
  * rounded and a 1 px surface stroke on each segment leaves the 2 px gap between neighbours.
  */
 export function barProps(
@@ -165,8 +165,8 @@ export function barProps(
   const round = !options.stacked || options.top;
   const radius = round
     ? options.horizontal
-      ? ([0, 4, 4, 0] as [number, number, number, number])
-      : ([4, 4, 0, 0] as [number, number, number, number])
+      ? ([0, 2, 2, 0] as [number, number, number, number])
+      : ([2, 2, 0, 0] as [number, number, number, number])
     : 0;
   return {
     fill: options.color ?? ACCENT,
@@ -255,7 +255,7 @@ export function tooltipProps(
         ? (false as const)
         : cursor === "bar"
           ? { fill: "var(--muted)", fillOpacity: 0.7 }
-          : { stroke: "var(--border-strong)", strokeWidth: 1 },
+          : { stroke: "var(--muted-foreground)", strokeOpacity: 0.6, strokeWidth: 1 },
     isAnimationActive: false,
     wrapperStyle: { outline: "none", zIndex: 20 } as CSSProperties,
   };
@@ -272,7 +272,9 @@ export function legendProps(mark: "line" | "swatch" = "line") {
 
 /** Right margin that leaves room for EndLabels text ("Filed 37,443"). */
 export function endLabelMargin(labels: readonly string[], fontSize = TICK_FONT): number {
-  return Math.ceil(Math.min(170, Math.max(24, ...labels.map((l) => labelWidth(l, fontSize))) + 14));
+  return Math.ceil(
+    Math.min(176, Math.max(24, ...labels.map((l) => labelWidth(l, fontSize) * 1.06)) + 18),
+  );
 }
 
 /** A labelled benchmark reference ("Median district 7.9") for RankBars, TrendLines and TrendColumns; none when the

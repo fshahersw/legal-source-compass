@@ -7,6 +7,7 @@ import { NOT_RECORDED } from "../format";
 import { dodgeLabels } from "../scale";
 import { TICK_FONT } from "./axis";
 import { cn } from "@/lib/utils";
+import { TOOLTIP_BOX, TOOLTIP_MUTED, TooltipSwatch } from "../canvas";
 
 type TooltipEntry = {
   name?: string | number;
@@ -67,48 +68,40 @@ export function ThemedTooltip({
   const title = labelFormat ? labelFormat(label, row) : String(label ?? "");
   const totalText = total?.(row) ?? null;
   return (
-    <div
-      data-chart-tooltip=""
-      className="pointer-events-none min-w-32 max-w-[260px] rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs leading-4 text-popover-foreground shadow-md"
-    >
+    <div data-chart-tooltip="" className={cn(TOOLTIP_BOX, "min-w-36 max-w-[260px]")}>
       {title ? <p className="font-semibold">{title}</p> : null}
       <ul className="mt-1 space-y-0.5">
         {rows.map((e) => {
           const key = String(e.dataKey ?? e.name ?? "");
           const v = typeof e.value === "number" && Number.isFinite(e.value) ? e.value : null;
           const color = e.color ?? e.stroke ?? e.fill;
+          const named = !(hideKey && rows.length === 1);
           return (
-            <li key={key} className="flex items-baseline gap-1.5">
-              {!hideKey && color ? (
-                <span
-                  aria-hidden
-                  className="inline-block h-0.5 w-2.5 shrink-0 translate-y-[-3px] rounded-full"
-                  style={{ background: color }}
-                />
+            <li key={key} className="flex items-baseline gap-2">
+              {!hideKey && color ? <TooltipSwatch color={color} /> : null}
+              {named ? (
+                <span className={cn("min-w-0 flex-1 truncate", TOOLTIP_MUTED)}>
+                  {String(e.name ?? key)}
+                </span>
               ) : null}
-              <span className="font-semibold tabular-nums">
+              <span className="ml-auto shrink-0 font-semibold tabular-nums">
                 {v === null
                   ? NOT_RECORDED
                   : valueFormat
                     ? valueFormat(v, key, row ?? {})
                     : v.toLocaleString("en-US")}
               </span>
-              {hideKey && rows.length === 1 ? null : (
-                <span className="min-w-0 truncate text-muted-foreground">
-                  {String(e.name ?? key)}
-                </span>
-              )}
             </li>
           );
         })}
       </ul>
       {totalText ? (
-        <p className="mt-1 border-t border-border/70 pt-1">
-          <span className="font-semibold tabular-nums">{totalText}</span>{" "}
-          <span className="text-muted-foreground">total</span>
+        <p className="mt-1 flex items-baseline gap-2 border-t border-background/20 pt-1">
+          <span className={cn("flex-1", TOOLTIP_MUTED)}>Total</span>
+          <span className="font-semibold tabular-nums">{totalText}</span>
         </p>
       ) : null}
-      {footer ? <div className="mt-1 text-muted-foreground">{footer(row)}</div> : null}
+      {footer ? <div className={cn("mt-1", TOOLTIP_MUTED)}>{footer(row)}</div> : null}
     </div>
   );
 }
@@ -143,33 +136,33 @@ export function SeriesLegend({
     <ul
       aria-label="Legend"
       className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-1 text-xs leading-4 text-muted-foreground",
+        "flex flex-wrap items-center gap-x-3.5 gap-y-1 text-[11.5px] leading-4 text-muted-foreground",
         className,
       )}
     >
       {items.map((it) => (
         <li key={it.id} className="flex items-center gap-1.5">
           {mark === "line" ? (
-            <svg width="16" height="6" aria-hidden className="shrink-0">
+            <svg width="13" height="6" aria-hidden className="shrink-0">
               <line
-                x1="1"
+                x1="0.5"
                 y1="3"
-                x2="15"
+                x2="12.5"
                 y2="3"
                 stroke={it.color}
                 strokeWidth="2"
                 strokeLinecap="round"
-                {...(it.dashed ? { strokeDasharray: "3 3" } : {})}
+                {...(it.dashed ? { strokeDasharray: "3 2.5" } : {})}
               />
             </svg>
           ) : (
             <span
               aria-hidden
-              className="inline-block size-2.5 shrink-0 rounded-[3px]"
+              className="inline-block size-[9px] shrink-0 rounded-[2px]"
               style={{ background: it.color }}
             />
           )}
-          <span className="text-foreground">{it.label}</span>
+          <span className="text-foreground/80">{it.label}</span>
           {it.note ? <span className="tabular-nums">{it.note}</span> : null}
         </li>
       ))}
@@ -213,7 +206,7 @@ type FormattedItem = {
   /** The Line element: its props carry dataKey, name and hide. */
   item?: {
     type?: { displayName?: string };
-    props?: { dataKey?: unknown; name?: unknown; hide?: boolean };
+    props?: { dataKey?: unknown; name?: unknown; hide?: boolean; stroke?: unknown };
   };
   /** Computed geometry. */
   props?: {
@@ -266,6 +259,7 @@ export function EndLabels({
           return {
             key: String(g.item?.props?.dataKey ?? ""),
             name: String(g.item?.props?.name ?? g.item?.props?.dataKey ?? ""),
+            color: typeof g.item?.props?.stroke === "string" ? g.item.props.stroke : null,
             x: p.x ?? 0,
             y: p.y,
             value: p.value,
@@ -291,10 +285,20 @@ export function EndLabels({
           : format(e.value);
         return (
           <g key={e.key}>
+            {e.color ? (
+              <circle
+                cx={e.x}
+                cy={e.y}
+                r={3.5}
+                fill={e.color}
+                stroke="var(--surface)"
+                strokeWidth={1.5}
+              />
+            ) : null}
             {Math.abs(ys[i]! - e.y) > 3 ? (
               <line
-                x1={e.x + 3}
-                x2={e.x + 7}
+                x1={e.x + 5}
+                x2={e.x + 8}
                 y1={e.y}
                 y2={ys[i]}
                 stroke="var(--border-strong)"
@@ -302,10 +306,11 @@ export function EndLabels({
               />
             ) : null}
             <text
-              x={e.x + 8}
+              x={e.x + 10}
               y={ys[i]}
               dy="0.32em"
               fontSize={TICK_FONT}
+              fontWeight={600}
               fill="var(--foreground)"
               className="tabular-nums"
               stroke="var(--surface)"

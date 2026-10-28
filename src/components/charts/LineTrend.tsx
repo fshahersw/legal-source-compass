@@ -2,6 +2,7 @@
  * Multi-series line chart over periods. Gaps stay gaps (no line across a period the source does not record), partial
  * periods are dashed, a published margin of error is a light band, reporting changes are marked with a labelled
  * vertical rule. A crosshair snaps to the nearest period and lists every series there; the arrow keys do the same.
+ * A single series on a zero baseline carries a faint area down to zero; each line ends in a ringed dot.
  */
 import { useMemo, useState } from "react";
 import {
@@ -55,6 +56,8 @@ export type LineTrendProps = {
   compact?: boolean | undefined;
   /** What the shaded band is ("90% margin of error, as published"). */
   bandLabel?: string | undefined;
+  /** Faint area under the line down to zero (default: one series on a zero baseline, not compact). */
+  area?: boolean | undefined;
 };
 
 const MARGIN = { top: 16, bottom: 22 };
@@ -75,6 +78,7 @@ export function LineTrend({
   directLabels,
   compact = false,
   bandLabel = "margin of error, as published",
+  area,
 }: LineTrendProps) {
   const [active, setActive] = useState<number | null>(null);
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
@@ -125,7 +129,10 @@ export function LineTrend({
           return series.length === 1 ? v : `${truncate(series[si]!.label, 18)} ${v}`;
         };
         const labelRoom = wantLabels
-          ? Math.min(170, Math.max(...series.map((_, si) => textWidth(endText(si), 12))) + 16)
+          ? Math.min(
+              176,
+              Math.max(...series.map((_, si) => textWidth(endText(si), 11.5) * 1.06)) + 18,
+            )
           : 8;
         const plotRight = w - labelRoom;
         const xs = pointPositions(axis.keys.length, [leftMargin, plotRight]);
@@ -167,8 +174,8 @@ export function LineTrend({
                   x2={plotRight}
                   y1={y(t)}
                   y2={y(t)}
-                  stroke="var(--chart-grid)"
-                  strokeOpacity={0.55}
+                  stroke={t === domain[0] ? "var(--chart-baseline)" : "var(--chart-grid)"}
+                  strokeOpacity={t === domain[0] ? 1 : 0.55}
                   strokeWidth={1}
                   shapeRendering="crispEdges"
                 />
@@ -243,6 +250,24 @@ export function LineTrend({
                 );
               }),
             )}
+            {/* faint area under a single line, to the zero baseline */}
+            {(area ?? (series.length === 1 && !compact)) && domain[0] === 0 && series.length === 1
+              ? lineSegments(aligned[0]!).map((seg, gi) =>
+                  seg.indices.length > 1 ? (
+                    <polygon
+                      key={`area-${gi}`}
+                      points={[
+                        `${xs[seg.indices[0]!]},${y(0)}`,
+                        ...seg.indices.map((i) => `${xs[i]},${y(aligned[0]![i]!.value as number)}`),
+                        `${xs[seg.indices[seg.indices.length - 1]!]},${y(0)}`,
+                      ].join(" ")}
+                      fill={color(0)}
+                      fillOpacity={0.08}
+                      stroke="none"
+                    />
+                  ) : null,
+                )
+              : null}
             {/* lines */}
             {series.map((s, si) => {
               const a = aligned[si]!;
@@ -258,7 +283,7 @@ export function LineTrend({
                         .join(" ")}
                       fill="none"
                       stroke={c}
-                      strokeWidth={emphasis ? 1.75 : 1.25}
+                      strokeWidth={emphasis ? 2 : 1.25}
                       strokeLinejoin="round"
                       strokeLinecap="round"
                       {...(seg.dashed ? { strokeDasharray: "4 4" } : {})}
@@ -282,7 +307,7 @@ export function LineTrend({
                       r={3.5}
                       fill={c}
                       stroke="var(--chart-surface)"
-                      strokeWidth={2}
+                      strokeWidth={1.5}
                     />
                   ) : null}
                 </g>
@@ -297,7 +322,8 @@ export function LineTrend({
                       x={plotRight + 8}
                       y={endYs[si]}
                       dy="0.32em"
-                      fontSize={12}
+                      fontSize={11.5}
+                      fontWeight={600}
                       fill="var(--chart-ink)"
                       className="tabular-nums"
                     >
@@ -314,7 +340,8 @@ export function LineTrend({
                   x2={xs[active]}
                   y1={MARGIN.top}
                   y2={height - MARGIN.bottom}
-                  stroke="var(--border-strong)"
+                  stroke="var(--chart-axis)"
+                  strokeOpacity={0.6}
                   strokeWidth={1}
                 />
                 {series.map((s, si) => {
@@ -328,7 +355,7 @@ export function LineTrend({
                       r={4}
                       fill={color(si)}
                       stroke="var(--chart-surface)"
-                      strokeWidth={2}
+                      strokeWidth={1.5}
                     />
                   );
                 })}
