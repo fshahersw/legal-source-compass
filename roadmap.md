@@ -1,7 +1,7 @@
 # Legal Source Atlas — roadmap
 
 ## Comprehensive platform scan (2026-10-28)
-- [ ] Read-only audit: pages and workflows, visual cohesion, accessibility, chart/data integrity, AI/server security, automated tests; save evidence and prioritized findings without app changes.
+- [x] Read-only audit: pages and workflows, visual cohesion, accessibility, chart/data integrity, AI/server security, automated tests; evidence and prioritized findings saved without application changes; hosted deployment and exhaustive legal/security certification remain unverified.
 
 - [x] First version: seven views, search/filters, drawer, local reviews/bookmarks, CSV/JSON exports
 - [x] Real V2.2A adapter + meta-claim cross-check
