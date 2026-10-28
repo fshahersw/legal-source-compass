@@ -13,7 +13,7 @@
 - [x] S3.2 Law structure: U.S. Code title icicle (exact partition, click opens the container) and CFR largest-parts chart; state codes load their tree lazily, so a full-structure view needs a totals endpoint first
 - [x] S3.3 Court/agency hierarchy contrast: court tiers already AA in both themes; agency components fit narrow columns; official org-chart links for 11 agencies bound by exact Federal Register id, with the publisher's printed date (DHS, State, SEC) or "undated"
 - [ ] S4.1 Exact-ID imagery: section backdrops with AA contrast; courthouse/capitol/judge/agency seal coverage check
-- [ ] S4.2 Enforcement penalty distributions: log bins, raw-record medians, agencies kept separate
+- [x] S4.2 Enforcement penalty distributions: EPA log-scale histogram by case type with record medians (published ≥$100K cases, national cases merged once); DOJ share of releases by size of largest stated figure per year (shares, since archive coverage jumps)
 - [ ] S5 Typography/padding check at 1039×635 and 390×844; vendor names only in info popovers
 - [ ] S6 Verification: targeted tests, typecheck, browser checks (/courts, /litigation, /places/TX, /enforcement, /agencies/271) light+dark, both viewports
 
