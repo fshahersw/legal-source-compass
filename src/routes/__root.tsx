@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { NavigatorPanel } from "@/components/navigator/NavigatorPanel";
 import { SourceViewer } from "@/components/sourceViewer/SourceViewer";
 import { AtlasProvider } from "@/lib/atlas/store";
 import { CorpusProvider } from "@/lib/corpus/store";
@@ -156,6 +157,7 @@ function RootComponent() {
             <Outlet />
             <SourceViewer />
             <AssistantPanel />
+            <NavigatorPanel />
             <Toaster position="bottom-right" />
           </CorpusProvider>
         </AtlasProvider>

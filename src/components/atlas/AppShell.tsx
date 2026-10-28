@@ -1,6 +1,7 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
+  Bot,
   LogIn,
   LogOut,
   Menu,
@@ -14,6 +15,7 @@ import {
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useCorpusAccessMode } from "@/components/auth/CorpusAccessGate";
 import { openAssistant } from "@/components/assistant/askAssistant";
+import { openNavigator } from "@/components/navigator/navigatorEvents";
 import { signOutEverywhere } from "@/lib/auth/session";
 import { useSessionUser } from "@/lib/auth/useSession";
 import { useAtlas } from "@/lib/atlas/store";
@@ -231,6 +233,23 @@ function AskAiButton() {
   );
 }
 
+/** Opens the navigator: the agent that works the site (opens pages, reads charts, uses controls) for a task. */
+function NavigatorButton() {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => openNavigator()}
+      aria-label="Navigator: give the agent a task to do in the site"
+      title="Navigator: give the agent a task to do in the site"
+      className="h-9 shrink-0 gap-1.5 px-2.5 md:h-9"
+    >
+      <Bot className="size-4 text-brand" aria-hidden />
+      <span className="hidden sm:inline">Agent</span>
+    </Button>
+  );
+}
+
 function Brand({ collapsed }: { collapsed: boolean }) {
   return (
     <Link
@@ -381,7 +400,12 @@ export function AppShell({
             </>
           }
           search={<SearchForm className="hidden w-56 shrink-0 md:flex lg:w-72" />}
-          askAi={<AskAiButton />}
+          askAi={
+            <>
+              <NavigatorButton />
+              <AskAiButton />
+            </>
+          }
           trailing={
             <>
               <Link

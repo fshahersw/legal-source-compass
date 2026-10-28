@@ -1111,3 +1111,30 @@ export function composeBreadcrumbs(
   if (last) deduped[deduped.length - 1] = { label: last.label };
   return deduped;
 }
+
+// ------------------------------------------------------------------------------------------------ site directory
+
+export type DirectoryEntry = {
+  section: string;
+  label: string;
+  path: string;
+  description: string;
+};
+
+/** Every section and tab of the site as plain entries (label, path with its query, description), for the navigator. */
+export function siteDirectory(): DirectoryEntry[] {
+  const out: DirectoryEntry[] = [];
+  for (const s of ALL_SECTIONS)
+    out.push({ section: s.label, label: s.label, path: s.to, description: s.description });
+  for (const spec of SECTIONS) {
+    const section = SECTION_BY_ID.get(spec.id)?.label ?? spec.id;
+    for (const t of spec.tabs) {
+      const query = t.search
+        ? `?${new URLSearchParams(t.search as Record<string, string>).toString()}`
+        : "";
+      out.push({ section, label: t.label, path: `${t.to}${query}`, description: t.description });
+    }
+  }
+  const seen = new Set<string>();
+  return out.filter((e) => (seen.has(e.path) ? false : (seen.add(e.path), true)));
+}

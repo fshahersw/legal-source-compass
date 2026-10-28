@@ -184,6 +184,9 @@ function lastUserBlocks(req: AssistantRequest): Block[] {
 
 type StreamResult = { blocks: Block[]; stopReason: string | null };
 
+export type ModelBlock = Block;
+export type ModelTurn = Turn;
+
 async function streamTurn(
   turns: Turn[],
   round: number,
@@ -191,18 +194,45 @@ async function streamTurn(
   signal: AbortSignal,
   today: string,
 ): Promise<StreamResult> {
+  return await streamModelTurn({
+    turns,
+    round,
+    emit,
+    signal,
+    system: systemPrompt(today),
+    tools: availableTools(),
+    allowTools: round < MAX_ROUNDS,
+  });
+}
+
+/**
+ * One streamed model turn with the given system prompt and tools (the last tool and the system prompt are cached).
+ * Text deltas go out as `delta` events; the finished blocks and stop reason come back. Shared by the research
+ * assistant and the in-app navigator.
+ */
+export async function streamModelTurn(opts: {
+  turns: Turn[];
+  round: number;
+  emit: (e: { type: "delta"; round: number; text: string }) => void;
+  signal: AbortSignal;
+  system: string;
+  tools: { name: string; description: string; input_schema: Record<string, unknown> }[];
+  allowTools: boolean;
+  maxTokens?: number;
+}): Promise<StreamResult> {
+  const { turns, round, emit, signal } = opts;
   const config = modelConfig();
   if (!config) throw new AssistantUnavailable("The assistant is not configured on this server.");
-  const tools = availableTools().map((t, i, all) =>
+  const tools = opts.tools.map((t, i, all) =>
     i === all.length - 1 ? { ...t, cache_control: { type: "ephemeral" } } : t,
   );
   const body = {
     model: config.model,
-    max_tokens: 4096,
+    max_tokens: opts.maxTokens ?? 4096,
     stream: true,
-    system: [{ type: "text", text: systemPrompt(today), cache_control: { type: "ephemeral" } }],
+    system: [{ type: "text", text: opts.system, cache_control: { type: "ephemeral" } }],
     tools,
-    tool_choice: round >= MAX_ROUNDS ? { type: "none" } : { type: "auto" },
+    tool_choice: opts.allowTools ? { type: "auto" } : { type: "none" },
     messages: turns,
   };
   let res: Response | null = null;
