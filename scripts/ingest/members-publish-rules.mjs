@@ -2,8 +2,10 @@
 //
 // Published exactly as the court record shows it (whitespace collapsed only): docket-entry descriptions (clipped to 500 characters), member-case
 // captions, party names and extra_info text, counsel name + firm + role.
-// Never published: anything sealed, restricted, in camera, ex parte or redacted; entries that carry a document flagged is_sealed=true;
-// dockets blocked at the source; counsel flagged "Attorney in sealed group"; any contact field (address block, phone, fax, email).
+// Never published: entries that carry a document flagged is_sealed=true; dockets blocked at the source; counsel flagged "Attorney in sealed
+// group"; any contact field (address block, phone, fax, email). The keyword pattern below (EXCLUDE_RE) is the earlier display rule; under the
+// owner decision of 2026-10-27 it no longer withholds party names, notes or counsel (partyNameHold / partyNoteShown / counselNameShown) and is
+// kept only for the projectors that have not yet moved to that decision.
 import { createHash } from 'node:crypto';
 
 export const sha256 = x => createHash('sha256').update(x).digest('hex');
@@ -12,8 +14,21 @@ export const sha256 = x => createHash('sha256').update(x).digest('hex');
 export const EXCLUDE_RE = /seal|restricted|in[\s-]*camera|ex[\s-]*parte|redact/i;
 export const excluded = s => EXCLUDE_RE.test(String(s ?? ''));
 // A published free-text value must not carry a contact field.
-export const CONTACT_RE = /[\w.+-]+@[\w-]+\.[\w.-]+|\(\d{3}\)\s?\d{3}[-.\s]?\d{4}|\b\d{3}[-.]\d{3}[-.]\d{4}\b/;
+// Email, US phone numbers (also space-separated dial-in form) and hearing access data (meeting id, passcode, access code): review 2026-10-27.
+export const CONTACT_RE = /[\w.+-]+@[\w-]+\.[\w.-]+|\(\d{3}\)\s?\d{3}[-.\s]?\d{4}|\b\d{3}[-.]\d{3}[-.]\d{4}\b|\+\s?1?[\s.]?\d{3}[\s.]\d{3}[\s.]\d{4}\b|\b\d{3}\s\d{3}\s\d{4}\b|\b(?:passcode|pass code|meeting id|access code)\b/i;
 export const hasContact = s => CONTACT_RE.test(String(s ?? ''));
+
+// Parties and counsel (sw_matter_parties_v1) under the owner decision of 2026-10-27 ("dont withhold any data. If its accurate and valuable,
+// USE IT"): a name or court-record note is held back only for a contact field (owner decision 2026-10-03, no contact fields). Sealing words in
+// a name ("Sealed Air", "Royal Adhesives and Sealants", a party captioned "SEALED ... APPLICATION") are what the court record publishes and
+// are shown. Counsel the court record itself flags "Attorney in sealed group" (CourtListener role 3) stay omitted: that is the source's
+// own seal flag, not a keyword.
+/** Why a party name is not shown: 'not_recorded' (empty), 'contact_or_access_data', or null (shown as published). */
+export const partyNameHold = raw => (!ws(raw) ? 'not_recorded' : hasContact(raw) ? 'contact_or_access_data' : null);
+/** A court-record note (extra_info) is shown unless it carries a contact field. */
+export const partyNoteShown = raw => !!ws(raw) && !hasContact(raw);
+/** A counsel name is shown unless empty or carrying a contact field. */
+export const counselNameShown = raw => !!ws(raw) && !hasContact(raw);
 export const ws = s => String(s ?? '').replace(/\s+/g, ' ').trim();
 
 // CourtListener people_db.models.Role (cl/people_db/models.py, read 2026-10-03)

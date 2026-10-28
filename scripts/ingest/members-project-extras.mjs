@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { rest, rpc } from './members-pgrest.mjs';
 import { docketNumberFromKey, courtOfKey } from './members-registry-lib.mjs';
-import { sha256, canon, excluded, hasContact, ws, clipDescription, ATTORNEY_ROLE, ROLE_SEALED, ROLE_TERMINATED, firmFromLines, entryOrdinal, partyOrdinal } from './members-publish-rules.mjs';
+import { sha256, canon, excluded, hasContact, ws, clipDescription, ATTORNEY_ROLE, ROLE_SEALED, ROLE_TERMINATED, firmFromLines, entryOrdinal, partyOrdinal, partyNameHold, partyNoteShown, counselNameShown } from './members-publish-rules.mjs';
 import { makeEntryRecord } from './members-entry-record.mjs';
 import { beforeImagePayload, mergeProjectionMetadata, mergeProjectionRows } from './members-projection-metadata.mjs';
 
@@ -138,10 +138,11 @@ function partyRecords(partyRows, attorneyMap) {
       const types = [...new Set(pts.map(pt => ws(pt.name)).filter(Boolean))];
       const extraRaw = [...new Set(pts.map(pt => ws(pt.extra_info)).filter(Boolean))].join(' | ');
       const nameRaw = ws(d.name);
-      const nameWithheld = excluded(nameRaw) || hasContact(nameRaw) || !nameRaw;
-      const extraWithheld = !!extraRaw && (excluded(extraRaw) || hasContact(extraRaw));
-      const name = nameWithheld ? null : nameRaw;
-      const extra = extraRaw && !extraWithheld ? extraRaw : null;
+      // Owner decision 2026-10-27: names and notes are shown as the court record publishes them; only a contact field is withheld.
+      const nameHold = partyNameHold(nameRaw);
+      const nameWithheld = nameHold === 'contact_or_access_data';
+      const name = nameHold ? null : nameRaw;
+      const extra = partyNoteShown(extraRaw) ? extraRaw : null;
       const dateTerminated = pts.map(pt => pt.date_terminated).find(Boolean) ?? null;
       // counsel: this party's attorney associations on this docket, one entry per attorney
       const byAtty = new Map();
@@ -158,23 +159,23 @@ function partyRecords(partyRows, attorneyMap) {
         const codes = [...e.codes].sort((x, y) => x - y);
         if (!a) { unresolved++; counsel.push({ native_attorney_id: attyId, name: null, firm: null, roles: codes.map(c => ATTORNEY_ROLE[c] ?? `Role ${c}`), role_codes: codes, terminated: codes.some(c => ROLE_TERMINATED.has(c)), note: 'attorney record not collected yet' }); continue; }
         const nm = ws(a.data.name);
-        const nmOk = nm && !excluded(nm) && !hasContact(nm);
+        const nmOk = counselNameShown(nm);
         const firm = nmOk ? firmFromLines(nm, a.data.contact_lines) : null;
-        counsel.push({ native_attorney_id: attyId, name: nmOk ? nm : null, firm: firm && !excluded(firm) ? firm : null, roles: codes.map(c => ATTORNEY_ROLE[c] ?? `Role ${c}`), role_codes: codes, terminated: codes.some(c => ROLE_TERMINATED.has(c)) });
+        counsel.push({ native_attorney_id: attyId, name: nmOk ? nm : null, firm: firm ?? null, roles: codes.map(c => ATTORNEY_ROLE[c] ?? `Role ${c}`), role_codes: codes, terminated: codes.some(c => ROLE_TERMINATED.has(c)) });
       }
       counsel.sort((x, y) => (y.role_codes.includes(2) - x.role_codes.includes(2)) || String(x.name ?? '\uffff').localeCompare(String(y.name ?? '\uffff')) || x.native_attorney_id.localeCompare(y.native_attorney_id));
       ctx.stats.parties.projected++; if (nameWithheld) ctx.stats.parties.name_withheld++;
       ctx.stats.parties.counsel_links += counsel.length; ctx.stats.parties.counsel_sealed_omitted += sealedOmitted; ctx.stats.parties.counsel_unresolved += unresolved;
       const id = `sw-party:courtlistener:${clDocketId}:${row.native_id}`;
       const typeLabel = types.join(' / ') || 'Party';
-      const title = `${name ?? 'Name withheld'} \u2014 ${typeLabel}`;
+      const title = `${name ?? (nameWithheld ? 'Name withheld' : 'Name not recorded')} \u2014 ${typeLabel}`;
       const subtitle = `${ctx.docket_number} (${ctx.court_id}) \u00b7 MDL ${ctx.mdl}`;
       const firms = [...new Set(counsel.map(c => c.firm).filter(Boolean))];
       const cells = { mdl: String(ctx.mdl), docket_key: ctx.docket_key, docket_number: ctx.docket_number, court_id: ctx.court_id, provider: 'courtlistener', native_party_id: String(row.native_id), native_docket_id: clDocketId,
         party_name: name, party_types: typeLabel, extra_info: extra, date_terminated: dateTerminated, name_withheld: nameWithheld, counsel_count: counsel.length, lead_counsel_count: counsel.filter(c => c.role_codes.includes(2)).length, counsel_sealed_omitted: sealedOmitted,
         kind: 'party', name };
       const links = [{ url: clDocketUrl(clDocketId), label: 'CourtListener docket' }, { url: masterLink(ctx), label: 'Master docket in the matter registry' }, { url: matterLink(ctx), label: 'Matter' }];
-      const facts = [['MDL', String(ctx.mdl)], ['Docket', `${ctx.docket_number} (${ctx.court_id})`], ['Party', name ?? 'Withheld (sealed, restricted or redacted in the court record)'], ['Party type', typeLabel], ...(extra ? [['Court-record note', extra]] : []), ...(dateTerminated ? [['Terminated', dateTerminated]] : []), ['Counsel of record', String(counsel.length)], ['Native party id', String(row.native_id)]];
+      const facts = [['MDL', String(ctx.mdl)], ['Docket', `${ctx.docket_number} (${ctx.court_id})`], ['Party', name ?? (nameWithheld ? 'Withheld (the name carries contact data)' : 'Not recorded')], ['Party type', typeLabel], ...(extra ? [['Court-record note', extra]] : []), ...(dateTerminated ? [['Terminated', dateTerminated]] : []), ['Counsel of record', String(counsel.length)], ['Native party id', String(row.native_id)]];
       const sections = counsel.length ? [{ heading: 'Counsel', header: ['Name', 'Firm', 'Role'], rows: counsel.map(c => [c.name ?? 'Not recorded', c.firm ?? '', c.roles.join('; ')]) }] : [];
       const rec = {
         dataset: DS_PARTIES, id, category: 'sw_matter_party', state: null, county_geoids: [], title, source_url: clDocketUrl(clDocketId), ordinal: partyOrdinal(ctx.mdl, row.native_id),
@@ -182,7 +183,7 @@ function partyRecords(partyRows, attorneyMap) {
         detail: { id, title, subtitle, facts, links, sections,
           registry: { schema: 'sw-matter-registry/1', mdl: String(ctx.mdl), docket_key: ctx.docket_key, native_case_ids: [{ provider: 'courtlistener', source_system: 'courtlistener', id: clDocketId }], party: { provider: 'courtlistener', native_party_id: String(row.native_id), name, name_withheld: nameWithheld, party_types: types, extra_info: extra, date_terminated: dateTerminated }, counsel, counsel_sealed_omitted: sealedOmitted, counsel_unresolved: unresolved },
           provenance: { source_system: 'courtlistener', source_entity_type: 'parties', source_native_id: String(row.native_id), source_record_sha256: row.payload_sha256, counsel_record_sha256: sha256(canon(counsel.map(c => [c.native_attorney_id, attorneyMap.get(c.native_attorney_id)?.payload_sha256 ?? null]))), retrieved_at: row.retrieved_at, run_ids: [run], projection_schema: SCHEMA },
-          qualification: 'One party on a master docket and its counsel, as the court record shows them (CourtListener parties and attorneys). Counsel is name, firm and role only; addresses, phones, faxes and emails are not published. Parties or counsel that are sealed, restricted or redacted in the record are withheld; counsel flagged "Attorney in sealed group" are omitted. Not legal advice.' },
+          qualification: 'One party on a master docket and its counsel, as the court record shows them (CourtListener parties and attorneys). Names are shown as the court record publishes them. Counsel is name, firm and role only; addresses, phones, faxes and emails are not published. Counsel the court record flags "Attorney in sealed group" are omitted. Not legal advice.' },
         text: [name ?? '', typeLabel, extra ?? '', ...counsel.map(c => `${c.name ?? ''} ${c.firm ?? ''}`), ctx.docket_number, `MDL ${ctx.mdl}`].join(' ').replace(/\s+/g, ' ').trim(),
         filters: { _listing: 'true', native_id: String(row.native_id), mdl: String(ctx.mdl), docket_key: ctx.docket_key, native_docket_id: clDocketId, provider: 'courtlistener', kind: 'party', party_type: types.length ? types : ['Party'], has_counsel: counsel.length ? 'true' : 'false', name_withheld: nameWithheld ? 'true' : 'false', counsel_native_id: counsel.map(c => c.native_attorney_id), counsel_firm: firms },
       };
@@ -340,7 +341,7 @@ if (only === 'all' || only === 'parties') {
   const metadata = {
     grain: 'One party on a master docket with its counsel of record (CourtListener parties and attorneys)', aliases: [DS_PARTIES, 'sw-matter-parties'], source_system: 'sw-matter-registry', schema_version: SCHEMA, source_runs: [run],
     qualification: 'Parties and counsel of the registry master dockets as the court record shows them. Counsel is name, firm and role only. Collection is quota-bound, so a docket can be partial (see the matter registry party coverage). Not legal advice.',
-    privacy_policy: 'Show as published (owner decision 2026-10-03): party names are published as the court record shows them unless sealed, restricted, in camera, ex parte or redacted; counsel name + firm + role only; no addresses, phones, faxes or emails; counsel flagged "Attorney in sealed group" omitted.',
+    privacy_policy: 'Show as published (owner decisions 2026-10-03 and 2026-10-27): party names and court-record notes are published as the court record shows them, held back only when they carry a contact field; counsel name + firm + role only; no addresses, phones, faxes or emails; counsel the court record flags "Attorney in sealed group" (its own seal flag) omitted.',
     listing: { columns: [{ key: 'party_name', label: 'Party' }, { key: 'party_types', label: 'Type' }, { key: 'counsel_count', label: 'Counsel' }, { key: 'docket_number', label: 'Docket' }, { key: 'mdl', label: 'MDL' }],
       filters: [{ name: 'mdl', type: 'select', label: 'MDL', options: opt(byMdl, v => `MDL ${v}`), placeholder: 'All MDLs' }, { name: 'party_type', type: 'select', label: 'Party type', options: opt(types), placeholder: 'All types' }, { name: 'has_counsel', type: 'select', label: 'Has counsel', options: [{ value: 'true', label: 'With counsel' }, { value: 'false', label: 'Without counsel' }], placeholder: 'Any' }] },
   };
