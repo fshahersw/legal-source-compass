@@ -138,6 +138,8 @@ function Ridges({
   const decades: number[] = [];
   for (let v = EPA_FLOOR; v <= hi * 1.0001; v *= 10) decades.push(v);
   const height = types.length * (ROW + GAP) + AXIS;
+  // On narrow cards a decade can be narrower than its label: label every other decade (grid lines stay).
+  const step = x(EPA_FLOOR * 10) - x(EPA_FLOOR) < 52 ? 2 : 1;
   const tick = (v: number) => usd(v, 0).replace(".0", "");
   return (
     <div ref={box} className="min-w-0 px-4 pb-3">
@@ -160,9 +162,11 @@ function Ridges({
               y2={height - AXIS}
               style={{ stroke: "var(--chart-grid)" }}
             />
-            <text x={x(d)} y={height - 8} textAnchor="middle" className={TICK}>
-              {tick(d)}
-            </text>
+            {decades.indexOf(d) % step === 0 ? (
+              <text x={x(d)} y={height - 8} textAnchor="middle" className={TICK}>
+                {tick(d)}
+              </text>
+            ) : null}
           </g>
         ))}
         {types.map((t, ti) => {
