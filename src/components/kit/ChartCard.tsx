@@ -16,7 +16,25 @@ import { Card, CardFooter, SourceFooter, type SourceFooterProps } from "./Card";
 import { DataDrawer, type DataDrawerProps } from "./DataDrawer";
 import { EmptyState } from "./EmptyState";
 import { ChartSkeleton } from "./Skeletons";
-import { ChartExplorer } from "@/components/charts/explore/ChartExplorer";
+import { useEffect, useState } from "react";
+import { AskAiButton } from "./ai/AskAiButton";
+import { chartContext } from "./ai/chartContext";
+
+function sourceLabel(src: SourceFooterProps["source"]): string | undefined {
+  const one = Array.isArray(src) ? src[0] : src;
+  return one && typeof one === "object" && "label" in one && typeof one.label === "string"
+    ? one.label
+    : undefined;
+}
+
+/** The page's topic (its title without the site name), read after hydration. */
+function usePageTopic(): string | undefined {
+  const [topic, setTopic] = useState<string>();
+  useEffect(() => {
+    setTopic(document.title.split(/\s[—|–-]\s/)[0]?.trim() || undefined);
+  }, []);
+  return topic;
+}
 
 export function ChartCard<T>({
   title,
@@ -54,6 +72,18 @@ export function ChartCard<T>({
   children?: ReactNode | undefined;
 }) {
   const titleId = id ? `${id}-title` : undefined;
+  const topic = usePageTopic();
+  const askContext =
+    data && state === "ready" && data.rows.length > 0
+      ? chartContext({
+          title: typeof title === "string" ? title : data.title,
+          topic,
+          period: typeof source?.period === "string" ? source.period : undefined,
+          source: sourceLabel(source?.source ?? data.source?.source),
+          columns: data.columns,
+          rows: data.rows,
+        })
+      : null;
   return (
     <Card
       as="figure"
@@ -71,8 +101,13 @@ export function ChartCard<T>({
         {actions || (data && state === "ready") ? (
           <div className="flex max-w-full flex-wrap items-center gap-2">
             {actions}
-            {data && state === "ready" && data.rows.length > 1 ? (
-              <ChartExplorer title={data.title} columns={data.columns} rows={data.rows} />
+            {data && state === "ready" && data.rows.length > 0 ? (
+              <AskAiButton
+                sectionId={id ?? data.title}
+                title={typeof title === "string" ? title : data.title}
+                context={askContext}
+                size="icon"
+              />
             ) : null}
             {data && state === "ready" ? <DataDrawer {...data} /> : null}
           </div>
