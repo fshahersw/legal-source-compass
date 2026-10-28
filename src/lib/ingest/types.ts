@@ -120,6 +120,19 @@ export interface SourceHttp {
     url: string,
     init?: { headers?: Record<string, string>; recordUrl?: string },
   ): Promise<{ status: number; text: string; record: RequestRecord }>;
+  /**
+   * Any method with a JSON body (APIs that take POST: Firecrawl, model batches). Optional so test doubles that only
+   * read can omit it; adapters that need it check for it.
+   */
+  send?(
+    url: string,
+    init?: {
+      method?: "GET" | "POST";
+      headers?: Record<string, string>;
+      body?: string;
+      recordUrl?: string;
+    },
+  ): Promise<{ status: number; text: string; record: RequestRecord }>;
   readonly requests: RequestRecord[];
   readonly remaining: number;
 }

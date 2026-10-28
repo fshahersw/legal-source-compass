@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { createFileRoute, Link, notFound, type NotFoundRouteProps } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
@@ -18,6 +19,7 @@ import { CompanyCepPanel } from "@/components/enforcement/oversight/CompanyCepPa
 import { CompanyLegalProceedings } from "@/components/apiLaw/CompanyLegalProceedings";
 import { CompanyEnforcementTrend } from "@/components/companies/CompanyEnforcementTrend";
 import { CompanyFederalAwardsPanel } from "@/components/calculators/CompanyFederalAwardsPanel";
+import { accentVars, useBrandAccent } from "@/components/companies/brandAccent";
 
 const COMPANY_CRUMBS = [
   { label: "Home", to: "/" },
@@ -80,6 +82,10 @@ function Page() {
   const name = q.data ? companyTitle(q.data) : (st.data?.name ?? `CIK ${cik}`);
   const known = Boolean(q.data || st.data);
   const view = viewOf(tabOf(search)).id;
+  // Charts on this page draw their first series in the colour of the company's own site icon when it passes the
+  // palette checks (brandAccent.ts); otherwise the default palette stays.
+  const accent = useBrandAccent(st.data?.logo?.path);
+  const vars = accentVars(accent) as CSSProperties;
   return (
     <AppShell
       title={name}
@@ -90,31 +96,39 @@ function Page() {
       }
       emblem={
         known ? (
-          <CompanyLogo profile={st.data ?? null} cik={cik} settled={!st.isPending} />
+          <span
+            className="inline-flex rounded-xl"
+            style={accent ? { ...vars, boxShadow: "0 0 0 2px var(--entity-mark)" } : undefined}
+            title={accent ? "Page colour taken from the company's site icon" : undefined}
+          >
+            <CompanyLogo profile={st.data ?? null} cik={cik} settled={!st.isPending} />
+          </span>
         ) : undefined
       }
       breadcrumbs={[...COMPANY_CRUMBS, { label: name }]}
     >
-      <CompanyProfile
-        cik={cik}
-        search={search}
-        onNavigate={(next, opts) =>
-          void navigate({ search: next, replace: opts?.replace ?? true, resetScroll: false })
-        }
-      />
-      {/* Overview keeps the enforcement trend; the record lists sit with the litigation evidence. */}
-      {view === "overview" || view === "litigation" ? (
-        <CompanyEnforcementTrend cik={cik} className="mt-3" />
-      ) : null}
-      {view === "litigation" ? (
-        <>
-          <CompanyLegalProceedings cik={cik} className="mt-3" />
-          <CompanyEnforcementPanel cik={cik} className="mt-3" />
-          <RegulatoryRecordPanel cik={cik} className="mt-3" />
-          <CompanyCepPanel cik={cik} className="mt-3" />
-          <CompanyFederalAwardsPanel cik={cik} className="mt-3" />
-        </>
-      ) : null}
+      <div style={vars} data-entity-accent={accent ? accent.light : undefined}>
+        <CompanyProfile
+          cik={cik}
+          search={search}
+          onNavigate={(next, opts) =>
+            void navigate({ search: next, replace: opts?.replace ?? true, resetScroll: false })
+          }
+        />
+        {/* Overview keeps the enforcement trend; the record lists sit with the litigation evidence. */}
+        {view === "overview" || view === "litigation" ? (
+          <CompanyEnforcementTrend cik={cik} className="mt-3" />
+        ) : null}
+        {view === "litigation" ? (
+          <>
+            <CompanyLegalProceedings cik={cik} className="mt-3" />
+            <CompanyEnforcementPanel cik={cik} className="mt-3" />
+            <RegulatoryRecordPanel cik={cik} className="mt-3" />
+            <CompanyCepPanel cik={cik} className="mt-3" />
+            <CompanyFederalAwardsPanel cik={cik} className="mt-3" />
+          </>
+        ) : null}
+      </div>
     </AppShell>
   );
 }

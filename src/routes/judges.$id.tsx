@@ -7,8 +7,8 @@ import { JudgeDisclosuresPanel } from "@/components/judges/clb/JudgeDisclosuresP
 import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServicePanel";
 import { JudgeServicePanel } from "@/components/judges/clb/JudgeServicePanel";
 import { JudgeDisclosureContentsPanel } from "@/components/judges/clb/JudgeDisclosureContentsPanel";
-import { JudgeGlance } from "@/components/judges/JudgeGlance";
-import { JudgeHeadshot, recordedPhotoCredit } from "@/components/judges/JudgeHeadshot";
+import { JudgeConsole, JudgeProfileHeader } from "@/components/judges/JudgeConsole";
+import { recordedPhotoCredit } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
 import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
@@ -65,18 +65,18 @@ function Page() {
       dataset="judges"
       id={id}
       crumbs={crumbs}
-      lead={(_, v) => (
-        <JudgeHeadshot
+      header={(_, v) => (
+        <JudgeProfileHeader
           judgeId={id}
           name={v.title}
-          recorded={v.photo}
-          recordedCredit={recordedPhotoCredit(raw)}
+          photo={v.photo}
+          photoCredit={recordedPhotoCredit(raw)}
         />
       )}
       extra={() => (
         <>
           {states.length ? (
-            <div className="-mt-2 mb-5 flex flex-wrap items-center gap-2 text-xs">
+            <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-muted-foreground">State:</span>
               {states.map((state) => (
                 <Link
@@ -91,17 +91,14 @@ function Page() {
               ))}
             </div>
           ) : null}
+          {/^[a-z0-9]{8,64}$/.test(id) ? (
+            <div className="mb-8">
+              <JudgeConsole judgeId={id} name={view.title || "This judge"} />
+            </div>
+          ) : null}
           <ProfileSections
             after={[{ id: "entity-record", label: "Record" }]}
             sections={[
-              {
-                id: "judge-glance",
-                title: "At a glance",
-                description: "MDL load, docket flow and docket mix from exactly linked records.",
-                content: /^[a-z0-9]{8,64}$/.test(id) ? (
-                  <JudgeGlance judgeId={id} name={view.title || "This judge"} />
-                ) : null,
-              },
               {
                 id: "judge-career",
                 title: "Career",

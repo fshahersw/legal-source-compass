@@ -95,7 +95,21 @@ export function politeHttp(opts: HttpOptions): SourceHttp {
     url: string,
     init: { headers?: Record<string, string>; recordUrl?: string } = {},
   ) {
+    return send(url, { ...init, method: "GET" });
+  }
+
+  async function send(
+    url: string,
+    init: {
+      method?: "GET" | "POST";
+      headers?: Record<string, string>;
+      body?: string;
+      recordUrl?: string;
+    } = {},
+  ) {
     const host = new URL(url).host;
+    // A write is never repeated blindly: POST gets one attempt (a 429/503 still reports the wait to the run).
+    const tries = (init.method ?? "GET") === "GET" ? attempts : 1;
     for (let attempt = 1; ; attempt++) {
       if (used >= opts.maxRequests) throw new BudgetExhausted();
       used++;
@@ -103,16 +117,19 @@ export function politeHttp(opts: HttpOptions): SourceHttp {
       let res: Response;
       try {
         res = await doFetch(url, {
+          method: init.method ?? "GET",
           headers: {
             "User-Agent": USER_AGENT,
             Accept: "application/json",
+            ...(init.body !== undefined ? { "Content-Type": "application/json" } : {}),
             ...(init.headers ?? {}),
           },
+          ...(init.body !== undefined ? { body: init.body } : {}),
           redirect: "follow",
           signal: AbortSignal.timeout(timeout),
         });
       } catch (error) {
-        if (attempt >= attempts)
+        if (attempt >= tries)
           throw new SourceError(
             `network error after ${attempt} attempts (${error instanceof Error ? error.name : "error"})`,
             0,
@@ -124,11 +141,11 @@ export function politeHttp(opts: HttpOptions): SourceHttp {
         const wait =
           retryAfterMs(res.headers.get("retry-after"), clock()) ?? 5000 * 2 ** (attempt - 1);
         await res.body?.cancel();
-        if (wait > maxRetryWait || attempt >= attempts) throw new RateLimited(wait);
+        if (wait > maxRetryWait || attempt >= tries) throw new RateLimited(wait);
         await sleep(wait);
         continue;
       }
-      if (res.status >= 500 && attempt < attempts) {
+      if (res.status >= 500 && attempt < tries) {
         await res.body?.cancel();
         await sleep(2000 * 2 ** (attempt - 1));
         continue;
@@ -150,6 +167,7 @@ export function politeHttp(opts: HttpOptions): SourceHttp {
 
   return {
     getText,
+    send,
     requests,
     get remaining() {
       return Math.max(0, opts.maxRequests - used);
