@@ -595,6 +595,7 @@ export function SpendingPanelBody({ spending }: { spending: AgencySpending }) {
           stateAction="Open"
           formatValue={(v) => usd(v)}
           legendNote="Shading scales with obligations per resident (place of performance)."
+          missing="unrecorded"
           onState={(fips) => {
             const code = USPS_BY_FIPS.get(fips);
             if (code) void navigate({ to: "/places/$state", params: { state: code } });

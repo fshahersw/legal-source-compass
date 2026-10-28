@@ -697,15 +697,22 @@ function EpaBody({
   const tableRows = rows.filter((r) => r.kind === "state" || r.kind === "territory");
   const otherCodes = data.profiles.filter((p) => p.kind === "other" || p.kind === "unrecorded");
   const mapRows = rows.filter((r) => r.kind === "state" && r.fips);
+  // A state without a population base has no per-million rate: it is left out (hatched), never drawn as zero.
   const values = new Map(
-    mapRows.map((r) => [
-      r.fips!,
-      metric === "penalty"
-        ? Math.round(r.sums.fedPenalty / 1e5) / 10
-        : metric === "cases"
-          ? r.sums.cases
-          : Math.round((r.perMillion ?? 0) * 10) / 10,
-    ]),
+    mapRows.flatMap((r): [string, number][] =>
+      metric === "perMillion" && r.perMillion == null
+        ? []
+        : [
+            [
+              r.fips!,
+              metric === "penalty"
+                ? Math.round(r.sums.fedPenalty / 1e5) / 10
+                : metric === "cases"
+                  ? r.sums.cases
+                  : Math.round(r.perMillion! * 10) / 10,
+            ],
+          ],
+    ),
   );
   const detail = useQuery({
     queryKey: ["epa-state-detail", state],
@@ -883,6 +890,7 @@ function EpaBody({
                   v.toLocaleString("en-US", { maximumFractionDigits: metric === "cases" ? 0 : 1 })
                 }
                 legendNote="Shading scales with the selected ECHO metric for states; territories and unrecorded codes are listed in the table."
+                missing="unrecorded"
                 selectedState={state}
                 onState={(fips) => {
                   const hit = mapRows.find((r) => r.fips === fips);

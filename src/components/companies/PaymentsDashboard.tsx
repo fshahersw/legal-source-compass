@@ -872,6 +872,7 @@ export function PaymentsDashboard({
                     ? "Shading scales with CMS dollars per resident; it does not measure misconduct or influence."
                     : "Shading scales with CMS reported dollars; it does not measure misconduct or influence."
                 }
+                missing="unrecorded"
                 selectedState={search.st}
                 onState={(f) => {
                   const s = [...stateByUsps.values()].find((x) => x.fips === f);
