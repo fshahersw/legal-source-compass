@@ -14,7 +14,8 @@ export function isSourceIdKey(key: string): boolean {
 }
 
 /** Data providers whose names stay out of the page's main text (they remain in tooltips and source popovers). */
-const PROVIDERS = /\b(CourtListener|DocketBird|FJC|Federal Judicial Center|Stanford Securities Class Action Clearinghouse|Securities Class Action Clearinghouse|Vaquill?|PACER)\b/i;
+const PROVIDERS =
+  /\b(CourtListener|DocketBird|FJC|Federal Judicial Center|Stanford Securities Class Action Clearinghouse|Securities Class Action Clearinghouse|Vaquill?|PACER)\b/i;
 
 /** "Parent court (CourtListener)" → text "Parent court", note "CourtListener"; other keys are unchanged. */
 export function splitProviderKey(key: string): { text: string; note: string | null } {
@@ -37,7 +38,8 @@ export function subtitleWithoutIds(subtitle: string | null | undefined): string 
   return kept.length ? kept.join(" · ") : null;
 }
 
-const PROVENANCE = /\b(recorded|re-checked|rechecked|registry|as published|as printed|printed in|flag)\b/i;
+const PROVENANCE =
+  /\b(recorded|re-checked|rechecked|registry|as published|as printed|printed in|flag)\b/i;
 
 /** "Court website (url as recorded by X, not re-checked)" → text "Court website", note "url as recorded by X, not re-checked". */
 export function splitProvenanceLabel(label: string): { text: string; note: string | null } {

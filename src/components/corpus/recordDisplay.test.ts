@@ -46,7 +46,10 @@ describe("record display rules", () => {
   });
 
   it("moves a provider name out of a field name and a provenance explanation out of a value", () => {
-    expect(splitProviderKey("Parent court (CourtListener)")).toEqual({ text: "Parent court", note: "CourtListener" });
+    expect(splitProviderKey("Parent court (CourtListener)")).toEqual({
+      text: "Parent court",
+      note: "CourtListener",
+    });
     expect(splitProviderKey("Court type (FD)")).toEqual({ text: "Court type (FD)", note: null });
     expect(splitProviderValue("NY — state name printed in the CourtListener court name")).toEqual({
       text: "NY",

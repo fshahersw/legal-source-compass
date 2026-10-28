@@ -169,11 +169,14 @@ export function EntityPage({
                 const shown = typeof val === "string" ? splitProviderValue(val) : null;
                 return (
                   <div key={i} className="min-w-0">
-                    <dt className="text-[11px] text-muted-foreground" title={name.note ?? undefined}>
+                    <dt
+                      className="text-[11px] text-muted-foreground"
+                      title={name.note ?? undefined}
+                    >
                       {name.text}
                     </dt>
                     <dd className="break-words" title={shown?.note ?? undefined}>
-                      {shown ? shown.text : displayValue(val)}
+                      {displayValue(shown ? shown.text : val)}
                     </dd>
                   </div>
                 );
