@@ -374,9 +374,16 @@ export function DivergingDots({
           x2={x(baseline)}
           y1={18}
           y2={height - 4}
-          style={{ stroke: "var(--chart-axis)" }}
+          // The reference ink (foreground), dashed, so the baseline reads in both themes like other charts' references.
+          style={{ stroke: "var(--chart-reference, var(--chart-axis))", strokeWidth: 1.25 }}
+          strokeDasharray="4 3"
         />
-        <text x={x(baseline)} y={11} textAnchor="middle" className={TICK}>
+        <text
+          x={x(baseline)}
+          y={11}
+          textAnchor="middle"
+          className="fill-foreground text-[11px] font-medium tabular-nums"
+        >
           {baselineLabel}
           {showBaselineValue ? ` ${format(baseline)}` : ""}
         </text>
