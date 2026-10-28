@@ -5,6 +5,18 @@
 - [x] First sprint: four state modes with legacy directory destinations; compact balanced hub figures; richer bounded chart AI context; complete-year civil clearance flow panels and corrected district-median AI label.
 - [ ] Next sprint: MDL missing-value validation/momentum, district profile links, map tile mode, law trees and exact-ID imagery; source compatibility remains required. Time Limits and acquisition checkpoints untouched.
 
+## Executive brief — Sprints 2–4 (uploaded 2026-10-28 07:21 UTC; use Firecrawl/Tavily as needed)
+- [ ] S2.1 MDL data validation (no missing→0, validated series points) + momentum scatter (log pending, exact same-month 12-month change, zero-pending drawer, links to MDL pages) + tests
+- [ ] S2.2 District speed chart: district names link to court profiles when an exact court record exists
+- [ ] S2.3 Clearance ratio: zero-filing years null, partial years excluded from callouts (verify + tests)
+- [ ] S3.1 Map: Geographic | Equal-area tiles switch (50 states + DC), shared class breaks and missing hatch, keyboard navigation + tests
+- [ ] S3.2 Law tree: Title → Chapter/Part → Section explorer over reader endpoints with coverage chips and reader links
+- [ ] S3.3 Court/agency hierarchy contrast: tier badges, appeal arrows, directory-vs-reporting distinction, official org-chart links with snapshot dates
+- [ ] S4.1 Exact-ID imagery: section backdrops with AA contrast; courthouse/capitol/judge/agency seal coverage check
+- [ ] S4.2 Enforcement penalty distributions: log bins, raw-record medians, agencies kept separate
+- [ ] S5 Typography/padding check at 1039×635 and 390×844; vendor names only in info popovers
+- [ ] S6 Verification: targeted tests, typecheck, browser checks (/courts, /litigation, /places/TX, /enforcement, /agencies/271) light+dark, both viewports
+
 ## Comprehensive platform scan (2026-10-28)
 - [x] Read-only audit: pages and workflows, visual cohesion, accessibility, chart/data integrity, AI/server security, automated tests; evidence and prioritized findings saved without application changes; hosted deployment and exhaustive legal/security certification remain unverified.
 
