@@ -41,8 +41,13 @@ export function buildRows({ runDir, mdl, listing, summary, registeredKeys = new 
   const caseId = evidence?.literal ?? (matter.printed_mdl_literal ?? null);
   const caseKind = evidence ? 'exact_sourced_master_docket_literal' : caseId ? 'printed_mdl_number_literal' : 'not_recorded';
   const excluded = [], byUrl = new Map();
+  const hrefNeedle = matter.listing_href_substring ?? null;
   for (const row of listing) {
     const r = row.record;
+    if (hrefNeedle && ![r.url, r.href_as_printed].some(h => String(h ?? '').includes(hrefNeedle))) {
+      excluded.push({ url: r.url, printed_title: r.printed_title, printed_date: r.printed_date, doc_number: r.doc_number, page_id: row.source.page_id, row_ordinal: r.row_ordinal, decision: 'excluded', reason: 'listing_href_substring_mismatch', listing_href_substring: hrefNeedle });
+      continue;
+    }
     if (row.decision.decision !== 'queue') { excluded.push({ url: r.url, printed_title: r.printed_title, printed_date: r.printed_date, doc_number: r.doc_number, page_id: row.source.page_id, row_ordinal: r.row_ordinal, ...row.decision }); continue; }
     if (!byUrl.has(r.url)) byUrl.set(r.url, []);
     byUrl.get(r.url).push(row);
