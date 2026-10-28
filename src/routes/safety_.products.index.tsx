@@ -1,17 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { ProductsIndex } from "@/components/safety/products/ProductsIndex";
-import type { IndexView } from "@/components/safety/products/queries";
+import type { ProductsView } from "@/components/safety/products/ProductsIndex";
 import { pageHead } from "@/lib/corpus/head";
 
-type S = { view?: IndexView | undefined; q?: string | undefined; page?: number | undefined };
-const VIEWS: readonly IndexView[] = ["mdl", "drugs", "devices"];
+type S = { view?: ProductsView | undefined; q?: string | undefined; page?: number | undefined };
+// the watch is the default (no ?view); the lists keep their former addresses (?view=drugs, ?view=devices) and the
+// MDL list, formerly the default, is ?view=mdl
+const VIEWS: readonly ProductsView[] = ["watch", "mdl", "drugs", "devices"];
 
 export const Route = createFileRoute("/safety_/products/")({
   validateSearch: (s: Record<string, unknown>): S => ({
     view:
-      VIEWS.includes(s["view"] as IndexView) && s["view"] !== "mdl"
-        ? (s["view"] as IndexView)
+      VIEWS.includes(s["view"] as ProductsView) && s["view"] !== "watch"
+        ? (s["view"] as ProductsView)
         : undefined,
     q:
       typeof s["q"] === "string" && s["q"].length <= 100 && s["q"].trim()
@@ -33,7 +35,7 @@ export const Route = createFileRoute("/safety_/products/")({
 function Page() {
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const view = search.view ?? "mdl";
+  const view = search.view ?? "watch";
   return (
     <AppShell
       title="Products & devices"
@@ -51,11 +53,11 @@ function Page() {
         onChange={(next) =>
           void navigate({
             search: (prev: S) => {
-              const v = next.view ?? prev.view ?? "mdl";
+              const v = next.view ?? prev.view ?? "watch";
               const q = next.q !== undefined ? next.q : prev.q;
               const p = next.page ?? prev.page ?? 1;
               return {
-                view: v === "mdl" ? undefined : v,
+                view: v === "watch" ? undefined : v,
                 q: q || undefined,
                 page: p > 1 ? p : undefined,
               };
