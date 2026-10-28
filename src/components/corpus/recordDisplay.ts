@@ -5,12 +5,12 @@
  * so provider names stay out of the page's main text (owner decision 2026-10-24) without losing the note. Pure.
  */
 
-/** Keys that hold a source system's identifier or a provider flag, e.g. "Record id", "CourtListener court id", "In use (CourtListener flag)". */
+/** Keys that hold a source system's identifier or a provider flag, e.g. "Record id", "CourtListener court id", "Local registry key", "In use (CourtListener flag)". */
 export function isSourceIdKey(key: string): boolean {
   const k = key.trim();
   if (/\(([^()]*\s)?flag\)$/i.test(k)) return true;
   const bare = k.replace(/\s*\([^()]*\)$/, "");
-  return /^record id$/i.test(bare) || /\bid$/i.test(bare);
+  return /^record id$/i.test(bare) || /\b(id|key)$/i.test(bare);
 }
 
 /** Data providers whose names stay out of the page's main text (they remain in tooltips and source popovers). */

@@ -13,6 +13,7 @@ describe("record display rules", () => {
     expect(isSourceIdKey("CourtListener court id")).toBe(true);
     expect(isSourceIdKey("In use (CourtListener flag)")).toBe(true);
     expect(isSourceIdKey("FJC court id (as recorded by CourtListener)")).toBe(true);
+    expect(isSourceIdKey("Local registry key")).toBe(true);
     expect(isSourceIdKey("Short name")).toBe(false);
     expect(isSourceIdKey("Court type")).toBe(false);
     expect(isSourceIdKey("Paid")).toBe(false);
