@@ -38,7 +38,6 @@ import {
   type SearchParams,
 } from "@/lib/atlas/navigation";
 import { SECTION_ICONS } from "./sectionIcons";
-import { SECTION_BACKDROPS } from "./sectionBackdrops";
 import { THEME_SCRIPT, applyTheme, readTheme, storeTheme, type Theme } from "./theme";
 
 /**
@@ -255,7 +254,7 @@ function Brand({ collapsed }: { collapsed: boolean }) {
             alt="Seeger Weiss LLP"
             width={241}
             height={21}
-            className="h-auto w-40 opacity-90 brightness-0 dark:opacity-100 dark:brightness-100"
+            className="h-auto w-40"
           />
           <span className="mt-1.5 block text-[10px] font-medium uppercase tracking-[0.14em] text-sidebar-muted">
             {WORKSPACE_DESCRIPTOR}
@@ -315,7 +314,7 @@ export function AppShell({
   const mode: ListMode = collapsed ? "rail" : "responsive";
   return (
     <div
-      data-ui-release="seeger-weiss-workspace-20261024"
+      data-ui-release="seeger-weiss-console-20261028"
       className="atlas-shell flex min-h-screen bg-background"
     >
       <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
@@ -323,7 +322,7 @@ export function AppShell({
       <div
         className={cn(
           "hidden shrink-0 border-r border-sidebar-border bg-sidebar transition-[width] duration-150 md:block",
-          collapsed ? "w-16" : "w-16 lg:w-56",
+          collapsed ? "w-16" : "w-16 lg:w-52",
         )}
       >
         <aside
@@ -352,7 +351,7 @@ export function AppShell({
           breadcrumbs={trail}
           menu={menu}
           menuTitle={sectionLabel}
-          backdrop={section ? SECTION_BACKDROPS[section] : undefined}
+          eyebrow={sectionLabel && sectionLabel !== title ? sectionLabel : undefined}
           leading={
             <>
               <button
@@ -427,7 +426,7 @@ export function AppShell({
                 alt="Seeger Weiss LLP"
                 width={241}
                 height={21}
-                className="h-auto w-40 opacity-90 brightness-0 dark:opacity-100 dark:brightness-100"
+                className="h-auto w-40"
               />
             </Link>
           </div>

@@ -9,7 +9,7 @@ import {
 import { CompanyLogo } from "@/components/companies/CompanyHeader";
 import { tickerLine } from "@/components/companies/companyStatements";
 import { companyStatementsQuery } from "@/components/companies/companyQueries";
-import { normalizeCompanySearch } from "@/components/companies/companySearch";
+import { normalizeCompanySearch, tabOf, viewOf } from "@/components/companies/companySearch";
 import { isCikAddress, paddedCik, requestedCik } from "@/components/companies/cik";
 import { pageHead } from "@/lib/corpus/head";
 import { CompanyEnforcementPanel } from "@/components/enforcement/actions/CompanyEnforcementPanel";
@@ -79,6 +79,7 @@ function Page() {
   const st = useQuery(companyStatementsQuery(cik));
   const name = q.data ? companyTitle(q.data) : (st.data?.name ?? `CIK ${cik}`);
   const known = Boolean(q.data || st.data);
+  const view = viewOf(tabOf(search)).id;
   return (
     <AppShell
       title={name}
@@ -101,12 +102,19 @@ function Page() {
           void navigate({ search: next, replace: opts?.replace ?? true, resetScroll: false })
         }
       />
-      <CompanyEnforcementTrend cik={cik} className="mt-3" />
-      <CompanyEnforcementPanel cik={cik} className="mt-3" />
-      <RegulatoryRecordPanel cik={cik} className="mt-3" />
-      <CompanyCepPanel cik={cik} className="mt-3" />
-      <CompanyFederalAwardsPanel cik={cik} className="mt-3" />
-      <CompanyLegalProceedings cik={cik} className="mt-3" />
+      {/* Overview keeps the enforcement trend; the record lists sit with the litigation evidence. */}
+      {view === "overview" || view === "litigation" ? (
+        <CompanyEnforcementTrend cik={cik} className="mt-3" />
+      ) : null}
+      {view === "litigation" ? (
+        <>
+          <CompanyLegalProceedings cik={cik} className="mt-3" />
+          <CompanyEnforcementPanel cik={cik} className="mt-3" />
+          <RegulatoryRecordPanel cik={cik} className="mt-3" />
+          <CompanyCepPanel cik={cik} className="mt-3" />
+          <CompanyFederalAwardsPanel cik={cik} className="mt-3" />
+        </>
+      ) : null}
     </AppShell>
   );
 }

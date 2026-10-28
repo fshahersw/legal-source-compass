@@ -13,7 +13,7 @@
 }
 @media (min-width: 1024px) {
   :root {
-    --workspace-gutter: 24px;
+    --workspace-gutter: 20px;
   }
 }
 @media (max-width: 639px) {
@@ -28,7 +28,7 @@
 .atlas-main {
   /* 32 px under the header (one section gap); a sticky SectionIndex cancels it with -mt-[var(--page-pad-top)].
      The bottom padding keeps the last content clear of the floating assistant button (32 px + 12 px offset). */
-  --page-pad-top: 32px;
+  --page-pad-top: 18px;
   padding: var(--page-pad-top) var(--workspace-gutter) 72px;
 }
 
@@ -74,7 +74,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   background: var(--surface);
-  box-shadow: var(--shadow-xs);
 }
 .resource-row {
   display: flex;

@@ -182,19 +182,14 @@ export function ChartCard({
     <KitChartCard
       title={
         variant === "editorial" ? (
-          <>
-            <span aria-hidden className="mb-2 block h-[3px] w-9 rounded-full bg-brand" />
-            <span className="block text-label font-bold text-foreground">
-              {title}
-            </span>
-          </>
+          <span className="block text-label font-semibold text-foreground">{title}</span>
         ) : (
           title
         )
       }
       subtitle={
         variant === "editorial" && subtitle ? (
-          <span className="mt-0.5 block text-[13px] leading-5">{subtitle}</span>
+          <span className="mt-0.5 block">{subtitle}</span>
         ) : (
           subtitle
         )

@@ -46,7 +46,7 @@ import {
 } from "./companyData";
 import { companyStatementsQuery } from "./companyQueries";
 import { COMPANY_VIEWS, tabOf, viewOf, type CompanySearch, type CompanyTab } from "./companySearch";
-import type { Grain } from "./companyStatements";
+import type { Grain, Statements } from "./companyStatements";
 import { CompanyFacts } from "./CompanyHeader";
 import { GrainToggle, OverviewTab, StatementsTab } from "./CompanyFinancials";
 import { SegmentsTab } from "./CompanySegments";
@@ -71,6 +71,8 @@ import {
   uiExposure,
 } from "./exposure";
 import { ReserveVsDocket } from "./ReserveVsDocket";
+import { AbilityToPay, DisclosureQuotes, ExposureStrip, NamedMdls } from "./DefendantDossier";
+import { Cell, ConsoleGrid } from "@/components/console/ConsoleGrid";
 import { CorporateTransactions } from "./CorporateTransactions";
 import {
   dateSpan,
@@ -155,7 +157,15 @@ export function CompanyProfile({
             {statements.error instanceof Error ? statements.error.message : ""}
           </Notice>
         ) : tab === "overview" ? (
-          <OverviewTab profile={p} summary={uiSummary} onOpen={open} />
+          <OverviewTab
+            profile={p}
+            summary={uiSummary}
+            onOpen={open}
+            lead={uiSummary ? <ExposureStrip summary={uiSummary} /> : undefined}
+            dossier={
+              d ? <DossierPanels d={uiDetail(d)} statements={p?.statements ?? null} /> : undefined
+            }
+          />
         ) : tab === "statements" || tab === "segments" ? (
           <ViewParts
             first={tab === "segments" ? 1 : 0}
@@ -307,13 +317,48 @@ function reportsToCms(sic: string | null): boolean {
   );
 }
 
-function Litigation({ d: published }: { d: CompanyDetail }) {
-  // Exposure under the UI rule: tier C links never count; pending actions are MDL-wide.
-  const d: CompanyDetail = {
+/** The detail with exposure under the UI rule: tier C links never count; pending actions are MDL-wide. */
+function uiDetail(published: CompanyDetail): CompanyDetail {
+  return {
     ...published,
     summary: applyUiExposure(published.summary),
     links: published.links.map((l) => ({ ...l, countsTowardExposure: countsInUi(l) })),
   };
+}
+
+/** Overview dossier: ability to pay, the named MDLs, reserve against docket, pending trend and the filings' own words. */
+function DossierPanels({ d, statements }: { d: CompanyDetail; statements: Statements | null }) {
+  return (
+    <>
+      <ConsoleGrid>
+        <Cell span={8}>
+          <AbilityToPay statements={statements} summary={d.summary} />
+        </Cell>
+        <Cell span={4}>
+          <NamedMdls d={d} />
+        </Cell>
+        {d.summary.latest.litigation_accrual ? (
+          <>
+            <Cell span={6}>
+              <ReserveVsDocket d={d} />
+            </Cell>
+            <Cell span={6}>
+              <PendingTrend d={d} />
+            </Cell>
+          </>
+        ) : (
+          <Cell span={12}>
+            <PendingTrend d={d} />
+          </Cell>
+        )}
+      </ConsoleGrid>
+      <DisclosureQuotes d={d} />
+    </>
+  );
+}
+
+function Litigation({ d: published }: { d: CompanyDetail }) {
+  const d = uiDetail(published);
   const { summary: s, financials: f } = d;
   const p = s.profile;
   const acc = s.latest.litigation_accrual;

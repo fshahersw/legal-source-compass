@@ -54,6 +54,7 @@ import { Route as CourtsIdRouteImport } from './routes/courts.$id'
 import { Route as CourtsAnalyticsRouteImport } from './routes/courts.analytics'
 import { Route as CourtsCaseloadRouteImport } from './routes/courts.caseload'
 import { Route as CourtsCollectionRouteImport } from './routes/courts.collection'
+import { Route as CourtsDocketHealthRouteImport } from './routes/courts.docket-health'
 import { Route as CourtsFirmsRouteImport } from './routes/courts.firms'
 import { Route as CourtsSecuritiesRouteImport } from './routes/courts.securities'
 import { Route as CourtsVacanciesRouteImport } from './routes/courts.vacancies'
@@ -377,6 +378,11 @@ const CourtsCaseloadRoute = CourtsCaseloadRouteImport.update({
 const CourtsCollectionRoute = CourtsCollectionRouteImport.update({
   id: '/courts/collection',
   path: '/courts/collection',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CourtsDocketHealthRoute = CourtsDocketHealthRouteImport.update({
+  id: '/courts/docket-health',
+  path: '/courts/docket-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CourtsFirmsRoute = CourtsFirmsRouteImport.update({
@@ -923,6 +929,7 @@ export interface FileRoutesByFullPath {
   '/courts/analytics': typeof CourtsAnalyticsRoute
   '/courts/caseload': typeof CourtsCaseloadRoute
   '/courts/collection': typeof CourtsCollectionRoute
+  '/courts/docket-health': typeof CourtsDocketHealthRoute
   '/courts/firms': typeof CourtsFirmsRoute
   '/courts/securities': typeof CourtsSecuritiesRoute
   '/courts/vacancies': typeof CourtsVacanciesRoute
@@ -1068,6 +1075,7 @@ export interface FileRoutesByTo {
   '/courts/analytics': typeof CourtsAnalyticsRoute
   '/courts/caseload': typeof CourtsCaseloadRoute
   '/courts/collection': typeof CourtsCollectionRoute
+  '/courts/docket-health': typeof CourtsDocketHealthRoute
   '/courts/firms': typeof CourtsFirmsRoute
   '/courts/securities': typeof CourtsSecuritiesRoute
   '/courts/vacancies': typeof CourtsVacanciesRoute
@@ -1206,6 +1214,7 @@ export interface FileRoutesById {
   '/courts/analytics': typeof CourtsAnalyticsRoute
   '/courts/caseload': typeof CourtsCaseloadRoute
   '/courts/collection': typeof CourtsCollectionRoute
+  '/courts/docket-health': typeof CourtsDocketHealthRoute
   '/courts/firms': typeof CourtsFirmsRoute
   '/courts/securities': typeof CourtsSecuritiesRoute
   '/courts/vacancies': typeof CourtsVacanciesRoute
@@ -1353,6 +1362,7 @@ export interface FileRouteTypes {
     | '/courts/analytics'
     | '/courts/caseload'
     | '/courts/collection'
+    | '/courts/docket-health'
     | '/courts/firms'
     | '/courts/securities'
     | '/courts/vacancies'
@@ -1498,6 +1508,7 @@ export interface FileRouteTypes {
     | '/courts/analytics'
     | '/courts/caseload'
     | '/courts/collection'
+    | '/courts/docket-health'
     | '/courts/firms'
     | '/courts/securities'
     | '/courts/vacancies'
@@ -1635,6 +1646,7 @@ export interface FileRouteTypes {
     | '/courts/analytics'
     | '/courts/caseload'
     | '/courts/collection'
+    | '/courts/docket-health'
     | '/courts/firms'
     | '/courts/securities'
     | '/courts/vacancies'
@@ -1781,6 +1793,7 @@ export interface RootRouteChildren {
   CourtsAnalyticsRoute: typeof CourtsAnalyticsRoute
   CourtsCaseloadRoute: typeof CourtsCaseloadRoute
   CourtsCollectionRoute: typeof CourtsCollectionRoute
+  CourtsDocketHealthRoute: typeof CourtsDocketHealthRoute
   CourtsFirmsRoute: typeof CourtsFirmsRoute
   CourtsSecuritiesRoute: typeof CourtsSecuritiesRoute
   CourtsVacanciesRoute: typeof CourtsVacanciesRoute
@@ -2173,6 +2186,13 @@ declare module '@tanstack/react-router' {
       path: '/courts/collection'
       fullPath: '/courts/collection'
       preLoaderRoute: typeof CourtsCollectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courts/docket-health': {
+      id: '/courts/docket-health'
+      path: '/courts/docket-health'
+      fullPath: '/courts/docket-health'
+      preLoaderRoute: typeof CourtsDocketHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courts/firms': {
@@ -3062,6 +3082,7 @@ const rootRouteChildren: RootRouteChildren = {
   CourtsAnalyticsRoute: CourtsAnalyticsRoute,
   CourtsCaseloadRoute: CourtsCaseloadRoute,
   CourtsCollectionRoute: CourtsCollectionRoute,
+  CourtsDocketHealthRoute: CourtsDocketHealthRoute,
   CourtsFirmsRoute: CourtsFirmsRoute,
   CourtsSecuritiesRoute: CourtsSecuritiesRoute,
   CourtsVacanciesRoute: CourtsVacanciesRoute,

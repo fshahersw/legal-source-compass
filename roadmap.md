@@ -1,5 +1,12 @@
 # Legal Source Atlas — roadmap
 
+## Analyst-console refresh (2026-10-28)
+- [x] Theme: analyst-console tokens (cool grey canvas, navy sidebar rail, flat 10 px panels, #2a78d6 accent, Instrument Sans with a Newsreader page title), validated six-slot chart palette in both themes, section eyebrow above titles, header photo backdrops removed, chart footers folded into the card
+- [x] Overview: litigation pulse (JPML portfolio, largest MDLs, 12-month movers, federal civil filings and terminations) above the headlines and the map
+- [x] Docket health (/courts/docket-health): FJC complete-year flow and clearance panels, pending, median days, district scatter and median-district ranking, heaviest dockets, MDL inflow and resolution
+- [x] Company overview as a defendant dossier: exposure strip, ability to pay (resources against booked and disclosed litigation, same-year ratios only), named MDLs with tiers, filings' own words; record lists moved to the Litigation view; company facts collapsed to one line
+- [x] Corpus cleanup: Oct 7 scratch tables and the finished one-off build job removed (docs/corpus-cleanup-2026-10-28.md)
+
 ## Uploaded executive brief (2026-10-28)
 - [x] Prepare evidence-based sprint plan: visual declutter, chart accuracy, maps, hierarchy/registry imagery, and compatible corpus enrichment; preserve Time Limits and existing acquisition checkpoints.
 - [x] First sprint: four state modes with legacy directory destinations; compact balanced hub figures; richer bounded chart AI context; complete-year civil clearance flow panels and corrected district-median AI label.

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import {
   Bar,
   BarChart,
@@ -100,17 +100,25 @@ export function OverviewTab({
   profile: p,
   summary,
   onOpen,
+  lead,
+  dossier,
 }: {
   profile: StatementsProfile | null;
   summary: CompanySummary | null;
   onOpen: (tab: CompanyTab) => void;
+  /** Shown above the financial KPIs (the exposure strip). */
+  lead?: ReactNode;
+  /** The defendant dossier panels, between the KPIs and the financial charts; replaces the one-line litigation note. */
+  dossier?: ReactNode;
 }) {
   const s = p?.statements ?? null;
   const exposure = summary?.exposure ?? null;
   return (
     <div className="space-y-3">
+      {lead}
       {s ? <OverviewKpis s={s} /> : <NoStatements />}
-      {exposure ? (
+      {dossier}
+      {exposure && !dossier ? (
         <p className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
           Litigation:{" "}
           <span className="text-foreground">

@@ -477,6 +477,15 @@ const SECTIONS: readonly SectionSpec[] = [
           recordIn("courts", "judges")(p),
       },
       {
+        id: "docket-health",
+        to: "/courts/docket-health",
+        label: "Docket health",
+        description:
+          "Filings against terminations, pending cases, time to disposition and MDL dockets.",
+        group: "caseload",
+        owns: (p) => at(p, "/courts/docket-health"),
+      },
+      {
         id: "caseload",
         to: "/courts/caseload",
         label: "Caseload",

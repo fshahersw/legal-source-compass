@@ -145,91 +145,111 @@ export function CompanyFacts({
   const annual =
     p?.filings.find((f) => ["10-K", "20-F", "40-F", "10-KT"].includes(f.form))?.date ?? null;
   return (
-    <section aria-label="Company facts" className="rounded-md border border-border bg-surface p-3">
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-        <Fact label="Tickers and exchange">{tickerLine(p, summary)}</Fact>
-        <Fact label="Industry (SIC)">
-          <span title={sic ? `SIC ${sic}` : undefined}>
-            {sicDescription ?? NOT_RECORDED}
-            {sic ? <span className="text-muted-foreground"> · {sic}</span> : null}
+    <section aria-label="Company facts" className="rounded-xl border border-border bg-surface">
+      <details className="group">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-5 gap-y-1 px-3.5 py-2.5 text-[12.5px] text-muted-foreground [&::-webkit-details-marker]:hidden">
+          <span>
+            <b className="font-semibold text-foreground">{tickerLine(p, summary)}</b>
           </span>
-        </Fact>
-        <Fact label="State of incorporation">{stateName(state)}</Fact>
-        <Fact label="Fiscal year ends">{fiscalYearEnd(fye)}</Fact>
-        <Fact label="Website">
-          <SiteLink site={p?.website ?? null} namedIn={annual} />
-        </Fact>
-        <Fact label="Investor relations">
-          <SiteLink site={p?.irWebsite ?? null} namedIn={annual} />
-        </Fact>
-        <Fact label="CIK" mono>
-          {cik}
-        </Fact>
-        <Fact label="Filer category">{p?.category ?? NOT_RECORDED}</Fact>
-        <Fact label="Business address">{address || NOT_RECORDED}</Fact>
-        <Fact label="Market price">
-          <span className="text-muted-foreground" title={p?.priceNote ?? undefined}>
-            No price source connected
+          <span>{sicDescription ?? NOT_RECORDED}</span>
+          <span>{address || NOT_RECORDED}</span>
+          <span>Incorporated in {stateName(state)}</span>
+          <span>FY ends {fiscalYearEnd(fye)}</span>
+          <span className="font-mono text-[11px]">CIK {cik}</span>
+          <span className="ml-auto font-medium text-primary group-open:hidden">
+            Company details
           </span>
-        </Fact>
-        <Fact label="SEC filings">
-          <a
-            href={edgarCompanyUrl(cik)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
-            EDGAR <ExternalLink className="size-3" aria-hidden />
-          </a>
-        </Fact>
-        <Fact label="XBRL facts">
-          {p?.statements ? (
-            <a
-              href={companyfactsUrl(cik)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-primary hover:underline"
-            >
-              companyfacts <ExternalLink className="size-3" aria-hidden />
-            </a>
-          ) : (
-            <span className="text-muted-foreground">None filed</span>
-          )}
-        </Fact>
-      </dl>
-      <div className="mt-2.5 border-t border-border/60 pt-2 text-xs leading-5">
-        {p?.description ? (
-          <p>
-            {p.description}{" "}
-            {p.descriptionSource ? (
+          <span className="ml-auto hidden font-medium text-primary group-open:inline">
+            Hide details
+          </span>
+        </summary>
+        <div className="border-t border-border/70 p-3.5">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+            <Fact label="Tickers and exchange">{tickerLine(p, summary)}</Fact>
+            <Fact label="Industry (SIC)">
+              <span title={sic ? `SIC ${sic}` : undefined}>
+                {sicDescription ?? NOT_RECORDED}
+                {sic ? <span className="text-muted-foreground"> · {sic}</span> : null}
+              </span>
+            </Fact>
+            <Fact label="State of incorporation">{stateName(state)}</Fact>
+            <Fact label="Fiscal year ends">{fiscalYearEnd(fye)}</Fact>
+            <Fact label="Website">
+              <SiteLink site={p?.website ?? null} namedIn={annual} />
+            </Fact>
+            <Fact label="Investor relations">
+              <SiteLink site={p?.irWebsite ?? null} namedIn={annual} />
+            </Fact>
+            <Fact label="CIK" mono>
+              {cik}
+            </Fact>
+            <Fact label="Filer category">{p?.category ?? NOT_RECORDED}</Fact>
+            <Fact label="Business address">{address || NOT_RECORDED}</Fact>
+            <Fact label="Market price">
+              <span className="text-muted-foreground" title={p?.priceNote ?? undefined}>
+                No price source connected
+              </span>
+            </Fact>
+            <Fact label="SEC filings">
               <a
-                href={p.descriptionSource.url}
+                href={edgarCompanyUrl(cik)}
                 target="_blank"
                 rel="noreferrer"
-                className="whitespace-nowrap text-[11px] text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
               >
-                Item 1, Form {p.descriptionSource.form} filed {p.descriptionSource.date}
+                EDGAR <ExternalLink className="size-3" aria-hidden />
               </a>
+            </Fact>
+            <Fact label="XBRL facts">
+              {p?.statements ? (
+                <a
+                  href={companyfactsUrl(cik)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  companyfacts <ExternalLink className="size-3" aria-hidden />
+                </a>
+              ) : (
+                <span className="text-muted-foreground">None filed</span>
+              )}
+            </Fact>
+          </dl>
+          <div className="mt-2.5 border-t border-border/60 pt-2 text-xs leading-5">
+            {p?.description ? (
+              <p>
+                {p.description}{" "}
+                {p.descriptionSource ? (
+                  <a
+                    href={p.descriptionSource.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="whitespace-nowrap text-[11px] text-primary hover:underline"
+                  >
+                    Item 1, Form {p.descriptionSource.form} filed {p.descriptionSource.date}
+                  </a>
+                ) : null}
+              </p>
+            ) : (
+              <p className="text-muted-foreground">
+                Business description: {NOT_RECORDED}. No passage of the latest annual report&rsquo;s
+                business section could be quoted word for word.
+              </p>
+            )}
+            {s?.formerNames.length ? (
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Former names: {s.formerNames.join("; ")}
+              </p>
             ) : null}
-          </p>
-        ) : (
-          <p className="text-muted-foreground">
-            Business description: {NOT_RECORDED}. No passage of the latest annual report&rsquo;s
-            business section could be quoted word for word.
-          </p>
-        )}
-        {s?.formerNames.length ? (
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Former names: {s.formerNames.join("; ")}
-          </p>
-        ) : null}
-        {summary?.coRegistrantOf.length ? (
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Files as a co-registrant with {summary.coRegistrantOf.join("; ")}.
-          </p>
-        ) : null}
-        <OpenLogoCredit cik={cik} hasSiteIcon={!!p?.logo} />
-      </div>
+            {summary?.coRegistrantOf.length ? (
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Files as a co-registrant with {summary.coRegistrantOf.join("; ")}.
+              </p>
+            ) : null}
+            <OpenLogoCredit cik={cik} hasSiteIcon={!!p?.logo} />
+          </div>
+        </div>
+      </details>
     </section>
   );
 }

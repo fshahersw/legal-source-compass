@@ -12,7 +12,7 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Card, CardFooter, SourceFooter, type SourceFooterProps } from "./Card";
+import { Card, SourceFooter, type SourceFooterProps } from "./Card";
 import { DataDrawer, type DataDrawerProps } from "./DataDrawer";
 import { EmptyState } from "./EmptyState";
 import { ChartSkeleton } from "./Skeletons";
@@ -22,7 +22,11 @@ import { chartContext } from "./ai/chartContext";
 
 function sourceLabel(src: SourceFooterProps["source"]): string | undefined {
   const list = Array.isArray(src) ? src : [src];
-  const labels = list.flatMap((one) => one && typeof one === "object" && "label" in one && typeof one.label === "string" ? [one.label] : []);
+  const labels = list.flatMap((one) =>
+    one && typeof one === "object" && "label" in one && typeof one.label === "string"
+      ? [one.label]
+      : [],
+  );
   return labels.length ? labels.join("; ") : undefined;
 }
 
@@ -100,7 +104,7 @@ export function ChartCard<T>({
       aria-labelledby={titleId}
       className={cn("m-0 flex flex-col", className)}
     >
-      <figcaption className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-4 pt-3.5 pb-2.5">
+      <figcaption className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 px-3.5 pt-3 pb-2">
         <div className="min-w-0 flex-[1_1_14rem]">
           <h3 id={titleId} className="text-label font-semibold text-foreground">
             {title}
@@ -123,7 +127,7 @@ export function ChartCard<T>({
         ) : null}
       </figcaption>
       {legend && state === "ready" ? <div className="px-4 pb-2">{legend}</div> : null}
-      <div className="min-w-0 flex-1 px-4 pb-4">
+      <div className="min-w-0 flex-1 px-3.5 pb-3">
         {state === "loading" ? (
           <ChartSkeleton height={height} />
         ) : state === "error" ? (
@@ -149,9 +153,9 @@ export function ChartCard<T>({
         )}
       </div>
       {source ? (
-        <CardFooter>
+        <div className="flex min-w-0 items-center gap-2 px-4 pb-2.5 text-meta text-muted-foreground">
           <SourceFooter {...source} className="flex-1" />
-        </CardFooter>
+        </div>
       ) : null}
     </Card>
   );

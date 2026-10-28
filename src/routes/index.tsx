@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { OverviewBriefing, OverviewSections } from "@/components/atlas/hub/OverviewBriefing";
+import { OverviewConsole } from "@/components/console/OverviewConsole";
 import { PlacesMap } from "@/components/corpus/PlacesMap";
 import { parseMapSearch, type MapSearch } from "@/components/places/mapSearch";
 
@@ -18,5 +19,16 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <PlacesMap home before={<OverviewBriefing />} after={<OverviewSections />} />,
+  component: () => (
+    <PlacesMap
+      home
+      before={
+        <>
+          <OverviewConsole />
+          <OverviewBriefing />
+        </>
+      }
+      after={<OverviewSections />}
+    />
+  ),
 });

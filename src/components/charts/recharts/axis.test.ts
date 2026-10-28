@@ -75,7 +75,7 @@ describe("nice value axes", () => {
 
 describe("theme props and content", () => {
   it("colours series in fixed order and refuses a slot past the palette", () => {
-    expect(seriesColor(0)).toBe("var(--chart-1, light-dark(#2863ab, #4c88d3))");
+    expect(seriesColor(0)).toBe("var(--chart-1, light-dark(#2a78d6, #3987e5))");
     expect(() => seriesColor(6)).toThrow(RangeError);
   });
 
