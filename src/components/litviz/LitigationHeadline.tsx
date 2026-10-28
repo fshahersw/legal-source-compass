@@ -51,7 +51,7 @@ export function productLabel(m: Pick<MdlRow, "mdl" | "title">, max = 16): string
 export function largestMdlSeries(
   data: MdlAnalytics,
   n = 5,
-): { series: Series[]; picked: MdlRow[] } {
+): { series: Series[]; picked: (MdlRow & { pending: number })[] } {
   const dates = data.overview.portfolio.map((p) => p.date);
   const picked = data.mdls
     .filter((m) => m.status === "pending" && m.series.length >= 2)
