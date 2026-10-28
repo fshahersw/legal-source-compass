@@ -9,7 +9,6 @@ import {
   optionalText,
   parseMarkImage,
   parseOpenImage,
-  text,
   yearOf,
   type MarkImage,
   type OpenImage,
