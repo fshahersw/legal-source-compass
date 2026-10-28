@@ -257,7 +257,7 @@ export function DojHealthSection() {
 
       <div className="mt-4">
         <ChartCard
-          title="Largest health-care resolutions"
+          title="Largest False Claims Act and health-care resolutions"
           subtitle={`Ranked by the amount each release title states · USD · ${period}`}
           status={
             status.kind === "ready" && !(d?.top.length ?? 0)
@@ -279,7 +279,7 @@ export function DojHealthSection() {
           actions={
             d?.top.length ? (
               <DataDrawer
-                title="Largest health-care resolutions"
+                title="Largest False Claims Act and health-care resolutions"
                 rows={d.top}
                 rowKey={(e) => e.release.id}
                 triggerLabel={`View all ${fmtInt(d.top.length)}`}
@@ -313,7 +313,7 @@ export function DojHealthSection() {
           }
         >
           <BarList
-            ariaLabel="Largest health-care resolutions by headline figure"
+            ariaLabel="Largest False Claims Act and health-care resolutions by headline figure"
             items={(d?.top ?? []).slice(0, 10).map((e) => ({
               id: e.release.id,
               label: e.release.title,

@@ -16,8 +16,21 @@ import {
 } from "../penaltyDistribution";
 import { fmtInt } from "./format";
 
+// The chart answers "how many reach $10M": bands below it are neutral greys, $10M and up a blue ramp,
+// so the $10M+ share reads at a glance without telling five similar blues apart.
+const NEUTRAL = [
+  "color-mix(in srgb, var(--muted-foreground) 18%, var(--surface))",
+  "color-mix(in srgb, var(--muted-foreground) 38%, var(--surface))",
+];
 const FILLS = Object.fromEntries(
-  DOJ_BANDS.map((b, i) => [b, sequentialFill(0.28 + (0.72 * i) / (DOJ_BANDS.length - 1))]),
+  DOJ_BANDS.map((b, i) => [
+    b,
+    i < NEUTRAL.length
+      ? NEUTRAL[i]!
+      : sequentialFill(
+          0.45 + (0.55 * (i - NEUTRAL.length)) / (DOJ_BANDS.length - 1 - NEUTRAL.length),
+        ),
+  ]),
 );
 
 export function DojFigureSizes({ overview }: { overview: DojOverview }) {
