@@ -20,6 +20,7 @@ import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { UsMap } from "@/components/corpus/UsMap";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { EpaPenaltySizes } from "./EpaPenaltySizes";
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { useCorpus } from "@/lib/corpus/store";
 import {
   getEpaCases,
@@ -839,8 +840,9 @@ function EpaBody({
           : ""}
       </p>
 
+      {/* The window's total penalties and cases are already the KPI tiles above; the takeaways keep what they add. */}
       <KeyTakeaways
-        items={takeaways}
+        items={takeaways.filter((t) => t.id !== "penalties" && t.id !== "cases")}
         scope={`${win.label} · ${selected ? selected.name : "United States"} · flag lines always compare all states`}
       />
       <HowToRead measures={EPA_MEASURES} />
@@ -917,8 +919,10 @@ function EpaBody({
             <div>
               <p className="flex items-center gap-1 font-medium">
                 <Flag className="size-3.5 text-warning" aria-hidden /> Case surge · FY{latest}
+                <InfoPopover label="How the surge flag is set" title="Case surge">
+                  <p>{SURGE_RULE}</p>
+                </InfoPopover>
               </p>
-              <p className="text-[11px] text-muted-foreground">{SURGE_RULE}</p>
               {surges.length ? (
                 <>
                   <ul
@@ -960,8 +964,10 @@ function EpaBody({
             <div>
               <p className="flex items-center gap-1 font-medium">
                 <Flag className="size-3.5 text-warning" aria-hidden /> Per-capita outliers · FY2025
+                <InfoPopover label="How the per-capita flag is set" title="Per-capita outliers">
+                  <p>{PER_CAPITA_RULE}</p>
+                </InfoPopover>
               </p>
-              <p className="text-[11px] text-muted-foreground">{PER_CAPITA_RULE}</p>
               {outliers.length ? (
                 <ul className="mt-1 space-y-0.5">
                   {outliers.map((r) => (
@@ -983,23 +989,6 @@ function EpaBody({
                 <p className="mt-1 text-muted-foreground">No state exceeds the fence.</p>
               )}
             </div>
-            {topCase ? (
-              <div>
-                <p className="font-medium">
-                  Largest case · {selected ? selected.name : "United States"}, all years
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  {topCase.name} ({topCase.records.join(" + ")}; settled {topCase.settled ?? "—"}) —{" "}
-                  {usd(topCase.fedPenalty, 2)}
-                  {topCase.records.length > 1
-                    ? ` across ${topCase.records.length} regional records that split one national penalty`
-                    : ""}
-                  {profile.totals.fedPenalty
-                    ? `, ${((topCase.fedPenalty / profile.totals.fedPenalty) * 100).toFixed(0)}% of all settled federal penalties recorded for ${selected ? selected.name : "the U.S."}.`
-                    : "."}
-                </p>
-              </div>
-            ) : null}
           </div>
         </Panel>
       </div>
