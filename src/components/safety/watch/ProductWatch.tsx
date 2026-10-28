@@ -17,6 +17,10 @@ import { Input } from "@/components/ui/input";
 import { formatMonth } from "@/components/safety/products/productModel";
 import { cn } from "@/lib/utils";
 import { chartTokens } from "@/components/charts/palette";
+import { Beeswarm, type SwarmPoint } from "@/components/charts/d3/Beeswarm";
+import { RidgelineChart } from "@/components/charts/d3/RidgelineChart";
+import { metricFormatter } from "@/components/charts/format";
+import { useNavigate } from "@tanstack/react-router";
 import { ForestPlot, type ForestRow } from "./ForestPlot";
 import { MomentumMap } from "./MomentumMap";
 import { STATUS_COLOR } from "./watchColors";
@@ -28,6 +32,7 @@ import {
   SIGNAL_LABEL,
   SOURCE_LABEL,
   STATUS_LABEL,
+  tailMonths,
   type MdlStatus,
   type WatchCard,
   type WatchView,
@@ -138,6 +143,187 @@ function forestTable(cards: readonly WatchCard[], caption: string, deaths = fals
       };
     }),
   };
+}
+
+const COUNT = metricFormatter("count");
+const ratioWords = (v: number) => (v >= 10 ? `${v.toFixed(0)}×` : `${v.toFixed(2)}×`);
+const medianOf = (values: number[]) => {
+  if (!values.length) return null;
+  const s = [...values].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
+};
+
+/** The 36-month shape of each emerging drug's rise, one ridge each, the last 12 months in colour. */
+function RisesRidgeline({ cards }: { cards: readonly WatchCard[] }) {
+  const navigate = useNavigate();
+  const end = cards[0]?.end ?? "";
+  const rows = cards.filter((c) => c.end === end && c.tail.length >= 24);
+  const len = Math.max(...rows.map((c) => c.tail.length));
+  const keys = tailMonths(end, len);
+  const spiky = rows.filter((c) => c.peakMonth).length;
+  const short = (k: string) => {
+    const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
+      Number(k.slice(5, 7)) - 1
+    ];
+    return `${m} ’${k.slice(2, 4)}`;
+  };
+  const table: TableSpec = {
+    caption: `Monthly reports for each drug, ${formatMonth(keys[0] ?? end)} to ${formatMonth(end)}.`,
+    columns: [
+      { label: "Month" },
+      ...rows.map((c) => ({ label: c.label, align: "right" as const })),
+    ],
+    rows: keys.map((k, i) => ({
+      key: k,
+      cells: [
+        formatMonth(k),
+        ...rows.map((c) => COUNT.full(c.tail[i - (len - c.tail.length)] ?? null)),
+      ],
+    })),
+  };
+  return (
+    <ChartCard
+      title={
+        spiky
+          ? `${rows.length - spiky} of ${rows.length} rises build across the last 12 months; in ${spiky}, one month holds 40% or more of the year`
+          : `All ${rows.length} rises build across the last 12 months; none rests on a single month`
+      }
+      subtitle={`Reports per month, each drug scaled to its own peak · ${formatMonth(keys[0] ?? end)} – ${formatMonth(end)}`}
+      table={table}
+      sources={[
+        {
+          label: "openFDA drug adverse events (FAERS)",
+          url: "https://open.fda.gov/apis/drug/event/",
+        },
+      ]}
+      about={
+        <p>
+          Each ridge is one drug&apos;s monthly FAERS reports over 36 months, drawn to its own peak
+          so a small product&apos;s shape reads as clearly as a large one&apos;s. The coloured part
+          is the last 12 months, the window the watch compares with the 12 before. Heights are not
+          comparable between ridges; the ratio at the right is.
+        </p>
+      }
+      minHeight={300}
+    >
+      <RidgelineChart
+        rows={rows.map((c) => ({
+          id: c.id,
+          label: c.label,
+          note: c.ratio === null ? "new" : ratioWords(c.ratio),
+          values: [...Array.from({ length: len - c.tail.length }, () => null), ...c.tail],
+          color: STATUS_COLOR[c.status],
+        }))}
+        keys={keys}
+        keyLabel={formatMonth}
+        tickLabel={short}
+        emphasisFrom={len - 12}
+        emphasisLabel="Last 12 months"
+        formatter={COUNT}
+        unit="reports"
+        ariaLabel="Monthly FAERS reports for each drug rising with no MDL linked, each scaled to its own peak."
+        onSelect={(id) => void navigate({ to: "/safety/products/$id", params: { id } })}
+      />
+    </ChartCard>
+  );
+}
+
+const SPREAD_GROUPS = [
+  { id: "pending", label: "Pending MDL" },
+  { id: "closed", label: "Closed MDL only" },
+  { id: "none", label: "No MDL linked" },
+] as const;
+
+/** Every rated drug as a mark on the ratio axis, one lane per MDL status (d3-force beeswarm). */
+function SpreadSection({ view, labelled }: { view: WatchView; labelled: readonly string[] }) {
+  const navigate = useNavigate();
+  const drugs = view.points.filter((p) => p.source === "faers" && p.status !== "unkeyed");
+  const points: SwarmPoint[] = drugs.map((p) => ({
+    id: p.id,
+    label: p.label,
+    value: Math.min(64, Math.max(1 / 8, p.ratio)),
+    group: p.status,
+    size: p.recent,
+    detail: [
+      { label: "Last 12 months", value: COUNT.full(p.recent) },
+      { label: "Signal", value: SIGNAL_LABEL[p.signal] },
+    ],
+  }));
+  const med = Object.fromEntries(
+    SPREAD_GROUPS.map((g) => [
+      g.id,
+      medianOf(drugs.filter((p) => p.status === g.id).map((p) => p.ratio)),
+    ]),
+  ) as Record<string, number | null>;
+  const share = (status: string) => {
+    const list = drugs.filter((p) => p.status === status);
+    return list.length ? (100 * list.filter((p) => p.ratio > 1).length) / list.length : null;
+  };
+  const pendingShare = share("pending");
+  const noneShare = share("none");
+  const title =
+    med["pending"] !== null && med["none"] !== null && pendingShare !== null && noneShare !== null
+      ? `${pendingShare.toFixed(0)}% of drugs in a pending MDL report above expected, against ${noneShare.toFixed(0)}% of drugs with no MDL linked (medians ${med["pending"]!.toFixed(2)}× and ${med["none"]!.toFixed(2)}×)`
+      : "How rises spread by MDL status";
+  const table: TableSpec = {
+    caption: "Rated drugs by MDL status: reports against expected.",
+    columns: [
+      { label: "Drug" },
+      { label: "MDL status" },
+      { label: "Last 12 months", align: "right" },
+      { label: "Against expected", align: "right" },
+    ],
+    rows: [...drugs]
+      .sort((a, b) => b.ratio - a.ratio)
+      .slice(0, 400)
+      .map((p) => ({
+        key: p.id,
+        cells: [p.label, STATUS_LABEL[p.status], COUNT.full(p.recent), ratioWords(p.ratio)],
+      })),
+  };
+  return (
+    <Section
+      id="watch-spread"
+      title="How rises spread by MDL status"
+      description="Every rated drug as one mark, placed by its reports against expected, in a lane for its MDL status. Mark size follows its report count. The upright line in each lane is that lane's median."
+    >
+      <ChartCard
+        title={title}
+        subtitle="FAERS drugs with 50+ reports in the last 12 months · reports against expected (log scale)"
+        table={table}
+        sources={[
+          {
+            label: "openFDA drug adverse events (FAERS)",
+            url: "https://open.fda.gov/apis/drug/event/",
+          },
+        ]}
+        about={
+          <p>
+            Litigation itself raises reporting (lawyers and patients file reports once a case is
+            public), so drugs in a pending MDL sitting further right is expected and is not evidence
+            of harm. The lane to watch is &quot;No MDL linked&quot;: its right-hand tail is where
+            unlitigated rises are.
+          </p>
+        }
+        minHeight={320}
+      >
+        <Beeswarm
+          points={points}
+          groups={SPREAD_GROUPS.map((g) => ({ ...g, color: STATUS_COLOR[g.id] }))}
+          reference={1}
+          referenceLabel="in line"
+          format={ratioWords}
+          tick={(v) => (v < 1 ? `1/${Math.round(1 / v)}×` : `${v}×`)}
+          domain={[1 / 8, 64]}
+          radius={[1.4, 4.5]}
+          ariaLabel="Rated drugs by reports against expected, one lane per MDL status."
+          labelled={labelled.filter((id) => drugs.some((p) => p.id === id)).slice(0, 3)}
+          onSelect={(id) => void navigate({ to: "/safety/products/$id", params: { id } })}
+        />
+      </ChartCard>
+    </Section>
+  );
 }
 
 export function ProductWatch() {
@@ -306,6 +492,7 @@ export function ProductWatch() {
       <SectionIndex
         items={[
           { id: "watch-map", label: "Momentum map" },
+          { id: "watch-spread", label: "By MDL status" },
           { id: "watch-emerging", label: "No MDL linked" },
           { id: "watch-litigated", label: "In litigation" },
           { id: "watch-deaths", label: "Death reports" },
@@ -433,6 +620,8 @@ export function ProductWatch() {
         </ChartCard>
       </Section>
 
+      <SpreadSection view={view} labelled={labelled} />
+
       <Section
         id="watch-emerging"
         title="Rising with no MDL linked"
@@ -443,8 +632,9 @@ export function ProductWatch() {
           </InfoPopover>
         }
       >
+        {view.emerging.length ? <RisesRidgeline cards={view.emerging} /> : null}
         {view.emerging.length ? (
-          <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {view.emerging.map((card) => (
               <WatchCardTile key={card.id} card={card} />
             ))}

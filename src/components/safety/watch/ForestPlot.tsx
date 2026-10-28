@@ -5,7 +5,7 @@
  */
 import { useState } from "react";
 import { scaleLog } from "d3-scale";
-import { ChartCanvas, axisText, textWidth, type TipSpec } from "@/components/charts/canvas";
+import { ChartCanvas, axisText, type TipSpec } from "@/components/charts/canvas";
 
 export type ForestRow = {
   id: string;
@@ -70,9 +70,12 @@ export function ForestPlot({
           .clamp(true);
         const step = ticks.length > 9 ? 2 : 1;
         const focus = active ?? hover;
+        // bold capitals run wider than the axis-text estimate: widen the per-character width by the share of capitals
+        const em = (t: string) =>
+          0.58 + 0.16 * ((t.match(/[A-Z]/g)?.length ?? 0) / Math.max(1, t.length));
         const fit = (text: string, width: number, size: number) => {
-          if (textWidth(text, size) <= width) return text;
-          const chars = Math.max(4, Math.floor(width / (size * 0.56)) - 1);
+          if (text.length * size * em(text) <= width) return text;
+          const chars = Math.max(4, Math.floor(width / (size * em(text))) - 1);
           return `${text.slice(0, chars)}…`;
         };
         const tip: TipSpec | null =
