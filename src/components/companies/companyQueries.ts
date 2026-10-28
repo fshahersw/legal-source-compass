@@ -5,6 +5,7 @@ import {
   getDocumentText,
 } from "@/lib/external/companyStatements.functions";
 import { getCompanyCoverFacts, getCompanyIrFigures } from "@/lib/external/companyIr.functions";
+import { getCompanyPrices } from "@/lib/external/companyPrices.functions";
 
 const STALE = 10 * 60 * 1000;
 
@@ -41,5 +42,11 @@ export const companyCoverFactsQuery = (cik: string) => ({
 export const companyIrFiguresQuery = (cik: string) => ({
   queryKey: ["company-ir-figures", cik],
   queryFn: () => getCompanyIrFigures({ data: { cik } }),
+  staleTime: STALE,
+});
+
+export const companyPricesQuery = (cik: string) => ({
+  queryKey: ["company-prices", cik],
+  queryFn: () => getCompanyPrices({ data: { cik } }),
   staleTime: STALE,
 });
