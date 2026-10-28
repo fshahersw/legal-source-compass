@@ -76,6 +76,50 @@ export function sunburstLayout(
     .descendants();
 }
 
+/** One sunburst segment in ring units: x in radians [0, 2π], y in rings (the root is ring 0, its children ring 1). */
+export type RingArc = { x0: number; x1: number; y0: number; y1: number };
+
+/**
+ * Where segment `d` sits when the chart is zoomed to `p` (both in ring units): `p` fills the full circle and its
+ * children become the first ring. Segments outside `p` collapse to zero width; ancestors drop to ring 0 and below.
+ */
+export function zoomArc(d: RingArc, p: RingArc & { depth: number }): RingArc {
+  const span = p.x1 - p.x0 || 1;
+  const clamp = (v: number) => Math.max(0, Math.min(1, v));
+  return {
+    x0: clamp((d.x0 - p.x0) / span) * 2 * Math.PI,
+    x1: clamp((d.x1 - p.x0) / span) * 2 * Math.PI,
+    y0: Math.max(0, d.y0 - p.depth),
+    y1: Math.max(0, d.y1 - p.depth),
+  };
+}
+
+/** A segment is drawn while it sits in rings 1..`rings` with some angle. */
+export function ringVisible(a: RingArc, rings: number): boolean {
+  return a.y0 >= 1 && a.y1 <= rings + 1 + 1e-9 && a.x1 - a.x0 > 1e-6;
+}
+
+/**
+ * A label fits a segment when the arc at the middle radius is at least `minArcPx` long (the text height) and the
+ * segment is not a sliver. `rad` maps ring units to pixels.
+ */
+export function ringLabelFits(
+  a: RingArc,
+  rings: number,
+  rad: (y: number) => number,
+  minArcPx = 11,
+): boolean {
+  if (!ringVisible(a, rings)) return false;
+  const mid = (rad(a.y0) + rad(a.y1)) / 2;
+  return (a.x1 - a.x0) * mid >= minArcPx && (a.y1 - a.y0) * (a.x1 - a.x0) > 0.06;
+}
+
+/** Shorten a label to `max` characters with an ellipsis; very short budgets drop the label. */
+export function fitLabel(name: string, max: number): string | null {
+  if (max < 3) return null;
+  return name.length > max ? `${name.slice(0, Math.max(1, max - 1)).trimEnd()}…` : name;
+}
+
 /** Spread end-of-line labels so none sits closer than `gap` to its neighbour, keeping order and staying in [min, max]. */
 export function spreadLabels(
   ys: readonly number[],

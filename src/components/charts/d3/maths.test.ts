@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { divergingDomain, rebase, spreadLabels, stackLayers, sunburstLayout } from "./maths";
+import {
+  divergingDomain,
+  fitLabel,
+  rebase,
+  ringLabelFits,
+  ringVisible,
+  spreadLabels,
+  stackLayers,
+  sunburstLayout,
+  zoomArc,
+} from "./maths";
 
 describe("d3 maths", () => {
   it("rebases to the chosen date and keeps gaps null", () => {
@@ -66,5 +76,28 @@ describe("d3 maths", () => {
   it("spreads colliding labels apart and keeps them in bounds", () => {
     expect(spreadLabels([50, 52, 200], 12, 0, 300)).toEqual([50, 62, 200]);
     expect(spreadLabels([295, 298], 12, 0, 300)).toEqual([288, 300]);
+  });
+  it("zooms a segment to the full circle and lifts its children to the first ring", () => {
+    const p = { x0: Math.PI / 2, x1: Math.PI, y0: 1, y1: 2, depth: 1 };
+    const self = zoomArc(p, p);
+    expect(self.x0).toBeCloseTo(0);
+    expect(self.x1).toBeCloseTo(2 * Math.PI);
+    expect(self.y0).toBe(0);
+    const child = zoomArc({ x0: Math.PI / 2, x1: (3 * Math.PI) / 4, y0: 2, y1: 3 }, p);
+    expect(child.x1).toBeCloseTo(Math.PI);
+    expect(child.y0).toBe(1);
+    const outside = zoomArc({ x0: 0, x1: Math.PI / 4, y0: 1, y1: 2 }, p);
+    expect(outside.x1 - outside.x0).toBe(0);
+  });
+  it("shows rings 1..n only and labels only segments wide enough", () => {
+    expect(ringVisible({ x0: 0, x1: 1, y0: 1, y1: 2 }, 2)).toBe(true);
+    expect(ringVisible({ x0: 0, x1: 1, y0: 0, y1: 1 }, 2)).toBe(false);
+    expect(ringVisible({ x0: 0, x1: 1, y0: 3, y1: 4 }, 2)).toBe(false);
+    const rad = (y: number) => y * 50;
+    expect(ringLabelFits({ x0: 0, x1: 0.5, y0: 1, y1: 2 }, 2, rad)).toBe(true);
+    expect(ringLabelFits({ x0: 0, x1: 0.05, y0: 1, y1: 2 }, 2, rad)).toBe(false);
+    expect(fitLabel("Products liability", 10)).toBe("Products…");
+    expect(fitLabel("Torts", 10)).toBe("Torts");
+    expect(fitLabel("Torts", 2)).toBeNull();
   });
 });

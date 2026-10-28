@@ -100,13 +100,14 @@ export function divergingFill(t: number): string {
 
 /** CSS variables every chart root sets. The neutral and ink roles map onto the app's own tokens. */
 export const chartTokens: CSSProperties = {
-  ["--chart-1" as string]: slotColor(0),
+  // An entity page may set --entity-accent (companies/brandAccent.ts, checked against slots 2-6) to draw slot 1 in its brand colour.
+  ["--chart-1" as string]: `var(--entity-accent, ${slotColor(0)})`,
   ["--chart-2" as string]: slotColor(1),
   ["--chart-3" as string]: slotColor(2),
   ["--chart-4" as string]: slotColor(3),
   ["--chart-5" as string]: slotColor(4),
   ["--chart-6" as string]: slotColor(5),
-  ["--chart-on-1" as string]: `light-dark(${SLOT_INK_LIGHT[0]}, ${SLOT_INK_DARK[0]})`,
+  ["--chart-on-1" as string]: `var(--entity-accent-on, light-dark(${SLOT_INK_LIGHT[0]}, ${SLOT_INK_DARK[0]}))`,
   ["--chart-on-2" as string]: `light-dark(${SLOT_INK_LIGHT[1]}, ${SLOT_INK_DARK[1]})`,
   ["--chart-on-3" as string]: `light-dark(${SLOT_INK_LIGHT[2]}, ${SLOT_INK_DARK[2]})`,
   ["--chart-on-4" as string]: `light-dark(${SLOT_INK_LIGHT[3]}, ${SLOT_INK_DARK[3]})`,

@@ -59,6 +59,7 @@ export function EntityPage({
   crumbs,
   docket,
   lead,
+  header,
   extra,
   linkFilter,
 }: {
@@ -67,6 +68,14 @@ export function EntityPage({
   crumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[];
   docket?: { kind: "mdl" | "court"; id: string } | undefined;
   lead?: (
+    raw: Record<string, unknown>,
+    view: ReturnType<typeof buildEntityView>,
+  ) => React.ReactNode;
+  /**
+   * Replaces the whole header card (lead and key facts). The key facts then move to the record details, so nothing
+   * recorded is dropped.
+   */
+  header?: (
     raw: Record<string, unknown>,
     view: ReturnType<typeof buildEntityView>,
   ) => React.ReactNode;
@@ -117,12 +126,13 @@ export function EntityPage({
   const isId = ([k]: (typeof v.facts)[number]) => isSourceIdKey(k) || isStorageMetaKey(k);
   const moved = v.facts.filter((f) => isNoise(f) || isId(f));
   const facts = v.facts.filter((f) => !isNoise(f) && !isId(f) && !dupe(f));
-  const key = facts.slice(0, 8).filter((f) => !repeats(f));
+  const custom = header ? header(data.raw, v) : null;
+  const key = header ? [] : facts.slice(0, 8).filter((f) => !repeats(f));
   // A caller's lead replaces the photo; the facts box is drawn only when it has something to hold.
-  const leadNode = lead ? lead(data.raw, v) : null;
+  const leadNode = lead && !header ? lead(data.raw, v) : null;
   const hasLead = leadNode !== null && leadNode !== undefined && leadNode !== false;
   const photo = !lead && v.photo ? v.photo : null;
-  const rest = [...facts.slice(0, 8).filter(repeats), ...facts.slice(8)];
+  const rest = header ? facts : [...facts.slice(0, 8).filter(repeats), ...facts.slice(8)];
   const technical = [...moved, ...v.technical];
   // Source identifiers stay in the technical details, not the header line.
   const subtitle = subtitleWithoutIds(v.subtitle);
@@ -153,7 +163,8 @@ export function EntityPage({
           </InfoPopover>
         </div>
       ) : null}
-      {key.length || hasLead || photo ? (
+      {custom}
+      {!header && (key.length || hasLead || photo) ? (
         <div className="mb-5 flex flex-col gap-4 rounded-xl border border-border bg-card shadow-xs p-4 shadow-card sm:flex-row">
           {hasLead ? leadNode : null}
           {photo ? (

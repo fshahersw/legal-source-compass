@@ -3,15 +3,20 @@
  * its own width so text stays at its real size (no viewBox shrinking). Wrap each in a ChartCard for title, unit,
  * period, source and the "View data" table.
  */
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { scaleBand, scaleLinear, scalePoint } from "d3-scale";
 import { arc as d3arc, line as d3line } from "d3-shape";
 import {
   divergingDomain,
+  fitLabel,
   rebase,
+  ringLabelFits,
+  ringVisible,
   spreadLabels,
   stackLayers,
   sunburstLayout,
+  zoomArc,
+  type RingArc,
   type Series,
   type StackRow,
   type TreeNode,
@@ -484,6 +489,13 @@ export function DivergingDots({
 
 // ------------------------------------------------------------------------------------------------ sunburst
 
+/**
+ * Zoomable sunburst (portfolio-composition form). Each top-level branch keeps its own categorical slot; deeper rings
+ * are lighter tints of the parent hue, and "Not broken down" remainders take the neutral fill. Labels sit inside the
+ * arcs along the radius and hide when a segment is too small. Click (or Enter on) a segment with children to zoom in,
+ * the centre to zoom out. The centre shows the total of the zoomed node, or of the hovered segment, with its name.
+ * Only exact partitions belong here (see charts AGENTS.md): values sum from the leaves.
+ */
 export function Sunburst({
   root,
   size = 360,
@@ -498,80 +510,297 @@ export function Sunburst({
   onFocusChange?: (name: string | null) => void;
   centerLabel?: (value: number) => string;
 }) {
-  const r = size / 2;
-  const nodes = useMemo(() => sunburstLayout(root, r), [root, r]);
+  const [wrap, width] = useWidth<HTMLDivElement>(size);
+  const px = Math.max(180, Math.min(size, width));
+  const r = px / 2;
+  const nodes = useMemo(() => {
+    const laid = sunburstLayout(root, 1);
+    const levels = (laid[0]?.height ?? 0) + 1;
+    return laid.map((n) => ({
+      node: n,
+      key: n
+        .ancestors()
+        .reverse()
+        .map((a) => a.data.name)
+        .join("\u241f"),
+      arc: { x0: n.x0, x1: n.x1, y0: n.y0 * levels, y1: n.y1 * levels } as RingArc,
+    }));
+  }, [root]);
+  const height = nodes[0]?.node.height ?? 0;
+  const rings = Math.max(1, Math.min(3, height));
+  const ringR = r / (rings + 1.3);
+  const centerR = ringR * 1.3;
+  const rad = (y: number) => (y <= 1 ? Math.max(0, y) * centerR : centerR + (y - 1) * ringR);
+
+  const [zoomKey, setZoomKey] = useState<string | null>(null);
+  const zoomed = nodes.find((n) => n.key === zoomKey) ?? nodes[0];
+  const [view, setView] = useState<RingArc[]>(() => nodes.map((n) => n.arc));
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  useEffect(() => {
+    if (!zoomed) return;
+    const p = { ...zoomed.arc, depth: zoomed.node.depth };
+    const to = nodes.map((n) => zoomArc(n.arc, p));
+    const from = viewRef.current;
+    const reduce =
+      typeof window === "undefined" ||
+      typeof window.requestAnimationFrame !== "function" ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || from.length !== to.length) {
+      setView(to);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / 550);
+      const e = ease(t);
+      setView(
+        to.map((b, i) => {
+          const f = from[i]!;
+          return {
+            x0: f.x0 + (b.x0 - f.x0) * e,
+            x1: f.x1 + (b.x1 - f.x1) * e,
+            y0: f.y0 + (b.y0 - f.y0) * e,
+            y1: f.y1 + (b.y1 - f.y1) * e,
+          };
+        }),
+      );
+      if (t < 1) raf = window.requestAnimationFrame(step);
+    };
+    raf = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(raf);
+  }, [nodes, zoomed]);
+
   const [own, setOwn] = useState<string | null>(null);
   const focus = focusProp !== undefined ? focusProp : own;
   const setFocus = (name: string | null) => {
     setOwn(name);
     onFocusChange?.(name);
   };
-  const a = d3arc<{ x0: number; x1: number; y0: number; y1: number }>()
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
+
+  const tops = nodes.filter((n) => n.node.depth === 1);
+  const topOf = (n: (typeof nodes)[number]) => {
+    let a = n.node;
+    while (a.depth > 1 && a.parent) a = a.parent;
+    return a;
+  };
+  const slotOf = (n: (typeof nodes)[number]) => {
+    const t = topOf(n);
+    return (
+      t.data.slot ??
+      Math.min(
+        5,
+        Math.max(
+          0,
+          tops.findIndex((x) => x.node === t),
+        ),
+      )
+    );
+  };
+  const fillOf = (n: (typeof nodes)[number]) => {
+    if (/^not broken down$/i.test(n.node.data.name)) return "var(--chart-other)";
+    const base = seriesVar(slotOf(n));
+    const tint = Math.max(34, 100 - (n.node.depth - 1) * 26);
+    return n.node.depth === 1 ? base : `color-mix(in srgb, ${base} ${tint}%, var(--chart-surface))`;
+  };
+  const arcPath = d3arc<RingArc>()
     .startAngle((d) => d.x0)
     .endAngle((d) => d.x1)
-    .innerRadius((d) => d.y0)
-    .outerRadius((d) => d.y1 - 1)
-    .padAngle(0.004);
-  const top = (n: (typeof nodes)[number]) => n.ancestors().reverse()[1];
-  const tops = nodes.filter((n) => n.depth === 1);
-  const total = nodes[0]?.value ?? 0;
-  const shown = focus ? nodes.find((n) => n.data.name === focus && n.depth === 1) : undefined;
+    .innerRadius((d) => rad(d.y0))
+    .outerRadius((d) => Math.max(rad(d.y0), rad(d.y1)));
+  const total = nodes[0]?.node.value ?? 0;
+  const pathOf = (n: (typeof nodes)[number]) =>
+    n.node
+      .ancestors()
+      .reverse()
+      .slice(1)
+      .map((x) => x.data.name)
+      .join(" › ");
+  const fmt = (v: number) => (centerLabel ? centerLabel(v) : v.toLocaleString("en-US"));
+  const hovered = hoverKey ? nodes.find((n) => n.key === hoverKey) : undefined;
+  const focused = !hovered && focus ? tops.find((n) => n.node.data.name === focus) : undefined;
+  const shown = hovered ?? focused ?? zoomed;
+  const shownValue = shown?.node.value ?? total;
+  const shownName = shown && shown.node.depth > 0 ? shown.node.data.name : root.name;
+  const valueText = fmt(shownValue);
+  const valueSize = Math.round(
+    Math.max(
+      11,
+      Math.min(Math.min(26, centerR * 0.36), (2 * centerR - 16) / (valueText.length * 0.58)),
+    ),
+  );
+  const captionMax = Math.floor((2 * centerR - 18) / 5.6);
+  const zoomable = height > 1;
+  const zoomIn = (n: (typeof nodes)[number]) => {
+    if (!n.node.children?.length) return;
+    setHoverKey(null);
+    setZoomKey(n.key);
+  };
+  const zoomOut = () => {
+    if (!zoomed?.node.parent) return;
+    setHoverKey(null);
+    const parent = nodes.find((n) => n.node === zoomed.node.parent);
+    setZoomKey(parent && parent.node.depth > 0 ? parent.key : null);
+  };
+  const share = (v: number) =>
+    total > 0 ? `${((v / total) * 100).toFixed(1)}% of ${root.name}` : "";
+  const labelChars = Math.floor((ringR - 8) / 5.4);
+  const atRoot = !zoomed || zoomed.node.depth === 0;
+
   return (
-    <svg
-      style={chartTokens}
-      viewBox={`${-r} ${-r} ${size} ${size}`}
-      className="mx-auto block w-full max-w-sm"
-      role="group"
-      aria-label={`Breakdown of ${root.name}`}
-    >
-      {nodes
-        .filter((n) => n.depth > 0)
-        .map((n, i) => {
-          const t = top(n);
-          const slot = t?.data.slot ?? Math.min(5, Math.max(0, tops.indexOf(t!)));
-          // Inner-ring segments are keyboard stops (Tab), focusing one highlights it like hovering does; outer rings
-          // stay pointer-only, their figures are in the title and the table.
-          const keyboard = n.depth === 1;
-          return (
-            <path
-              key={i}
-              d={a(n) ?? ""}
-              style={{ fill: seriesVar(slot) }}
-              opacity={focus && t?.data.name !== focus ? 0.25 : 1 - (n.depth - 1) * 0.22}
-              onMouseEnter={() => setFocus(t?.data.name ?? null)}
-              onMouseLeave={() => setFocus(null)}
-              {...(keyboard
-                ? {
-                    tabIndex: 0,
-                    role: "img",
-                    "aria-label": `${n.data.name}: ${(n.value ?? 0).toLocaleString("en-US")}`,
-                    onFocus: () => setFocus(n.data.name),
-                    onBlur: () => setFocus(null),
-                    className:
-                      "outline-none focus-visible:[stroke:var(--foreground)] focus-visible:[stroke-width:2.5]",
+    <div ref={wrap} className="w-full">
+      <svg
+        style={chartTokens}
+        width={px}
+        height={px}
+        viewBox={`${-r} ${-r} ${px} ${px}`}
+        className="mx-auto block max-w-full"
+        role="group"
+        aria-label={`Breakdown of ${root.name}${atRoot ? "" : `, zoomed to ${pathOf(zoomed!)}`}`}
+      >
+        <g>
+          {nodes.map((n, i) => {
+            if (n.node.depth === 0) return null;
+            const a = view[i];
+            if (!a || !ringVisible(a, rings)) return null;
+            const t = topOf(n);
+            const dim = focus && t.data.name !== focus && !hovered;
+            const firstRing = n.node.depth === (zoomed?.node.depth ?? 0) + 1;
+            const canZoom = !!n.node.children?.length && zoomable;
+            const label = `${pathOf(n)}: ${(n.node.value ?? 0).toLocaleString("en-US")}`;
+            return (
+              <path
+                key={n.key}
+                d={arcPath(a) ?? ""}
+                style={{
+                  fill: fillOf(n),
+                  stroke: "var(--chart-surface)",
+                  cursor: canZoom ? "pointer" : "default",
+                }}
+                strokeWidth={1}
+                opacity={dim ? 0.28 : 1}
+                onMouseEnter={() => {
+                  setHoverKey(n.key);
+                  setFocus(t.data.name);
+                }}
+                onMouseLeave={() => {
+                  setHoverKey(null);
+                  setFocus(null);
+                }}
+                onClick={canZoom ? () => zoomIn(n) : undefined}
+                {...(firstRing
+                  ? {
+                      tabIndex: 0,
+                      role: canZoom ? "button" : "img",
+                      "aria-label": canZoom ? `${label}. Zoom in` : label,
+                      onFocus: () => {
+                        setHoverKey(n.key);
+                        setFocus(t.data.name);
+                      },
+                      onBlur: () => {
+                        setHoverKey(null);
+                        setFocus(null);
+                      },
+                      onKeyDown: (e: KeyboardEvent) => {
+                        if (canZoom && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault();
+                          zoomIn(n);
+                        }
+                      },
+                      className:
+                        "outline-none focus-visible:[stroke:var(--foreground)] focus-visible:[stroke-width:2.5]",
+                    }
+                  : { "aria-hidden": true })}
+              >
+                <title>{`${label}${share(n.node.value ?? 0) ? ` (${share(n.node.value ?? 0)})` : ""}${canZoom ? ". Click to zoom in" : ""}`}</title>
+              </path>
+            );
+          })}
+        </g>
+        <g pointerEvents="none" textAnchor="middle">
+          {nodes.map((n, i) => {
+            if (n.node.depth === 0) return null;
+            const a = view[i];
+            if (!a || !ringLabelFits(a, rings, rad)) return null;
+            const text = fitLabel(n.node.data.name, labelChars);
+            if (!text) return null;
+            const deg = (((a.x0 + a.x1) / 2) * 180) / Math.PI;
+            const y = (rad(a.y0) + rad(a.y1)) / 2;
+            const t = topOf(n);
+            const dim = focus && t.data.name !== focus && !hovered;
+            return (
+              <text
+                key={n.key}
+                dy="0.35em"
+                transform={`rotate(${deg - 90}) translate(${y},0) rotate(${deg < 180 ? 0 : 180})`}
+                className="text-[10px]"
+                style={{
+                  fill: "var(--chart-ink)",
+                  stroke: "var(--chart-surface)",
+                  strokeWidth: 2.6,
+                  paintOrder: "stroke",
+                  strokeLinejoin: "round",
+                }}
+                opacity={dim ? 0.3 : 1}
+              >
+                {text}
+              </text>
+            );
+          })}
+        </g>
+        <g
+          onClick={atRoot ? undefined : zoomOut}
+          style={{ cursor: atRoot ? "default" : "pointer" }}
+          {...(atRoot
+            ? {}
+            : {
+                role: "button",
+                tabIndex: 0,
+                "aria-label": `Zoom out from ${zoomed!.node.data.name}`,
+                onKeyDown: (e: KeyboardEvent) => {
+                  if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+                    e.preventDefault();
+                    zoomOut();
                   }
-                : { "aria-hidden": true })}
+                },
+                className: "outline-none [&:focus-visible>circle]:[stroke:var(--foreground)]",
+              })}
+        >
+          <circle r={centerR - 3} style={{ fill: "var(--chart-mid)" }} strokeWidth={2} />
+          <text
+            textAnchor="middle"
+            dy={-centerR * 0.06}
+            className="fill-foreground font-semibold tabular-nums"
+            style={{ fontSize: valueSize }}
+          >
+            {valueText}
+          </text>
+          <text
+            textAnchor="middle"
+            dy={valueSize * 0.55 + 6}
+            className="fill-muted-foreground text-[10.5px]"
+          >
+            {fitLabel(shownName, captionMax) ?? ""}
+          </text>
+          {!atRoot ? (
+            <text
+              textAnchor="middle"
+              dy={valueSize * 0.55 + 20}
+              className="fill-primary text-[10px] font-medium"
             >
-              <title>{`${n
-                .ancestors()
-                .reverse()
-                .slice(1)
-                .map((x) => x.data.name)
-                .join(" › ")}: ${(n.value ?? 0).toLocaleString("en-US")}`}</title>
-            </path>
-          );
-        })}
-      <text textAnchor="middle" dy="-0.2em" className="fill-foreground text-sm font-semibold">
-        {centerLabel
-          ? centerLabel(shown?.value ?? total)
-          : (shown?.value ?? total).toLocaleString("en-US")}
-      </text>
-      <text textAnchor="middle" dy="1.2em" className="fill-muted-foreground text-[10px]">
-        {(() => {
-          const name = shown?.data.name ?? root.name;
-          return name.length > 24 ? `${name.slice(0, 22).trimEnd()}…` : name;
-        })()}
-      </text>
-    </svg>
+              ↑ Zoom out
+            </text>
+          ) : null}
+        </g>
+      </svg>
+      {zoomable ? (
+        <p className="m-0 mt-1 text-center text-[11px] text-muted-foreground">
+          Click a segment to zoom in, the centre to zoom out.
+        </p>
+      ) : null}
+    </div>
   );
 }

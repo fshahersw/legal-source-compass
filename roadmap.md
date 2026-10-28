@@ -1,5 +1,15 @@
 # Legal Source Atlas — roadmap
 
+## Company IR figures, judge console and logo accents (2026-10-28)
+- [x] Self-updating source company_sec_cover_facts (ingest-company-ir): public float and shares outstanding from SEC dei company concepts, 25 registrants a run, enabled and scheduled daily
+- [x] Self-updating source company_ir_kpis (ingest-company-ir): documents on the IR site each registrant names in its SEC filings (Firecrawl map and scrape with the PDF parser, Tavily only on the company's own domains), figures read by one Anthropic Message Batches pass per run with the printed line kept and checked against the document text ("In text" or "Page image"); registered and scheduled, disabled until FIRECRAWL_API_KEY and ANTHROPIC_API_KEY are set on the corpussite function
+- [x] Company dossier: segments and KPIs from the company's investor documents, market value on the 10-K cover
+- [x] Company pages: accent colour from the company's own site icon (re-stepped to clear 3:1 in both themes, kept out of charts when too close to another series colour)
+- [x] Judge pages: profile card, six key figures, expert-ruling grant rates with 95% intervals, how MDL actions ended, bench map of motions pending, counsel most often before the judge, bench scatter, pending MDLs
+- [x] Sunburst: zoom on click, radial labels, branch-coloured rings, centre total
+- [ ] Not built (no motion-level outcomes in the data): dismissal and summary-judgment grant rates, motion-by-motion bench heatmap, days to ruling, rulings per quarter
+- [ ] Not built (no licensed price source): defendant share prices around case events
+
 ## Analyst-console refresh (2026-10-28)
 - [x] Theme: analyst-console tokens (cool grey canvas, navy sidebar rail, flat 10 px panels, #2a78d6 accent, Instrument Sans with a Newsreader page title), validated six-slot chart palette in both themes, section eyebrow above titles, header photo backdrops removed, chart footers folded into the card
 - [x] Overview: litigation pulse (JPML portfolio, largest MDLs, 12-month movers, federal civil filings and terminations) above the headlines and the map
