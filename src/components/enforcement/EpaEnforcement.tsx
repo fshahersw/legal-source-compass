@@ -19,6 +19,7 @@ import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
 import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { UsMap } from "@/components/corpus/UsMap";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
+import { EpaPenaltySizes } from "./EpaPenaltySizes";
 import { useCorpus } from "@/lib/corpus/store";
 import {
   getEpaCases,
@@ -730,6 +731,7 @@ function EpaBody({
   const scopeName = selected ? selected.name : "all states";
   const minCaseFy = Math.max(win.from, 2017);
   const detailPending = !!selected && detail.isLoading;
+  const cases = useQuery(epaCasesQuery);
   const topState = selected
     ? null
     : (rows
@@ -1022,6 +1024,18 @@ function EpaBody({
           )}
         </Panel>
       </div>
+
+      <EpaPenaltySizes
+        rows={cases.data}
+        pending={cases.isPending}
+        error={cases.isError}
+        onRetry={() => void cases.refetch()}
+        fromFy={minCaseFy}
+        toFy={win.to}
+        state={selected?.code}
+        scopeName={selected ? selected.name : "United States"}
+        sourceHref={data.source}
+      />
 
       <Panel
         id="epa-states"

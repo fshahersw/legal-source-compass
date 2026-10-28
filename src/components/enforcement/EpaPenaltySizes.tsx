@@ -72,8 +72,8 @@ export function EpaPenaltySizes({
     about: (
       <>
         <p>
-          Each dot row is a histogram of the published EPA case records, a federal penalty of
-          $100,000 or more with a settlement in FY2017 or later, binned four to a power of ten. The
+          Each row is a histogram of the published EPA case records (a federal penalty of
+          $100,000 or more with a settlement in FY2017 or later), binned four to a power of ten. The
           penalty is the case&rsquo;s total federal penalty across its settlements, placed in the
           fiscal year of its latest settlement. Smaller penalties are not published as case
           records, so these medians describe large cases only.
