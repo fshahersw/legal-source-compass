@@ -73,7 +73,8 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
     x1: number,
     row: number,
   ) => {
-    if (row >= maxRows || own <= 0) return;
+    // a leaf's sections are all printed directly in it: nothing is drawn below it
+    if (row >= maxRows || own <= 0 || !kids.length) return;
     const kidSum = kids.reduce((a, k) => a + count(k.total), 0);
     if (kidSum + direct > own) {
       if (parent) excess.push(parent.index);
@@ -102,8 +103,7 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
       place(k, byParent.get(k.index) ?? [], t, count(k.direct), x, x + w, row + 1);
       x += w;
     }
-    // only a container that is broken down at this row gets a "directly in" cell; a leaf's sections are all direct
-    if (kids.length && direct > 0) {
+    if (direct > 0) {
       cells.push({
         key: `d${parent?.index ?? "root"}`,
         index: null,
@@ -119,8 +119,8 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
       });
       x += direct * scale;
     }
-    const rest = own - kidSum - (kids.length ? direct : own - kidSum);
-    if (kids.length && rest > 0) {
+    const rest = own - kidSum - direct;
+    if (rest > 0) {
       unbroken += rest;
       cells.push({
         key: `u${parent?.index ?? "root"}`,
