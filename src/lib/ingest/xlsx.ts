@@ -31,7 +31,10 @@ function entryStream(bytes: Uint8Array, entry: ZipEntry): ReadableStream<Uint8Ar
 /** Text chunks of one entry, decoded as UTF-8. */
 async function* entryText(bytes: Uint8Array, entry: ZipEntry): AsyncGenerator<string> {
   // the DOM typings give TextDecoderStream a BufferSource writable; a Uint8Array stream is what it accepts at runtime
-  const decoder = new TextDecoderStream("utf-8") as unknown as ReadableWritablePair<string, Uint8Array>;
+  const decoder = new TextDecoderStream("utf-8") as unknown as ReadableWritablePair<
+    string,
+    Uint8Array
+  >;
   const reader = entryStream(bytes, entry).pipeThrough(decoder).getReader();
   for (;;) {
     const { value, done } = await reader.read();
