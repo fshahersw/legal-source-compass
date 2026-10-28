@@ -911,6 +911,7 @@ function EpaBody({
         </Panel>
         <Panel
           id="epa-flags"
+          className="self-start"
           title="Flags"
           subtitle="Deterministic rules over the published counts"
           footnote="A flag is a lead to review, not a finding."

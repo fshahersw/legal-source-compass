@@ -109,7 +109,7 @@
 - [x] Explore button replaced by an Ask AI icon that sends the chart's shown figures, page topic, period and source
 - [x] Enforcement calendar Weekdays/Months/3D start at coverage start (no pre-coverage zeros)
 - [x] Court structure diagram (federal + selectable state tiers, recorded types only) on Courts & judges and every state page
-- [~] Site-wide "say it once" declutter pass — state pages done (duplicate caseload block, tile captions, source prose, capitol card, bill lists, chart contrast); other sections next
+- [~] Site-wide "say it once" declutter pass — state pages done (duplicate caseload block, tile captions, source prose, capitol card, bill lists, chart contrast); EPA enforcement done (takeaways no longer repeat the KPI tiles, flag rules in info popovers, duplicate largest-case block removed); other sections next
 - [x] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
 - [x] Map/Tiles toggle on every national state map (Overview, Places, Insights rankings, EPA, OSHA, CFPB, agency spending, company payments, case analytics); rate maps hatch states with no figure instead of drawing them as the lowest value (EPA per-million no longer turns a missing rate into 0)
 - [ ] Law hierarchy trees: U.S. Code and CFR done; state codes/constitutions need a per-level totals endpoint
