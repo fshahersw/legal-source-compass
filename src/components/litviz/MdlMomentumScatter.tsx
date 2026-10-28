@@ -196,11 +196,23 @@ export function MomentumPlot({
                 </text>
               </g>
             ))}
-            <text x={left + 4} y={TOP + 11} fontSize={10.5} fill="var(--chart-axis)">
-              Grew
+            <text
+              x={w - RIGHT - 4}
+              y={y(0) - 6}
+              textAnchor="end"
+              fontSize={10.5}
+              fill="var(--chart-axis)"
+            >
+              ↑ Grew
             </text>
-            <text x={left + 4} y={HEIGHT - BOTTOM - 6} fontSize={10.5} fill="var(--chart-axis)">
-              Shrank
+            <text
+              x={w - RIGHT - 4}
+              y={y(0) + 14}
+              textAnchor="end"
+              fontSize={10.5}
+              fill="var(--chart-axis)"
+            >
+              ↓ Shrank
             </text>
             <text
               x={(left + w - RIGHT) / 2}
