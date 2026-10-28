@@ -1,6 +1,7 @@
 /**
- * The Litigation overview's lead charts, from the JPML monthly pending-MDL reports: how the five largest pending MDLs
- * changed since a report date the reader chooses, and the MDLs whose pending actions rose or fell most in 12 months.
+ * The Litigation overview's lead chart, from the JPML monthly pending-MDL reports: how the five largest pending MDLs
+ * changed since a report date the reader chooses. The 12-month rises and falls moved to MdlMomentumScatter, which
+ * places every listed MDL instead of ten.
  */
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -69,25 +70,10 @@ export function largestMdlSeries(
   return { series, picked };
 }
 
-/** The `n` largest 12-month rises and `n` largest falls in pending actions (MDLs with a recorded change only). */
-export function twelveMonthMovers(data: MdlAnalytics, n = 5): MdlRow[] {
-  const withChange = data.mdls.filter((m) => m.status === "pending" && m.change12m != null);
-  const ups = withChange
-    .filter((m) => m.change12m! > 0)
-    .sort((a, b) => b.change12m! - a.change12m!)
-    .slice(0, n);
-  const downs = withChange
-    .filter((m) => m.change12m! < 0)
-    .sort((a, b) => a.change12m! - b.change12m!)
-    .slice(0, n);
-  return [...ups, ...downs.reverse()];
-}
-
 export function LitigationHeadline() {
   const q = useQuery(mdlAnalyticsQuery);
   const data = q.data ?? null;
   const largest = useMemo(() => (data ? largestMdlSeries(data) : null), [data]);
-  const movers = useMemo(() => (data ? twelveMonthMovers(data) : []), [data]);
   const status = q.isLoading
     ? ({ kind: "loading" } as const)
     : q.isError
@@ -107,7 +93,7 @@ export function LitigationHeadline() {
   const lead = largest?.picked[0];
 
   return (
-    <div className="grid gap-4 xl:grid-cols-2" data-testid="litigation-headline">
+    <div className="min-w-0" data-testid="litigation-headline">
       <ChartCard
         variant="editorial"
         title={
@@ -155,48 +141,6 @@ export function LitigationHeadline() {
       >
         {largest?.series.length ? (
           <IndexChart series={largest.series} formatDate={monthLabel} labelWidth={170} />
-        ) : null}
-      </ChartCard>
-      <ChartCard
-        variant="editorial"
-        title={
-          movers.length && o
-            ? `${productLabel(movers[0]!, 36)} grew most in 12 months (${signed(movers[0]!.change12m!)} actions)`
-            : "Biggest 12-month changes in pending actions"
-        }
-        subtitle="Change in actions pending over the last 12 monthly reports · largest rises and falls"
-        status={
-          status.kind === "ready" && !movers.length
-            ? { kind: "empty", reason: "No 12-month change is recorded." }
-            : status
-        }
-        sources={SOURCES}
-        period={period}
-        asOf={o ? monthLabel(o.as_of) : undefined}
-        about={
-          <p>
-            A fall means actions were closed, remanded or transferred out; the report does not say
-            which. MDLs that left the report entirely are not shown here.
-          </p>
-        }
-        table={{
-          caption: "Change in actions pending over 12 months",
-          columns: [{ label: "MDL" }, { label: "Change, 12 months" }, { label: "Pending now" }],
-          rows: movers.map((m) => ({
-            key: String(m.mdl),
-            cells: [mdlName(m.mdl, m.title), m.change12m!, m.pending],
-          })),
-        }}
-        minHeight={320}
-      >
-        {movers.length ? (
-          <DivergingDots
-            items={movers.map((m) => ({ label: productLabel(m, 18), value: m.change12m }))}
-            baseline={0}
-            baselineLabel="No change"
-            showBaselineValue={false}
-            format={signed}
-          />
         ) : null}
       </ChartCard>
     </div>
