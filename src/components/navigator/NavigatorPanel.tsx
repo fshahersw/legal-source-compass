@@ -14,6 +14,8 @@ import {
   Eye,
   Keyboard,
   Loader2,
+  Mic,
+  MicOff,
   Minus,
   MousePointer2,
   Search,
@@ -24,12 +26,16 @@ import {
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown, InternalLink } from "@/components/assistant/AssistantMarkdown";
 import type { NavigatorStep } from "@/lib/navigator/protocol";
+import { guideFor } from "@/lib/navigator/pageGuides";
 import {
   NAVIGATOR_OPEN_EVENT,
   navigatorSuggestions,
   type NavigatorOpenDetail,
 } from "./navigatorEvents";
 import { useNavigator, type NavMessage } from "./useNavigator";
+import { useVoice, type VoiceState } from "./useVoice";
+import { VoiceOrb } from "./VoiceOrb";
+import { VoiceBar } from "./VoiceBar";
 
 type Mode = "closed" | "open" | "mini";
 
@@ -148,13 +154,42 @@ function Message({ m }: { m: NavMessage }) {
   );
 }
 
+function voiceLabel(state: VoiceState): string {
+  switch (state) {
+    case "connecting":
+      return "Connecting voice…";
+    case "listening":
+      return "Listening";
+    case "thinking":
+      return "Thinking";
+    case "speaking":
+      return "Speaking";
+    case "working":
+      return "Working on it";
+    default:
+      return "Navigator";
+  }
+}
+
 export function NavigatorPanel() {
   const [mode, setMode] = useState<Mode>("closed");
   const [draft, setDraft] = useState("");
   const panelRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const { messages, busy, run, stop, clear } = useNavigator(panelRef);
+  const voice = useVoice({ runTask: run, stopTask: stop, busy, panel: panelRef });
+  const voiceOn = voice.state !== "off" && voice.state !== "error";
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const lastStep =
+    messages.at(-1)?.role === "assistant" ? messages.at(-1)?.steps.at(-1) : undefined;
+
+  // while a task runs, the voice says which page is opening
+  useEffect(() => {
+    if (!voiceOn || !lastStep || lastStep.state !== "running") return;
+    const m = /^Opening (\/\S*)/.exec(lastStep.label);
+    if (m) voice.narrate(`opening the ${guideFor(m[1]!)?.title ?? "next page"}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastStep?.id, lastStep?.state]);
 
   useEffect(() => {
     const onOpen = (e: Event) => {
@@ -188,13 +223,22 @@ export function NavigatorPanel() {
         data-navigator-panel=""
         className="fixed bottom-4 left-4 z-50 flex max-w-[min(26rem,calc(100vw-2rem))] items-center gap-2 rounded-full border border-border bg-card py-1.5 pl-3 pr-1.5 shadow-2xl print:hidden"
       >
-        <Bot className="size-4 shrink-0 text-primary" aria-hidden />
+        {voiceOn ? (
+          <VoiceOrb
+            state={voice.state}
+            mic={voice.streams.mic}
+            voice={voice.streams.voice}
+            size={26}
+          />
+        ) : (
+          <Bot className="size-4 shrink-0 text-primary" aria-hidden />
+        )}
         <button
           type="button"
           className="min-w-0 truncate text-left text-[12px]"
           onClick={() => setMode("open")}
         >
-          {busy ? (current?.label ?? "Working…") : "Navigator"}
+          {busy ? (current?.label ?? "Working…") : voiceOn ? voiceLabel(voice.state) : "Navigator"}
         </button>
         {busy ? (
           <button
@@ -218,13 +262,24 @@ export function NavigatorPanel() {
       className="fixed bottom-4 left-4 z-50 flex max-h-[min(72vh,44rem)] w-[min(25rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl print:hidden"
     >
       <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <Bot className="size-4 text-primary" aria-hidden />
+        {voiceOn ? (
+          <VoiceOrb
+            state={voice.state}
+            mic={voice.streams.mic}
+            voice={voice.streams.voice}
+            size={28}
+          />
+        ) : (
+          <Bot className="size-4 text-primary" aria-hidden />
+        )}
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-semibold leading-4">Navigator</p>
           <p className="truncate text-[11px] leading-4 text-muted-foreground">
             {busy
               ? (current?.label ?? "Working…")
-              : "Works the site for you: opens pages, reads charts, uses controls"}
+              : voiceOn
+                ? voiceLabel(voice.state)
+                : "Works the site for you: opens pages, reads charts, uses controls"}
           </p>
         </div>
         <button
@@ -250,6 +305,7 @@ export function NavigatorPanel() {
           type="button"
           onClick={() => {
             if (busy) stop();
+            voice.stop();
             setMode("closed");
           }}
           aria-label="Close the navigator"
@@ -286,6 +342,17 @@ export function NavigatorPanel() {
           </div>
         )}
       </div>
+      {voiceOn || voice.state === "error" ? (
+        <VoiceBar
+          state={voice.state}
+          error={voice.error}
+          captions={voice.captions}
+          style={voice.style}
+          adapted={voice.adapted}
+          onStyle={voice.setStyle}
+          onReset={voice.resetStyle}
+        />
+      ) : null}
       <form
         className="flex items-end gap-2 border-t border-border p-2"
         onSubmit={(e) => {
@@ -293,6 +360,27 @@ export function NavigatorPanel() {
           submit();
         }}
       >
+        <button
+          type="button"
+          onClick={() => (voiceOn ? voice.stop() : void voice.start())}
+          aria-label={voiceOn ? "Stop talking" : "Talk to the navigator"}
+          aria-pressed={voiceOn}
+          title={voiceOn ? "Stop talking" : "Talk to the navigator"}
+          className={cn(
+            "inline-flex size-9 shrink-0 items-center justify-center rounded-md border",
+            voiceOn
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-input text-muted-foreground hover:bg-accent",
+          )}
+        >
+          {voice.state === "connecting" ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : voiceOn ? (
+            <MicOff className="size-4" aria-hidden />
+          ) : (
+            <Mic className="size-4" aria-hidden />
+          )}
+        </button>
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

@@ -50,6 +50,9 @@ export function useNavigator(panelRef: React.RefObject<HTMLElement | null>) {
   const [messages, setMessages] = useState<NavMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
+  // the latest messages, so a finished run can hand its final message to a caller (the voice layer)
+  const latest = useRef<NavMessage[]>(messages);
+  latest.current = messages;
 
   const patch = useCallback((id: string, change: (m: NavMessage) => NavMessage) => {
     setMessages((all) => all.map((m) => (m.id === id ? change(m) : m)));
@@ -68,9 +71,9 @@ export function useNavigator(panelRef: React.RefObject<HTMLElement | null>) {
   );
 
   const run = useCallback(
-    async (text: string) => {
+    async (text: string): Promise<NavMessage | null> => {
       const question = text.trim().slice(0, NAV_MAX_MESSAGE_CHARS);
-      if (!question || busy) return;
+      if (!question || busy) return null;
       const user: NavMessage = {
         id: uid(),
         role: "user",
@@ -230,6 +233,8 @@ export function useNavigator(panelRef: React.RefObject<HTMLElement | null>) {
         abort.current = null;
         setTimeout(clearOverlays, 2500);
       }
+      await new Promise((r) => setTimeout(r, 60));
+      return latest.current.find((m) => m.id === reply.id) ?? null;
     },
     [busy, messages, panelRef, patch, queryClient, router, upsertStep],
   );
