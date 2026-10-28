@@ -84,6 +84,6 @@ export const TILE_GRID: readonly TilePos[] = ROWS.flatMap((cells, row) =>
 
 export const TILE_BY_USPS = new Map(TILE_GRID.map((t) => [t.usps, t]));
 
-/** Label colour for a tile: the light ink once the fill is past the middle of the ramp. */
+/** Which label ink a tile takes (`--map-ink-low` / `--map-ink-high`): the high ink from the middle of the ramp up. */
 export const tileInk = (shade: number | null): "low" | "high" | "none" =>
-  shade == null ? "none" : shade >= 58 ? "high" : "low";
+  shade == null ? "none" : shade >= 50 ? "high" : "low";
