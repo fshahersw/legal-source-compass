@@ -12,7 +12,7 @@
 - [x] S3.1 Map: Geographic | Equal-area tiles switch (50 states + DC), shared class breaks and missing hatch, keyboard navigation + tests (national MetricMap; the state-dashboard choropleth still map-only)
 - [x] S3.2 Law structure: U.S. Code title icicle (exact partition, click opens the container) and CFR largest-parts chart; state codes load their tree lazily, so a full-structure view needs a totals endpoint first
 - [x] S3.3 Court/agency hierarchy contrast: court tiers already AA in both themes; agency components fit narrow columns; official org-chart links for 11 agencies bound by exact Federal Register id, with the publisher's printed date (DHS, State, SEC) or "undated"
-- [ ] S4.1 Exact-ID imagery: section backdrops with AA contrast; courthouse/capitol/judge/agency seal coverage check
+- [x] S4.1 Exact-ID imagery coverage: 160 courthouse, 240 judge-portrait, 218 agency (61 with photos), 55 capitol records; 19 sampled pages bind by exact id with 0 broken images; 18 agency photos hidden only for a blank building name now show with a neutral caption
 - [x] S4.2 Enforcement penalty distributions: EPA log-scale histogram by case type with record medians (published ≥$100K cases, national cases merged once); DOJ share of releases by size of largest stated figure per year (shares, since archive coverage jumps)
 - [ ] S5 Typography/padding check at 1039×635 and 390×844; vendor names only in info popovers
 - [ ] S6 Verification: targeted tests, typecheck, browser checks (/courts, /litigation, /places/TX, /enforcement, /agencies/271) light+dark, both viewports
