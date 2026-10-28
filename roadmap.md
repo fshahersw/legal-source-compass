@@ -88,6 +88,7 @@
 - [ ] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)
 
 ## Cleaner, richer visuals (plan 2026-10-28)
+- [x] Court diagram contrast in both themes; exact-bound courthouse/capitol section imagery; agency parent/component diagrams with marks and scope labels; verified CDC organization-chart, USAGov state-government and Census visualization references. Internal agency reporting structures beyond recorded relationships remain unacquired, not invented.
 - [x] Explore button replaced by an Ask AI icon that sends the chart's shown figures, page topic, period and source
 - [x] Enforcement calendar Weekdays/Months/3D start at coverage start (no pre-coverage zeros)
 - [x] Court structure diagram (federal + selectable state tiers, recorded types only) on Courts & judges and every state page

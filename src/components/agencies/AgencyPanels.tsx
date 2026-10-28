@@ -33,6 +33,7 @@ import type {
 } from "@/lib/external/agencyProfile.functions";
 import { cn } from "@/lib/utils";
 import { SERIES_COLORS } from "./ActivityChart";
+import { AgencyOrganization } from "./AgencyOrganization";
 import {
   budgetRows,
   fmt,
@@ -775,40 +776,7 @@ export function StructurePanelBody({ profile }: { profile: AgencyProfile }) {
   return (
     <div className="grid gap-3 p-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
       <div className="min-w-0 space-y-2 text-xs">
-        {profile.parent ? (
-          <p>
-            <span className="text-muted-foreground">Part of </span>
-            <Link
-              to="/agencies/$id"
-              params={{ id: String(profile.parent.id) }}
-              className="text-primary hover:underline"
-            >
-              {profile.parent.name}
-            </Link>
-          </p>
-        ) : null}
-        <div>
-          <h4 className="text-[11px] font-medium text-muted-foreground">
-            Components listed by the Federal Register ({fmt(profile.children.length)})
-          </h4>
-          {profile.children.length ? (
-            <ul className="mt-1 columns-1 gap-4 sm:columns-2">
-              {profile.children.map((c) => (
-                <li key={c.id} className="break-inside-avoid py-0.5">
-                  <Link
-                    to="/agencies/$id"
-                    params={{ id: String(c.id) }}
-                    className="text-primary hover:underline"
-                  >
-                    {c.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-1 text-muted-foreground">None listed.</p>
-          )}
-        </div>
+        <AgencyOrganization profile={profile} />
         {gm?.mission ? (
           <div>
             <h4 className="text-[11px] font-medium text-muted-foreground">
