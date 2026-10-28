@@ -1,4 +1,4 @@
-import { getDefendantNetwork, getMdlDocket } from "@/lib/external/stories.functions";
+import { getDefendantNetwork, getMdlAtlas, getMdlDocket } from "@/lib/external/stories.functions";
 
 export const mdlDocketQuery = {
   queryKey: ["stories", "mdl-docket"] as const,
@@ -9,5 +9,11 @@ export const mdlDocketQuery = {
 export const defendantNetworkQuery = {
   queryKey: ["stories", "defendant-network"] as const,
   queryFn: () => getDefendantNetwork(),
+  staleTime: 10 * 60_000,
+};
+
+export const mdlAtlasQuery = {
+  queryKey: ["stories", "mdl-atlas"] as const,
+  queryFn: () => getMdlAtlas(),
   staleTime: 10 * 60_000,
 };

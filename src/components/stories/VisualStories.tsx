@@ -6,14 +6,11 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Pause, Play, RotateCcw, SkipForward } from "lucide-react";
 import { ChartCard, type TableSpec } from "@/components/charts/ChartCard";
 import { KpiStrip } from "@/components/kit/KpiCard";
 import { Section } from "@/components/kit/Section";
 import { SectionIndex } from "@/components/kit/SectionIndex";
 import { AiSummary, buildSectionContext } from "@/components/kit/ai";
-import { Button } from "@/components/ui/button";
-import { Segmented } from "@/components/enforcement/parts";
 import { DocketRace, DocketTimeline } from "./DocketRace";
 import { CATEGORY_COLOR, reportLabel } from "./storiesColors";
 import { DocketStream } from "./DocketStream";
@@ -28,7 +25,11 @@ import {
   type Docket,
   type Network,
 } from "./storiesModel";
-import { defendantNetworkQuery, mdlDocketQuery } from "./storiesQuery";
+import { defendantNetworkQuery, mdlAtlasQuery, mdlDocketQuery } from "./storiesQuery";
+import { ChordSection, FieldSection, MapSection, StrandsSection } from "./AtlasSections";
+import { PlaybackBar } from "./PlaybackBar";
+import { courtShort, latestMdls, type Atlas } from "./atlasModel";
+import type { PlaybackControls, Speed } from "./playback";
 
 const n = (v: number | null | undefined) =>
   typeof v === "number" && Number.isFinite(v)
@@ -40,12 +41,6 @@ const JPML = {
 };
 const SEC = { label: "SEC EDGAR company filings", url: "https://www.sec.gov/edgar/search/" };
 
-const SPEEDS = [
-  { id: "0.5", label: "0.5×" },
-  { id: "1", label: "1×" },
-  { id: "2", label: "2×" },
-] as const;
-type Speed = (typeof SPEEDS)[number]["id"];
 /** Reports advanced per second at 1×: the 89 captured reports play in about 40 seconds. */
 const FRAMES_PER_SECOND = 2.2;
 
@@ -57,7 +52,7 @@ function reducedMotion() {
 }
 
 /** Playback of the docket frames: a requestAnimationFrame loop that advances the fractional frame while playing. */
-function usePlayback(last: number) {
+function usePlayback(last: number): PlaybackControls {
   const [t, setT] = useState(last);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>("1");
@@ -142,9 +137,21 @@ function storyFacts(d: Docket, net: Network | null) {
   };
 }
 
+function topJudges(atlas: Atlas) {
+  const by = new Map<string, number>();
+  for (const r of latestMdls(atlas))
+    if (r.m.judge) by.set(r.m.judge, (by.get(r.m.judge) ?? 0) + r.pending);
+  return [...by.entries()]
+    .map(([judge, actions]) => ({ judge, actions }))
+    .sort((a, b) => b.actions - a.actions)
+    .slice(0, 3);
+}
+
 export function VisualStories() {
   const docketQ = useQuery(mdlDocketQuery);
   const netQ = useQuery(defendantNetworkQuery);
+  const atlasQ = useQuery(mdlAtlasQuery);
+  const atlas = atlasQ.data ?? null;
   const docket = docketQ.data ?? null;
   const network = netQ.data ?? null;
   const facts = useMemo(() => (docket ? storyFacts(docket, network) : null), [docket, network]);
@@ -227,10 +234,26 @@ export function VisualStories() {
               })),
             ]
           : []),
+        ...(atlas
+          ? [
+              ...[...atlas.districts]
+                .sort((a, b) => (b.values.at(-1) ?? 0) - (a.values.at(-1) ?? 0))
+                .slice(0, 4)
+                .map((d) => ({
+                  label: `${courtShort(d)}: actions pending, latest report`,
+                  value: n(d.values.at(-1)),
+                })),
+              ...topJudges(atlas).map((j) => ({
+                label: `Judge ${j.judge}: actions pending`,
+                value: n(j.actions),
+              })),
+              { label: "MDLs in all captured reports", value: n(atlas.mdls.length) },
+            ]
+          : []),
       ],
-      maxFigures: 30,
+      maxFigures: 36,
     });
-  }, [docket, network, facts]);
+  }, [docket, network, facts, atlas]);
 
   if (docketQ.isPending)
     return (
@@ -391,8 +414,12 @@ export function VisualStories() {
       <SectionIndex
         items={[
           { id: "story-race", label: "Docket race" },
+          { id: "story-map", label: "Court map" },
+          { id: "story-field", label: "Every case" },
           { id: "story-stream", label: "Shape of the docket" },
+          { id: "story-strands", label: "Every MDL's life" },
           { id: "story-network", label: "Defendant network" },
+          { id: "story-chord", label: "Sued together" },
         ]}
       />
 
@@ -429,61 +456,39 @@ export function VisualStories() {
             minHeight={620}
           >
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                {play.playing ? (
-                  <Button size="sm" variant="default" onClick={play.pause} aria-label="Pause">
-                    <Pause className="size-3.5" /> Pause
-                  </Button>
-                ) : (
-                  <Button size="sm" variant="default" onClick={play.play} aria-label="Play">
-                    <Play className="size-3.5" /> Play
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={play.restart}
-                  aria-label="Play from the first report"
-                >
-                  <RotateCcw className="size-3.5" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={play.end}
-                  aria-label="Jump to the latest report"
-                >
-                  <SkipForward className="size-3.5" />
-                </Button>
-                <Segmented
-                  label="Playback speed"
-                  value={play.speed}
-                  options={[...SPEEDS]}
-                  onChange={play.setSpeed}
-                />
-                <span className="text-xs tabular-nums text-muted-foreground" aria-live="off">
-                  Report {near + 1} of {docket.dates.length} ·{" "}
-                  {reportLabel(docket.dates[near] ?? "")}
-                  {leaderNow ? ` · leading: ${shortTitle(leaderNow.m.title)}` : ""}
-                </span>
-                <ul className="ml-auto flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                  {CATEGORIES.filter((c) => docket.mdls.some((m) => m.category === c)).map((c) => (
-                    <li key={c} className="flex items-center gap-1.5">
-                      <span
-                        className="inline-block size-2.5 rounded-sm"
-                        style={{ background: CATEGORY_COLOR[c] }}
-                      />
-                      {CATEGORY_LABEL[c]}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <PlaybackBar
+                play={play}
+                status={`Report ${near + 1} of ${docket.dates.length} · ${reportLabel(docket.dates[near] ?? "")}${leaderNow ? ` · leading: ${shortTitle(leaderNow.m.title)}` : ""}`}
+                extra={
+                  <ul className="ml-auto flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    {CATEGORIES.filter((c) => docket.mdls.some((m) => m.category === c)).map(
+                      (c) => (
+                        <li key={c} className="flex items-center gap-1.5">
+                          <span
+                            className="inline-block size-2.5 rounded-sm"
+                            style={{ background: CATEGORY_COLOR[c] }}
+                          />
+                          {CATEGORY_LABEL[c]}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                }
+              />
               <DocketRace docket={docket} t={play.t} height={540} />
               <DocketTimeline docket={docket} t={play.t} onScrub={play.scrub} />
             </div>
           </ChartCard>
         </div>
       </Section>
+
+      {atlas ? (
+        <MapSection atlas={atlas} docket={docket} play={play} />
+      ) : (
+        <AtlasPending q={atlasQ} />
+      )}
+
+      {atlas ? <FieldSection atlas={atlas} /> : null}
 
       <Section
         id="story-stream"
@@ -508,6 +513,8 @@ export function VisualStories() {
           <DocketStream docket={docket} t={play.t} height={400} />
         </ChartCard>
       </Section>
+
+      {atlas ? <StrandsSection atlas={atlas} play={play} /> : null}
 
       <Section
         id="story-network"
@@ -556,6 +563,35 @@ export function VisualStories() {
           </p>
         )}
       </Section>
+
+      {network ? <ChordSection network={network} /> : null}
     </div>
+  );
+}
+
+function AtlasPending({
+  q,
+}: {
+  q: { isPending: boolean; isError: boolean; refetch: () => unknown };
+}) {
+  if (q.isPending)
+    return (
+      <div
+        className="h-[560px] animate-pulse rounded-xl border border-border bg-muted/30"
+        role="status"
+        aria-label="Loading the MDL atlas"
+      />
+    );
+  return (
+    <p className="rounded-md border border-border p-3 text-sm text-muted-foreground">
+      {q.isError
+        ? "The court map and case dots could not be read just now."
+        : "The MDL atlas is not published yet."}{" "}
+      {q.isError ? (
+        <button type="button" className="text-primary underline" onClick={() => void q.refetch()}>
+          Retry
+        </button>
+      ) : null}
+    </p>
   );
 }

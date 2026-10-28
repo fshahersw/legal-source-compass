@@ -53,3 +53,4 @@ Congress split by became law).
 ## Visual stories (2026-10-28)
 
 - New page `/insights/stories` (owned by the Insights Overview tab, no new tab): the MDL docket race over every captured JPML pending report, a streamgraph of the whole docket and the live defendant network from SEC filings, read through `public.corpus_mdl_docket_v1` and `public.corpus_defendant_network_v1` (`database/contracts/visual-stories-v1.sql`). The Insights Overview tools list gains a "Visual stories" entry. Added; nothing moved or removed.
+- Visual stories, second pass (same day): four more sections from `public.corpus_mdl_atlas_v1` (`database/contracts/mdl-atlas-v1.sql`): the court map (actions pending per transferee district, on the race's playhead), every case as dots (unit chart, regrouped by MDL, type, court, judge or year), every MDL's life (heatmap of all 704 MDLs across the reports) and the co-defendant chord (from the SEC defendant links). Added; nothing moved or removed.
