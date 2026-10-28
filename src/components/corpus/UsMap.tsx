@@ -103,6 +103,14 @@ export function UsMap({
       : "var(--map-low)";
   };
   const tiles = !state && view === "tiles";
+  const hasMissing =
+    missing === "unrecorded" &&
+    (state
+      ? counties.some((c) => !known(values.get(c.id)))
+      : geo.states.some((s) => {
+          const id = stateFromGeometry(s);
+          return !!id && TILE_BY_USPS.has(id.usps) && !known(values.get(id.fips));
+        }));
   const offGrid = !state
     ? geo.states.filter((s) => {
         const id = stateFromGeometry(s);
@@ -185,8 +193,8 @@ export function UsMap({
                   title={v === "tiles" ? "Every state the same size" : "Geographic map"}
                   className={`${bandButton} ${
                     view === v
-                      ? "border-white/70 bg-white/15 font-medium text-white"
-                      : "border-white/30 text-white/85 hover:bg-white/10"
+                      ? "border-primary bg-primary/10 font-medium text-primary"
+                      : "border-border text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
                   {v === "map" ? "Map" : "Tiles"}
@@ -198,7 +206,7 @@ export function UsMap({
                 type="button"
                 onClick={() => setBoundaries((v) => !v)}
                 aria-pressed={boundaries}
-                className={`flex items-center gap-1.5 ${bandButton} border-white/30 text-white hover:bg-white/10`}
+                className={`flex items-center gap-1.5 ${bandButton} border-border text-foreground hover:bg-accent`}
               >
                 <Layers3 className="size-3.5" aria-hidden />
                 County boundaries
@@ -225,7 +233,8 @@ export function UsMap({
             const value = values.get(identity.fips);
             const active = selectedState === identity.usps || hover?.id === identity.fips;
             const shade = shadeOf(value);
-            const ink = active ? INK.high : INK[tileInk(known(value) ? shade : null)];
+            // Tiles keep their value shade when active (the outline marks them), so the label ink stays legible.
+            const ink = INK[tileInk(known(value) ? shade : null)];
             const x = t.col * CELL_W + TILE_GAP / 2;
             const y = t.row * CELL_H + TILE_GAP / 2;
             const w = CELL_W - TILE_GAP;
@@ -245,7 +254,7 @@ export function UsMap({
                   rx={7}
                   stroke={active ? "var(--map-focus)" : "var(--surface)"}
                   strokeWidth={active ? 3 : 1}
-                  style={{ fill: fill(value, active) }}
+                  style={{ fill: fill(value, false) }}
                   className="transition-[fill,stroke] duration-150 group-focus-visible:[stroke:var(--map-focus)] group-focus-visible:[stroke-width:3]"
                 />
                 <text
@@ -389,7 +398,7 @@ export function UsMap({
             />
             <span className="font-mono tabular-nums">{formatValue(recordedMax)}</span>
             <span>{valueLabel}</span>
-            {missing === "unrecorded" ? (
+            {hasMissing ? (
               <span className="ml-1 inline-flex items-center gap-1">
                 <svg aria-hidden width="12" height="10" className="rounded-sm">
                   <rect width="12" height="10" fill="var(--muted)" />
