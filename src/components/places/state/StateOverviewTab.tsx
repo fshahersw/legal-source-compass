@@ -1,3 +1,4 @@
+import { CourtSystemDiagram } from "@/components/charts/hierarchy/CourtSystemDiagram";
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, MapPin } from "lucide-react";
@@ -164,7 +165,7 @@ export function StateOverviewTab(props: {
       <Section
         id="courts"
         title="Courts and judges"
-        note="Federal districts from the Federal Judicial Center; state courts from the court directory"
+        note="Federal districts and state courts as recorded"
       >
         <CourtsJudgesSection
           usps={usps}
@@ -176,6 +177,9 @@ export function StateOverviewTab(props: {
           onOpenCourts={() => props.onOpenTab("courts")}
           onOpenJudges={() => props.onOpenTab("judges")}
         />
+        {props.courts?.some((c) => c.system === "State" && c.state === usps) ? (
+          <CourtSystemDiagram key={usps} rows={props.courts} initialState={usps} showFederal={false} />
+        ) : null}
       </Section>
       <Section
         id="law"
