@@ -8,7 +8,14 @@ import { assembleBlock, yearPoints, type TrendBlockData } from "@/lib/analytics/
 
 export const NOT_RECORDED = "Not recorded";
 
-export const DOC_SOURCES = ["docketbird", "courtlistener", "official-court", "govinfo"] as const;
+export const DOC_SOURCES = [
+  "docketbird",
+  "courtlistener",
+  "official-court",
+  "govinfo",
+  // RECAP files on storage.courtlistener.com found through the public locator (documents-v2-sources.sql)
+  "courtlistener-public-locator",
+] as const;
 export type DocSource = (typeof DOC_SOURCES)[number];
 
 export const TEXT_STATUSES = [
@@ -119,6 +126,7 @@ export const SOURCE_LABEL: Record<DocSource, string> = {
   courtlistener: "CourtListener RECAP",
   "official-court": "Court website",
   govinfo: "GovInfo",
+  "courtlistener-public-locator": "CourtListener RECAP file",
 };
 
 export const LISTED_BY_LABEL: Record<ListedBy, string> = {

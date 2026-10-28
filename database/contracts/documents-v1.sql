@@ -3,7 +3,9 @@
 -- Scope (owner decisions 2026-10-03 and 2026-10-23 evening; AGENTS.md): a document enters this layer only when ALL hold
 --   1. one of its registry associations is 'open' under the live rule public.corpus_pdf_availability_v1 (DocketBird
 --      restricted=false and downloaded; CourtListener is_available and is_sealed=false; official court / GovInfo
---      sealing_related_locator_held=false; never withheld_by_policy). courtlistener-public-locator is never open;
+--      sealing_related_locator_held=false; never withheld_by_policy). This file's refresh leaves source
+--      courtlistener-public-locator out; documents-v2-sources.sql (apply after this file) takes it in, and
+--      corpus-pdf-availability-v2.sql now opens every PDF without an explicit seal / restriction / policy flag;
 --   2. its native case id is one the published matter pages request: the matter registry's explicit pdf_case_ids
 --      (sw_matters_v1, the matter's MDL), the court MDL-page labels 'MDL <n>' / 'MDL No. <n>' of an MDL in the published
 --      `mdls` dataset, or, for an MDL the registry does not cover, the master-docket keys derived from the JPML master

@@ -49,7 +49,21 @@ describe("document rows", () => {
       textStatus: "text_layer",
     });
     expect(parseDocSummary({ ...ROW, id: "x" })).toBeNull();
-    expect(parseDocSummary({ ...ROW, source_system: "courtlistener-public-locator" })).toBeNull();
+    expect(parseDocSummary({ ...ROW, source_system: "courtlistener-search" })).toBeNull();
+    // RECAP files found through the public locator are a documents/1 source (documents-v2-sources.sql)
+    const recapUrl =
+      "https://storage.courtlistener.com/recap/gov.uscourts.njd.333000/gov.uscourts.njd.333000.101.0.pdf";
+    const recap = parseDocSummary({
+      ...ROW,
+      source_system: "courtlistener-public-locator",
+      native_document_id: recapUrl,
+      native_case_id: "6245245",
+      source_url: recapUrl,
+    })!;
+    expect(recap.sourceSystem).toBe("courtlistener-public-locator");
+    expect(documentPdfUrl(recap)).toBe(
+      `/api/matter-pdf?source=courtlistener-public-locator&doc=${encodeURIComponent(recapUrl)}`,
+    );
     expect(parseDocSummary({ ...ROW, text_status: "open" })).toBeNull();
     expect(parseDocSummary({ ...ROW, mdl: "0" })).toBeNull();
     // unknown values become "not recorded", never a guess
