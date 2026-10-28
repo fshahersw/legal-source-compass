@@ -16,7 +16,7 @@ export function subtitleWithoutIds(subtitle: string | null | undefined): string 
   if (!subtitle) return null;
   const kept = subtitle
     .split(" · ")
-    .filter((seg) => !/\bid\s+[A-Za-z0-9:_.\-]+$/i.test(seg.trim()));
+    .filter((seg) => !/\bid\s+[A-Za-z0-9:_.-]+$/i.test(seg.trim()));
   return kept.length ? kept.join(" · ") : null;
 }
 
