@@ -238,7 +238,7 @@ export function repeatedTileIds(kpis: readonly Kpi[]): Set<string> {
 export const MOVEMENT_RULE = {
   minCompletePeriods: 5,
   count: 6,
-  text: "The largest changes, in percent, between each tile's latest complete period and the period before it, among tiles with at least five complete periods. Partial periods never count; a change from zero has no percentage and is left out.",
+  text: "The largest changes, in percent, between each tile's latest complete period and the period before it (for counts of congressional work, the same year of the previous Congress), among tiles with at least five complete periods. Partial periods never count; a change from zero has no percentage and is left out.",
 } as const;
 
 /** Largest absolute percentage changes among tiles with enough history (deterministic; ties by title). */
