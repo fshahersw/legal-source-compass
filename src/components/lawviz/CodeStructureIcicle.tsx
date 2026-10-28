@@ -21,6 +21,8 @@ const ROW_H = 30;
 const ROW_GAP = 2;
 const SHADE = [80, 54, 32];
 const fmt = (n: number) => n.toLocaleString("en-US");
+/** Statuses that mean the level no longer holds law in force; "unknown" is not one of them. */
+const GONE = new Set(["repealed", "omitted", "transferred", "renumbered", "reserved", "vacant"]);
 const pctText = (v: number | null) =>
   v === null ? "Not recorded" : v >= 10 ? `${Math.round(v)}%` : `${v.toFixed(1)}%`;
 
@@ -72,6 +74,7 @@ export function CodeStructureIcicle({
     .filter((r) => r.kind === "container")
     .sort((a, b) => b.total - a.total)[0];
   const containers = top.filter((r) => r.kind === "container").length;
+  const anyGone = layout.cells.some((c) => c.status !== null && GONE.has(c.status));
   const height = Math.max(1, layout.rows) * (ROW_H + ROW_GAP);
   const source = {
     source: {
@@ -175,7 +178,7 @@ export function CodeStructureIcicle({
             if (cw < 0.5) return null;
             const y = c.row * (ROW_H + ROW_GAP);
             const shade = SHADE[c.row] ?? 24;
-            const gone = c.kind === "container" && c.status !== null;
+            const gone = c.kind === "container" && c.status !== null && GONE.has(c.status);
             const fill =
               c.kind === "unbroken"
                 ? `url(#${hatch})`
@@ -260,13 +263,15 @@ export function CodeStructureIcicle({
                 />
                 Levels below
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  aria-hidden
-                  className="inline-block h-2.5 w-4 rounded-sm border border-dashed border-border bg-muted"
-                />
-                Repealed, omitted or moved
-              </span>
+              {anyGone ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="inline-block h-2.5 w-4 rounded-sm border border-dashed border-border bg-muted"
+                  />
+                  Repealed, omitted or moved
+                </span>
+              ) : null}
               {layout.unbroken ? (
                 <span className="inline-flex items-center gap-1.5">
                   <svg width="16" height="10" aria-hidden>

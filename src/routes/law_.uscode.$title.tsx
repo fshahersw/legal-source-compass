@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { Fact, StatusBadge } from "@/components/uscode/UsCodeText";
+import { CodeStructureIcicle } from "@/components/lawviz/CodeStructureIcicle";
 import { pageHead } from "@/lib/corpus/head";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +16,7 @@ import {
   containerLabel,
   containerSmallCaps,
   smartTitle,
+  STATUS_LABELS,
   TITLE_KEY,
   type OutlineNode,
   type UnitHead,
@@ -107,6 +109,20 @@ function TitlePage() {
       {t ? (
         <>
           <TitleFacts t={t} />
+          {t.outline.length ? (
+            <div className="mb-4">
+              <CodeStructureIcicle
+                titleLabel={t.appendix ? `Title ${t.number} Appendix` : `Title ${t.number}`}
+                outline={t.outline}
+                release={t.release}
+                sourceHref={t.officialUrl}
+                statusLabels={STATUS_LABELS}
+                containerLabel={containerLabel}
+                selected={c}
+                onSelect={(i) => void navigate({ search: { q, c: i } })}
+              />
+            </div>
+          ) : null}
           <TitleSearchBox
             title={title}
             q={q}
