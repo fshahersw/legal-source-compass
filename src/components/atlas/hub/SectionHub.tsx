@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/kit/EmptyState";
 import { KpiCard, KpiGrid } from "@/components/kit/KpiCard";
 import { LinkTile } from "@/components/kit/LinkTile";
 import { Section } from "@/components/kit/Section";
+import { Button } from "@/components/ui/button";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionItem } from "@/lib/atlas/navigation";
 import { recordCount, useCatalog } from "./catalog";
@@ -30,13 +31,14 @@ export function HubKpis({
         compact
         title="Record counts could not be loaded."
         action={
-          <button
-            type="button"
+          <Button
+            variant="link"
+            size="sm"
             onClick={catalog.retry}
             className="rounded-md text-[13px] font-medium text-brand underline-offset-2 hover:underline"
           >
             Retry
-          </button>
+          </Button>
         }
       />
     );
@@ -44,7 +46,7 @@ export function HubKpis({
   if (!tiles.length) return null;
   const columns = tiles.length >= 6 ? 6 : tiles.length === 5 ? 5 : 4;
   return (
-    <KpiGrid columns={columns} label={label}>
+    <KpiGrid columns={columns} label={label} className="gap-2 lg:grid-cols-4 xl:grid-cols-6">
       {tiles.map((k) => {
         const d = catalog.byId.get(k.dataset);
         const n = recordCount(d);
@@ -54,6 +56,8 @@ export function HubKpis({
             key={k.dataset}
             as="li"
             size="sm"
+            bare
+            className="rounded-md border border-border bg-card"
             label={k.label}
             state={catalog.loading ? "loading" : "ready"}
             loadingLabel={`Loading ${k.label}`}
