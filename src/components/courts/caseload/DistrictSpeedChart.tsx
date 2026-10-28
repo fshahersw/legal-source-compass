@@ -126,7 +126,9 @@ export function DistrictSpeedChart() {
                 ? { label: short(d.name), value: d.value, href: `/courts/${d.id}` }
                 : { label: short(d.name), value: d.value, note: "No court page recorded" },
             )}
-            onNavigate={(href) => void navigate({ to: href })}
+            onNavigate={(href) =>
+              void navigate({ to: "/courts/$id", params: { id: href.slice("/courts/".length) } })
+            }
             baseline={speed.baseline}
             baselineLabel="Median district"
             format={(v) => Math.round(v).toLocaleString("en-US")}
