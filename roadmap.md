@@ -11,7 +11,7 @@
 - [x] S2.3 Clearance ratio: zero-filing years null, partial years excluded from callouts (verify + tests)
 - [x] S3.1 Map: Geographic | Equal-area tiles switch (50 states + DC), shared class breaks and missing hatch, keyboard navigation + tests (national MetricMap; the state-dashboard choropleth still map-only)
 - [x] S3.2 Law structure: U.S. Code title icicle (exact partition, click opens the container) and CFR largest-parts chart; state codes load their tree lazily, so a full-structure view needs a totals endpoint first
-- [ ] S3.3 Court/agency hierarchy contrast: tier badges, appeal arrows, directory-vs-reporting distinction, official org-chart links with snapshot dates
+- [x] S3.3 Court/agency hierarchy contrast: court tiers already AA in both themes; agency components fit narrow columns; official org-chart links for 11 agencies bound by exact Federal Register id, with the publisher's printed date (DHS, State, SEC) or "undated"
 - [ ] S4.1 Exact-ID imagery: section backdrops with AA contrast; courthouse/capitol/judge/agency seal coverage check
 - [ ] S4.2 Enforcement penalty distributions: log bins, raw-record medians, agencies kept separate
 - [ ] S5 Typography/padding check at 1039×635 and 390×844; vendor names only in info popovers
