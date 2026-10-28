@@ -9,7 +9,14 @@ import { agencyOrganization, officialOrganizationReference } from "./organizatio
 
 export function AgencyOrganization({ profile }: { profile: AgencyProfile }) {
   const { parent, current, children } = agencyOrganization(profile);
-  const reference = officialOrganizationReference(profile.name);
+  const reference = officialOrganizationReference(profile.id);
+  const day = (iso: string) =>
+    new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  const refNote = reference
+    ? reference.publisherDate
+      ? `Dated ${day(reference.publisherDate)} by the publisher`
+      : "Undated by the publisher; check the date on the chart"
+    : null;
   return (
     <section aria-label={`${profile.name} organization`} className="min-w-0 space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -17,7 +24,7 @@ export function AgencyOrganization({ profile }: { profile: AgencyProfile }) {
         <InfoPopover label="Organization sources and scope">
           <p>Parent and components follow the Federal Register's recorded agency relationships. This is a directory hierarchy, not an internal reporting chart; unlisted offices are not assumed absent.</p>
           <a href={profile.frUrl} target="_blank" rel="noreferrer">Agency directory record</a>
-          {reference ? <><p>Official charts may be dated snapshots; check the date printed on each chart.</p><a href={reference.url} target="_blank" rel="noreferrer">{reference.label}</a></> : null}
+          {reference ? <><p>Official charts are dated snapshots of internal structure and may differ from the directory relationships drawn here. {refNote}; link checked {day(reference.checked)}.</p><a href={reference.url} target="_blank" rel="noreferrer">{reference.label}</a></> : null}
         </InfoPopover>
       </div>
       {parent ? <>
@@ -45,7 +52,17 @@ export function AgencyOrganization({ profile }: { profile: AgencyProfile }) {
           </li>)}
         </ul>
       </> : <p className="text-meta text-muted-foreground">Internal office relationships: Not recorded.</p>}
-      {reference ? <Button asChild variant="outline" size="sm"><a href={reference.url} target="_blank" rel="noreferrer">{reference.label}<ArrowUpRight className="size-3.5" /></a></Button> : null}
+      {reference ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Button asChild variant="outline" size="sm">
+            <a href={reference.url} target="_blank" rel="noreferrer">
+              {reference.label}
+              <ArrowUpRight className="size-3.5" />
+            </a>
+          </Button>
+          <span className="text-meta text-muted-foreground">{refNote}</span>
+        </div>
+      ) : null}
     </section>
   );
 }
