@@ -198,6 +198,24 @@ export function kpiFromFacts(def: MetricDef, facts: readonly Fact[], href: Kpi["
   };
 }
 
+/**
+ * Tiles that repeat an earlier tile: the same area, the same latest value for the same period and the same change.
+ * The board reads one series from the Analytics hub and others from the data layer, and a few of those are the same
+ * published figure (e.g. federal civil filings, final rules); the first tile in board order is kept. Partial or
+ * unrecorded values never match, so two tiles that merely lack data are not merged.
+ */
+export function repeatedTileIds(kpis: readonly Kpi[]): Set<string> {
+  const seen = new Set<string>();
+  const repeats = new Set<string>();
+  for (const k of kpis) {
+    if (k.value === null || k.periodText === null || k.changePercent === null) continue;
+    const key = `${k.topic}|${k.value}|${k.periodText}|${k.changePercent.toFixed(1)}`;
+    if (seen.has(key)) repeats.add(k.id);
+    else seen.add(key);
+  }
+  return repeats;
+}
+
 /** The rule behind "notable movements", stated on the page. */
 export const MOVEMENT_RULE = {
   minCompletePeriods: 5,

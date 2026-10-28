@@ -27,7 +27,7 @@ import {
 import { isBridgeMetric, joinCross } from "./data";
 import { fixtureCatalog, fixtureLayer } from "./fixtures";
 import { INSIGHTS_FIXTURES } from "./fixtureMode";
-import { kpiFromBlock, kpiFromFacts, notableMovements, type Kpi } from "./kpis";
+import { kpiFromBlock, kpiFromFacts, notableMovements, repeatedTileIds, type Kpi } from "./kpis";
 
 const smDef = (over: Partial<SmDef>): SmDef => ({
   key: "overdose_rate",
@@ -511,5 +511,56 @@ describe("KPI board model", () => {
       { ...base, id: "d", title: "D", changePercent: null },
     ];
     expect(notableMovements(tiles).map((t) => t.id)).toEqual(["b", "a"]);
+  });
+
+  it("drops a tile that repeats an earlier one's figure, period and change in the same area", () => {
+    const base = kpiFromBlock(block, "A", "courts");
+    const tiles: Kpi[] = [
+      {
+        ...base,
+        id: "hub:federal-register",
+        topic: "law",
+        value: "2,441",
+        periodText: "2025",
+        changePercent: -24.8,
+      },
+      {
+        ...base,
+        id: "metric:fr_final_rules",
+        topic: "law",
+        value: "2,441",
+        periodText: "2025",
+        changePercent: -24.81,
+      },
+      {
+        ...base,
+        id: "metric:fr_documents",
+        topic: "law",
+        value: "23,690",
+        periodText: "2025",
+        changePercent: -23.2,
+      },
+    ];
+    expect([...repeatedTileIds(tiles)]).toEqual(["metric:fr_final_rules"]);
+  });
+
+  it("keeps same-figure tiles from different areas, periods or changes, and never merges missing values", () => {
+    const base = kpiFromBlock(block, "A", "courts");
+    const tiles: Kpi[] = [
+      { ...base, id: "a", topic: "law", value: "2,441", periodText: "2025", changePercent: -24.8 },
+      {
+        ...base,
+        id: "b",
+        topic: "government",
+        value: "2,441",
+        periodText: "2025",
+        changePercent: -24.8,
+      },
+      { ...base, id: "c", topic: "law", value: "2,441", periodText: "2024", changePercent: -24.8 },
+      { ...base, id: "d", topic: "law", value: "2,441", periodText: "2025", changePercent: 3 },
+      { ...base, id: "e", topic: "law", value: null, periodText: null, changePercent: null },
+      { ...base, id: "f", topic: "law", value: null, periodText: null, changePercent: null },
+    ];
+    expect(repeatedTileIds(tiles).size).toBe(0);
   });
 });
