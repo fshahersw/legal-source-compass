@@ -8,46 +8,9 @@
  * substituted, so a skipped month cannot pass a 10- or 13-month change off as a 12-month one.
  */
 import type { MdlRow } from "@/lib/external/mdlAnalytics.functions";
-import type { MdlPoint } from "@/lib/external/mdlSeries";
 
-/** "2026-10" for "2026-10-01". Null for anything that is not an ISO calendar date. */
-export function monthKey(date: string): string | null {
-  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(date);
-  if (!m) return null;
-  const month = Number(m[2]);
-  return month >= 1 && month <= 12 ? `${m[1]}-${m[2]}` : null;
-}
-
-/** The month key `months` calendar months before `key` ("2026-10", 12 → "2025-10"). */
-export function shiftMonth(key: string, months: number): string {
-  const [y, m] = key.split("-").map(Number) as [number, number];
-  const idx = y * 12 + (m - 1) - months;
-  const yy = Math.floor(idx / 12);
-  const mm = idx - yy * 12 + 1;
-  return `${yy}-${String(mm).padStart(2, "0")}`;
-}
-
-export type ExactChange =
-  | { ok: true; latest: MdlPoint; prior: MdlPoint; change: number }
-  | { ok: false; reason: "no-latest" | "no-prior-report" | "two-reports-in-month" };
-
-/**
- * Change in actions pending between the latest report in `series` and the report exactly `months` calendar months
- * earlier. `series` should already be validated (see `validSeries`); the latest point is the last by date.
- */
-export function exactChange(series: readonly MdlPoint[], months = 12): ExactChange {
-  const sorted = [...series].sort((a, b) => a.date.localeCompare(b.date));
-  const latest = sorted[sorted.length - 1];
-  const latestKey = latest ? monthKey(latest.date) : null;
-  if (!latest || !latestKey) return { ok: false, reason: "no-latest" };
-  if (sorted.filter((p) => monthKey(p.date) === latestKey).length > 1)
-    return { ok: false, reason: "two-reports-in-month" };
-  const target = shiftMonth(latestKey, months);
-  const prior = sorted.filter((p) => monthKey(p.date) === target);
-  if (prior.length === 0) return { ok: false, reason: "no-prior-report" };
-  if (prior.length > 1) return { ok: false, reason: "two-reports-in-month" };
-  return { ok: true, latest, prior: prior[0]!, change: latest.pending - prior[0]!.pending };
-}
+export { exactChange, monthKey, shiftMonth, type ExactChange } from "@/lib/external/mdlSeries";
+import { exactChange } from "@/lib/external/mdlSeries";
 
 export type MomentumPoint = {
   mdl: number;
