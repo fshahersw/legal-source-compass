@@ -42,14 +42,21 @@ export function AgencyOrganization({ profile }: { profile: AgencyProfile }) {
       {children.length ? <>
         <div className="flex justify-center text-brand" aria-hidden><ArrowDown className="size-5" /></div>
         <p className="text-meta text-muted-foreground">{children.length} listed components</p>
-        <ul className="grid gap-2 border-l-2 border-status-info-ring pl-3 sm:grid-cols-2">
-          {children.map((child) => <li key={child.id} className="min-w-0">
-            <Link to="/agencies/$id" params={{ id: String(child.id) }} className="flex h-full items-center gap-2 rounded-md border border-status-info-ring bg-status-info-soft p-2 text-body text-status-info-ink focus-visible:outline-2 focus-visible:outline-ring">
-              <AgencyMark name={child.name} />
-              <span className="min-w-0 flex-1">{child.name}</span>
-              <ArrowUpRight className="size-3.5 shrink-0" aria-hidden />
-            </Link>
-          </li>)}
+        {/* rows size to the column they sit in, so a narrow side panel gets one column and long names wrap */}
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-1.5 border-l-2 border-status-info-ring pl-3">
+          {children.map((child) => (
+            <li key={child.id} className="min-w-0">
+              <Link
+                to="/agencies/$id"
+                params={{ id: String(child.id) }}
+                className="flex h-full items-center gap-2 rounded-md border border-status-info-ring bg-status-info-soft px-2 py-1.5 text-[13px] leading-snug text-status-info-ink transition-colors hover:border-status-info focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <AgencyMark name={child.name} className="size-7 rounded-md p-1" />
+                <span className="min-w-0 flex-1 break-words">{child.name}</span>
+                <ArrowUpRight className="size-3.5 shrink-0" aria-hidden />
+              </Link>
+            </li>
+          ))}
         </ul>
       </> : <p className="text-meta text-muted-foreground">Internal office relationships: Not recorded.</p>}
       {reference ? (
