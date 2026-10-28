@@ -1,6 +1,12 @@
 import { cn } from "@/lib/utils";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { isSourceIdKey, splitProvenanceLabel, subtitleWithoutIds } from "./recordDisplay";
+import {
+  isSourceIdKey,
+  splitProvenanceLabel,
+  splitProviderKey,
+  splitProviderValue,
+  subtitleWithoutIds,
+} from "./recordDisplay";
 import { InfoPopover } from "@/components/kit/InfoPopover";
 import { Fragment, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
@@ -157,12 +163,21 @@ export function EntityPage({
           ) : null}
           {key.length ? (
             <dl className="grid flex-1 content-start grid-cols-1 gap-x-6 gap-y-2.5 text-[13px] sm:grid-cols-2">
-              {key.map(([k, val], i) => (
-                <div key={i} className="min-w-0">
-                  <dt className="text-[11px] text-muted-foreground">{k}</dt>
-                  <dd className="break-words">{displayValue(val)}</dd>
-                </div>
-              ))}
+              {key.map(([k, val], i) => {
+                // Provider names and provenance notes move into tooltips; the recorded value is unchanged.
+                const name = splitProviderKey(k);
+                const shown = typeof val === "string" ? splitProviderValue(val) : null;
+                return (
+                  <div key={i} className="min-w-0">
+                    <dt className="text-[11px] text-muted-foreground" title={name.note ?? undefined}>
+                      {name.text}
+                    </dt>
+                    <dd className="break-words" title={shown?.note ?? undefined}>
+                      {shown ? shown.text : displayValue(val)}
+                    </dd>
+                  </div>
+                );
+              })}
             </dl>
           ) : null}
         </div>
