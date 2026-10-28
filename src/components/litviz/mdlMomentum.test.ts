@@ -189,8 +189,8 @@ describe("axis helpers", () => {
     expect(symlog(99)).toBeCloseTo(2);
   });
   it("symlog ticks reach the data on both sides", () => {
-    expect(symlogTicks(-3392, 5190)).toEqual([-1000, -100, -10, -1, 0, 1, 10, 100, 1000, 10000]);
-    expect(symlogTicks(0, 40)).toEqual([0, 1, 10, 100]);
+    expect(symlogTicks(-3392, 5190)).toEqual([-1000, -100, -10, 0, 10, 100, 1000]);
+    expect(symlogTicks(0, 40)).toEqual([0, 10]);
   });
   it("log ticks start at 1", () => {
     expect(log10Ticks(69340)).toEqual([1, 10, 100, 1000, 10000, 100000]);

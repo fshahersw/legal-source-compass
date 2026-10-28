@@ -117,13 +117,15 @@ export function mdlMomentum(rows: readonly MdlRow[], asOf: string): Momentum {
 /** Symmetric log: sign(v)·log10(1 + |v|). Keeps 0 at 0 and spreads small and large changes on one axis. */
 export const symlog = (v: number) => Math.sign(v) * Math.log10(1 + Math.abs(v));
 
-/** Ticks for a symmetric-log axis covering [lo, hi]: 0 and ±1, ±10, ±100 … out to the data. */
+/** Ticks for a symmetric-log axis over the data extent [lo, hi]: 0 and ±10, ±100 … within the extent. */
 export function symlogTicks(lo: number, hi: number): number[] {
   const ticks = [0];
-  for (let p = 1; p <= 1e9; p *= 10) {
-    if (hi >= p * 0.5) ticks.push(p);
-    if (lo <= -p * 0.5) ticks.unshift(-p);
-    if (p > Math.max(Math.abs(lo), Math.abs(hi))) break;
+  for (let p = 10; p <= 1e12; p *= 10) {
+    const up = hi >= p;
+    const down = lo <= -p;
+    if (up) ticks.push(p);
+    if (down) ticks.unshift(-p);
+    if (!up && !down) break;
   }
   return ticks;
 }
