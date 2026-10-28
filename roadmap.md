@@ -1,7 +1,8 @@
 # Legal Source Atlas — roadmap
 
 ## Uploaded executive brief (2026-10-28)
-- [ ] Prepare evidence-based sprint plan: visual declutter, chart accuracy, maps, hierarchy/registry imagery, and compatible corpus enrichment; preserve Time Limits and existing acquisition checkpoints.
+- [x] Prepare evidence-based sprint plan: visual declutter, chart accuracy, maps, hierarchy/registry imagery, and compatible corpus enrichment; preserve Time Limits and existing acquisition checkpoints.
+- [ ] Implement the executive-brief sprint sequence — awaiting approval of the plan; data-dependent visuals require verified source fields and joins.
 
 ## Comprehensive platform scan (2026-10-28)
 - [x] Read-only audit: pages and workflows, visual cohesion, accessibility, chart/data integrity, AI/server security, automated tests; evidence and prioritized findings saved without application changes; hosted deployment and exhaustive legal/security certification remain unverified.
