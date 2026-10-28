@@ -11,12 +11,17 @@
  *     <TrendColumns … />
  *   </ChartCard>
  */
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChartCard as KitChartCard } from "@/components/kit/ChartCard";
 import { DeltaPill as KitDeltaPill } from "@/components/kit/KpiCard";
 import { cn } from "@/lib/utils";
 import { chartTokens } from "./palette";
 import { tableDrawer, type TableColumn, type TableSpec } from "./tableData";
+import {
+  nextChartKey,
+  registerChart,
+  type ChartSource as RegistryChart,
+} from "@/lib/navigator/chartRegistry";
 
 export type { TableColumn, TableSpec };
 
@@ -175,6 +180,11 @@ export function ChartCard({
         : status.kind === "empty"
           ? "empty"
           : "ready";
+  // the navigator reads the card's figures through this registration (converted only when read)
+  const [chartKey] = useState(nextChartKey);
+  const latest = useRef<RegistryChart>({ title, subtitle, table, sources, period });
+  latest.current = { title, subtitle, table, sources, period };
+  useEffect(() => registerChart(chartKey, () => latest.current), [chartKey]);
   const sourceProp =
     sources && sources.length ? sources.map((s) => ({ label: s.label, href: s.url })) : undefined;
   const hasFooter = sourceProp !== undefined || period || asOf || about || partial;
@@ -217,6 +227,7 @@ export function ChartCard({
       }
     >
       <div className="min-w-0" style={chartTokens}>
+        <span data-chart-anchor={chartKey} hidden aria-hidden />
         {kpis?.length ? <ChartKpis items={kpis} /> : null}
         {notice ? (
           <div
