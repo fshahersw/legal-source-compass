@@ -17,7 +17,6 @@ import { DataDrawer, type DataDrawerProps } from "./DataDrawer";
 import { EmptyState } from "./EmptyState";
 import { ChartSkeleton } from "./Skeletons";
 import { useEffect, useState } from "react";
-import { ClientOnly } from "@tanstack/react-router";
 import { AskAiButton } from "./ai/AskAiButton";
 import { chartContext } from "./ai/chartContext";
 
@@ -29,12 +28,18 @@ function sourceLabel(src: SourceFooterProps["source"]): string | undefined {
 }
 
 /** The page's topic (its title without the site name), read after hydration. */
-function usePageTopic(): string | undefined {
-  const [topic, setTopic] = useState<string>();
+function usePageTopic(): { mounted: boolean; topic: string | undefined } {
+  const [state, setState] = useState<{ mounted: boolean; topic: string | undefined }>({
+    mounted: false,
+    topic: undefined,
+  });
   useEffect(() => {
-    setTopic(document.title.split(/\s[—|–-]\s/)[0]?.trim() || undefined);
+    setState({
+      mounted: true,
+      topic: document.title.split(/\s[—|–-]\s/)[0]?.trim() || undefined,
+    });
   }, []);
-  return topic;
+  return state;
 }
 
 export function ChartCard<T>({
@@ -73,7 +78,7 @@ export function ChartCard<T>({
   children?: ReactNode | undefined;
 }) {
   const titleId = id ? `${id}-title` : undefined;
-  const topic = usePageTopic();
+  const { mounted, topic } = usePageTopic();
   const askContext =
     data && state === "ready" && data.rows.length > 0
       ? chartContext({
@@ -103,14 +108,14 @@ export function ChartCard<T>({
           <div className="flex max-w-full flex-wrap items-center gap-2">
             {actions}
             {data && state === "ready" && data.rows.length > 0 ? (
-              <ClientOnly fallback={null}>
+              {mounted ? (
                 <AskAiButton
                   sectionId={id ?? data.title}
                   title={typeof title === "string" ? title : data.title}
                   context={askContext}
                   size="icon"
                 />
-              </ClientOnly>
+              ) : null}
             ) : null}
             {data && state === "ready" ? <DataDrawer {...data} /> : null}
           </div>
