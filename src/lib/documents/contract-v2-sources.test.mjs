@@ -334,8 +334,8 @@ test("documents/1 v2 sources: public-locator RECAP filings", { timeout: 180000 }
       assert.equal((await one("select count(*)::int n from documents.pages where sha256 = $1", [S.main101])).n, 0);
       const src = (await one("select prosrc from pg_proc where oid = 'public.documents_refresh_v1(text)'::regprocedure")).prosrc;
       assert.equal(
-        createHash("md5").update(src).digest("hex"),
-        createHash("md5").update(scopeRefresh).digest("hex"),
+        createHash("md5").update(src.replace(/\r\n/g, "\n")).digest("hex"),
+        createHash("md5").update(scopeRefresh.replace(/\r\n/g, "\n")).digest("hex"),
         "the documents-v2-scope.sql refresh text",
       );
       await db.exec(v2);
