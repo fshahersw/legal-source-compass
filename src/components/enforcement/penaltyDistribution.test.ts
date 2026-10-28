@@ -135,7 +135,8 @@ describe("logHistogram", () => {
   it("bins on equal log widths and keeps the top edge in the last bin", async () => {
     const { logHistogram, decadeCeiling } = await import("./penaltyDistribution");
     const bins = logHistogram([1e5, 3e5, 9.9e5, 1e6, 5e6, 1e7, 5e4], 1e5, 1e7, 2);
-    expect(bins.map((b) => b.count)).toEqual([2, 1, 2, 2]);
+    // [1e5,3.16e5): 1e5,3e5 · [3.16e5,1e6): 9.9e5 · [1e6,3.16e6): 1e6 · [3.16e6,1e7]: 5e6,1e7 · 5e4 below lo
+    expect(bins.map((b) => b.count)).toEqual([2, 1, 1, 2]);
     expect(bins[0]!.x0).toBe(1e5);
     expect(bins.at(-1)!.x1).toBeCloseTo(1e7);
     expect(decadeCeiling([2.5e6], 1e5)).toBe(1e7);
