@@ -78,9 +78,13 @@ function aligned<T>(v: unknown, n: number, read: (x: unknown) => T | null): (T |
   return Array.isArray(v) && v.length === n ? v.map(read) : Array.from({ length: n }, () => null);
 }
 
-/** Notes printed under the same judge row with the same opening words are one note across reports. */
+/**
+ * Notes printed under the same judge row for the same measure are one note across reports when one printing starts
+ * with the other (extraction can cut a sentence short); the longest printing is kept.
+ */
 function groupNotes(raw: unknown, periods: readonly string[]): DistrictCjraNote[] {
-  const groups = new Map<string, DistrictCjraNote & { lastPeriod: string }>();
+  const groups: (DistrictCjraNote & { lastPeriod: string })[] = [];
+  const norm = (t: string) => t.toLowerCase();
   for (const n of Array.isArray(raw) ? raw : []) {
     const o = obj(n);
     const period = str(o?.["period"]);
@@ -89,22 +93,26 @@ function groupNotes(raw: unknown, periods: readonly string[]): DistrictCjraNote[
     if (!period || !text || !periods.includes(period)) continue;
     const m = str(o?.["measure"]);
     const measure = m && SERIES.has(m) ? (m as CjraSeriesKey) : null;
-    const key = `${row}|${measure ?? ""}|${text.slice(0, 60).toLowerCase()}`;
     const page = count(o?.["page"]);
-    const g = groups.get(key);
+    const t = norm(text);
+    const g = groups.find(
+      (x) =>
+        x.row === row &&
+        x.measure === measure &&
+        (norm(x.text).startsWith(t) || t.startsWith(norm(x.text))),
+    );
     if (!g) {
-      groups.set(key, { row, text, measure, periods: [period], page, lastPeriod: period });
+      groups.push({ row, text, measure, periods: [period], page, lastPeriod: period });
       continue;
     }
     if (!g.periods.includes(period)) g.periods.push(period);
-    // the longest printing of the note (extraction can cut a sentence short), and the latest page
     if (text.length > g.text.length) g.text = text;
     if (period > g.lastPeriod) {
       g.lastPeriod = period;
       g.page = page;
     }
   }
-  return [...groups.values()]
+  return groups
     .map(({ lastPeriod: _l, ...g }) => ({ ...g, periods: g.periods.sort() }))
     .sort(
       (a, b) =>
