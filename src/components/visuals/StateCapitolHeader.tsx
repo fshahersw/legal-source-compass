@@ -1,3 +1,4 @@
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { useQuery } from "@tanstack/react-query";
 import { capitolCaption, USPS } from "@/lib/visuals/stateCapitols";
 import { PhotoHeaderBand } from "./PhotoHeaderBand";
@@ -28,10 +29,12 @@ export function StateCapitolHeader({ usps, stateName }: { usps: string; stateNam
       }
       label={`${stateName} capitol photograph`}
       className="mb-3"
-    >
-      <p className="m-0 text-[11px] leading-snug text-muted-foreground">
-        The photograph shows the building, not where a body meets today.
-      </p>
-    </PhotoHeaderBand>
+      frameClassName="sm:h-24 sm:w-40"
+      aside={
+        <InfoPopover label="About this photograph">
+          <p>The photograph shows the building, not where a body meets today.</p>
+        </InfoPopover>
+      }
+    />
   );
 }

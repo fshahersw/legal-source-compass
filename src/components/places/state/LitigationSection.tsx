@@ -65,9 +65,19 @@ function FilingsChart({ usps, stateName }: { usps: string; stateName: string }) 
     pending: y.pending,
   }));
   const first = civil.series[0]?.fy;
+  const last = civil.series.at(-1);
+  const prev = civil.series.at(-2);
+  const change =
+    last?.filings != null && prev?.filings != null && prev.filings > 0
+      ? ((last.filings - prev.filings) / prev.filings) * 100
+      : null;
   return (
     <TrendFigure
-      title="Federal civil cases"
+      title={
+        change !== null && last
+          ? `Federal civil filings ${change >= 0 ? "rose" : "fell"} ${Math.abs(change).toFixed(1)}% in FY${last.fy}`
+          : "Federal civil cases"
+      }
       unit="cases per fiscal year, all districts of the state together"
       period={
         first ? `FY${first} to FY${civil.latestFy}, complete years` : `through FY${civil.latestFy}`
@@ -352,7 +362,7 @@ export function LitigationSection({ usps, stateName }: { usps: string; stateName
     <div className="grid items-start gap-3 xl:grid-cols-2">
       <div className="min-w-0 space-y-3">
         <FilingsChart usps={usps} stateName={stateName} />
-        <StateCourtDataPanel key={`court-data-${usps}`} usps={usps} />
+        <StateCourtDataPanel key={`court-data-${usps}`} usps={usps} withCivil={false} />
         <ComplaintsChart usps={usps} stateName={stateName} />
       </div>
       <div className="min-w-0 space-y-3">

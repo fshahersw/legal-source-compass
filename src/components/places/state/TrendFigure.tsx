@@ -1,3 +1,4 @@
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { useId } from "react";
 import {
   CartesianGrid,
@@ -16,8 +17,9 @@ export type FigureSeries = { id: string; label: string; tone: "primary" | "ring"
 export type FigureRow = { x: number } & Record<string, number | null>;
 
 const TONE: Record<FigureSeries["tone"], { stroke: string; dash?: string }> = {
-  primary: { stroke: "var(--primary)" },
-  ring: { stroke: "var(--ring)" },
+  // Blue and orange: distinct in both themes and for common colour-vision differences.
+  primary: { stroke: "var(--status-info)" },
+  ring: { stroke: "var(--status-serious)" },
   muted: { stroke: "var(--muted-foreground)", dash: "5 3" },
 };
 
@@ -148,10 +150,17 @@ export function TrendFigure({
         </ul>
       ) : null}
       <div className="space-y-1.5 border-t border-border/60 px-3 py-2 text-[11px] leading-4 text-muted-foreground">
-        <div>
-          Source:{" "}
-          {source.href ? <SourceLink href={source.href}>{source.label}</SourceLink> : source.label}
-          {note ? <span> · {note}</span> : null}
+        <div className="flex items-center justify-between gap-2">
+          <span>{note ?? period}</span>
+          <InfoPopover label="Source and notes">
+            <p>
+              {source.href ? (
+                <SourceLink href={source.href}>{source.label}</SourceLink>
+              ) : (
+                source.label
+              )}
+            </p>
+          </InfoPopover>
         </div>
         <details className="rounded-md border border-border/70 bg-surface">
           <summary className="cursor-pointer px-2 py-1 text-xs font-medium text-foreground hover:bg-muted/40">

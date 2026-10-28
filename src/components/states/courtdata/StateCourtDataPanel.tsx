@@ -51,7 +51,14 @@ const SECTION_LABEL: Record<CourtSection, string> = {
 };
 
 /** Federal civil caseload, CourtListener's docket collection and bench positions for a state, each labelled by its dataset. */
-export function StateCourtDataPanel({ usps }: { usps: string }) {
+export function StateCourtDataPanel({
+  usps,
+  withCivil = true,
+}: {
+  usps: string;
+  /** false where the page already charts the federal civil caseload. */
+  withCivil?: boolean;
+}) {
   const fn = useServerFn(getStateCourtData);
   const q = useQuery({
     queryKey: ["state-court-data", usps],
@@ -61,14 +68,13 @@ export function StateCourtDataPanel({ usps }: { usps: string }) {
   return (
     <section
       className="resource-panel @container"
-      aria-label="Federal civil caseload, CourtListener dockets and benches"
+      aria-label="Court data: caseload, dockets and benches"
     >
       <div className="research-band">
         <h2 className="flex items-center gap-2 text-heading font-semibold text-foreground">
           <Gavel className="size-4" aria-hidden />
           Court data
         </h2>
-        <span className="text-[11px] text-muted-foreground">Federal · CourtListener</span>
       </div>
       {q.isPending ? (
         <p role="status" aria-busy="true" className="px-3 py-6 text-xs text-muted-foreground">
@@ -79,14 +85,23 @@ export function StateCourtDataPanel({ usps }: { usps: string }) {
           Court data could not load.
         </PanelState>
       ) : (
-        <Body data={q.data} onRetry={() => void q.refetch()} />
+        <Body data={q.data} onRetry={() => void q.refetch()} withCivil={withCivil} />
       )}
     </section>
   );
 }
 
-function Body({ data, onRetry }: { data: StateCourtData; onRetry: () => void }) {
-  const { civil, courtListener: cl, benches } = data;
+function Body({
+  data,
+  onRetry,
+  withCivil,
+}: {
+  data: StateCourtData;
+  onRetry: () => void;
+  withCivil: boolean;
+}) {
+  const { courtListener: cl, benches } = data;
+  const civil = withCivil ? data.civil : null;
   if (!civil && !cl && !benches)
     return data.unavailable.length ? (
       <PanelState tone="error" action={<RetryButton onClick={onRetry} />}>
@@ -100,11 +115,11 @@ function Body({ data, onRetry }: { data: StateCourtData; onRetry: () => void }) 
   const two = civil ? lastTwo(civil) : null;
   const filings = civil ? civilChange(civil, "filings") : null;
   const terminations = civil ? civilChange(civil, "terminations") : null;
-  const takeaways = courtTakeaways(data);
+  const takeaways = courtTakeaways(withCivil ? data : { ...data, civil: null });
   const fyScope = two ? `FY${two.last.fy} · FJC` : null;
   // A dataset with no row for this state is said so once; one that failed to load is named in the note above.
   const absent = [
-    !civil && !data.unavailable.includes("civil") ? "federal civil caseload" : null,
+    withCivil && !civil && !data.unavailable.includes("civil") ? "federal civil caseload" : null,
     !cl && !data.unavailable.includes("dockets") ? "CourtListener docket collection" : null,
     !benches && !data.unavailable.includes("benches") ? "bench positions" : null,
   ].filter((s): s is string => s != null);
@@ -214,11 +229,7 @@ function Body({ data, onRetry }: { data: StateCourtData; onRetry: () => void }) 
         </PanelSection>
       ) : null}
       {cl ? (
-        <PanelSection
-          id="courts-dockets"
-          title="Dockets in the collection"
-          hint="collection"
-        >
+        <PanelSection id="courts-dockets" title="Dockets in the collection" hint="collection">
           <Dockets data={data} />
         </PanelSection>
       ) : null}

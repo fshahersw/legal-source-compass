@@ -91,7 +91,7 @@
 - [x] Explore button replaced by an Ask AI icon that sends the chart's shown figures, page topic, period and source
 - [x] Enforcement calendar Weekdays/Months/3D start at coverage start (no pre-coverage zeros)
 - [x] Court structure diagram (federal + selectable state tiers, recorded types only) on Courts & judges and every state page
-- [ ] Site-wide "say it once" declutter pass (duplicate KPIs/captions, long source prose into info icons)
+- [~] Site-wide "say it once" declutter pass — state pages done (duplicate caseload block, tile captions, source prose, capitol card, bill lists, chart contrast); other sections next
 - [ ] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
 - [ ] Shared map with tile-grid mode and rate shading across Overview/Places/Courts/Litigation/Enforcement/Law
 - [ ] Law hierarchy trees (U.S. Code, CFR, state codes/constitutions)

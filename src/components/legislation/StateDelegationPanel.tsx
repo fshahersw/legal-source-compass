@@ -1,3 +1,4 @@
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -54,10 +55,15 @@ export function StateDelegationPanel({ usps }: { usps: string }) {
           <Group title="Senators" rows={q.data.senators} />
           <Group title="Representatives" rows={q.data.representatives} district />
           <Group title="Delegates and resident commissioners" rows={q.data.delegates} />
-          <p className="m-0 text-[10.5px] leading-4 text-muted-foreground">
-            Congress.gov API (Library of Congress): members flagged current, listed under the state
-            of their latest term. Party is the latest entry of each member's party history.
-          </p>
+          <div className="flex justify-end">
+            <InfoPopover label="Source and notes">
+              <p>
+                Congress.gov API (Library of Congress): members flagged current, listed under the
+                state of their latest term. Party is the latest entry of each member's party
+                history.
+              </p>
+            </InfoPopover>
+          </div>
         </div>
       )}
     </section>

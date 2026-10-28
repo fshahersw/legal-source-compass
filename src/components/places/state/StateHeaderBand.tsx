@@ -98,7 +98,7 @@ export function StateHeaderBand({
           value={pep ? formatCensus(pep.value, "int") : NOT_RECORDED}
           note={
             pep
-              ? `${pep.date}, Census Population Estimates${pep.rank && pep.of ? ` · #${pep.rank} of ${pep.of}` : ""}`
+              ? `${pep.rank && pep.of ? `#${pep.rank} of ${pep.of} · ` : ""}${pep.date}`
               : census.error
                 ? "Could not load"
                 : "No estimate recorded"
@@ -112,7 +112,7 @@ export function StateHeaderBand({
           value={courts ? judicial.length.toLocaleString("en-US") : NOT_RECORDED}
           note={
             courts
-              ? `${federal} federal · ${stateCourts} state, in the court directory`
+              ? `${federal} federal · ${stateCourts} state`
               : "Directory not loaded"
           }
         />
@@ -124,7 +124,7 @@ export function StateHeaderBand({
           value={o?.judgeProfiles != null ? o.judgeProfiles.toLocaleString("en-US") : NOT_RECORDED}
           note={
             s?.activeJudges != null
-              ? `profiles in the directory · ${s.activeJudges} active federal district judges (FJC, ${s.asOf ?? "latest"})`
+              ? `${s.activeJudges} active federal district judges`
               : "profiles in the directory"
           }
         />
@@ -146,7 +146,7 @@ export function StateHeaderBand({
           }
           note={
             s?.pendingActions != null
-              ? `in ${s.pendingMdls ?? 0} MDLs before the state's courts, JPML, ${s.asOf ?? "latest"}`
+              ? `in ${s.pendingMdls ?? 0} MDLs · ${s.asOf ?? "latest"}`
               : "Not recorded for every district"
           }
         />
@@ -158,7 +158,7 @@ export function StateHeaderBand({
           value={s?.filings ? s.filings.value.toLocaleString("en-US") : NOT_RECORDED}
           note={
             s?.filings
-              ? `civil cases filed, FY${s.filings.fy}${change ? ` · ${change} vs FY${s.filings.fy - 1}` : ""}`
+              ? `civil, FY${s.filings.fy}${change ? ` · ${change} vs FY${s.filings.fy - 1}` : ""}`
               : "No complete fiscal year recorded"
           }
         />
