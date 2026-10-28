@@ -3,7 +3,7 @@
  * "View data" table. Each row becomes figures labelled "<row label> · <column>", so the assistant receives exactly the
  * figures on screen (missing values read "Not recorded"), plus the page topic, period and source. Pure and tested.
  */
-import type { CsvValue } from "@/lib/export";
+import type { CsvValue } from "../csv";
 import { buildSectionContext, type FigureInput } from "./buildSectionContext";
 import type { SectionContext } from "@/lib/assistant/sectionContext";
 
