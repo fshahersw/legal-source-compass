@@ -327,8 +327,14 @@ export function DivergingDots({
   format = (v: number) => v.toLocaleString("en-US"),
   showBaselineValue = true,
   labelWidth = 180,
+  onNavigate,
 }: {
-  items: readonly { label: string; value: number | null }[];
+  /**
+   * `href` makes the row label a link (client-side via `onNavigate`, a real href for open-in-new-tab); `note` is the
+   * hover text of an unlinked label ("No court page recorded").
+   */
+  items: readonly { label: string; value: number | null; href?: string; note?: string }[];
+  onNavigate?: (href: string) => void;
   baseline: number;
   baselineLabel: string;
   format?: (v: number) => string;
@@ -385,16 +391,41 @@ export function DivergingDots({
                   opacity={0.35}
                 />
               ) : null}
-              <text
-                x={gutter}
-                y={cy}
-                dy="0.32em"
-                textAnchor="end"
-                className="fill-foreground text-xs"
-              >
-                <title>{it.label}</title>
-                {clip(it.label, chars)}
-              </text>
+              {it.href ? (
+                <a
+                  href={it.href}
+                  aria-label={`${it.label}: open profile`}
+                  onClick={(e) => {
+                    if (!onNavigate || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)
+                      return;
+                    e.preventDefault();
+                    onNavigate(it.href!);
+                  }}
+                  className="outline-none [&:focus-visible>text]:underline"
+                >
+                  <text
+                    x={gutter}
+                    y={cy}
+                    dy="0.32em"
+                    textAnchor="end"
+                    className="fill-primary text-xs underline-offset-2 hover:underline"
+                  >
+                    <title>{it.label}</title>
+                    {clip(it.label, chars)}
+                  </text>
+                </a>
+              ) : (
+                <text
+                  x={gutter}
+                  y={cy}
+                  dy="0.32em"
+                  textAnchor="end"
+                  className="fill-foreground text-xs"
+                >
+                  <title>{it.note ? `${it.label} · ${it.note}` : it.label}</title>
+                  {clip(it.label, chars)}
+                </text>
+              )}
               {it.value == null ? (
                 <text
                   x={x(baseline) + 8}

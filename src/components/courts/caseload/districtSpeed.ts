@@ -11,15 +11,19 @@ export type DistrictSpeedInput = {
   name: string;
   terminations: number | null;
   medianDays: number | null;
+  /** True only when the district's own record links its court profile (/courts/<id>). */
+  hasCourtPage?: boolean | undefined;
 };
+
+export type DistrictSpeedItem = { id: string; name: string; value: number; hasCourtPage: boolean };
 
 export type DistrictSpeed = {
   /** Median of the compared districts' medians. */
   baseline: number;
   /** Median over all civil cases closed nationally, as published. */
   national: number | null;
-  slowest: { id: string; name: string; value: number }[];
-  fastest: { id: string; name: string; value: number }[];
+  slowest: DistrictSpeedItem[];
+  fastest: DistrictSpeedItem[];
   /** Districts that met the threshold and have a median. */
   counted: number;
   /** Districts left out: below the threshold or no recorded median. */
@@ -36,7 +40,12 @@ export function districtSpeed(
       (r): r is DistrictSpeedInput & { medianDays: number; terminations: number } =>
         r.medianDays != null && r.terminations != null && r.terminations >= minTerminations,
     )
-    .map((r) => ({ id: r.id, name: r.name, value: r.medianDays }))
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      value: r.medianDays,
+      hasCourtPage: r.hasCourtPage === true,
+    }))
     .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
   if (counted.length < n * 2) return null;
   return {
