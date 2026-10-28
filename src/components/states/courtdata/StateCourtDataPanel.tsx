@@ -51,7 +51,14 @@ const SECTION_LABEL: Record<CourtSection, string> = {
 };
 
 /** Federal civil caseload, CourtListener's docket collection and bench positions for a state, each labelled by its dataset. */
-export function StateCourtDataPanel({ usps }: { usps: string }) {
+export function StateCourtDataPanel({
+  usps,
+  withCivil = true,
+}: {
+  usps: string;
+  /** false where the page already charts the federal civil caseload. */
+  withCivil?: boolean;
+}) {
   const fn = useServerFn(getStateCourtData);
   const q = useQuery({
     queryKey: ["state-court-data", usps],

@@ -352,7 +352,7 @@ export function LitigationSection({ usps, stateName }: { usps: string; stateName
     <div className="grid items-start gap-3 xl:grid-cols-2">
       <div className="min-w-0 space-y-3">
         <FilingsChart usps={usps} stateName={stateName} />
-        <StateCourtDataPanel key={`court-data-${usps}`} usps={usps} />
+        <StateCourtDataPanel key={`court-data-${usps}`} usps={usps} withCivil={false} />
         <ComplaintsChart usps={usps} stateName={stateName} />
       </div>
       <div className="min-w-0 space-y-3">
