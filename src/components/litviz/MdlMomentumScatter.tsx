@@ -74,8 +74,8 @@ export function MomentumPlot({
   const hi = Math.max(0, ...changes);
   const xTicks = log10Ticks(maxPending);
   const yTicks = symlogTicks(lo, hi);
-  const yLo = symlog(Math.min(lo, yTicks[0]!)) - 0.15;
-  const yHi = symlog(Math.max(hi, yTicks[yTicks.length - 1]!)) + 0.15;
+  const yLo = symlog(Math.min(lo, yTicks[0]!)) - 0.35;
+  const yHi = symlog(Math.max(hi, yTicks[yTicks.length - 1]!)) + 0.35;
   // the three largest moves either way carry a direct label
   const labelled = useMemo(() => {
     const ids = new Set<number>();
@@ -117,6 +117,31 @@ export function MomentumPlot({
           });
           return best;
         };
+        // direct labels, nudged apart: each label is a box; a box that overlaps one already placed moves away from
+        // the zero line (up for rises, down for falls) until it is clear
+        const placed: { x0: number; x1: number; y: number }[] = [];
+        const labelPos = new Map<number, { x: number; y: number; anchor: "start" | "end" }>();
+        const chars = w < 480 ? 10 : 16;
+        for (const p of [...sorted]
+          .filter((q) => labelled.has(q.mdl))
+          .sort((a, b) => Math.abs(b.change ?? 0) - Math.abs(a.change ?? 0))) {
+          const cx = px(p);
+          const up = (p.change ?? 0) >= 0;
+          const anchor = cx > w - 120 ? "end" : "start";
+          const text = productLabel(p, chars);
+          const width = text.length * 5.9;
+          const x0 = anchor === "end" ? cx - 7 - width : cx + 7;
+          const x1 = x0 + width;
+          let y = py(p) + (up ? -7 : 14);
+          for (let guard = 0; guard < 8; guard++) {
+            const hit = placed.some((b) => x0 < b.x1 && x1 > b.x0 && Math.abs(b.y - y) < 12);
+            if (!hit) break;
+            y += up ? -12 : 12;
+          }
+          y = Math.max(TOP + 10, Math.min(HEIGHT - BOTTOM - 3, y));
+          placed.push({ x0, x1, y });
+          labelPos.set(p.mdl, { x: anchor === "end" ? cx - 7 : cx + 7, y, anchor });
+        }
         const tone = (c: number) =>
           c > 0 ? "var(--chart-2)" : c < 0 ? "var(--chart-1)" : "var(--chart-axis)";
         const marks = (
@@ -198,23 +223,24 @@ export function MomentumPlot({
                 strokeWidth={1.25}
               />
             ))}
-            {sorted.map((p) =>
-              labelled.has(p.mdl) ? (
+            {sorted.map((p) => {
+              const l = labelPos.get(p.mdl);
+              return l ? (
                 <text
                   key={`l${p.mdl}`}
-                  x={px(p) + (px(p) > w - 110 ? -7 : 7)}
-                  y={py(p) + ((p.change ?? 0) >= 0 ? -6 : 13)}
-                  textAnchor={px(p) > w - 110 ? "end" : "start"}
+                  x={l.x}
+                  y={l.y}
+                  textAnchor={l.anchor}
                   fontSize={10.5}
                   fill="var(--chart-ink)"
                   stroke="var(--chart-surface)"
                   strokeWidth={3}
                   paintOrder="stroke"
                 >
-                  {productLabel(p, w < 480 ? 10 : 16)}
+                  {productLabel(p, chars)}
                 </text>
-              ) : null,
-            )}
+              ) : null;
+            })}
             <rect
               x={0}
               y={0}

@@ -408,7 +408,7 @@ export function DivergingDots({
                     y={cy}
                     dy="0.32em"
                     textAnchor="end"
-                    className="fill-primary text-xs underline-offset-2 hover:underline"
+                    className="fill-foreground text-xs underline decoration-muted-foreground/60 decoration-dotted underline-offset-2 hover:decoration-solid"
                   >
                     <title>{it.label}</title>
                     {clip(it.label, chars)}
