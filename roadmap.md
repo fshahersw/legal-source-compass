@@ -6,11 +6,11 @@
 - [ ] Next sprint: MDL missing-value validation/momentum, district profile links, map tile mode, law trees and exact-ID imagery; source compatibility remains required. Time Limits and acquisition checkpoints untouched.
 
 ## Executive brief — Sprints 2–4 (uploaded 2026-10-28 07:21 UTC; use Firecrawl/Tavily as needed)
-- [ ] S2.1 MDL data validation (no missing→0, validated series points) + momentum scatter (log pending, exact same-month 12-month change, zero-pending drawer, links to MDL pages) + tests
-- [ ] S2.2 District speed chart: district names link to court profiles when an exact court record exists
-- [ ] S2.3 Clearance ratio: zero-filing years null, partial years excluded from callouts (verify + tests)
-- [ ] S3.1 Map: Geographic | Equal-area tiles switch (50 states + DC), shared class breaks and missing hatch, keyboard navigation + tests
-- [ ] S3.2 Law tree: Title → Chapter/Part → Section explorer over reader endpoints with coverage chips and reader links
+- [x] S2.1 MDL data validation (no missing→0, validated series points) + momentum scatter (log pending, exact same-month 12-month change, zero-pending drawer, links to MDL pages) + tests
+- [x] S2.2 District speed chart: district names link to court profiles when an exact court record exists
+- [x] S2.3 Clearance ratio: zero-filing years null, partial years excluded from callouts (verify + tests)
+- [x] S3.1 Map: Geographic | Equal-area tiles switch (50 states + DC), shared class breaks and missing hatch, keyboard navigation + tests (national MetricMap; the state-dashboard choropleth still map-only)
+- [x] S3.2 Law structure: U.S. Code title icicle (exact partition, click opens the container) and CFR largest-parts chart; state codes load their tree lazily, so a full-structure view needs a totals endpoint first
 - [ ] S3.3 Court/agency hierarchy contrast: tier badges, appeal arrows, directory-vs-reporting distinction, official org-chart links with snapshot dates
 - [ ] S4.1 Exact-ID imagery: section backdrops with AA contrast; courthouse/capitol/judge/agency seal coverage check
 - [ ] S4.2 Enforcement penalty distributions: log bins, raw-record medians, agencies kept separate
@@ -102,7 +102,7 @@
 - [x] Desktop + phone checks of the 13 main pages (no sideways scroll, no page errors, 2026-10-24); demoted blocks listed in docs/audits/2026-10-24-ui-refresh-moved-blocks.md
 - [ ] Places: confirm the median reference line on the state comparison chart is visible in both themes (looked faint in one screenshot)
 - [ ] Sunburst: keyboard focus for ring segments (the case-type list already works with the keyboard)
-- [ ] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)
+- [x] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)
 
 ## Cleaner, richer visuals (plan 2026-10-28)
 - [x] Court diagram contrast in both themes; exact-bound courthouse/capitol section imagery; agency parent/component diagrams with marks and scope labels; verified CDC organization-chart, USAGov state-government and Census visualization references. Internal agency reporting structures beyond recorded relationships remain unacquired, not invented.
@@ -110,8 +110,8 @@
 - [x] Enforcement calendar Weekdays/Months/3D start at coverage start (no pre-coverage zeros)
 - [x] Court structure diagram (federal + selectable state tiers, recorded types only) on Courts & judges and every state page
 - [~] Site-wide "say it once" declutter pass — state pages done (duplicate caseload block, tile captions, source prose, capitol card, bill lists, chart contrast); other sections next
-- [ ] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
+- [x] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
 - [ ] Shared map with tile-grid mode and rate shading across Overview/Places/Courts/Litigation/Enforcement/Law
-- [ ] Law hierarchy trees (U.S. Code, CFR, state codes/constitutions)
+- [ ] Law hierarchy trees: U.S. Code and CFR done; state codes/constitutions need a per-level totals endpoint
 - [ ] Visual backfill: court/judge/place/company identity blocks
 - [ ] Wire unused accurate datasets into their sections
