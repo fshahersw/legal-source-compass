@@ -14,6 +14,7 @@ import { GovDomainsPanel } from "./GovDomainsPanel";
 import { LitigationSection } from "./LitigationSection";
 import type { Hidden } from "./resourceFilter";
 import { StateHeaderBand } from "./StateHeaderBand";
+import { SectionIdentity } from "@/components/visuals/SectionIdentity";
 
 export const OVERVIEW_SECTIONS = [
   { id: "courts", label: "Courts and judges" },
@@ -30,20 +31,19 @@ function Section({
   title,
   note,
   children,
+  state,
+  courtId,
 }: {
   id: string;
   title: string;
   note?: ReactNode;
   children: ReactNode;
+  state: string;
+  courtId?: string;
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-12 space-y-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-        <h2 id={`${id}-heading`} className="m-0 text-base font-semibold">
-          {title}
-        </h2>
-        {note ? <p className="m-0 text-[11px] text-muted-foreground">{note}</p> : null}
-      </div>
+      <SectionIdentity id={id} title={title} note={note} state={state} courtId={courtId} />
       {children}
     </section>
   );
@@ -164,6 +164,8 @@ export function StateOverviewTab(props: {
       </nav>
       <Section
         id="courts"
+        state={usps}
+        courtId={props.courts?.find((c) => c.state === usps && c.type === "Federal district")?.id}
         title="Courts and judges"
         note="Federal districts and state courts as recorded"
       >
@@ -183,6 +185,7 @@ export function StateOverviewTab(props: {
       </Section>
       <Section
         id="law"
+        state={usps}
         title="Law"
         note="Codes, constitution, regulations, court rules and time limits, each from its official publisher"
       >
@@ -194,6 +197,7 @@ export function StateOverviewTab(props: {
       </Section>
       <Section
         id="litigation"
+        state={usps}
         title="Litigation and enforcement"
         note="Federal civil caseload, MDLs, consumer complaints and workplace safety"
       >
@@ -202,6 +206,7 @@ export function StateOverviewTab(props: {
       <StateExposureSection usps={usps} stateName={stateName} />
       <Section
         id="demographics"
+        state={usps}
         title="Demographics and economy"
         note="U.S. Census Bureau: American Community Survey, Population Estimates and County Business Patterns"
       >
@@ -229,6 +234,7 @@ export function StateOverviewTab(props: {
       </Section>
       <Section
         id="resources"
+        state={usps}
         title="Research resources"
         note="Official and library sources; commercial publishers and other states' pages are not listed"
       >
@@ -246,6 +252,7 @@ export function StateOverviewTab(props: {
       </Section>
       <Section
         id="government-sites"
+        state={usps}
         title="Official government websites"
         note="Domains the CISA .gov registry and the GSA list register to this state, as the publishers give them"
       >
