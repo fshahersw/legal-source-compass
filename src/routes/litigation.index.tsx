@@ -4,6 +4,7 @@ import { SectionHub } from "@/components/atlas/hub/SectionHub";
 import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { CaseMixChart } from "@/components/litviz/CaseMixChart";
 import { CaseTypeSunburst } from "@/components/litviz/CaseTypeSunburst";
+import { ClearanceRateChart } from "@/components/litviz/ClearanceRateChart";
 import { LitigationHeadline } from "@/components/litviz/LitigationHeadline";
 import { RadarTopFive } from "@/components/safety/radar/RadarTopFive";
 import { pageHead } from "@/lib/corpus/head";
@@ -30,6 +31,7 @@ function Page() {
         lead={
           <div className="space-y-6">
             <LitigationHeadline />
+            <ClearanceRateChart />
             <RadarTopFive />
             <CaseMixChart />
             <CaseTypeSunburst />

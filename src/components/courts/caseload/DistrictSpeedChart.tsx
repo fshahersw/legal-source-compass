@@ -60,7 +60,7 @@ export function DistrictSpeedChart() {
           source: SOURCE.label,
           figures: [
             {
-              label: "National median, filing to disposition",
+              label: "Median of qualifying districts' medians, filing to disposition",
               value: speed.baseline,
               unit: "days",
             },

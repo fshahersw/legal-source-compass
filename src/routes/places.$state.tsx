@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useMatch, useNavigate } from "@tanstack/
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BarChart3, BookOpen, Landmark, MapPin, UsersRound } from "lucide-react";
+import { BarChart3, BookOpen, Landmark, MapPin } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { UsMap } from "@/components/corpus/UsMap";
 import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
