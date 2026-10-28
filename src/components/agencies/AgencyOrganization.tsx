@@ -13,7 +13,7 @@ export function AgencyOrganization({ profile }: { profile: AgencyProfile }) {
   return (
     <section aria-label={`${profile.name} organization`} className="min-w-0 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="text-label font-semibold">Organization</h4>
+        <div><h4 className="text-label font-semibold">Organization</h4><p className="text-meta text-muted-foreground">Recorded directory relationships · includes former agencies</p></div>
         <InfoPopover label="Organization sources and scope">
           <p>Parent and components follow the Federal Register's recorded agency relationships. This is a directory hierarchy, not an internal reporting chart; unlisted offices are not assumed absent.</p>
           <a href={profile.frUrl} target="_blank" rel="noreferrer">Agency directory record</a>
