@@ -282,5 +282,5 @@ export function logHistogram(
 /** Smallest power of ten at or above every value (at least `lo` × 10). */
 export function decadeCeiling(values: readonly number[], lo: number): number {
   const max = values.reduce((m, v) => Math.max(m, v), 0);
-  return Math.max(lo * 10, 10 ** Math.ceil(Math.log10(Math.max(max, 1)) + 1e-12));
+  return Math.max(lo * 10, 10 ** Math.ceil(Math.log10(Math.max(max, 1)) - 1e-9));
 }
