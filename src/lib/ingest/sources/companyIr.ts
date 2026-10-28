@@ -17,8 +17,9 @@
  *     must come with the line it was read from; a figure whose number does not appear in that line is dropped, and a
  *     figure whose number is not in the stored document text is kept but marked `check: "image"` (read from the page
  *     image only). Nothing is computed or estimated by the model.
- *   - Each run: collect finished batches, submit pending documents (one batch), then discover and fetch one target
- *     (rotating cursor; a run stays well inside the edge function's wall-clock limit). Rows move pending → submitted → extracted | failed through upserts.
+ *   - Each run: collect finished batches, submit pending documents (one batch), then discover and fetch the most
+ *     relevant registrant that is due (see dueTargets: pending-MDL defendants weekly, other MDL links every two weeks,
+ *     other current filers monthly; one per run keeps a run inside the edge function's wall-clock limit). Rows move pending → submitted → extracted | failed through upserts.
  *
  * company_sec_cover_facts (source company_sec_cover_facts): the cover-page facts each registrant tags in XBRL (dei
  * EntityPublicFloat, EntityCommonStockSharesOutstanding) from data.sec.gov company concepts, one row per company.
@@ -351,6 +352,99 @@ async function readTargets(ctx: CollectContext): Promise<Target[]> {
     .filter((t) => /^\d{10}$/.test(t.cik));
 }
 
+/* ------------------------------------------------------------------------------------------------ relevance */
+
+/**
+ * Which registrants the IR source reads, in what order and how often. Relevance comes from company_sec_mdl_links
+ * with the company pages' rule (tier C evidence never counts toward exposure):
+ *   1  named as defendant in a pending MDL on tier A or B evidence, not dismissed      revisited every 7 days
+ *   2  any other pending, not-dismissed MDL link (tier C, role unclear)                  every 14 days
+ *   3  other registrants still filing                                                     every 30 days
+ *   skipped: no pending MDL link and the last 10-K cover date is more than three years old (stopped filing)
+ */
+export type Relevance = 1 | 2 | 3;
+export const REVISIT_DAYS: Record<Relevance, number> = { 1: 7, 2: 14, 3: 30 };
+const STALE_FILER_DAYS = 3 * 365;
+const DAY = 86_400_000;
+
+export type MdlLinkFact = {
+  cik: string;
+  status: string | null;
+  tier: string | null;
+  role: string | null;
+  dismissed: boolean;
+};
+
+export function relevanceOf(links: readonly MdlLinkFact[]): Relevance | null {
+  const pending = links.filter((l) => l.status === "pending" && !l.dismissed);
+  if (pending.some((l) => l.role === "defendant" && (l.tier === "A" || l.tier === "B"))) return 1;
+  if (pending.length) return 2;
+  return null;
+}
+
+export type RankedTarget = Target & { relevance: Relevance; lastVisit: string | null };
+
+/**
+ * The targets due now, most relevant first, then the longest unvisited. `visited` maps CIK to the ISO time of the
+ * last visit; `floatDates` maps CIK to its latest public-float date (absent when no cover row exists).
+ */
+export function dueTargets(
+  targets: readonly Target[],
+  links: readonly MdlLinkFact[],
+  floatDates: ReadonlyMap<string, string>,
+  visited: Readonly<Record<string, string>>,
+  now: Date,
+): RankedTarget[] {
+  const byCik = new Map<string, MdlLinkFact[]>();
+  for (const l of links) byCik.set(l.cik, [...(byCik.get(l.cik) ?? []), l]);
+  const out: RankedTarget[] = [];
+  for (const t of targets) {
+    let relevance: Relevance | null = relevanceOf(byCik.get(t.cik) ?? []);
+    if (relevance === null) {
+      const float = floatDates.get(t.cik);
+      if (float && now.getTime() - Date.parse(`${float}T00:00:00Z`) > STALE_FILER_DAYS * DAY)
+        continue;
+      relevance = 3;
+    }
+    const lastVisit = visited[t.cik] ?? null;
+    if (lastVisit && now.getTime() - Date.parse(lastVisit) < REVISIT_DAYS[relevance] * DAY)
+      continue;
+    out.push({ ...t, relevance, lastVisit });
+  }
+  return out.sort(
+    (a, b) =>
+      a.relevance - b.relevance ||
+      (a.lastVisit ?? "").localeCompare(b.lastVisit ?? "") ||
+      a.cik.localeCompare(b.cik),
+  );
+}
+
+async function readRelevance(ctx: CollectContext) {
+  const linkRows = await ctx.corpus.query(
+    "corpus_records?select=c:item->link->>cik,s:item->link->>mdl_status,t:item->link->>tier," +
+      "r:item->link->>role,d:item->link->>dismissed&dataset=eq.company_sec_mdl_links&order=id.asc&limit=5000",
+  );
+  const links: MdlLinkFact[] = linkRows
+    .map((r) => ({
+      cik: String(r["c"] ?? ""),
+      status: typeof r["s"] === "string" ? r["s"] : null,
+      tier: typeof r["t"] === "string" ? r["t"] : null,
+      role: typeof r["r"] === "string" ? r["r"] : null,
+      dismissed: r["d"] === "true" || r["d"] === true,
+    }))
+    .filter((l) => /^\d{10}$/.test(l.cik));
+  const coverRows = await ctx.corpus.query(
+    "corpus_records?select=id,f:item->cells->>float_date&dataset=eq.company_sec_cover_facts&order=id.asc&limit=1000",
+  );
+  const floatDates = new Map<string, string>();
+  for (const r of coverRows) {
+    const cik = String(r["id"] ?? "").replace(/^cover:/, "");
+    if (typeof r["f"] === "string" && /^\d{4}-\d{2}-\d{2}$/.test(r["f"]))
+      floatDates.set(cik, r["f"]);
+  }
+  return { links, floatDates };
+}
+
 /* ------------------------------------------------------------------------------------------------ API calls */
 
 type Http = CollectContext["http"];
@@ -624,7 +718,14 @@ export const companyIrKpis: SourceAdapter = {
     const ak = ctx.env("ANTHROPIC_API_KEY")!;
     const tv = ctx.env("TAVILY_API_KEY") ?? null;
     const cursor = (isObj(ctx.cursor) ? ctx.cursor : {}) as Obj;
-    let next = typeof cursor["next"] === "number" ? cursor["next"] : 0;
+    // CIK → ISO time of the last visit (relevance decides how soon a registrant is due again)
+    const visited: Record<string, string> = isObj(cursor["visited"])
+      ? Object.fromEntries(
+          Object.entries(cursor["visited"]).filter(
+            (e): e is [string, string] => typeof e[1] === "string" && /^\d{10}$/.test(e[0]),
+          ),
+        )
+      : {};
     let batches: BatchRef[] = Array.isArray(cursor["batches"])
       ? (cursor["batches"] as BatchRef[])
       : [];
@@ -730,10 +831,18 @@ export const companyIrKpis: SourceAdapter = {
 
       // 3. discover and fetch a few targets
       const targets = await readTargets(ctx);
+      const { links, floatDates } = await readRelevance(ctx);
+      const due = dueTargets(targets, links, floatDates, visited, ctx.now);
       notes["targets"] = targets.length;
-      for (let i = 0; i < Math.min(TARGETS_PER_RUN, targets.length); i++) {
-        const t = targets[next % targets.length]!;
-        next = (next + 1) % targets.length;
+      notes["due"] = due.length;
+      notes["due_by_relevance"] = {
+        "1": due.filter((t) => t.relevance === 1).length,
+        "2": due.filter((t) => t.relevance === 2).length,
+        "3": due.filter((t) => t.relevance === 3).length,
+      };
+      for (const t of due.slice(0, TARGETS_PER_RUN)) {
+        visited[t.cik] = ctx.now.toISOString();
+        notes["visited"] = { cik: t.cik, relevance: t.relevance };
         if (!t.domains.length) {
           held.push({ key: t.cik, reason: "no official website stated in SEC filings" });
           continue;
@@ -745,26 +854,26 @@ export const companyIrKpis: SourceAdapter = {
           const origins = [
             ...new Set([t.ir, t.site].filter((u): u is URL => !!u).map((u) => u.origin)),
           ];
-          const links: string[] = [];
+          const found: string[] = [];
           let mapError: unknown = null;
           for (const origin of origins) {
             try {
-              links.push(...(await firecrawlMap(ctx.http, fc, new URL(origin))));
+              found.push(...(await firecrawlMap(ctx.http, fc, new URL(origin))));
             } catch (error) {
               if (error instanceof BudgetExhausted || error instanceof RateLimited) throw error;
               mapError = error;
             }
           }
-          let picks = pickCandidates(links, t.domains, ctx.now);
+          let picks = pickCandidates(found, t.domains, ctx.now);
           if (picks.length < 2 && tv) {
             try {
-              links.push(...(await tavilyLinks(ctx.http, tv, t)));
-              picks = pickCandidates(links, t.domains, ctx.now);
+              found.push(...(await tavilyLinks(ctx.http, tv, t)));
+              picks = pickCandidates(found, t.domains, ctx.now);
             } catch (error) {
               if (error instanceof BudgetExhausted || error instanceof RateLimited) throw error;
             }
           }
-          if (!links.length && mapError) throw mapError;
+          if (!found.length && mapError) throw mapError;
           if (!picks.length) {
             held.push({
               key: t.cik,
@@ -840,7 +949,7 @@ export const companyIrKpis: SourceAdapter = {
       rows: [...byId.values()],
       fetched,
       held,
-      cursorAfter: { next, batches } as unknown as Json,
+      cursorAfter: { batches, visited } as unknown as Json,
       complete,
       notes,
     };

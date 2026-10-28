@@ -10,16 +10,20 @@ import {
   containsNumber,
   coverFacts,
   customId,
+  dueTargets,
   irRow,
   irRowId,
   isFirstParty,
   parseBatchResults,
   pickCandidates,
   registrableDomain,
+  relevanceOf,
+  REVISIT_DAYS,
   rowIdOf,
   siteUrl,
   validateFigures,
   type IrDocument,
+  type MdlLinkFact,
 } from "./companyIr.ts";
 
 const NOW = new Date("2026-10-28T12:00:00Z");
@@ -357,8 +361,8 @@ describe("company_ir_kpis run (offline)", () => {
     expect(status[heldId]).toBe("submitted");
     expect(Object.values(status).filter((s) => s === "pending")).toHaveLength(1);
     expect(out.cursorAfter).toEqual({
-      next: 0,
       batches: [{ id: "msgbatch_1", submitted: NOW.toISOString(), ids: [heldId] }],
+      visited: { [BD.id]: NOW.toISOString() },
     });
     expect(ctx.http.requests.every((r) => !r.url.includes("KEY"))).toBe(true);
   });
@@ -413,7 +417,7 @@ describe("company_ir_kpis run (offline)", () => {
     const out = await companyIrKpis.collect({
       http: politeHttp({ maxRequests: 40, minIntervalMs: 0, fetch: fetchImpl }),
       corpus: corpusWith([submitted], [BD]),
-      cursor: { next: 0, batches: [{ id: "msgbatch_1", submitted: "x", ids: [id] }] },
+      cursor: { batches: [{ id: "msgbatch_1", submitted: "x", ids: [id] }], visited: {} },
       now: NOW,
       env: (k) => ({ FIRECRAWL_API_KEY: "F", ANTHROPIC_API_KEY: "A" })[k],
     });
@@ -434,23 +438,34 @@ describe("company_ir_kpis run (offline)", () => {
   it("holds a registrant that states no website and a target whose site fails", async () => {
     const fetchImpl = (async () => new Response("{}", { status: 500 })) as typeof fetch;
     const targets = [{ id: "0000000001", n: "NO SITE INC", w: null, ir: null }, BD];
-    const run = (next: number) =>
+    const run = (visited: Record<string, string>) =>
       companyIrKpis.collect({
         http: politeHttp({ maxRequests: 40, minIntervalMs: 0, attempts: 1, fetch: fetchImpl }),
         corpus: corpusWith([], targets),
-        cursor: { next, batches: [] },
+        cursor: { batches: [], visited },
         now: NOW,
         env: (k) => ({ FIRECRAWL_API_KEY: "F", ANTHROPIC_API_KEY: "A" })[k],
       });
-    const first = await run(0);
+    // neither has a pending MDL: both relevance 3, never visited, so CIK order
+    const first = await run({});
     expect(first.rows).toEqual([]);
     expect(first.held).toEqual([
       { key: "0000000001", reason: "no official website stated in SEC filings" },
     ]);
-    expect(first.cursorAfter).toEqual({ next: 1, batches: [] });
-    const second = await run(1);
+    const afterFirst = (first.cursorAfter as JsonObject)["visited"] as Record<string, string>;
+    expect(afterFirst).toEqual({ "0000000001": NOW.toISOString() });
+    const second = await run(afterFirst);
     expect(second.held).toEqual([{ key: BD.id, reason: "Firecrawl map HTTP 500" }]);
-    expect(second.cursorAfter).toEqual({ next: 0, batches: [] });
+    expect((second.cursorAfter as JsonObject)["visited"]).toEqual({
+      "0000000001": NOW.toISOString(),
+      [BD.id]: NOW.toISOString(),
+    });
+    // both visited this instant: nothing is due
+    const third = await run(
+      (second.cursorAfter as JsonObject)["visited"] as Record<string, string>,
+    );
+    expect(third.held).toEqual([]);
+    expect(third.notes["due"]).toBe(0);
   });
 });
 
@@ -532,6 +547,64 @@ describe("company_ir_kpis scrape errors (offline)", () => {
         error: "Bad Request: unsupported URL",
       },
     ]);
+  });
+});
+
+describe("relevance", () => {
+  const T = (cik: string) => ({ cik, name: cik, ir: null, site: null, domains: ["x.com"] });
+  const link = (cik: string, over: Partial<MdlLinkFact> = {}): MdlLinkFact => ({
+    cik,
+    status: "pending",
+    tier: "A",
+    role: "defendant",
+    dismissed: false,
+    ...over,
+  });
+
+  it("ranks pending-MDL defendants first and follows the exposure rule for tier C", () => {
+    expect(relevanceOf([link("1")])).toBe(1);
+    expect(relevanceOf([link("1", { tier: "B" })])).toBe(1);
+    expect(relevanceOf([link("1", { tier: "C" })])).toBe(2);
+    expect(relevanceOf([link("1", { role: "unclear" })])).toBe(2);
+    expect(relevanceOf([link("1", { dismissed: true })])).toBeNull();
+    expect(relevanceOf([link("1", { status: "terminated" })])).toBeNull();
+    expect(relevanceOf([])).toBeNull();
+  });
+
+  it("orders due targets by relevance, then the longest unvisited, and skips stopped filers", () => {
+    const a = "0000000001";
+    const b = "0000000002";
+    const c = "0000000003";
+    const d = "0000000004";
+    const e = "0000000005";
+    const due = dueTargets(
+      [T(a), T(b), T(c), T(d), T(e)],
+      [link(c), link(d, { tier: "C" })],
+      new Map([
+        [a, "2025-06-30"],
+        [b, "2019-06-30"],
+      ]),
+      { [c]: "2026-10-25T00:00:00Z", [e]: "2026-09-01T00:00:00Z" },
+      NOW,
+    );
+    // c (relevance 1) was visited 3 days ago: not due; d (2) never visited; a and e (3); b stopped filing in 2019
+    expect(due.map((t) => [t.cik, t.relevance])).toEqual([
+      [d, 2],
+      [a, 3],
+      [e, 3],
+    ]);
+    expect(REVISIT_DAYS).toEqual({ 1: 7, 2: 14, 3: 30 });
+  });
+
+  it("keeps a stopped filer that is still named in a pending MDL", () => {
+    const due = dueTargets(
+      [T("0000005187")],
+      [link("0000005187")],
+      new Map([["0000005187", "2008-06-30"]]),
+      {},
+      NOW,
+    );
+    expect(due.map((t) => t.relevance)).toEqual([1]);
   });
 });
 

@@ -86,11 +86,11 @@ insert into ingest.sources as s (id, dataset, label, publisher, source_url, func
 values
   ('company_ir_kpis', 'company_ir_kpis', 'Company investor-relations documents and the figures they print',
    'The registrants (their own investor-relations websites); text via Firecrawl, figures via Anthropic Message Batches',
-   'https://www.sec.gov/edgar/searchedgar/companysearch', 'ingest-company-ir', '23 */2 * * *', interval '7 days',
+   'https://www.sec.gov/edgar/searchedgar/companysearch', 'ingest-company-ir', '23 * * * *', interval '7 days',
    'upsert', 'append', 'company_ir_kpis', '^ir:[0-9]{10}:[0-9a-f]{16}$',
    '{"counted_filters": [], "extend_filters": [], "summary_counts": {"rows": 0}}',
    'Documents the companies publish for investors on the sites they name in SEC filings; quoted lines are kept short and every document links to the company''s own copy.',
-   'At most 40 requests a run, 1.5 s apart per host: finished model batches first, then one batch of up to 15 pending documents, then one registrant in rotation (one site map and up to four document reads), every two hours.'),
+   'At most 40 requests a run, 1.5 s apart per host: finished model batches first, then one batch of up to 15 pending documents, then the most relevant registrant that is due (pending-MDL defendants weekly, other MDL links every two weeks, other current filers monthly), every hour.'),
   ('company_sec_cover_facts', 'company_sec_cover_facts', 'SEC cover-page facts: public float and shares outstanding',
    'U.S. Securities and Exchange Commission (data.sec.gov XBRL company concepts)',
    'https://www.sec.gov/search-filings/edgar-application-programming-interfaces', 'ingest-company-ir', '41 9 * * *',
