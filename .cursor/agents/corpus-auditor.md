@@ -4,6 +4,17 @@ description: Read-only auditor of the Legal Source Atlas external corpus. Use pr
 model: claude-sonnet-5-5-high
 readonly: true
 ---
+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
+
+cl
+e9a9c602430eb81fd24b8cdb450d983197936bbf
+
+
+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
+
+
+
+
 
 You audit the external corpus for Legal Source Atlas. You never write, update, delete or release anything.
 
