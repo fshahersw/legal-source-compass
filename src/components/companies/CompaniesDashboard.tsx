@@ -143,8 +143,8 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>
-          {count(o.companies)} companies linked to MDLs by {count(o.links)} links in their SEC filings ·
-          built {o.asOf}
+          {count(o.companies)} companies whose SEC filings link them to an MDL ({count(o.links)}{" "}
+          links) · built {o.asOf}
         </span>
         <InfoPopover label="How companies are linked" showLabel>
           <p>
@@ -773,7 +773,9 @@ function FlagPanel({
       <div className="flex items-center gap-1.5">
         <h3 className="text-label font-semibold text-foreground">Cluster flags</h3>
         <InfoPopover label="How each flag is set" title="Cluster flags">
-          <p className="mb-2">Fixed rules over the published numbers. A flag is a lead to review, not a finding.</p>
+          <p className="mb-2">
+            Fixed rules over the published numbers. A flag is a lead to review, not a finding.
+          </p>
           <dl className="space-y-1.5">
             {keys.map((k) => (
               <div key={k}>
