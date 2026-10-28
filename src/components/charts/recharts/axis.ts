@@ -6,8 +6,8 @@
 import { compactNumber } from "../format";
 import { niceDomain } from "../scale";
 
-/** Axis tick font size in px (the chart standard: muted 12 px ticks). */
-export const TICK_FONT = 12;
+/** Axis tick font size in px (the chart standard: muted 11 px ticks). */
+export const TICK_FONT = 11;
 
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 

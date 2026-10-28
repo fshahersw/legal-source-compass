@@ -8,14 +8,15 @@
  */
 import { useId, useMemo, type ReactNode } from "react";
 import {
+  Area,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   Customized,
   LabelList,
   Line,
-  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -99,6 +100,8 @@ export type TrendLinesProps = {
   dots?: boolean | undefined;
   /** Target number of value intervals (default 4). */
   tickCount?: number | undefined;
+  /** A faint area under a single line, down to zero (default: one series on a zero baseline). */
+  area?: boolean | undefined;
   ariaLabel: string;
   className?: string | undefined;
 };
@@ -121,6 +124,7 @@ export function TrendLines({
   legend,
   dots,
   tickCount,
+  area,
   ariaLabel,
   className,
 }: TrendLinesProps) {
@@ -157,6 +161,9 @@ export function TrendLines({
   const showEnd = endLabels ?? series.length <= 4;
   const showLegend = legend ?? series.length >= 2;
   const withDots = dots ?? rows.length <= 12;
+  // an area reads as an amount from zero, so it is drawn only on a zero baseline
+  const withArea =
+    (area ?? (series.length === 1 && !series[0]!.context)) && zero && axis.domain[0] === 0;
   const endTexts = series.map((s) => {
     const i = lastIndexWithValue(rows, s.key, partialKey);
     if (i < 0) return "";
@@ -174,7 +181,7 @@ export function TrendLines({
       {showLegend ? <SeriesLegend items={legendItems} className="pb-2" /> : null}
       <div style={{ height }} role="figure" aria-label={ariaLabel}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <ComposedChart
             data={data}
             margin={{
               ...CHART_MARGIN,
@@ -211,6 +218,23 @@ export function TrendLines({
                 strokeOpacity={0.35}
               />
             ))}
+            {withArea
+              ? series.map((s, i) => (
+                  <Area
+                    key={`${s.key}__area`}
+                    dataKey={s.key}
+                    type="linear"
+                    stroke="none"
+                    fill={colorOf(s, i)}
+                    fillOpacity={0.08}
+                    isAnimationActive={false}
+                    connectNulls={false}
+                    activeDot={false}
+                    legendType="none"
+                    tooltipType="none"
+                  />
+                ))
+              : null}
             {series.map((s, i) => (
               <Line
                 key={s.key}
@@ -246,7 +270,7 @@ export function TrendLines({
                 }
               />
             ) : null}
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
@@ -414,7 +438,7 @@ export function TrendColumns({
                           x={Number(p.x) + Number(p.width) / 2}
                           y={Number(p.y) - 5}
                           textAnchor="middle"
-                          fontSize={12}
+                          fontSize={11}
                           fontWeight={600}
                           fill="var(--foreground)"
                           stroke="var(--surface)"

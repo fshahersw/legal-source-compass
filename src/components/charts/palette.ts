@@ -67,6 +67,10 @@ export const SLOT_INK_DARK = [
   "#101624",
 ] as const;
 
+/** Neutral context grey (not a categorical slot): light and dark steps. */
+export const BASE_HEX = "#b6bcc8";
+export const BASE_HEX_DARK = "#566074";
+
 export const MAX_SERIES = CATEGORICAL_HEX.length;
 /** Forms where every mark can sit beside every other (scatter, maps, small multiples) use at most this many hues. */
 export const MAX_ALL_PAIRS_SERIES = 3;
@@ -121,6 +125,10 @@ export const chartTokens: CSSProperties = {
   ["--chart-ink" as string]: "var(--foreground)",
   ["--chart-surface" as string]: "var(--surface)",
   ["--chart-reference" as string]: "var(--foreground)",
-  ["--chart-muted-mark" as string]:
-    "color-mix(in srgb, var(--muted-foreground) 45%, var(--surface))",
+  /** Neutral bar and line colour for context marks (the rows beside a highlighted one): a mid grey per theme. */
+  ["--chart-base" as string]: `light-dark(${BASE_HEX}, ${BASE_HEX_DARK})`,
+  ["--chart-muted-mark" as string]: "var(--chart-base)",
+  /** Hairline grid inside the plot and the solid baseline under it. */
+  ["--chart-gridline" as string]: "color-mix(in srgb, var(--border) 70%, var(--surface))",
+  ["--chart-baseline" as string]: "var(--border-strong)",
 };

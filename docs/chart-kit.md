@@ -41,10 +41,14 @@ import {
   so no extra table block sits beside a chart.
 - **Context, always:** over time, against a national or peer median (labelled reference line), ranked with the focus
   item highlighted, or small multiples on a shared axis. A chart that only repeats a KPI is dropped.
-- **Marks:** 1.75 px lines (1.25 px for context), bars at most 24 px with a 4 px rounded data end, hairline grid at 55% opacity, muted 12 px ticks on
-  nice steps (1, 2 or 5 × 10ⁿ; 4–6 ticks; compact 50K / 1.2M), legend above the plot for two or more series, direct
-  end labels for up to four lines, the latest value on the last column, crosshair tooltip on lines, per-bar hover on
-  bars, values leading in the tooltip. No dual axes, no pies over four parts, no 3D, no rainbow.
+- **Marks:** 2 px lines (1.25 px for context) ending in a ringed dot, a faint area (8%) under a single line on a zero
+  baseline, bars at most 24 px with a 2 px rounded data end, ranked bars 12 px thick on 24 px rows with names
+  right-aligned and the value in strong ink after each bar (no value axis), context rows in the neutral base grey
+  (`--chart-base`), hairline grid at 55% opacity over a solid baseline, muted 11 px ticks on nice steps (1, 2 or 5 ×
+  10ⁿ; 4–6 ticks; compact 50K / 1.2M), legend above the plot for two or more series (9 px squares or 13 px lines),
+  direct end labels for up to four lines, the latest value on the last column, crosshair tooltip on lines, per-bar
+  hover on bars. The tooltip is an inverted ink box (page ink fill, page background text) with one row per series: key
+  square, name, value at the right edge. No dual axes, no pies over four parts, no 3D, no rainbow.
 - **Honesty:** gaps stay gaps (`null` → "Not recorded", never 0); partial periods are dashed (lines) or hatched
   (columns), marked "partial" in the table and never used in a comparison; nothing estimated or interpolated.
 - **Colour:** one accent for one series (`seriesColor(0)`); categorical slots 1–6 in fixed order following the entity,
@@ -242,7 +246,7 @@ notes in About, View data. Props: `id`, `subject?`, `form?` ("auto" | "line" | "
 
 `LineTrend`, `BarTrend`, `RankedBars`, `SmallMultiples`, `Sparkline`, `Heatmap`, `Choropleth`, `SlopeChart`,
 `ScatterCorrelation`, `DistributionStrip`, `SurvivalCurve`, `Sankey`, `Network`, `Lanes`, `Swimlanes`, `Icicle`,
-`TreeExplorer`, inside `ChartFrame`. Same standard (nice 1/2/5 ticks, 12 px axis text, end labels with the last
+`TreeExplorer`, inside `ChartFrame`. Same standard (nice 1/2/5 ticks, 11 px axis text, end labels with the last
 value, RankedBars with rounded data ends and a muted-rest highlight, Sparkline at least 120 × 32 with an end dot and
 optional `format` / `showStart` values). Use them where the insights metric layer already supplies `PeriodAxis` and
 `ValueFormatter`; otherwise prefer the recharts components above.

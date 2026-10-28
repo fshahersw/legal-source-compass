@@ -29,7 +29,7 @@ const MAX_BAR = 24;
 const GAP = 2;
 
 /** Path of a column with a rounded top (or bottom for negatives) and a square baseline end. */
-export function columnPath(x: number, w: number, y0: number, y1: number, r = 4): string {
+export function columnPath(x: number, w: number, y0: number, y1: number, r = 2): string {
   const h = Math.abs(y1 - y0);
   if (h < 0.5 || w <= 0) return "";
   const rr = Math.min(r, w / 2, h);
@@ -222,7 +222,7 @@ export function BarTrend({
                     return (
                       <path
                         key={s.id}
-                        d={columnPath(bx, barW, y0 + gapAdj, y1, topSegment ? 4 : 0)}
+                        d={columnPath(bx, barW, y0 + gapAdj, y1, topSegment ? 2 : 0)}
                         fill={d?.partial ? `url(#${hatch}-p${si})` : color(si)}
                       />
                     );
@@ -252,7 +252,7 @@ export function BarTrend({
                 x={centre(li)}
                 y={y(Math.max(0, v)) - 5}
                 textAnchor="middle"
-                fontSize={12}
+                fontSize={11}
                 fontWeight={600}
                 fill="var(--chart-ink)"
                 stroke="var(--chart-surface)"

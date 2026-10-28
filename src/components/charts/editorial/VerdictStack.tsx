@@ -73,19 +73,16 @@ export function VerdictStack({
                 key={subject.id ?? `${subject.label}-${si}`}
                 className="col-span-full grid grid-cols-subgrid items-center"
               >
-                <p
-                  className="m-0 truncate text-[13px] font-medium text-foreground"
-                  title={subject.label}
-                >
+                <p className="m-0 truncate text-[12px] text-foreground/80" title={subject.label}>
                   {subject.label}
                 </p>
                 <div
                   role="img"
                   aria-label={text}
-                  className="flex h-6 gap-[2px] overflow-hidden rounded-[4px] bg-muted"
+                  className="flex h-[18px] gap-[1.5px] overflow-hidden rounded-[3px] bg-muted"
                 >
                   {total === 0 ? (
-                    <span className="flex-1 px-2 text-meta leading-6 text-muted-foreground">
+                    <span className="flex-1 px-2 text-meta leading-[18px] text-muted-foreground">
                       Not recorded
                     </span>
                   ) : (
@@ -118,7 +115,7 @@ export function VerdictStack({
                         >
                           {seg.percent >= 9 ? (
                             <span
-                              className="text-[11px] font-semibold tabular-nums"
+                              className="text-[10.5px] font-semibold tabular-nums"
                               style={{ color: paint.ink }}
                             >
                               {seg.rounded}%

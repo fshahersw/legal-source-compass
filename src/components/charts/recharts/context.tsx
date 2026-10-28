@@ -67,7 +67,7 @@ export type RankBarsProps = {
   ascending?: boolean | undefined;
   /** Show the top N (the focus row is always kept). */
   limit?: number | undefined;
-  /** Row height in px (bar at most 24 px). */
+  /** Row height in px (the bar is 12 px, or less on tight rows). */
   rowHeight?: number | undefined;
   /** Width cap of the name column. */
   labelWidth?: number | undefined;
@@ -87,7 +87,7 @@ export function RankBars({
   references = [],
   ascending = false,
   limit,
-  rowHeight = 26,
+  rowHeight = 24,
   labelWidth: maxLabel = 200,
   showRank = false,
   note,
@@ -125,7 +125,8 @@ export function RankBars({
             data={data}
             layout="vertical"
             margin={{ top, right: valueW, bottom: 0, left: 0 }}
-            barCategoryGap={Math.max(2, rowHeight - 18)}
+            // recharts takes the category gap on each side of the bar: a 12 px bar in each row
+            barCategoryGap={Math.max(1, (rowHeight - 12) / 2)}
             accessibilityLayer
           >
             <XAxis type="number" domain={axis.domain} ticks={axis.ticks} hide />
@@ -150,7 +151,11 @@ export function RankBars({
                     textAnchor="end"
                     fontSize={TICK.fontSize}
                     fontWeight={row?.focus ? 600 : 400}
-                    fill="var(--foreground)"
+                    fill={
+                      row?.focus
+                        ? "var(--foreground)"
+                        : "color-mix(in srgb, var(--foreground) 80%, var(--surface))"
+                    }
                   >
                     {fitText(String(p.payload?.value ?? ""), nameW - 8)}
                   </text>
@@ -226,8 +231,10 @@ export function RankBars({
                       y={y}
                       dy="0.32em"
                       fontSize={TICK.fontSize}
-                      fontWeight={focus ? 600 : 400}
-                      fill="var(--foreground)"
+                      fontWeight={600}
+                      fill={
+                        focus || focusId == null ? "var(--foreground)" : "var(--muted-foreground)"
+                      }
                       stroke="var(--surface)"
                       strokeWidth={3}
                       paintOrder="stroke"

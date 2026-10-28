@@ -950,7 +950,7 @@ function Band({
           const full = x(b.t1) - x0;
           const gap = full >= 5 ? 1 : 0;
           const w = Math.max(0.75, full - gap);
-          const d = columnPath(x0 + gap / 2, w, y(0), y(b.v), Math.min(4, w / 2));
+          const d = columnPath(x0 + gap / 2, w, y(0), y(b.v), Math.min(2, w / 2));
           return (
             <g key={`${b.t0}`}>
               <line
