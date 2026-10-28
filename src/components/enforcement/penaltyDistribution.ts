@@ -251,3 +251,36 @@ export function epaPenaltySizes(
     lastFy: fys.length ? Math.max(...fys) : null,
   };
 }
+
+export type LogBin = { x0: number; x1: number; count: number };
+
+/**
+ * Histogram on a log scale: `perDecade` equal-width bins per power of ten from `lo` up to `hi` (both powers of ten).
+ * Values below `lo` are not binned (callers report them); a value equal to `hi` falls in the last bin.
+ */
+export function logHistogram(
+  values: readonly number[],
+  lo: number,
+  hi: number,
+  perDecade: number,
+): LogBin[] {
+  const decades = Math.round(Math.log10(hi / lo));
+  const n = Math.max(1, decades * perDecade);
+  const bins: LogBin[] = Array.from({ length: n }, (_, i) => ({
+    x0: lo * 10 ** (i / perDecade),
+    x1: lo * 10 ** ((i + 1) / perDecade),
+    count: 0,
+  }));
+  for (const v of values) {
+    if (!(v >= lo)) continue;
+    const i = Math.min(n - 1, Math.floor(Math.log10(v / lo) * perDecade + 1e-9));
+    bins[i]!.count++;
+  }
+  return bins;
+}
+
+/** Smallest power of ten at or above every value (at least `lo` × 10). */
+export function decadeCeiling(values: readonly number[], lo: number): number {
+  const max = values.reduce((m, v) => Math.max(m, v), 0);
+  return Math.max(lo * 10, 10 ** Math.ceil(Math.log10(Math.max(max, 1)) + 1e-12));
+}
