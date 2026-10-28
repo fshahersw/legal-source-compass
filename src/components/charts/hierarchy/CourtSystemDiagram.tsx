@@ -5,9 +5,9 @@
  * of last resort on federal questions. Tiers come only from each court's recorded type (see courtTiers).
  */
 import { Link } from "@tanstack/react-router";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, ArrowUpRight, Building2, Landmark, Scale } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Card } from "@/components/kit/Card";
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { stateByUsps } from "@/lib/corpus/geo";
 import type { CourtRow } from "@/lib/external/directoryTree";
 import { cn } from "@/lib/utils";
@@ -18,11 +18,13 @@ function Node({
   system,
   state,
   active,
+  level = 0,
 }: {
   tier: Tier;
   system: string;
   state?: string | undefined;
   active?: boolean;
+  level?: number;
 }) {
   const empty = tier.count === 0;
   const search = {
@@ -31,19 +33,25 @@ function Node({
     type: tier.types.length === 1 ? (tier.types[0] ?? "*") : "*",
   };
   const body = (
-    <>
-      <span className="block truncate text-label font-semibold text-foreground">{tier.label}</span>
-      <span className="text-meta text-muted-foreground">
+    <div className="flex min-h-12 items-center gap-3">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-current/20" aria-hidden>
+        {level === 0 ? <Landmark className="size-5" /> : level === 1 ? <Scale className="size-5" /> : <Building2 className="size-5" />}
+      </span>
+      <span className="min-w-0 flex-1">
+      <span className="block text-label font-semibold">{tier.label}</span>
+      <span className="text-meta opacity-90">
         {empty
           ? "Not recorded"
           : `${tier.count.toLocaleString()} court${tier.count === 1 ? "" : "s"} recorded`}
       </span>
-    </>
+      </span>
+      {!empty ? <ArrowUpRight className="size-4 shrink-0" aria-hidden /> : null}
+    </div>
   );
   const cls = cn(
-    "block w-full rounded-lg border px-3 py-2 text-left transition-colors",
-    active ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/50",
-    empty && "border-dashed opacity-70",
+    "block w-full rounded-md border px-3 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+    empty ? "border-dashed border-border-strong bg-muted text-muted-foreground" : level === 0 ? "border-brand bg-brand text-brand-foreground hover:bg-brand/90" : level === 1 ? "border-status-info-ring bg-status-info-soft text-status-info-ink hover:border-status-info" : "border-border-strong bg-secondary text-secondary-foreground hover:border-brand",
+    active && "ring-2 ring-ring ring-offset-2 ring-offset-background",
   );
   if (tier.id === "scotus")
     return (
@@ -79,23 +87,24 @@ function Column({
 }) {
   return (
     <div className="min-w-0 space-y-1.5">
-      <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">
+      <p className="mb-3 text-label font-semibold text-foreground">
         {title}
       </p>
       {tiers.map((t, i) => (
         <div key={t.id}>
-          {i > 0 ? (
-            <div className="flex justify-center py-0.5 text-muted-foreground" aria-hidden>
-              <ArrowUp className="size-3.5" />
+          {i > 0 && t.id !== "bankruptcy" ? (
+            <div className="flex justify-center py-1 text-brand" aria-hidden>
+              <ArrowUp className="size-5" />
             </div>
           ) : null}
-          <Node tier={t} system={system} state={state} active={activeTier === t.id} />
+          {t.id === "bankruptcy" ? <p className="pb-1 pt-3 text-meta text-muted-foreground">Bankruptcy jurisdiction · review routes vary</p> : null}
+          <Node tier={t} system={system} state={state} level={i} active={activeTier === t.id} />
         </div>
       ))}
       {side.length || other ? (
         <div className="mt-2 grid gap-1.5 border-t border-border pt-2 sm:grid-cols-2">
           {side.map((t) => (
-            <Node key={t.id} tier={t} system={system} state={state} active={activeTier === t.id} />
+            <Node key={t.id} tier={t} system={system} state={state} level={2} active={activeTier === t.id} />
           ))}
           {other ? (
             <Link
@@ -141,15 +150,16 @@ export function CourtSystemDiagram({
   const st = useMemo(() => courtTiers(rows, "State", state), [rows, state]);
   if (!rows.length) return null;
   return (
-    <Card className="p-4">
+    <section className="border-y border-border py-4" aria-label="Court system structure">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-heading font-semibold">How the courts fit together</h2>
-          <p className="text-meta text-muted-foreground">
-            Arrows point the way appeals go. Counts are courts recorded at each level; open a level
-            for its courts.
-          </p>
+          <p className="text-meta text-muted-foreground">Recorded court tiers · appeals run upward</p>
         </div>
+        <InfoPopover label="Court structure sources and scope">
+          <p>Levels group the directory's recorded court types, not every court in existence. Arrows show the general appellate direction, not a verified appeal route for each court. Bankruptcy and special-court review routes vary. Icons represent court types, not official seals.</p>
+          <a href="https://www.uscourts.gov/about-federal-courts/court-role-and-structure" target="_blank" rel="noreferrer">Federal court structure</a>
+        </InfoPopover>
         {showFederal ? (
           <label className="flex items-center gap-2 text-meta text-muted-foreground">
             State
@@ -196,6 +206,6 @@ export function CourtSystemDiagram({
           ) : null}
         </div>
       </div>
-    </Card>
+    </section>
   );
 }
