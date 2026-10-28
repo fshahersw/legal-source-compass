@@ -203,16 +203,20 @@ export type Figure = {
 
 const GROUPS = new Set(["segment", "product", "geography", "operating", "guidance"]);
 
-/** Digits of a number as it can be printed: "1234.5" → ["1234.5", "1,234.5"]; integers also without decimals. */
+/**
+ * Digits of a number as it can be printed: "1234.5" → ["1234.5", "1,234.5"]; an integer also with one or two zero
+ * decimals ("2" → "2", "2.0", "2.00"), since tables print "$2.0 billion" for a value of 2.
+ */
 export function numberForms(value: number): string[] {
   const abs = Math.abs(value);
   const out = new Set<string>();
   const raw = String(abs);
-  out.add(raw);
-  const [int, dec] = raw.split(".");
-  const grouped = (int ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  out.add(dec ? `${grouped}.${dec}` : grouped);
-  if (dec && /^0+$/.test(dec)) out.add(int ?? raw);
+  const [int = raw, dec] = raw.split(".");
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  for (const i of [int, grouped]) {
+    if (dec) out.add(`${i}.${dec}`);
+    else for (const tail of ["", ".0", ".00"]) out.add(i + tail);
+  }
   return [...out];
 }
 
@@ -224,7 +228,8 @@ export function containsNumber(text: string, value: number): boolean {
   const t = flat(text);
   return numberForms(value).some((form) => {
     const esc = form.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`(^|[^0-9.,])${esc}([^0-9]|[.,](?![0-9])|$)`).test(t);
+    // the form must not continue as a longer number: "2" is not in "2.5", "12" or "2,500"
+    return new RegExp(`(^|[^0-9.,])${esc}([^0-9.,]|[.,](?![0-9])|$)`).test(t);
   });
 }
 

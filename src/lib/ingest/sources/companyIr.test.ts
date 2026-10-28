@@ -103,6 +103,11 @@ describe("figures", () => {
     expect(containsNumber("Revenue 21,234.5", 1234.5)).toBe(false);
     expect(containsNumber("Growth (3.2)%", -3.2)).toBe(true);
     expect(containsNumber("Up 4.0%.", 4)).toBe(true);
+    expect(containsNumber("International sales of $2.0 billion", 2)).toBe(true);
+    expect(containsNumber("International sales of $2.5 billion", 2)).toBe(false);
+    expect(containsNumber("sales of 2,500 units", 2)).toBe(false);
+    expect(containsNumber("sales of 2,500 units", 2500)).toBe(true);
+    expect(containsNumber("ended in 2021.", 2021)).toBe(true);
   });
 
   it("drops figures whose quote does not print the value and marks image-only figures", () => {
