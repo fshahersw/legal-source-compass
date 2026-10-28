@@ -107,15 +107,13 @@ export function ChartCard<T>({
         {actions || (data && state === "ready") ? (
           <div className="flex max-w-full flex-wrap items-center gap-2">
             {actions}
-            {data && state === "ready" && data.rows.length > 0 ? (
-              {mounted ? (
-                <AskAiButton
-                  sectionId={id ?? data.title}
-                  title={typeof title === "string" ? title : data.title}
-                  context={askContext}
-                  size="icon"
-                />
-              ) : null}
+            {mounted && data && state === "ready" && data.rows.length > 0 ? (
+              <AskAiButton
+                sectionId={id ?? data.title}
+                title={typeof title === "string" ? title : data.title}
+                context={askContext}
+                size="icon"
+              />
             ) : null}
             {data && state === "ready" ? <DataDrawer {...data} /> : null}
           </div>
