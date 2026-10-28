@@ -521,7 +521,7 @@ export function Sunburst({
       style={chartTokens}
       viewBox={`${-r} ${-r} ${size} ${size}`}
       className="mx-auto block w-full max-w-sm"
-      role="img"
+      role="group"
       aria-label={`Breakdown of ${root.name}`}
     >
       {nodes
@@ -529,6 +529,9 @@ export function Sunburst({
         .map((n, i) => {
           const t = top(n);
           const slot = t?.data.slot ?? Math.min(5, Math.max(0, tops.indexOf(t!)));
+          // Inner-ring segments are keyboard stops (Tab), focusing one highlights it like hovering does; outer rings
+          // stay pointer-only, their figures are in the title and the table.
+          const keyboard = n.depth === 1;
           return (
             <path
               key={i}
@@ -537,6 +540,17 @@ export function Sunburst({
               opacity={focus && t?.data.name !== focus ? 0.25 : 1 - (n.depth - 1) * 0.22}
               onMouseEnter={() => setFocus(t?.data.name ?? null)}
               onMouseLeave={() => setFocus(null)}
+              {...(keyboard
+                ? {
+                    tabIndex: 0,
+                    role: "img",
+                    "aria-label": `${n.data.name}: ${(n.value ?? 0).toLocaleString("en-US")}`,
+                    onFocus: () => setFocus(n.data.name),
+                    onBlur: () => setFocus(null),
+                    className:
+                      "outline-none focus-visible:[stroke:var(--foreground)] focus-visible:[stroke-width:2.5]",
+                  }
+                : { "aria-hidden": true })}
             >
               <title>{`${n
                 .ancestors()
