@@ -1,7 +1,7 @@
 # Legal Source Atlas: coherent pages and trustworthy analytics
 
 ## Outcome
-Make each page easier to scan: one identity area, a compact headline band, a few useful charts, and one section index. Extend existing components rather than building parallel versions. Use more corpus data only when its meaning, coverage, identifiers and periods support the proposed analysis.
+One identity area, compact headlines, useful charts and one section index. Extend existing views; enrich only with supported data/joins.
 
 ## Current evidence
 Texas eventually loads without errors but has six modes, a capitol card, two headline rows and another index before analysis. Courts/Litigation have large loading tiles and uneven rows. Existing Ask AI, map zoom, median dots, court/agency diagrams and law readers should be extended, not duplicated. Loaded diagram contrast remains unverified.
@@ -11,14 +11,10 @@ Ask AI caps context at 40 figures, selects one source and lacks explicit unit. M
 ## Scope and invariants
 Keep nine sidebar sections and old URLs. Preserve Time Limits, corpus scripts/caches/import checkpoints. No inferred identities/edges, estimated values or implicit current-law claims.
 
-Source names, attribution and methodology remain in info popovers and exports. Essential interpretive markers—unit, period, partial period, missing coverage, denominator and sample size—stay visible where hiding them would mislead. 
+Sources/methods stay in info popovers and exports; essential unit/period/gap/denominator/sample-size markers stay visible. 
 
-## Corrections to the brief
-- Clearance is a flow ratio, not proof of backlog change or efficiency. Use aligned count/percentage panels, not dual axes; label >100% “More terminations than filings.”
-- Keep the district-median baseline; national case-level median is separate. Across-district range is not within-district spread.
-- MDL bubble area needs evidenced member-docket counts; otherwise fixed-size points. Never substitute cumulative actions.
-- Maps need matched denominators/periods. Preserve raw-count tables, DC and territory destinations; no invented rates.
-- Reuse current card radius/tokens; retain compact type sizes and remove negative tracking, not another global radius migration.
+## Analytical corrections
+Clearance is a flow ratio, not proof of backlog reduction: aligned count/rate panels, no dual axis. Keep the median-of-district-medians baseline; national median separate. Bubble size needs evidenced member counts. Rates need matched denominators. Reuse compact tokens/current radius; remove negative tracking.
 
 ## Sprint 1 — Cohesion and truthful existing views
 **First implementation batch; no new analytical data required.**
