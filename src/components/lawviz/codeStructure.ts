@@ -60,9 +60,7 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
   // the first row and the title total is their sum
   const titleNode = roots.length === 1 && roots[0]!.depth === 0 ? roots[0]! : null;
   const top = titleNode ? (byParent.get(titleNode.index) ?? []) : roots;
-  const total = titleNode
-    ? count(titleNode.total)
-    : top.reduce((a, n) => a + count(n.total), 0);
+  const total = titleNode ? count(titleNode.total) : top.reduce((a, n) => a + count(n.total), 0);
   const cells: IcicleCell[] = [];
   const excess: number[] = [];
   let unbroken = 0;
@@ -154,7 +152,10 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
 /** "CHAPTER 6A—" → "Chapter 6A—": only the level word is re-cased; the designation stays exactly as printed. */
 export function readableDesignation(num: string | null): string | null {
   if (!num) return num;
-  return num.replace(/^(\[?)([A-Z]{2,})\b/, (_m, br: string, w: string) => `${br}${w[0]}${w.slice(1).toLowerCase()}`);
+  return num.replace(
+    /^(\[?)([A-Z]{2,})\b/,
+    (_m, br: string, w: string) => `${br}${w[0]}${w.slice(1).toLowerCase()}`,
+  );
 }
 
 const ABBR: Record<string, string> = {
@@ -171,7 +172,10 @@ const ABBR: Record<string, string> = {
 
 /** "CHAPTER 21—" → "Ch. 21"; "subpart i—" → "Subpt. i"; anything else is kept, without its trailing dash. */
 export function shortContainer(num: string | null): string {
-  const n = (num ?? "").trim().replace(/[—–-]+$/, "").trim();
+  const n = (num ?? "")
+    .trim()
+    .replace(/[—–-]+$/, "")
+    .trim();
   if (!n) return "";
   const m = /^\[?([A-Za-z]+)\s+(.+)$/.exec(n);
   if (!m) return n;

@@ -73,16 +73,14 @@ export function CodeStructureIcicle({
   const byIndex = useMemo(() => new Map(outline.map((n) => [n.index, n])), [outline]);
   const path = useMemo(() => {
     const s = new Set<number>();
-    for (let n = selected !== undefined ? byIndex.get(selected) : undefined; n; ) {
+    for (let n = selected !== undefined ? byIndex.get(selected) : undefined; n;) {
       s.add(n.index);
       n = n.parent !== null ? byIndex.get(n.parent) : undefined;
     }
     return s;
   }, [selected, byIndex]);
   const top = topLevelRows(layout);
-  const biggest = top
-    .filter((r) => r.kind === "container")
-    .sort((a, b) => b.total - a.total)[0];
+  const biggest = top.filter((r) => r.kind === "container").sort((a, b) => b.total - a.total)[0];
   const rowName = topRowName(outline, layout);
   const anyGone = layout.cells.some((c) => c.status !== null && GONE.has(c.status));
   const height = Math.max(1, layout.rows) * (ROW_H + ROW_GAP);
@@ -97,8 +95,12 @@ export function CodeStructureIcicle({
         Each block is one level of the title's outline, as wide as the number of sections the
         official outline counts inside it, repealed and transferred sections included. Up to three
         levels are drawn. Sections printed directly in a level, outside its sub-levels, get their
-        own light block; a level whose parts do not add up to its count shows the gap as "Not
-        broken down"{layout.excess.length ? ", and a level whose parts add up to more than its count is drawn without them" : ""}.
+        own light block; a level whose parts do not add up to its count shows the gap as "Not broken
+        down"
+        {layout.excess.length
+          ? ", and a level whose parts add up to more than its count is drawn without them"
+          : ""}
+        .
       </p>
     ),
   };
@@ -205,8 +207,7 @@ export function CodeStructureIcicle({
                     : `color-mix(in srgb, var(--map-high) ${shade}%, var(--map-low))`;
             const onPath = c.index !== null && path.has(c.index);
             const isHover = hover?.key === c.key;
-            const label =
-              c.kind === "container" ? shortContainer(c.num) || (c.heading ?? "") : "";
+            const label = c.kind === "container" ? shortContainer(c.num) || (c.heading ?? "") : "";
             const maxChars = Math.floor((cw - 8) / 6.4);
             const ink =
               c.kind === "container" && !gone && shade >= 50
@@ -255,10 +256,7 @@ export function CodeStructureIcicle({
             );
           })}
         </svg>
-        <p
-          aria-live="polite"
-          className="m-0 mt-2 min-h-4 truncate text-meta text-muted-foreground"
-        >
+        <p aria-live="polite" className="m-0 mt-2 min-h-4 truncate text-meta text-muted-foreground">
           {shown ? (
             readout(shown)
           ) : (

@@ -16,8 +16,7 @@ const SOURCE = {
 };
 const counts = metricFormatter("count");
 const percent = metricFormatter("percent");
-const pts = (v: number) =>
-  `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} points`;
+const pts = (v: number) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} points`;
 
 export function ClearanceRateChart() {
   const query = useQuery(nationalQuery);

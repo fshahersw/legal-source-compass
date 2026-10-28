@@ -131,8 +131,13 @@ export function MomentumPlot({
           const width = productLabel(p, chars).length * 5.9;
           const sides: ("start" | "end")[] = cx > w - 120 ? ["end", "start"] : ["start", "end"];
           const base = cy + (up ? -7 : 14);
-          let chosen: { x: number; y: number; anchor: "start" | "end"; x0: number; x1: number } | null =
-            null;
+          let chosen: {
+            x: number;
+            y: number;
+            anchor: "start" | "end";
+            x0: number;
+            x1: number;
+          } | null = null;
           for (const off of [0, 12, -12, 24, -24, 36, -36]) {
             for (const anchor of sides) {
               const y = base + (up ? off : -off) * -1;
@@ -199,7 +204,12 @@ export function MomentumPlot({
                   strokeOpacity={0.6}
                   shapeRendering="crispEdges"
                 />
-                <text x={x(Math.log10(t))} y={HEIGHT - BOTTOM + 15} textAnchor="middle" {...axisText}>
+                <text
+                  x={x(Math.log10(t))}
+                  y={HEIGHT - BOTTOM + 15}
+                  textAnchor="middle"
+                  {...axisText}
+                >
                   {t >= 1000 ? `${t / 1000}K` : t}
                 </text>
               </g>
@@ -347,10 +357,7 @@ export function MdlMomentumScatter() {
   const q = useQuery(mdlAnalyticsQuery);
   const navigate = useNavigate();
   const data = q.data ?? null;
-  const m = useMemo(
-    () => (data ? mdlMomentum(data.mdls, data.overview.as_of) : null),
-    [data],
-  );
+  const m = useMemo(() => (data ? mdlMomentum(data.mdls, data.overview.as_of) : null), [data]);
   const split = m ? momentumSplit(m.plotted) : null;
   const status = q.isLoading
     ? ({ kind: "loading" } as const)
@@ -361,7 +368,10 @@ export function MdlMomentumScatter() {
           onRetry: () => void q.refetch(),
         } as const)
       : !m
-        ? ({ kind: "empty", reason: "The JPML report figures have not been published yet." } as const)
+        ? ({
+            kind: "empty",
+            reason: "The JPML report figures have not been published yet.",
+          } as const)
         : !m.plotted.length
           ? ({ kind: "empty", reason: "No MDL has a report exactly 12 months earlier." } as const)
           : ({ kind: "ready" } as const);

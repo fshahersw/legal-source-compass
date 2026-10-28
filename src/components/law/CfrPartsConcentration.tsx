@@ -23,13 +23,16 @@ export function CfrPartsConcentration({
   const topShare = c.top.reduce((a, p) => a + p.share, 0);
   const label = (p: { title: string }) => p.title.replace(new RegExp(`^${title} CFR `), "");
   const source = {
-    source: { label: "Electronic Code of Federal Regulations (eCFR)", href: `https://www.ecfr.gov/current/title-${title}` },
+    source: {
+      label: "Electronic Code of Federal Regulations (eCFR)",
+      href: `https://www.ecfr.gov/current/title-${title}`,
+    },
     asOf: asOf ?? undefined,
     about: (
       <p>
         Sections counted in each part of the current eCFR text. Reserved parts
-        {c.unrecordedParts ? " and parts without a recorded section count" : ""} are left out of
-        the shares
+        {c.unrecordedParts ? " and parts without a recorded section count" : ""} are left out of the
+        shares
         {c.reservedParts || c.unrecordedParts
           ? ` (${[
               c.reservedParts ? `${fmt(c.reservedParts)} reserved` : "",
@@ -43,7 +46,12 @@ export function CfrPartsConcentration({
     ),
   };
   const rows = [
-    ...c.top.map((p) => ({ key: p.identifier, part: label(p), sections: p.sections, share: p.share })),
+    ...c.top.map((p) => ({
+      key: p.identifier,
+      part: label(p),
+      sections: p.sections,
+      share: p.share,
+    })),
     ...(c.other
       ? [
           {
@@ -76,7 +84,11 @@ export function CfrPartsConcentration({
         columns: [
           { key: "part", label: "Part", value: (r) => r.part },
           { key: "sections", label: "Sections", value: (r) => r.sections },
-          { key: "share", label: "Share of title (%)", value: (r) => Math.round(r.share * 10) / 10 },
+          {
+            key: "share",
+            label: "Share of title (%)",
+            value: (r) => Math.round(r.share * 10) / 10,
+          },
         ],
         source,
       }}

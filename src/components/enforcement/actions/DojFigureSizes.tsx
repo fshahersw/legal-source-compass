@@ -27,7 +27,10 @@ export function DojFigureSizes({ overview }: { overview: DojOverview }) {
   const callout = dojSizeCallout(years);
   const period = shown.length ? `${shown[0]!.year}–${shown.at(-1)!.year}` : undefined;
   const source = {
-    source: { label: "U.S. Department of Justice, press releases", href: "https://www.justice.gov/news" },
+    source: {
+      label: "U.S. Department of Justice, press releases",
+      href: "https://www.justice.gov/news",
+    },
     period,
     partial: shown.some((y) => y.partial)
       ? `${shown.find((y) => y.partial)!.year} is unfinished and drawn faded.`
@@ -41,8 +44,8 @@ export function DojFigureSizes({ overview }: { overview: DojOverview }) {
           not verified payments, and one release can describe several defendants.
         </p>
         <p className="mt-1.5">
-          Shares are used because the archive holds far fewer releases in some years than others,
-          so raw counts would track coverage, not enforcement.
+          Shares are used because the archive holds far fewer releases in some years than others, so
+          raw counts would track coverage, not enforcement.
           {unknown.length
             ? ` Left out because a size band is not recorded: ${unknown.join(", ")}.`
             : ""}
@@ -97,8 +100,8 @@ export function DojFigureSizes({ overview }: { overview: DojOverview }) {
         />
         {callout ? (
           <p className="mt-1 text-meta text-muted-foreground">
-            In {callout.year}, {fmtInt(callout.tenMillionPlus)} of the{" "}
-            {fmtInt(callout.withFigure)} releases that stated a figure put it at $10M or more.
+            In {callout.year}, {fmtInt(callout.tenMillionPlus)} of the {fmtInt(callout.withFigure)}{" "}
+            releases that stated a figure put it at $10M or more.
           </p>
         ) : null}
       </div>

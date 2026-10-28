@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  dojSizeCallout,
-  dojSizeYears,
-  epaPenaltySizes,
-  median,
-} from "./penaltyDistribution";
+import { dojSizeCallout, dojSizeYears, epaPenaltySizes, median } from "./penaltyDistribution";
 
 describe("dojSizeYears", () => {
   const years = dojSizeYears(
@@ -12,7 +7,14 @@ describe("dojSizeYears", () => {
       {
         year: "2025",
         count: 1000,
-        amount: { under_1m: 50, "1m_plus": 30, "10m_plus": 15, "100m_plus": 4, "1b_plus": 1, none: 900 },
+        amount: {
+          under_1m: 50,
+          "1m_plus": 30,
+          "10m_plus": 15,
+          "100m_plus": 4,
+          "1b_plus": 1,
+          none: 900,
+        },
       },
       { year: "2024", count: 800, amount: { under_1m: 10, "1m_plus": 10, none: 780 } },
       {
@@ -65,12 +67,54 @@ describe("dojSizeYears", () => {
 describe("epaPenaltySizes", () => {
   const base = { states: ["TX"], nationalCase: null };
   const rows = [
-    { ...base, caseNumber: "A", name: "A", typeCode: "JDC", fedPenalty: 2_000_000, settlementFy: 2020 },
-    { ...base, caseNumber: "B", name: "B", typeCode: "AFR", fedPenalty: 150_000, settlementFy: 2021 },
-    { ...base, caseNumber: "C", name: "C", typeCode: "AFR", fedPenalty: 250_000, settlementFy: 2022 },
-    { ...base, caseNumber: "D", name: "D", typeCode: "JDC", fedPenalty: 50_000_000, settlementFy: 2023 },
-    { ...base, caseNumber: "E", name: "E", typeCode: "JDC", fedPenalty: 900_000, settlementFy: null },
-    { ...base, caseNumber: "F", name: "F", typeCode: "AFR", fedPenalty: 400_000, settlementFy: 2010 },
+    {
+      ...base,
+      caseNumber: "A",
+      name: "A",
+      typeCode: "JDC",
+      fedPenalty: 2_000_000,
+      settlementFy: 2020,
+    },
+    {
+      ...base,
+      caseNumber: "B",
+      name: "B",
+      typeCode: "AFR",
+      fedPenalty: 150_000,
+      settlementFy: 2021,
+    },
+    {
+      ...base,
+      caseNumber: "C",
+      name: "C",
+      typeCode: "AFR",
+      fedPenalty: 250_000,
+      settlementFy: 2022,
+    },
+    {
+      ...base,
+      caseNumber: "D",
+      name: "D",
+      typeCode: "JDC",
+      fedPenalty: 50_000_000,
+      settlementFy: 2023,
+    },
+    {
+      ...base,
+      caseNumber: "E",
+      name: "E",
+      typeCode: "JDC",
+      fedPenalty: 900_000,
+      settlementFy: null,
+    },
+    {
+      ...base,
+      caseNumber: "F",
+      name: "F",
+      typeCode: "AFR",
+      fedPenalty: 400_000,
+      settlementFy: 2010,
+    },
     // One national case split across two regional records: counts once at the combined penalty.
     {
       caseNumber: "N1",

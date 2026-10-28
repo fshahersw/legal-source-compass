@@ -20,10 +20,16 @@ export type CfrConcentration = {
   unrecordedParts: number;
 };
 
-export function cfrConcentration(parts: readonly CfrPartInput[], limit = 8): CfrConcentration | null {
+export function cfrConcentration(
+  parts: readonly CfrPartInput[],
+  limit = 8,
+): CfrConcentration | null {
   const recorded = parts.filter(
     (p) =>
-      !p.reserved && typeof p.sections === "number" && Number.isFinite(p.sections) && p.sections > 0,
+      !p.reserved &&
+      typeof p.sections === "number" &&
+      Number.isFinite(p.sections) &&
+      p.sections > 0,
   ) as (CfrPartInput & { sections: number })[];
   const reservedParts = parts.filter((p) => p.reserved).length;
   const unrecordedParts = parts.length - reservedParts - recorded.length;
@@ -34,14 +40,12 @@ export function cfrConcentration(parts: readonly CfrPartInput[], limit = 8): Cfr
       b.sections - a.sections || a.identifier.localeCompare(b.identifier, "en", { numeric: true }),
   );
   const share = (n: number) => (n / totalSections) * 100;
-  const top = sorted
-    .slice(0, limit)
-    .map((p) => ({
-      identifier: p.identifier,
-      title: p.title,
-      sections: p.sections,
-      share: share(p.sections),
-    }));
+  const top = sorted.slice(0, limit).map((p) => ({
+    identifier: p.identifier,
+    title: p.title,
+    sections: p.sections,
+    share: share(p.sections),
+  }));
   const rest = sorted.slice(limit);
   const restSections = rest.reduce((a, p) => a + p.sections, 0);
   return {

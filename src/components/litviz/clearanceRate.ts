@@ -58,7 +58,9 @@ export type ClearanceCallout = {
  * change from the year before it (only when that exact year has a ratio) and how many years cleared at least 100%.
  */
 export function clearanceCallout(rows: readonly ClearanceRow[]): ClearanceCallout | null {
-  const rated = rows.filter((r): r is ClearanceRow & { rate: number } => r.rate !== null && !r.partial);
+  const rated = rows.filter(
+    (r): r is ClearanceRow & { rate: number } => r.rate !== null && !r.partial,
+  );
   const latest = rated.at(-1);
   if (!latest) return null;
   const prev = rows.find((r) => r.fy === latest.fy - 1);

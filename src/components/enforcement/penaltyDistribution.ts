@@ -49,9 +49,10 @@ export function dojSizeYears(byYear: readonly DojYearInput[], currentYear: numbe
   return [...byYear]
     .sort((a, b) => a.year.localeCompare(b.year))
     .map((y) => {
-      const counts = Object.fromEntries(
-        DOJ_BANDS.map((b) => [b, y.amount[b] ?? null]),
-      ) as Record<DojBand, number | null>;
+      const counts = Object.fromEntries(DOJ_BANDS.map((b) => [b, y.amount[b] ?? null])) as Record<
+        DojBand,
+        number | null
+      >;
       const known = DOJ_BANDS.every((b) => counts[b] != null);
       const withFigure = known ? DOJ_BANDS.reduce((s, b) => s + counts[b]!, 0) : null;
       const shares = Object.fromEntries(
@@ -184,7 +185,8 @@ export function epaPenaltySizes(
     if (nc) {
       if (seenLeads.has(nc.lead)) continue;
       // Prefer the lead record's own row for the case type; the first record seen stands in until it appears.
-      const lead = rows.find((x) => x.caseNumber === nc.lead && x.nationalCase?.lead === nc.lead) ?? r;
+      const lead =
+        rows.find((x) => x.caseNumber === nc.lead && x.nationalCase?.lead === nc.lead) ?? r;
       seenLeads.add(nc.lead);
       mergedNational++;
       const penalty = nc.combined;

@@ -143,7 +143,7 @@ export function MetricMap({
     if (svg && zoomRef.current)
       select(svg).transition().duration(300).call(zoomRef.current.scaleBy, f);
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   function fitTo(el: SVGGraphicsElement) {
     const svg = svgRef.current;
     if (!svg || !zoomRef.current) return;
@@ -251,7 +251,11 @@ export function MetricMap({
   }
 
   /** Pointer, focus and keyboard behaviour shared by a state's map path and its tile. */
-  function stateProps(id: { fips: string; usps: string; name: string }, read: Readout, isSelected: boolean) {
+  function stateProps(
+    id: { fips: string; usps: string; name: string },
+    read: Readout,
+    isSelected: boolean,
+  ) {
     return {
       "data-state": id.usps,
       "data-fips": id.fips,
