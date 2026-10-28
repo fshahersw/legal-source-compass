@@ -14,9 +14,7 @@ export function isSourceIdKey(key: string): boolean {
 /** The header line without the segments that only print a source identifier ("CourtListener id nysd"). */
 export function subtitleWithoutIds(subtitle: string | null | undefined): string | null {
   if (!subtitle) return null;
-  const kept = subtitle
-    .split(" · ")
-    .filter((seg) => !/\bid\s+[A-Za-z0-9:_.-]+$/i.test(seg.trim()));
+  const kept = subtitle.split(" · ").filter((seg) => !/\bid\s+[A-Za-z0-9:_.-]+$/i.test(seg.trim()));
   return kept.length ? kept.join(" · ") : null;
 }
 
