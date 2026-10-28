@@ -23,6 +23,7 @@
 -- service_role. Idempotent (create if not exists / create or replace / on conflict). Section 9 (cron) is a guarded block
 -- that does nothing until pg_cron and pg_net are both installed: apply this file again after enabling pg_net.
 -- Offline test: src/lib/ingest/contract.test.mjs (pglite).
+-- Amended by ingest-row-limit-v2.sql (the row size guard in ingest.row_problem): apply that file after this one.
 --
 -- Deployment (lead; project xosqzzsnhxcyehcnirpa — supabase/config.toml names another project, so pass --project-ref):
 --   1. create extension if not exists pg_net;                    (pg_cron is already installed)
