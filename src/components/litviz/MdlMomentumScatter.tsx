@@ -117,8 +117,8 @@ export function MomentumPlot({
           });
           return best;
         };
-        // direct labels, nudged apart: each label is a box; a box that overlaps one already placed moves away from
-        // the zero line (up for rises, down for falls) until it is clear
+        // direct labels, placed clear of each other: try the preferred side first, then nearby rows and the other
+        // side; a label with no clear spot inside the plot is dropped (the tooltip and table still carry it)
         const placed: { x0: number; x1: number; y: number }[] = [];
         const labelPos = new Map<number, { x: number; y: number; anchor: "start" | "end" }>();
         const chars = w < 480 ? 10 : 16;
@@ -126,21 +126,29 @@ export function MomentumPlot({
           .filter((q) => labelled.has(q.mdl))
           .sort((a, b) => Math.abs(b.change ?? 0) - Math.abs(a.change ?? 0))) {
           const cx = px(p);
+          const cy = py(p);
           const up = (p.change ?? 0) >= 0;
-          const anchor = cx > w - 120 ? "end" : "start";
-          const text = productLabel(p, chars);
-          const width = text.length * 5.9;
-          const x0 = anchor === "end" ? cx - 7 - width : cx + 7;
-          const x1 = x0 + width;
-          let y = py(p) + (up ? -7 : 14);
-          for (let guard = 0; guard < 8; guard++) {
-            const hit = placed.some((b) => x0 < b.x1 && x1 > b.x0 && Math.abs(b.y - y) < 12);
-            if (!hit) break;
-            y += up ? -12 : 12;
+          const width = productLabel(p, chars).length * 5.9;
+          const sides: ("start" | "end")[] = cx > w - 120 ? ["end", "start"] : ["start", "end"];
+          const base = cy + (up ? -7 : 14);
+          let chosen: { x: number; y: number; anchor: "start" | "end"; x0: number; x1: number } | null =
+            null;
+          for (const off of [0, 12, -12, 24, -24, 36, -36]) {
+            for (const anchor of sides) {
+              const y = base + (up ? off : -off) * -1;
+              if (y < TOP + 10 || y > HEIGHT - BOTTOM - 3) continue;
+              const x0 = anchor === "end" ? cx - 7 - width : cx + 7;
+              const x1 = x0 + width;
+              if (x0 < left || x1 > w - RIGHT) continue;
+              if (placed.some((q) => x0 < q.x1 && x1 > q.x0 && Math.abs(q.y - y) < 12)) continue;
+              chosen = { x: anchor === "end" ? cx - 7 : cx + 7, y, anchor, x0, x1 };
+              break;
+            }
+            if (chosen) break;
           }
-          y = Math.max(TOP + 10, Math.min(HEIGHT - BOTTOM - 3, y));
-          placed.push({ x0, x1, y });
-          labelPos.set(p.mdl, { x: anchor === "end" ? cx - 7 : cx + 7, y, anchor });
+          if (!chosen) continue;
+          placed.push({ x0: chosen.x0, x1: chosen.x1, y: chosen.y });
+          labelPos.set(p.mdl, { x: chosen.x, y: chosen.y, anchor: chosen.anchor });
         }
         const tone = (c: number) =>
           c > 0 ? "var(--chart-2)" : c < 0 ? "var(--chart-1)" : "var(--chart-axis)";
