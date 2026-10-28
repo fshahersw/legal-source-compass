@@ -14,6 +14,7 @@ import { courtPhotoThumbsQuery } from "@/components/courts/hero/queries";
 import { StateMark } from "@/components/corpus/EntityArtwork";
 import { Input } from "@/components/ui/input";
 import { CourtHierarchy } from "@/components/litviz/CourtHierarchy";
+import { CourtSystemDiagram } from "@/components/charts/hierarchy/CourtSystemDiagram";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { countBy, NOT_RECORDED, type CourtRow } from "@/lib/external/directoryTree";
@@ -194,6 +195,7 @@ function CourtsPage() {
                   { id: "mdl-pending", label: "MDL actions pending" },
                 ]}
               />
+              <CourtSystemDiagram rows={rows} />
               <DistrictSpeedChart />
             </div>
           }
