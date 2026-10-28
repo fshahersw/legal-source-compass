@@ -145,7 +145,7 @@ describe("page sections", () => {
     const out = html(createElement(StateCapitolHeader, { usps: "AK", stateName: "Alaska" }));
     expect(out).toContain(">flickr.com</a>");
     expect(out).not.toContain(">https://www.flickr.com");
-    expect(out).toContain("sm:h-[8.5rem]");
+    expect(out).toContain("sm:h-24");
     expect(out).toContain("sm:flex-row");
   });
 
