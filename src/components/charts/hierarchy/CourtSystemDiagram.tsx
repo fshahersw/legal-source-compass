@@ -15,10 +15,11 @@ import { courtTiers, type Tier } from "./courtTiers";
 
 function Node({ tier, system, state, active }: { tier: Tier; system: string; state?: string | undefined; active?: boolean }) {
   const empty = tier.count === 0;
-  const search =
-    tier.id === "scotus"
-      ? undefined
-      : { system, ...(state ? { state } : {}), type: tier.types.length === 1 ? tier.types[0] : "*" };
+  const search = {
+    system,
+    ...(state ? { state } : {}),
+    type: tier.types.length === 1 ? (tier.types[0] ?? "*") : "*",
+  };
   const body = (
     <>
       <span className="block truncate text-label font-semibold text-foreground">{tier.label}</span>
