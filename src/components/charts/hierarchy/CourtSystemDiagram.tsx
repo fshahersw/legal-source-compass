@@ -13,7 +13,17 @@ import type { CourtRow } from "@/lib/external/directoryTree";
 import { cn } from "@/lib/utils";
 import { courtTiers, type Tier } from "./courtTiers";
 
-function Node({ tier, system, state, active }: { tier: Tier; system: string; state?: string | undefined; active?: boolean }) {
+function Node({
+  tier,
+  system,
+  state,
+  active,
+}: {
+  tier: Tier;
+  system: string;
+  state?: string | undefined;
+  active?: boolean;
+}) {
   const empty = tier.count === 0;
   const search = {
     system,
@@ -24,7 +34,9 @@ function Node({ tier, system, state, active }: { tier: Tier; system: string; sta
     <>
       <span className="block truncate text-label font-semibold text-foreground">{tier.label}</span>
       <span className="text-meta text-muted-foreground">
-        {empty ? "Not recorded" : `${tier.count.toLocaleString()} court${tier.count === 1 ? "" : "s"} recorded`}
+        {empty
+          ? "Not recorded"
+          : `${tier.count.toLocaleString()} court${tier.count === 1 ? "" : "s"} recorded`}
       </span>
     </>
   );
@@ -67,7 +79,9 @@ function Column({
 }) {
   return (
     <div className="min-w-0 space-y-1.5">
-      <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>
+      <p className="text-meta font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </p>
       {tiers.map((t, i) => (
         <div key={t.id}>
           {i > 0 ? (
@@ -111,12 +125,18 @@ export function CourtSystemDiagram({
 }) {
   const states = useMemo(
     () =>
-      [...new Set(rows.filter((r) => r.system === "State" && stateByUsps.has(r.state)).map((r) => r.state))].sort(
-        (a, b) => (stateByUsps.get(a)?.name ?? a).localeCompare(stateByUsps.get(b)?.name ?? b),
+      [
+        ...new Set(
+          rows.filter((r) => r.system === "State" && stateByUsps.has(r.state)).map((r) => r.state),
+        ),
+      ].sort((a, b) =>
+        (stateByUsps.get(a)?.name ?? a).localeCompare(stateByUsps.get(b)?.name ?? b),
       ),
     [rows],
   );
-  const [state, setState] = useState(states.includes(initialState) ? initialState : (states[0] ?? initialState));
+  const [state, setState] = useState(
+    states.includes(initialState) ? initialState : (states[0] ?? initialState),
+  );
   const federal = useMemo(() => courtTiers(rows, "Federal"), [rows]);
   const st = useMemo(() => courtTiers(rows, "State", state), [rows, state]);
   if (!rows.length) return null;
@@ -126,27 +146,37 @@ export function CourtSystemDiagram({
         <div>
           <h2 className="text-heading font-semibold">How the courts fit together</h2>
           <p className="text-meta text-muted-foreground">
-            Arrows point the way appeals go. Counts are courts recorded at each level; open a level for its courts.
+            Arrows point the way appeals go. Counts are courts recorded at each level; open a level
+            for its courts.
           </p>
         </div>
-        <label className="flex items-center gap-2 text-meta text-muted-foreground">
-          State
-          <select
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            className="h-8 rounded-md border border-input bg-background px-2 text-[13px] text-foreground"
-          >
-            {states.map((s) => (
-              <option key={s} value={s}>
-                {stateByUsps.get(s)?.name ?? s}
-              </option>
-            ))}
-          </select>
-        </label>
+        {showFederal ? (
+          <label className="flex items-center gap-2 text-meta text-muted-foreground">
+            State
+            <select
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              className="h-8 rounded-md border border-input bg-background px-2 text-[13px] text-foreground"
+            >
+              {states.map((s) => (
+                <option key={s} value={s}>
+                  {stateByUsps.get(s)?.name ?? s}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
       </div>
       <div className={cn("grid gap-6", showFederal && "md:grid-cols-2")}>
         {showFederal ? (
-          <Column title="Federal" tiers={federal.main} side={federal.side} other={federal.other} system="Federal" activeTier={activeTier} />
+          <Column
+            title="Federal"
+            tiers={federal.main}
+            side={federal.side}
+            other={federal.other}
+            system="Federal"
+            activeTier={activeTier}
+          />
         ) : null}
         <div className="relative">
           <Column
@@ -160,7 +190,8 @@ export function CourtSystemDiagram({
           />
           {showFederal ? (
             <p className="mt-2 border-l-2 border-dashed border-primary/60 pl-2 text-meta text-muted-foreground">
-              Federal questions from the state court of last resort can go to the U.S. Supreme Court.
+              Federal questions from the state court of last resort can go to the U.S. Supreme
+              Court.
             </p>
           ) : null}
         </div>
