@@ -21,6 +21,7 @@ export const n = (v: number | null | undefined, digits = 0) =>
 export function peerRanking(all: readonly MdlRow[], mdl: number, type: string | null) {
   const peers = all
     .filter((m) => m.status === "pending" && (type ? m.type === type : true))
+    .filter(hasPending)
     .sort((a, b) => b.pending - a.pending);
   const index = peers.findIndex((m) => m.mdl === mdl);
   const growth = peers

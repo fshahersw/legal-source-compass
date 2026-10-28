@@ -570,6 +570,7 @@ function Origins() {
     () =>
       [...(mdl.data?.mdls ?? [])]
         .filter((r) => r.status === "pending")
+        .filter(hasPending)
         .sort((a, b) => b.pending - a.pending)
         .slice(0, 8)
         .map((r) => r.mdl),

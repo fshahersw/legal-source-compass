@@ -54,6 +54,7 @@ export function largestMdlSeries(
   const dates = data.overview.portfolio.map((p) => p.date);
   const picked = data.mdls
     .filter((m) => m.status === "pending" && m.series.length >= 2)
+    .filter(hasPending)
     .sort((a, b) => b.pending - a.pending)
     .slice(0, n);
   const series = picked.map((m) => {

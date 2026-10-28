@@ -3,7 +3,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { restGet } from "./rest.server";
 import { validSeries } from "./mdlSeries";
 
-/** One monthly JPML report figure. `total` is null when the report row carries no historical total. */
 import type { MdlPoint } from "./mdlSeries";
 export type { MdlPoint } from "./mdlSeries";
 export type MdlRow = {
