@@ -20,8 +20,7 @@ export function CfrPartsConcentration({
 }) {
   const c = cfrConcentration(parts, 8);
   if (!c) return null;
-  const first = c.top[0]!;
-  const top3 = c.top.slice(0, 3).reduce((a, p) => a + p.share, 0);
+  const topShare = c.top.reduce((a, p) => a + p.share, 0);
   const label = (p: { title: string }) => p.title.replace(new RegExp(`^${title} CFR `), "");
   const source = {
     source: { label: "Electronic Code of Federal Regulations (eCFR)", href: `https://www.ecfr.gov/current/title-${title}` },
@@ -59,11 +58,15 @@ export function CfrPartsConcentration({
   return (
     <ChartCard
       id="cfr-parts"
-      title={`${label(first)} holds ${pct(first.share)} of title ${title}'s ${fmt(c.totalSections)} sections`}
+      title={
+        c.other
+          ? `The ${c.top.length} largest of ${fmt(c.recordedParts)} parts hold ${pct(topShare)} of title ${title}'s ${fmt(c.totalSections)} sections`
+          : `Title ${title}'s ${fmt(c.totalSections)} sections by part`
+      }
       subtitle={
-        c.top.length >= 3
-          ? `The three largest of ${fmt(c.recordedParts)} parts hold ${pct(top3)} · select a part to open it`
-          : `${fmt(c.recordedParts)} ${c.recordedParts === 1 ? "part" : "parts"} with sections`
+        c.other
+          ? `The other ${fmt(c.other.parts)} parts hold ${pct(c.other.share)} · select a part to open it`
+          : "Select a part to open it"
       }
       source={source}
       data={{
@@ -88,16 +91,6 @@ export function CfrPartsConcentration({
             display: `${fmt(p.sections)} · ${pct(p.share)}`,
             to: `/law/cfr/${title}/part/${encodeURIComponent(p.identifier)}`,
           })),
-          ...(c.other
-            ? [
-                {
-                  id: "other",
-                  label: `All other parts (${fmt(c.other.parts)})`,
-                  value: c.other.sections,
-                  display: `${fmt(c.other.sections)} · ${pct(c.other.share)}`,
-                },
-              ]
-            : []),
         ]}
       />
     </ChartCard>
