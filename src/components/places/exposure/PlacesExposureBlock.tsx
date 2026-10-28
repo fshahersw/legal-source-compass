@@ -115,7 +115,7 @@ export function PlacesExposureBlock({ part, stateName }: { part: PlacesPart; sta
           />
         }
         actions={
-          <div className="flex items-end gap-2">
+          <div className="flex min-w-0 max-w-full items-end gap-2">
             <Picker
               id="exposure-places-measure"
               label="Condition"
