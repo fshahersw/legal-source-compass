@@ -140,7 +140,7 @@ function Dashboard({ data: raw }: { data: CompaniesData }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>
           {count(o.companies)} companies whose SEC filings link them to an MDL ({count(o.links)}{" "}
