@@ -151,6 +151,12 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
   return { cells, total, rows: deepest, excess, unbroken };
 }
 
+/** "CHAPTER 6A—" → "Chapter 6A—": only the level word is re-cased; the designation stays exactly as printed. */
+export function readableDesignation(num: string | null): string | null {
+  if (!num) return num;
+  return num.replace(/^(\[?)([A-Z]{2,})\b/, (_m, br: string, w: string) => `${br}${w[0]}${w.slice(1).toLowerCase()}`);
+}
+
 const ABBR: Record<string, string> = {
   title: "T.",
   subtitle: "Subt.",

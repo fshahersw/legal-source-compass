@@ -7,6 +7,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { Fact, StatusBadge } from "@/components/uscode/UsCodeText";
 import { CodeStructureIcicle } from "@/components/lawviz/CodeStructureIcicle";
+import { readableDesignation } from "@/components/lawviz/codeStructure";
 import { pageHead } from "@/lib/corpus/head";
 import { cn } from "@/lib/utils";
 import {
@@ -118,7 +119,9 @@ function TitlePage() {
                 sourceHref={t.officialUrl}
                 statusLabels={STATUS_LABELS}
                 containerLabel={containerLabel}
-                headline={smartTitle}
+                headline={(num, heading) =>
+                  containerLabel(readableDesignation(num), heading ? smartTitle(heading) : heading)
+                }
                 selected={c}
                 onSelect={(i) => void navigate({ search: { q, c: i } })}
               />

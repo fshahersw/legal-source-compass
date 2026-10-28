@@ -36,7 +36,7 @@ function cellName(c: IcicleCell, label: (num: string | null, heading: string | n
 }
 
 export function CodeStructureIcicle({
-  headline = (s: string) => s,
+  headline,
   id = "title-structure",
   titleLabel,
   outline,
@@ -56,7 +56,7 @@ export function CodeStructureIcicle({
   statusLabels: Record<string, string>;
   containerLabel: (num: string | null, heading: string | null) => string;
   /** Re-cases an all-capitals label for the card title only (blocks and the table keep the printed text). */
-  headline?: (label: string) => string;
+  headline?: ((num: string | null, heading: string | null) => string) | undefined;
   selected: number | undefined;
   onSelect: (index: number) => void;
 }) {
@@ -108,7 +108,7 @@ export function CodeStructureIcicle({
       id={id}
       title={
         biggest && biggest.share !== null
-          ? `${headline(containerLabel(biggest.num, biggest.heading))} holds ${pctText(biggest.share)} of ${titleLabel}'s ${fmt(layout.total)} sections`
+          ? `${(headline ?? containerLabel)(biggest.num, biggest.heading)} holds ${pctText(biggest.share)} of ${titleLabel}'s ${fmt(layout.total)} sections`
           : `${titleLabel}: where the sections sit`
       }
       subtitle={`${rowName} · each block as wide as its share of the sections · select one to open it`}

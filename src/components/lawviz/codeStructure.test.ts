@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   icicleLayout,
+  readableDesignation,
   shortContainer,
   topLevelRows,
   topRowName,
@@ -125,5 +126,14 @@ describe("topRowName", () => {
     expect(topRowName(outline, icicleLayout(outline))).toBe("2 chapters");
     const mixed = [...outline.slice(0, 2), { ...node(2, 0, 1, 1), kind: "subtitle" }];
     expect(topRowName(mixed, icicleLayout(mixed))).toBe("2 top-level containers");
+  });
+});
+
+describe("readableDesignation", () => {
+  it("re-cases only the level word and keeps the designation as printed", () => {
+    expect(readableDesignation("CHAPTER 6A—")).toBe("Chapter 6A—");
+    expect(readableDesignation("SUBTITLE A—")).toBe("Subtitle A—");
+    expect(readableDesignation("[CHAPTER 3—")).toBe("[Chapter 3—");
+    expect(readableDesignation("subpart i—")).toBe("subpart i—");
   });
 });
