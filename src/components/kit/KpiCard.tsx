@@ -301,7 +301,7 @@ export function KpiGrid({
   return (
     <ul
       aria-label={label}
-      className={cn("m-0 grid list-none gap-3 p-0", kpiGridClass(count, columns), className)}
+      className={cn("grid list-none gap-3 p-0", kpiGridClass(count, columns), className)}
     >
       {children}
     </ul>
