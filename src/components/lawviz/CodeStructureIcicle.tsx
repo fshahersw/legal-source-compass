@@ -25,7 +25,13 @@ const fmt = (n: number) => n.toLocaleString("en-US");
 /** Statuses that mean the level no longer holds law in force; "unknown" is not one of them. */
 const GONE = new Set(["repealed", "omitted", "transferred", "renumbered", "reserved", "vacant"]);
 const pctText = (v: number | null) =>
-  v === null ? "Not recorded" : v >= 10 ? `${Math.round(v)}%` : `${v.toFixed(1)}%`;
+  v === null
+    ? "Not recorded"
+    : v >= 10
+      ? `${Math.round(v)}%`
+      : v > 0 && v < 0.1
+        ? "<0.1%"
+        : `${v.toFixed(1)}%`;
 
 function cellName(c: IcicleCell, label: (num: string | null, heading: string | null) => string) {
   if (c.kind === "container") return label(c.num, c.heading);
