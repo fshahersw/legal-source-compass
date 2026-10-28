@@ -4,17 +4,14 @@
 Make each page easier to scan: one identity area, a compact headline band, a few useful charts, and one section index. Extend existing components rather than building parallel versions. Use more corpus data only when its meaning, coverage, identifiers and periods support the proposed analysis.
 
 ## Current evidence
-- Texas at 1039×635 eventually loads without page errors, but six modes, a separate capitol card, two headline rows and another section index delay the analysis. Initial blank loading needs measurement, not an assumed permanent failure.
-- Courts/Litigation open with five large loading/headline tiles and uneven last rows. Repeated takeaways and long descriptions compete with plots.
-- Ask AI, map zoom/pan, district median dots, court tiers, agency diagrams and law readers already exist. Extend them rather than duplicate them.
-- Loaded court-diagram contrast remains unverified: the latest hierarchy screenshot was a skeleton.
-- Ask AI defaults to 40 figures and only the first source label, without explicit unit. MDL parsing defaults missing counts to zero and casts monthly rows without validation.
-- Live corpus coverage was not inventoried here. Company numeric accrual history, compatible cross-agency penalties, member-docket bubble counts and district spread remain unverified.
+Texas eventually loads without errors but has six modes, a capitol card, two headline rows and another index before analysis. Courts/Litigation have large loading tiles and uneven rows. Existing Ask AI, map zoom, median dots, court/agency diagrams and law readers should be extended, not duplicated. Loaded diagram contrast remains unverified.
+
+Ask AI caps context at 40 figures, selects one source and lacks explicit unit. MDL parsing defaults missing counts to zero. Live corpus coverage, numeric accruals, comparable penalties, member counts and district spread remain unverified.
 
 ## Scope and invariants
-Keep all nine sidebar sections and existing URLs. Keep Time Limits engines, bundles, manifests and release tools untouched. Preserve corpus scripts, acquisition caches and active import checkpoints. No inferred people/entity links, invented hierarchy edges, estimated amounts or implicit current-law claims.
+Keep nine sidebar sections and old URLs. Preserve Time Limits, corpus scripts/caches/import checkpoints. No inferred identities/edges, estimated values or implicit current-law claims.
 
-Source names, attribution and methodology remain in info popovers and exports. Essential interpretive markers—unit, period, partial period, missing coverage, denominator and sample size—stay visible where hiding them would mislead. Official image credit remains accessible with its recorded source and licence.
+Source names, attribution and methodology remain in info popovers and exports. Essential interpretive markers—unit, period, partial period, missing coverage, denominator and sample size—stay visible where hiding them would mislead. 
 
 ## Corrections to the brief
 - Clearance is a flow ratio, not proof of backlog change or efficiency. Use aligned count/percentage panels, not dual axes; label >100% “More terminations than filings.”
@@ -56,8 +53,8 @@ Source names, attribution and methodology remain in info popovers and exports. E
 - Penalties: separate eligible agency distributions first. Preserve assessment/settlement definitions, currencies and periods; no pooled incomparable values or totals extrapolated from capped samples. Bins [0,10k), [10k,100k), [100k,1M), [1M,10M), [10M,+∞). Null/negative adjustments are not zero fines. Medians come from records, not bucket centres.
 - Company accrual joins require exact CIK, fiscal period, unit and amendment identity. Narrative is not a numeric accrual. If absent, provide concise sourced disclosure links. Use aligned panels or a verified positive-denominator ratio rather than tiny accrual bars beside huge revenue bars.
 
-## Technical delivery contracts
-Read scoped `AGENTS.md` before edits and runtime/server rules before server work. Reuse current read-only queries. Create helpers before importing views; record structural decisions in `AGENTS.md`.
+## Technical contracts
+Reuse read-only queries; read scoped rules before edits. Create helpers before views; record structure in AGENTS.md.
 
 | Target | Interface, data/helper | Fallback and tests |
 |---|---|---|
@@ -74,11 +71,10 @@ Read scoped `AGENTS.md` before edits and runtime/server rules before server work
 | Company profile/statements/disclosure modules | Exact numeric same-period facts and amendment resolver | Narrative links if accrual absent; tests reject CIK-only joins and mixed units/quarters |
 
 ## Verification and reporting
-- Vitest: targeted domain/contract tests per change, then full suite at milestones. No tests of copy/styling/snapshots as proof of business correctness.
-- Preview diagnostics: inspect latest build result; the platform runs compilation/typechecks. Do not manually run production builds or duplicate typechecks.
-- Playwright: 1039×635 for your view, 390×844 for phone, and 1280×1800 desktop; light/dark, populated/loading/empty/error. Measure overflow and clipped labels; inspect actual screenshots, image load success, connectors and chart legibility. Aim for WCAG AA text contrast and 3:1 meaningful chart/control boundaries.
-- Verify end-to-end filters, modes, zoom/reset, data table/export, hierarchy/profile links, info popovers and chart-to-chat context using real loaded data. A demo-only or empty flow is not verified.
-- Report each sprint: changed paths, actual analytical coverage, tests run, screenshots reviewed, unresolved blockers and deployment status. Do not claim all states complete/current or publish automatically as part of this UI work.
+- Run targeted domain tests, then full Vitest at milestones. The platform performs builds/typechecks; inspect diagnostics instead of manually duplicating them.
+- Playwright: your 1039×635 view, 390×844 phone and 1280×1800 desktop; both themes, populated/loading/empty/error. Check overflow, screenshots, loaded images, connectors and readable labels. Target AA text contrast and 3:1 meaningful boundaries.
+- Verify real filters, geo/tile modes, zoom/reset, exports, hierarchy/profile links, info popovers and chart-to-chat evidence. Empty/demo checks do not verify populated flows.
+- Report actual coverage, changed paths, tests, screenshots, blockers and deployment status. No implied all-state completion/currentness or automatic publishing.
 
 ## Approval scope
-Approve the sequence, starting with Sprint 1. Later data-dependent modules proceed only when their evidence gates pass; any missing extraction or relationship contract is reported specifically, not filled by inference. This plan does not authorize altering calculator releases or resuming/importing corpus acquisition jobs.
+Start with Sprint 1; later modules require evidence gates. Time Limits and corpus acquisition/import jobs remain untouched.
