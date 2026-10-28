@@ -16,6 +16,8 @@ import {
   type RegulatorySourceId,
 } from "@/lib/regulatory/types";
 import { RegulatoryQueryComposer } from "./RegulatoryQueryComposer";
+import { SourceChangesSummary } from "./SourceChangesSummary";
+import { commonReason } from "./sourceChanges";
 import { FdaDashboard } from "@/components/fda-analytics/FdaDashboard";
 import { RegulatoryEvidenceDrawer } from "./RegulatoryEvidenceDrawer";
 import { RegulatoryCoverage } from "./RegulatoryCoverage";
@@ -136,6 +138,9 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
         />
       )}
       {search.view === "analytics" && <FdaDashboard search={search} onSearch={onSearch} />}
+      {search.view === "signals" && !invalidWindow && !invalidEntity && (
+        <SourceChangesSummary search={search} overview={overview.data} onSearch={onSearch} />
+      )}
       {(search.view === "signals" || search.view === "entities") && (
         <>
           <RegulatoryQueryComposer query={query} onApply={apply} />
@@ -197,12 +202,20 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
         <section className={panelClass} aria-label="Source change queue">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-3">
             <div>
-              <h2 className="text-heading font-semibold text-foreground">Source changes to review</h2>
+              <h2 className="text-heading font-semibold text-foreground">
+                Source changes to review
+              </h2>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                An observed source change is a research lead, not a finding of injury or liability.
-                Initial captures and backfills remain separately labeled.
+                A detected change is a research lead, not a finding of injury or liability.
               </p>
             </div>
+            {events.data ? (
+              <span className="text-xs tabular-nums text-muted-foreground">
+                {displayCount(events.data.total)}
+                {events.data.totalCapped ? " (capped)" : ""} {events.data.countUnit} ·{" "}
+                {events.data.dateBasis === "published" ? "publisher date" : "first detected date"}
+              </span>
+            ) : null}
           </div>
           {events.isPending ? (
             <Pending />
@@ -215,84 +228,7 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
             </Empty>
           ) : (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground">
-                <span>
-                  {displayCount(events.data.total)}
-                  {events.data.totalCapped ? " (capped)" : ""} {events.data.countUnit} ·{" "}
-                  {events.data.dateBasis === "published" ? "publisher date" : "first detected date"}
-                </span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[800px] text-left text-sm">
-                  <caption className="sr-only">
-                    Versioned source events. Use each evidence button to open the retained document
-                    and changes.
-                  </caption>
-                  <thead className="bg-muted/30 text-xs text-muted-foreground">
-                    <tr>
-                      {["Record / subject", "Change and reason", "Source", "Dates", "Evidence"].map(
-                        (label) => (
-                          <th key={label} scope="col" className="px-3 py-2 font-medium">
-                            {label}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {events.data.items.map((event) => (
-                      <tr
-                        key={event.id}
-                        className="border-t border-border align-top hover:bg-muted/20"
-                      >
-                        <th scope="row" className="max-w-sm px-3 py-3 font-normal">
-                          <button
-                            type="button"
-                            className="text-left font-semibold text-primary underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-ring"
-                            onClick={() => open(event)}
-                          >
-                            {event.record.title}
-                          </button>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {event.record.document_type} · {event.nativeId}
-                          </p>
-                          {event.record.entity_refs.slice(0, 2).map((entity, i) => (
-                            <p className="mt-1 text-xs" key={i}>
-                              {entity.label}{" "}
-                              <span className="text-muted-foreground">
-                                ({entity.namespace}: {entity.native_id})
-                              </span>
-                            </p>
-                          ))}
-                        </th>
-                        <td className="max-w-xs px-3 py-3">
-                          <span className="rounded-md border border-border px-1.5 py-0.5 text-xs">
-                            {EVENT_LABELS[event.eventType]}
-                          </span>
-                          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                            {event.reason}
-                          </p>
-                        </td>
-                        <td className="px-3 py-3 text-xs">{sourceLabel(event.source)}</td>
-                        <td className="px-3 py-3 text-xs">
-                          <p>Published: {displayDate(event.record.published_on)}</p>
-                          <p className="mt-1 text-muted-foreground">Detected: {event.detectedAt}</p>
-                        </td>
-                        <td className="px-3 py-2">
-                          <button
-                            type="button"
-                            className={actionClass}
-                            aria-label={`Open evidence for ${event.record.title}`}
-                            onClick={() => open(event)}
-                          >
-                            Inspect
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <EventList events={events.data.items} sourceLabel={sourceLabel} onOpen={open} />
               <Pagination
                 page={search.page}
                 next={events.data.nextOffset}
@@ -305,7 +241,9 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
       {search.view === "entities" && (
         <section className={panelClass}>
           <div className="border-b border-border p-3">
-            <h2 className="text-heading font-semibold text-foreground">Recorded source identities</h2>
+            <h2 className="text-heading font-semibold text-foreground">
+              Recorded source identities
+            </h2>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Exact namespace and native identifier only. Similar names are not merged. Date,
               event-type and existing entity filters do not restrict this identity directory.
@@ -426,6 +364,105 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
         />
       )}
     </div>
+  );
+}
+
+const EVENT_TONE: Record<string, string> = {
+  record_changed: "border-amber-500/40 bg-amber-500/10 text-foreground",
+  correction: "border-amber-500/40 bg-amber-500/10 text-foreground",
+  new_record: "border-primary/30 bg-primary/10 text-foreground",
+  initial_record: "border-border bg-muted/40 text-muted-foreground",
+  backfill: "border-border bg-muted/40 text-muted-foreground",
+};
+
+/** Compact rows: what changed, where and when; a reason shared by most rows is printed once above the list. */
+function EventList({
+  events,
+  sourceLabel,
+  onOpen,
+}: {
+  events: RegulatoryEvent[];
+  sourceLabel: (id: string) => string;
+  onOpen: (event: RegulatoryEvent) => void;
+}) {
+  const shared = commonReason(events);
+  return (
+    <>
+      {shared ? (
+        <p className="border-b border-border bg-muted/20 px-3 py-2 text-xs leading-5 text-muted-foreground">
+          <span className="font-medium text-foreground">Most rows: </span>
+          {shared}
+        </p>
+      ) : null}
+      <ul className="m-0 list-none divide-y divide-border p-0" aria-label="Detected source events">
+        {events.map((event) => (
+          <li
+            key={event.id}
+            className="flex flex-wrap items-start gap-x-3 gap-y-1.5 px-3 py-2.5 hover:bg-muted/20"
+          >
+            <span
+              className={`mt-0.5 shrink-0 rounded-md border px-1.5 py-0.5 text-[11px] font-medium ${EVENT_TONE[event.eventType] ?? "border-border"}`}
+            >
+              {EVENT_LABELS[event.eventType]}
+            </span>
+            <div className="min-w-0 flex-[1_1_20rem]">
+              <button
+                type="button"
+                className="text-left text-sm font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                onClick={() => onOpen(event)}
+              >
+                {event.record.title}
+              </button>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {sourceLabel(event.source)} · {event.record.document_type || "Record"} ·{" "}
+                {event.nativeId} · Published {displayDate(event.record.published_on)} · Detected{" "}
+                {event.detectedAt.slice(0, 10)}
+              </p>
+              {event.record.entity_refs.length ? (
+                <p className="mt-0.5 text-xs text-foreground/80">
+                  {event.record.entity_refs
+                    .slice(0, 3)
+                    .map((entity) => entity.label)
+                    .join(" · ")}
+                  {event.record.entity_refs.length > 3
+                    ? ` · +${event.record.entity_refs.length - 3} more`
+                    : ""}
+                </p>
+              ) : null}
+              {event.changedFields.length ? (
+                <p className="mt-1 flex flex-wrap gap-1">
+                  <span className="text-[11px] text-muted-foreground">Changed:</span>
+                  {event.changedFields.slice(0, 6).map((field) => (
+                    <code
+                      key={field}
+                      className="rounded bg-muted px-1 py-px text-[11px] text-foreground"
+                    >
+                      {field}
+                    </code>
+                  ))}
+                  {event.changedFields.length > 6 ? (
+                    <span className="text-[11px] text-muted-foreground">
+                      +{event.changedFields.length - 6} more
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
+              {event.reason !== shared ? (
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">{event.reason}</p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={`${actionClass} ml-auto shrink-0`}
+              aria-label={`Open evidence for ${event.record.title}`}
+              onClick={() => onOpen(event)}
+            >
+              Inspect
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

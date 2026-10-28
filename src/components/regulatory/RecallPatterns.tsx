@@ -3,26 +3,18 @@ import { useState } from "react";
 import { ArrowUpRight, ChevronRight, MessageCircle } from "lucide-react";
 import { askAssistant, interpretQuestion } from "@/components/assistant/askAssistant";
 import {
-  Bar,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
-  axisTick,
   Kpi,
   LoadingBlock,
   MoreToggle,
   Panel,
   Segmented,
   StateNote,
-  tooltipStyle,
 } from "@/components/enforcement/parts";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
+import { BarTrend } from "@/components/charts/BarTrend";
+import { LineTrend } from "@/components/charts/LineTrend";
+import { metricFormatter } from "@/components/charts/format";
+import { chartTokens } from "@/components/charts/palette";
 import {
   getRecallDomain,
   type Anomaly,
@@ -113,48 +105,99 @@ function kpis(o: RecallOverview) {
   return list;
 }
 
+/**
+ * Recalls per report year as columns. FDA years split into Class I and the other classes (an exact partition of each
+ * year's recalls); CPSC's China share is its own small line chart below, never a second axis. The latest year is a
+ * partial period unless the data runs to December 31.
+ */
 function YearChart({ o }: { o: RecallOverview }) {
-  const second = o.domain.startsWith("fda")
-    ? new Map(o.class1ByYear.map((y) => [y.year, y.count]))
-    : o.domain === "cpsc"
-      ? new Map(o.chinaShareByYear.map((y) => [y.year, y.share]))
-      : null;
-  const secondLabel = o.domain.startsWith("fda") ? "Class I" : "Made in China (%)";
-  const data = o.byYear.map((y) => ({
-    year: y.year,
-    count: y.count,
-    second: second?.get(y.year) ?? null,
-  }));
+  const keys = o.byYear.map((y) => y.year);
+  const partialYear = o.last && o.last.slice(5) !== "12-31" ? o.last.slice(0, 4) : null;
+  const axis = {
+    keys,
+    label: (key: string) =>
+      key === partialYear && o.last ? `${key} (to ${dayLabel(o.last)})` : key,
+    tick: (key: string) => (keys.length > 14 ? `’${key.slice(2)}` : key),
+  };
+  const class1 = new Map(o.class1ByYear.map((y) => [y.year, y.count]));
+  const splitClasses =
+    o.domain.startsWith("fda") &&
+    o.class1ByYear.length > 0 &&
+    o.byYear.every((y) => (class1.get(y.year) ?? 0) <= y.count);
+  const point = (year: string, value: number) => ({
+    key: year,
+    value,
+    ...(year === partialYear ? { partial: true } : {}),
+  });
+  const series = splitClasses
+    ? [
+        {
+          id: "class1",
+          label: "Class I",
+          points: o.byYear.map((y) => point(y.year, class1.get(y.year) ?? 0)),
+        },
+        {
+          id: "other",
+          label: "Class II, III or not classified",
+          points: o.byYear.map((y) => point(y.year, y.count - (class1.get(y.year) ?? 0))),
+        },
+      ]
+    : [{ id: "count", label: "Recalls", points: o.byYear.map((y) => point(y.year, y.count)) }];
+  const china = o.domain === "cpsc" ? o.chinaShareByYear : [];
   return (
-    <div className="h-56 px-2 py-2" aria-label="Recalls by year">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: -12 }}>
-          <CartesianGrid vertical={false} stroke="var(--border)" />
-          <XAxis dataKey="year" tick={axisTick} interval="preserveStartEnd" />
-          <YAxis yAxisId="a" tick={axisTick} allowDecimals={false} width={46} />
-          {second && o.domain === "cpsc" ? (
-            <YAxis yAxisId="b" orientation="right" tick={axisTick} width={34} domain={[0, 100]} />
-          ) : null}
-          <Tooltip
-            contentStyle={tooltipStyle}
-            formatter={(v, name) => [
-              name === "count" ? n(Number(v)) : `${Number(v).toLocaleString("en-US")}`,
-              name === "count" ? "Recalls" : secondLabel,
+    <div className="space-y-2 px-3 py-2" style={chartTokens}>
+      <BarTrend
+        series={series}
+        axis={axis}
+        formatter={metricFormatter("count")}
+        unit="recalls"
+        stacked={splitClasses}
+        ariaLabel={`Recalls by report year${splitClasses ? ", split into Class I and other classes" : ""}`}
+        height={200}
+      />
+      {splitClasses ? (
+        <p className="flex flex-wrap gap-x-3 gap-y-1 text-meta text-muted-foreground">
+          {series.map((item, index) => (
+            <span key={item.id} className="inline-flex items-center gap-1.5">
+              <span
+                className="size-2.5 rounded-[2px]"
+                style={{ background: `var(--chart-${index + 1})` }}
+                aria-hidden
+              />
+              {item.label}
+            </span>
+          ))}
+        </p>
+      ) : null}
+      {china.length > 1 ? (
+        <div>
+          <p className="text-meta font-medium text-foreground/80">
+            Share of recalls naming China as the country of manufacture
+          </p>
+          <LineTrend
+            series={[
+              {
+                id: "china",
+                label: "Made in China",
+                points: china.map((y) => ({
+                  key: y.year,
+                  value: y.share,
+                  ...(y.year === partialYear ? { partial: true } : {}),
+                })),
+              },
             ]}
+            axis={{
+              keys: china.map((y) => y.year),
+              label: axis.label,
+              tick: (key: string) => (china.length > 14 ? `’${key.slice(2)}` : key),
+            }}
+            formatter={metricFormatter("percent")}
+            ariaLabel="Share of CPSC recalls naming China as the country of manufacture, by year"
+            height={130}
+            yDomain={[0, 100]}
           />
-          <Bar yAxisId="a" dataKey="count" fill={FDA_COLORS[0]!} radius={[2, 2, 0, 0]} />
-          {second ? (
-            <Line
-              yAxisId={o.domain === "cpsc" ? "b" : "a"}
-              dataKey="second"
-              stroke={FDA_COLORS[2]!}
-              strokeWidth={2}
-              dot={false}
-              connectNulls
-            />
-          ) : null}
-        </ComposedChart>
-      </ResponsiveContainer>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -513,9 +556,9 @@ function DomainView({ data, onOpen }: { data: RecallDomainData; onOpen: (id: str
           title="Recalls by year"
           subtitle={
             o.domain.startsWith("fda")
-              ? `Recall events by report year; line: Class I${o.last ? `. ${o.last.slice(0, 4)} runs to ${dayLabel(o.last)}` : ""}`
+              ? `Recall events by report year, Class I and other classes${o.last ? `. ${o.last.slice(0, 4)} runs to ${dayLabel(o.last)}` : ""}`
               : o.domain === "cpsc"
-                ? `Recalls by year; line: share naming China as country of manufacture${o.last ? `. ${o.last.slice(0, 4)} runs to ${dayLabel(o.last)}` : ""}`
+                ? `Recalls by year, and the share naming China as country of manufacture${o.last ? `. ${o.last.slice(0, 4)} runs to ${dayLabel(o.last)}` : ""}`
                 : `Campaigns by report year${o.last ? `. ${o.last.slice(0, 4)} runs to ${dayLabel(o.last)}` : ""}`
           }
         >
