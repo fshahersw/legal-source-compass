@@ -178,8 +178,10 @@ export function CodeStructureIcicle({
           </defs>
           {layout.cells.map((c) => {
             const x = c.x0 * w;
-            const cw = (c.x1 - c.x0) * w - 1;
-            if (cw < 0.5) return null;
+            // blocks under 4px lose their 1px gap so a run of small levels reads as one band, never as blank space
+            const raw = (c.x1 - c.x0) * w;
+            if (raw <= 0) return null;
+            const cw = raw >= 4 ? raw - 1 : raw;
             const y = c.row * (ROW_H + ROW_GAP);
             // a leaf runs to the bottom row, so a level with nothing below it reads as one block, not a gap
             const ch = c.leaf
@@ -223,7 +225,7 @@ export function CodeStructureIcicle({
                   stroke={
                     onPath || isHover
                       ? "var(--map-active)"
-                      : gone
+                      : gone && raw >= 4
                         ? "var(--border)"
                         : "none"
                   }
