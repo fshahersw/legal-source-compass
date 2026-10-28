@@ -7,9 +7,10 @@
  *     registrant states in its SEC filings (profile.ir_website / profile.website). A document counts only when it is
  *     served from one of those registrable domains, or from a page those hosts link to on the IR platform the site
  *     itself uses (recorded as `linked_from`). Nothing is taken from news sites, aggregators or data vendors.
- *   - Discovery: Firecrawl map of the official IR host (search terms for presentations and results), Tavily search
- *     restricted to the official domains when the registrant names no IR host.
- *   - Text: Firecrawl scrape (markdown; PDFs through its PDF parser, which reads image-only pages too). The text is
+ *   - Discovery: Firecrawl map of both official sites (IR host and corporate site; IR hosts often redirect to the
+ *     corporate site, where the documents sit), then Tavily search restricted to the official domains when the maps
+ *     give fewer than two candidates.
+ *   - Text: Firecrawl scrape (v1 scrape, markdown; PDFs through its PDF parser, parsePDF). The text is
  *     stored in the row and is the check every figure is held to.
  *   - Figures: one asynchronous model pass per run (Anthropic Message Batches). PDFs are given to the model as the
  *     document itself, so tables and charts are read from the page images; HTML documents as their text. Every figure
@@ -156,7 +157,9 @@ export function pickCandidates(
     if (!isFirstParty(url, officialDomains) && !isIrPlatform(url)) continue;
     const path = decodeURIComponent(u.pathname + u.search);
     if (SKIP_WORDS.test(path) || !DOC_WORDS.test(path)) continue;
-    const year = yearOf(path);
+    // the year the file name states (upload folders such as /files/2025-12/ say when it was posted, not the period)
+    const file = decodeURIComponent(u.pathname.split("/").pop() ?? "");
+    const year = yearOf(file) ?? yearOf(path);
     if (year !== null && (year < thisYear - 2 || year > thisYear + 1)) continue;
     const pdf = /\.pdf(\?|$)/i.test(u.pathname);
     const score =
@@ -401,21 +404,29 @@ async function tavilyLinks(http: Http, key: string, t: Target): Promise<string[]
   return results.map((r) => (isObj(r) ? str(r["url"]) : null)).filter((u): u is string => !!u);
 }
 
+/** The page as markdown, or Firecrawl's status and error text (never carries a key) when it could not be read. */
 async function firecrawlScrape(
   http: Http,
   key: string,
   url: string,
-): Promise<{ markdown: string; title: string } | null> {
+): Promise<{ markdown: string; title: string } | { status: number; error: string }> {
   const { status, json } = await postJson(
     http,
     `${FIRECRAWL}/scrape`,
-    { url, formats: ["markdown"], onlyMainContent: true, parsers: ["pdf"] },
+    { url, formats: ["markdown"], onlyMainContent: true, parsePDF: true },
     { Authorization: `Bearer ${key}` },
   );
-  if (status !== 200 || !isObj(json) || !isObj(json["data"])) return null;
+  if (status !== 200 || !isObj(json) || !isObj(json["data"])) {
+    const error = isObj(json) ? (str(json["error"]) ?? str(json["message"]) ?? "") : "";
+    return { status, error: error.slice(0, 200) };
+  }
   const data = json["data"];
   const markdown = str(data["markdown"]) ?? "";
   const meta = isObj(data["metadata"]) ? data["metadata"] : {};
+  // Firecrawl answers 200 for a page the site itself answered with an error; the site's status is in the metadata
+  const siteStatus = typeof meta["statusCode"] === "number" ? meta["statusCode"] : 200;
+  if (siteStatus >= 400)
+    return { status: siteStatus, error: "the site answered with an error page" };
   return { markdown, title: str(meta["title"]) ?? "" };
 }
 
@@ -618,6 +629,7 @@ export const companyIrKpis: SourceAdapter = {
     const notes: JsonObject = {};
     let fetched = 0;
     let complete = true;
+    const scrapeErrors: JsonObject[] = [];
 
     const stop = (error: unknown) => {
       if (error instanceof BudgetExhausted || error instanceof RateLimited) {
@@ -723,9 +735,31 @@ export const companyIrKpis: SourceAdapter = {
         }
         const base = t.ir ?? t.site!;
         try {
-          let links = await firecrawlMap(ctx.http, fc, base);
-          if (!t.ir && tv) links = [...links, ...(await tavilyLinks(ctx.http, tv, t))];
-          const picks = pickCandidates(links, t.domains, ctx.now);
+          // Both official sites are mapped: an IR host often redirects to the corporate site, where the results
+          // documents live. Tavily (restricted to the same domains) fills in when the maps give fewer than two.
+          const origins = [
+            ...new Set([t.ir, t.site].filter((u): u is URL => !!u).map((u) => u.origin)),
+          ];
+          const links: string[] = [];
+          let mapError: unknown = null;
+          for (const origin of origins) {
+            try {
+              links.push(...(await firecrawlMap(ctx.http, fc, new URL(origin))));
+            } catch (error) {
+              if (error instanceof BudgetExhausted || error instanceof RateLimited) throw error;
+              mapError = error;
+            }
+          }
+          let picks = pickCandidates(links, t.domains, ctx.now);
+          if (picks.length < 2 && tv) {
+            try {
+              links.push(...(await tavilyLinks(ctx.http, tv, t)));
+              picks = pickCandidates(links, t.domains, ctx.now);
+            } catch (error) {
+              if (error instanceof BudgetExhausted || error instanceof RateLimited) throw error;
+            }
+          }
+          if (!links.length && mapError) throw mapError;
           if (!picks.length) {
             held.push({
               key: t.cik,
@@ -743,7 +777,15 @@ export const companyIrKpis: SourceAdapter = {
             if (known.has(id) || rows.some((r) => r.id === id)) continue;
             const page = await firecrawlScrape(ctx.http, fc, p.url);
             fetched++;
-            if (!page || page.markdown.length < 200) {
+            if ("error" in page) {
+              held.push({
+                key: p.url,
+                reason: `document could not be read (HTTP ${page.status})`,
+              });
+              scrapeErrors.push({ url: p.url, status: page.status, error: page.error });
+              continue;
+            }
+            if (page.markdown.length < 200) {
               held.push({ key: p.url, reason: "document text could not be read" });
               continue;
             }
@@ -786,6 +828,7 @@ export const companyIrKpis: SourceAdapter = {
       if (!stop(error)) throw error;
     }
 
+    if (scrapeErrors.length) notes["scrape_errors"] = scrapeErrors.slice(0, 6);
     // a row produced twice in one run (fetched and extracted) keeps its last state
     const byId = new Map(rows.map((r) => [r.id, r]));
     return {

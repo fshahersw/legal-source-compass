@@ -341,7 +341,11 @@ describe("company_ir_kpis run (offline)", () => {
     };
     expect(sent.requests.map((r) => r.custom_id)).toEqual([customId(heldId)]);
     expect(JSON.stringify(sent.requests[0]!.params)).toContain('"type":"document"');
-    expect(seen.filter((s) => s.url.endsWith("/v1/scrape"))).toHaveLength(1);
+    const scrapes = seen.filter((s) => s.url.endsWith("/v1/scrape"));
+    expect(scrapes).toHaveLength(1);
+    // v1 scrape takes parsePDF; the v2 `parsers` option is refused with HTTP 400
+    expect(JSON.parse(scrapes[0]!.body)).toMatchObject({ parsePDF: true, formats: ["markdown"] });
+    expect(JSON.parse(scrapes[0]!.body)).not.toHaveProperty("parsers");
     const status = Object.fromEntries(
       out.rows.map((r) => [r.id, (r.item["extraction"] as JsonObject)["status"]]),
     );
@@ -482,5 +486,157 @@ describe("company_sec_cover_facts run (offline)", () => {
     expect(cells["shares_outstanding"]).toBe(287e6);
     expect(out.rows[0]!.category).toBe("company_sec_cover_facts");
     expect(out.cursorAfter).toEqual({ next: 0 });
+  });
+});
+
+describe("company_ir_kpis scrape errors (offline)", () => {
+  it("records Firecrawl's status and error text for a document it refuses", async () => {
+    const fetchImpl = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/v1/map"))
+        return new Response(
+          JSON.stringify({ links: ["https://investors.bd.com/q4-2026-earnings-presentation.pdf"] }),
+        );
+      if (url.endsWith("/v1/scrape"))
+        return new Response(
+          JSON.stringify({ success: false, error: "Bad Request: unsupported URL" }),
+          {
+            status: 400,
+          },
+        );
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    const out = await companyIrKpis.collect({
+      http: politeHttp({ maxRequests: 40, minIntervalMs: 0, fetch: fetchImpl }),
+      corpus: corpusWith([], [BD]),
+      cursor: null,
+      now: NOW,
+      env: (k) => ({ FIRECRAWL_API_KEY: "F", ANTHROPIC_API_KEY: "A" })[k],
+    });
+    expect(out.rows).toEqual([]);
+    expect(out.held).toEqual([
+      {
+        key: "https://investors.bd.com/q4-2026-earnings-presentation.pdf",
+        reason: "document could not be read (HTTP 400)",
+      },
+    ]);
+    expect(out.notes["scrape_errors"]).toEqual([
+      {
+        url: "https://investors.bd.com/q4-2026-earnings-presentation.pdf",
+        status: 400,
+        error: "Bad Request: unsupported URL",
+      },
+    ]);
+  });
+});
+
+describe("company_ir_kpis page checks", () => {
+  it("dates a document by its file name, not the upload folder", () => {
+    const picks = pickCandidates(
+      [
+        "https://www.baxter.com/sites/files/2025-12/Baxter_Reports_Third_Quarter_2022_Results_Release.pdf",
+        "https://www.baxter.com/sites/files/2026-03/q4_2025_earnings_release_financial_schedules.pdf",
+        "https://www.baxter.com/sites/files/2026-03/earnings-presentation.pdf",
+      ],
+      ["baxter.com"],
+      NOW,
+      10,
+    );
+    expect(picks.map((p) => [p.url.split("/").pop(), p.year])).toEqual([
+      ["earnings-presentation.pdf", 2026],
+      ["q4_2025_earnings_release_financial_schedules.pdf", 2025],
+    ]);
+  });
+
+  it("refuses a page the site answered with an error status", async () => {
+    const fetchImpl = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/v1/map"))
+        return new Response(
+          JSON.stringify({ links: ["https://investors.bd.com/q4-2026-earnings-presentation.pdf"] }),
+        );
+      if (url.endsWith("/v1/scrape"))
+        return new Response(
+          JSON.stringify({
+            data: {
+              markdown: "The requested page was not found on our website. ".repeat(20),
+              metadata: { title: "Not found", statusCode: 404 },
+            },
+          }),
+        );
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    const out = await companyIrKpis.collect({
+      http: politeHttp({ maxRequests: 40, minIntervalMs: 0, fetch: fetchImpl }),
+      corpus: corpusWith([], [BD]),
+      cursor: null,
+      now: NOW,
+      env: (k) => ({ FIRECRAWL_API_KEY: "F", ANTHROPIC_API_KEY: "A" })[k],
+    });
+    expect(out.rows).toEqual([]);
+    expect(out.held.map((h) => h.reason)).toEqual(["document could not be read (HTTP 404)"]);
+  });
+});
+
+describe("company_ir_kpis discovery (offline)", () => {
+  it("maps both official sites and asks Tavily, on the same domains, when the maps find too little", async () => {
+    const abbott = {
+      id: "0000001800",
+      n: "ABBOTT LABORATORIES",
+      w: "www.abbott.com",
+      ir: "www.abbottinvestor.com",
+    };
+    const seen: { url: string; body: string }[] = [];
+    const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const body = String(init?.body ?? "");
+      seen.push({ url, body });
+      if (url.endsWith("/v1/map")) {
+        const site = (JSON.parse(body) as { url: string }).url;
+        return new Response(
+          JSON.stringify({
+            links:
+              site === "https://www.abbott.com"
+                ? ["https://www.abbott.com/content/dam/hub/Q2-2026-Earnings-Infographic.pdf"]
+                : [],
+          }),
+        );
+      }
+      if (url === "https://api.tavily.com/search")
+        return new Response(
+          JSON.stringify({
+            results: [
+              { url: "https://www.abbott.com/content/dam/hub/Q3-2026-earnings-presentation.pdf" },
+              { url: "https://www.reuters.com/abbott-q3-2026-results" },
+            ],
+          }),
+        );
+      if (url.endsWith("/v1/scrape"))
+        return new Response(
+          JSON.stringify({
+            data: {
+              markdown: "Second-quarter 2026 results. Worldwide sales $12.6B. ".repeat(10),
+              metadata: { title: "Q2 2026 earnings" },
+            },
+          }),
+        );
+      return new Response("{}", { status: 404 });
+    }) as typeof fetch;
+    const out = await companyIrKpis.collect({
+      http: politeHttp({ maxRequests: 40, minIntervalMs: 0, fetch: fetchImpl }),
+      corpus: corpusWith([], [abbott]),
+      cursor: null,
+      now: NOW,
+      env: (k) => ({ FIRECRAWL_API_KEY: "F", ANTHROPIC_API_KEY: "A", TAVILY_API_KEY: "T" })[k],
+    });
+    const maps = seen.filter((s) => s.url.endsWith("/v1/map")).map((s) => JSON.parse(s.body).url);
+    expect(maps).toEqual(["https://www.abbottinvestor.com", "https://www.abbott.com"]);
+    const tavily = seen.find((s) => s.url === "https://api.tavily.com/search")!;
+    expect(JSON.parse(tavily.body).include_domains).toEqual(["abbottinvestor.com", "abbott.com"]);
+    expect(out.rows.map((r) => r.source_url).sort()).toEqual([
+      "https://www.abbott.com/content/dam/hub/Q2-2026-Earnings-Infographic.pdf",
+      "https://www.abbott.com/content/dam/hub/Q3-2026-earnings-presentation.pdf",
+    ]);
+    expect(out.held).toEqual([]);
   });
 });

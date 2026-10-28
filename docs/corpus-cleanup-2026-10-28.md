@@ -23,3 +23,17 @@ Rollback: the scratch tables were derived from `state_law.sections_tx` / `sectio
 | `caselaw.text_v2_t*` `tsv` GIN indexes (unused per advisor, ~2.4 GB) | | Back the tiered full-text opinion search in `caselaw-v2.sql`; low use is not no use. |
 | `corpus_ingest.publisher_code_*_v1` | ~16 MB | Read by the v1/v2 intake and progress contracts and their tests. |
 | `corpus_ingest.cleanup_*` | 2.1 GB | The removal ledger itself. |
+
+## company_ir_kpis: two error pages removed (2026-10-28, 13:00 UTC)
+
+The first live runs of `company_ir_kpis` stored two Baxter URLs whose site answered with its "page not found" page
+(Firecrawl returns HTTP 200 and puts the site's 404 in `metadata.statusCode`). Removed; no figures had been read from
+them. The adapter now refuses any page whose site status is 400 or above (`src/lib/ingest/sources/companyIr.ts`).
+
+| id | source_url |
+|---|---|
+| ir:0000010456:2457c65f4c6fd9c2 | https://www.baxter.com/sites/default/files/2026-01/Baxter_Q3_2025_Earnings_Release_Schedules_FINAL.pdf |
+| ir:0000010456:f635d6f545165f5e | https://www.baxter.com/sites/default/files/2026-03/q4_2025_earnings_release_financial_schedules.pdf |
+
+Reversible: the next scheduled visit of Baxter re-reads both URLs and stores them if the site serves them.
+corpus_datasets counts restated from the table (2 rows).
