@@ -3,7 +3,7 @@
 ## Uploaded executive brief (2026-10-28)
 - [x] Prepare evidence-based sprint plan: visual declutter, chart accuracy, maps, hierarchy/registry imagery, and compatible corpus enrichment; preserve Time Limits and existing acquisition checkpoints.
 - [x] First sprint: four state modes with legacy directory destinations; compact balanced hub figures; richer bounded chart AI context; complete-year civil clearance flow panels and corrected district-median AI label.
-- [ ] Next sprint: MDL missing-value validation/momentum, district profile links, map tile mode, law trees and exact-ID imagery; source compatibility remains required. Time Limits and acquisition checkpoints untouched.
+- [x] Sprint 2–4: MDL missing-value validation/momentum, district profile links, map tile mode, law trees and exact-ID imagery; Time Limits and acquisition checkpoints untouched.
 
 ## Executive brief — Sprints 2–4 (uploaded 2026-10-28 07:21 UTC; use Firecrawl/Tavily as needed)
 - [x] S2.1 MDL data validation (no missing→0, validated series points) + momentum scatter (log pending, exact same-month 12-month change, zero-pending drawer, links to MDL pages) + tests
@@ -14,8 +14,8 @@
 - [x] S3.3 Court/agency hierarchy contrast: court tiers already AA in both themes; agency components fit narrow columns; official org-chart links for 11 agencies bound by exact Federal Register id, with the publisher's printed date (DHS, State, SEC) or "undated"
 - [x] S4.1 Exact-ID imagery coverage: 160 courthouse, 240 judge-portrait, 218 agency (61 with photos), 55 capitol records; 19 sampled pages bind by exact id with 0 broken images; 18 agency photos hidden only for a blank building name now show with a neutral caption
 - [x] S4.2 Enforcement penalty distributions: EPA log-scale histogram by case type with record medians (published ≥$100K cases, national cases merged once); DOJ share of releases by size of largest stated figure per year (shares, since archive coverage jumps)
-- [ ] S5 Typography/padding check at 1039×635 and 390×844; vendor names only in info popovers
-- [ ] S6 Verification: targeted tests, typecheck, browser checks (/courts, /litigation, /places/TX, /enforcement, /agencies/271) light+dark, both viewports
+- [x] S5 Overflow check at 1039×635 and 390×844 on 9 key pages: none left (Texas health-condition picker fixed; EPA chart labels thin out on phones)
+- [x] S6 Verification: 61 test files / 560 tests, typecheck clean; browser checks of new charts in light and dark, both viewports, no page errors
 
 ## Comprehensive platform scan (2026-10-28)
 - [x] Read-only audit: pages and workflows, visual cohesion, accessibility, chart/data integrity, AI/server security, automated tests; evidence and prioritized findings saved without application changes; hosted deployment and exhaustive legal/security certification remain unverified.
