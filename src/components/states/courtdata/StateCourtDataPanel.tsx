@@ -229,11 +229,7 @@ function Body({
         </PanelSection>
       ) : null}
       {cl ? (
-        <PanelSection
-          id="courts-dockets"
-          title="Dockets in the collection"
-          hint="collection"
-        >
+        <PanelSection id="courts-dockets" title="Dockets in the collection" hint="collection">
           <Dockets data={data} />
         </PanelSection>
       ) : null}

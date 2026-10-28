@@ -1,3 +1,4 @@
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -64,23 +65,29 @@ export function StateLegislationPanel({ usps }: { usps: string }) {
               ? ` · ${fmtN(q.data.currentTotal)} bills in the current session`
               : ""}
           </p>
-          <List
-            title="Signed or became law, both sessions (latest first)"
-            rows={q.data.enacted}
-            total={q.data.enactedTotal}
-            empty="Open States records no signed or enacted bill for these sessions."
-          />
-          <List
-            title="Pending in the current session"
-            rows={q.data.pending}
-            total={q.data.pendingTotal}
-            empty="No pending bill is recorded for the current session."
-          />
-          <p className="m-0 text-[10.5px] leading-4 text-muted-foreground">
-            Open States public data, collected from the legislature's website; status follows Open
-            States' action classifications. Pending means no signature, enactment or veto is
-            recorded.
-          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            <List
+              title="Signed or became law (latest first)"
+              rows={q.data.enacted}
+              total={q.data.enactedTotal}
+              empty="Open States records no signed or enacted bill for these sessions."
+            />
+            <List
+              title="Pending in the current session"
+              rows={q.data.pending}
+              total={q.data.pendingTotal}
+              empty="No pending bill is recorded for the current session."
+            />
+          </div>
+          <div className="flex justify-end">
+            <InfoPopover label="Source and notes">
+              <p>
+                Open States public data, collected from the legislature's website; status follows
+                Open States' action classifications. Pending means no signature, enactment or veto
+                is recorded. Both sessions are counted for signed bills.
+              </p>
+            </InfoPopover>
+          </div>
         </div>
       )}
     </section>
@@ -116,9 +123,9 @@ function List({
       </h3>
       {sorted.length ? (
         <ul className="m-0 list-none space-y-1 p-0">
-          {sorted.map((r) => (
+          {sorted.slice(0, 4).map((r) => (
             <li key={r.id} className="min-w-0">
-              <p className="m-0 line-clamp-2" title={r.title}>
+              <p className="m-0 line-clamp-1" title={r.title}>
                 <Link
                   to="/law/legislation/state/$id"
                   params={{ id: r.id }}
