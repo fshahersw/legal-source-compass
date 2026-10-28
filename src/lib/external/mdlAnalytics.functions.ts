@@ -1,7 +1,7 @@
 /** MDL and mass-tort analytics built from JPML monthly reports (datasets mdl_analytics, mdl_terminated_history). */
 import { createServerFn } from "@tanstack/react-start";
 import { restGet } from "./rest.server";
-import { validSeries } from "./mdlSeries";
+import { validSeries, windowFigures } from "./mdlSeries";
 
 import type { MdlPoint } from "./mdlSeries";
 export type { MdlPoint } from "./mdlSeries";
@@ -101,6 +101,10 @@ const str = (v: unknown) => (typeof v === "string" && v ? v : null);
 function toRow(item: AnalyticsItem): MdlRow | null {
   const a = item.analytics;
   if (!a || typeof a["mdl"] !== "number") return null;
+  const series = validSeries(a["series"]);
+  // Windowed changes come from the validated series with exact calendar-month matching (see windowFigures): the
+  // record's own fields can carry a nearest-report substitute when the Panel skipped a month.
+  const w = windowFigures(series);
   const status =
     a["status"] === "terminated" || a["status"] === "no_longer_listed" ? a["status"] : "pending";
   return {
@@ -113,18 +117,18 @@ function toRow(item: AnalyticsItem): MdlRow | null {
     judge: str(a["judge"]),
     pending: num(a["pending"]),
     total: num(a["total"]),
-    change1m: num(a["change_1m"]),
-    change3m: num(a["change_3m"]),
-    change12m: num(a["change_12m"]),
-    new12m: num(a["new_12m"]),
-    resolved12m: num(a["resolved_12m"]),
+    change1m: w.change1m,
+    change3m: w.change3m,
+    change12m: w.change12m,
+    new12m: w.new12m,
+    resolved12m: w.resolved12m,
     ageYears: num(a["age_years"]),
     growth: str(a["growth"]) ?? "insufficient_history",
     dateTransferred: str(a["date_transferred"]),
     dateClosed: str(a["date_closed"]),
     rank: num(item.rank),
     sharePct: num(item.share_pct),
-    series: validSeries(a["series"]),
+    series,
   };
 }
 
