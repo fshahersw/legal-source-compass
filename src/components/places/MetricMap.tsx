@@ -401,7 +401,8 @@ export function MetricMap({
       <svg
         ref={svgRef}
         viewBox="0 0 975 610"
-        className={cn("h-auto min-h-52 w-full p-3", tiles && "hidden")}
+        className="h-auto min-h-52 w-full p-3"
+        style={tiles ? { display: "none" } : undefined}
         role="group"
         aria-labelledby={titleId}
         data-view="map"
