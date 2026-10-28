@@ -97,7 +97,7 @@ export function MiniTable<T>({
   caption: string;
   columns: readonly Column<T>[];
   rows: readonly T[];
-  rowKey: (row: T) => string;
+  rowKey: (row: T, index: number) => string;
   limit?: number;
   noun?: string;
   note?: ReactNode;
@@ -125,8 +125,8 @@ export function MiniTable<T>({
             </tr>
           </thead>
           <tbody>
-            {shown.map((r) => (
-              <tr key={rowKey(r)} className="border-b border-border/50 align-top">
+            {shown.map((r, i) => (
+              <tr key={rowKey(r, i)} className="border-b border-border/50 align-top">
                 {columns.map((c) => (
                   <td
                     key={c.key}

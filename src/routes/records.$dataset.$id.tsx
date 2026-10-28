@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { datasetSuccessor } from "@/lib/external/groups";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
 import { pageHead } from "@/lib/corpus/head";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
@@ -8,6 +9,16 @@ import { BillForPublicLawRecord } from "@/components/legislation/BillForLaw";
 import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 
 export const Route = createFileRoute("/records/$dataset/$id")({
+  // A record of a retired collection keeps its id in the collection it moved into.
+  beforeLoad: ({ params }) => {
+    const next = datasetSuccessor(params.dataset);
+    if (next)
+      throw redirect({
+        to: "/records/$dataset/$id",
+        params: { dataset: next, id: params.id },
+        replace: true,
+      });
+  },
   loader: ({ context, params }) => {
     if (!/^[a-z0-9_]{1,80}$/.test(params.dataset)) throw new Error("Unknown dataset");
     return context.queryClient.ensureQueryData(entityQuery(params.dataset, params.id));

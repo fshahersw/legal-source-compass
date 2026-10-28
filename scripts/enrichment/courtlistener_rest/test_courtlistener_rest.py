@@ -90,6 +90,74 @@ class AttributionTests(unittest.TestCase):
         self.assertEqual(rc.attribution("O'Malley", parsed)["status"], "consistent")
 
 
+class DisclosureItemTests(unittest.TestCase):
+    """Release of 2026-10-27: redacted lines keep CourtListener's text, unreadable file names are listed with a label, mismatches and
+    conflicts stay out."""
+
+    def test_redacted_item_keeps_published_text(self):
+        g = rc.gift_item(2018, "11307", "HEE  TRUST", "CASH", "$14,000.00", "t")
+        self.assertEqual(g, {"year": 2018, "report_id": 11307, "redacted": True, "source": "HEE TRUST", "description": "CASH", "value_as_filed": "$14,000.00"})
+        r = rc.reimbursement_item(2018, "19555", "", "March 19-20, 2018", "", "Judge moot court competition", "transportation, lodging", "t")
+        self.assertTrue(r["redacted"])
+        self.assertIsNone(r["source"])  # empty as published stays empty, never filled in
+        self.assertEqual((r["purpose"], r["items_paid_or_provided"]), ("Judge moot court competition", "transportation, lodging"))
+        a = rc.agreement_item(2002, "25999", "2002", "Administrative Office of PA Courts", "f")
+        self.assertEqual((a["redacted"], a["date_as_filed"], a["parties_and_terms"]), (False, "2002", "Administrative Office of PA Courts"))
+
+    def test_clip(self):
+        self.assertIsNone(rc.clip_text("   "))
+        self.assertEqual(len(rc.clip_text("x" * 400)), 300)
+
+    def test_split_lists_match_and_unchecked_only(self):
+        items = {"gifts": [{"report_id": 1}, {"report_id": 2}, {"report_id": 3}], "reimbursements": [{"report_id": 2}, {"report_id": 9}], "agreements": []}
+        checks = {1: "match", 2: "unchecked", 3: "mismatch"}
+        listed, withheld = rc.split_disclosure_items(items, checks, conflict=False)
+        self.assertEqual([(x["report_id"], x["attribution"]) for x in listed["gifts"]], [(1, "checked"), (2, "not_checked")])
+        self.assertEqual([(x["report_id"], x["attribution"]) for x in listed["reimbursements"]], [(2, "not_checked")])
+        # report 9 is not among the person's reports: no file evidence ties it to the person, so it is not listed
+        self.assertEqual(withheld, {"other_surname": {"gifts": 1, "reimbursements": 1, "agreements": 0},
+                                    "attribution_conflict": {"gifts": 0, "reimbursements": 0, "agreements": 0}})
+
+    def test_conflict_lists_nothing(self):
+        items = {"gifts": [{"report_id": 1}], "reimbursements": [{"report_id": 2}], "agreements": [{"report_id": 1}]}
+        listed, withheld = rc.split_disclosure_items(items, {1: "match", 2: "unchecked"}, conflict=True)
+        self.assertEqual(listed, {"gifts": [], "reimbursements": [], "agreements": []})
+        self.assertEqual(withheld["attribution_conflict"], {"gifts": 1, "reimbursements": 1, "agreements": 1})
+        self.assertEqual(sum(withheld["other_surname"].values()), 0)
+
+    def test_no_cap(self):
+        items = {"gifts": [], "reimbursements": [{"report_id": 1}] * 400, "agreements": []}
+        listed, _ = rc.split_disclosure_items(items, {1: "match"}, conflict=False)
+        self.assertEqual(len(listed["reimbursements"]), 400)
+
+    def test_resolve_conflict(self):
+        f = rc.parse_filer_file
+        same = [f(AO + "Jones-RA.%20J3.%2009.%20WAW_R_17.tiff"), f(AO + "Jones-RA.%20J3.%2003.%20WAW_R_18.tiff")]
+        self.assertEqual(rc.resolve_conflict(same, ["match", "match"], "wawd"), {"resolution": "same_district", "district": "WAW", "held": []})
+        self.assertEqual(rc.resolve_conflict(same, ["match", "match"], None)["resolution"], "same_district")
+        two = [f(AO + "King-RB.%20J3.%2004.%20VAE_R_17.tiff"), f(AO + "King-RB.%20J3.%2004.%20VAE_R_18.tiff"),
+               f(AO + "King-RB.%20B.%2005.%20TXW_R_19.tiff"), None]
+        checks = ["match", "match", "match", "unchecked"]
+        self.assertEqual(rc.resolve_conflict(two, checks, "vaed"), {"resolution": "recorded_court", "district": "VAE", "held": [2, 3]})
+        # the recorded court is not the district most reports carry, or there is none: everything stays held
+        self.assertEqual(rc.resolve_conflict(two, checks, "ca4")["held"], [0, 1, 2, 3])
+        self.assertEqual(rc.resolve_conflict(two, checks, "txwb")["resolution"], "unresolved")
+        tie = [two[0], two[2]]
+        self.assertEqual(rc.resolve_conflict(tie, ["match", "match"], "vaed")["resolution"], "unresolved")
+
+    def test_split_holds_only_the_conflict_reports(self):
+        items = {"gifts": [{"report_id": 1}, {"report_id": 2}], "reimbursements": [], "agreements": []}
+        listed, withheld = rc.split_disclosure_items(items, {1: "match", 2: "match"}, True, {2})
+        self.assertEqual([x["report_id"] for x in listed["gifts"]], [1])
+        self.assertEqual(withheld["attribution_conflict"]["gifts"], 1)
+
+    def test_withheld_reason(self):
+        self.assertIsNone(rc.withheld_reason("match", False))
+        self.assertIsNone(rc.withheld_reason("unchecked", False))
+        self.assertEqual(rc.withheld_reason("mismatch", False), "other_surname")
+        self.assertEqual(rc.withheld_reason("match", True), "attribution_conflict")
+
+
 class HelperTests(unittest.TestCase):
     def test_split_names(self):
         self.assertEqual(rc.split_names("Kozinski, W. Fletcher, and Bybee"), ["Kozinski", "W. Fletcher", "Bybee"])

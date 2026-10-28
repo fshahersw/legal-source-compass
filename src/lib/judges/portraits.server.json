@@ -97,20 +97,6 @@
    "sourceLabel": "Wikipedia",
    "sourceUrl": "https://en.wikipedia.org/wiki/File:Judge_Anello.jpg"
   },
-  "153": {
-   "assetPath": "/judge-portraits/153.jpeg",
-   "sha256": "5cbd1a37fbdbf86284c11c707c8b268b9afa842b221522eaee33a8d39697b279",
-   "width": 210,
-   "height": 288,
-   "originalSha256": "7e8ad3296edd8ed04ae485f961be358cf75bd97c06d2e20326169014a8cf0c8f",
-   "originalWidth": 3199,
-   "originalHeight": 4396,
-   "license": "Work of State Government",
-   "artist": null,
-   "dateCreated": null,
-   "sourceLabel": "Provided by the Judiciary of Tennessee",
-   "sourceUrl": null
-  },
   "201": {
    "assetPath": "/judge-portraits/201.jpeg",
    "sha256": "efbb12bc74613ba7ef9b4c4de18d9211402f065343562c95ee73bf2d08efd80e",
@@ -425,7 +411,6 @@
   "82edeba9e777faa7a3e5097d59dcfff4": 106,
   "8a8126025f8bc9842ac3ea7cc93b378c": 1124,
   "a517a58d8edd7cd591d8d948c6e29ea4": 2978,
-  "a541216ed0772341c8fc96bdbf85e527": 153,
   "b43b24b47904266112219e5293baa9ec": 2568,
   "b72be075555be635e02bb8e7c7eeb999": 1564,
   "ccd8eb7afc69cb4651913ae0396d4a6d": 1844,

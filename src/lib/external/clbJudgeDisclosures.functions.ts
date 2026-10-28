@@ -1,8 +1,10 @@
 /**
  * A judge's financial disclosure reports in CourtListener (dataset clb_judge_disclosures, compiled by
  * scripts/enrichment/courtlistener_rest). Counts per report year and section; gifts, reimbursements and agreements as
- * CourtListener extracted them, listed only from reports whose original file name carries the person's surname, and never for a
- * person whose reports carry two numbered circuits (attribution conflict). A judge page reaches the record through the
+ * CourtListener extracted them (a line CourtListener marks redacted keeps its remaining published text), listed from reports
+ * whose original file name carries the person's surname and, labelled 'not_checked', from reports whose file name could not be
+ * read; never from a report whose file name carries another surname, and never for a person whose reports carry two numbered
+ * circuits (attribution conflict). A judge page reaches the record through the
  * judge_cl_crosswalk (linked tiers only). Stored JSON is validated here; malformed values are dropped, never repaired. Read-only.
  */
 import { createServerFn } from "@tanstack/react-start";
@@ -45,10 +47,15 @@ export type DisclosureYear = {
   pages: number | null;
   items: SectionCounts;
 };
+/** 'checked': the report's file name carries the surname; 'not_checked': the file name could not be read. */
+export type ItemAttribution = "checked" | "not_checked";
+type Withheld = { gifts: number; reimbursements: number; agreements: number };
 export type Gift = {
   year: number | null;
   reportId: number;
+  /** CourtListener marks part of the line redacted by the filer; the remaining published text is kept. */
   redacted: boolean;
+  attribution: ItemAttribution;
   source: string | null;
   description: string | null;
   valueAsFiled: string | null;
@@ -57,6 +64,7 @@ export type Reimbursement = {
   year: number | null;
   reportId: number;
   redacted: boolean;
+  attribution: ItemAttribution;
   source: string | null;
   datesAsFiled: string | null;
   location: string | null;
@@ -67,6 +75,7 @@ export type Agreement = {
   year: number | null;
   reportId: number;
   redacted: boolean;
+  attribution: ItemAttribution;
   dateAsFiled: string | null;
   partiesAndTerms: string | null;
 };
@@ -80,6 +89,10 @@ export type ReportRow = {
   filerCode: string | null;
   /** CourtListener's copy of the report, only when its path names exactly this person id. */
   pdf: string | null;
+  /** For a person marked as an attribution conflict: true when this report is held, false when its items are listed
+   * (it carries the district of the person's recorded court). Null for everyone else and for records built before the
+   * per-report rule. */
+  conflictHold: boolean | null;
 };
 export type JudgeDisclosures = {
   personId: number;
@@ -91,7 +104,10 @@ export type JudgeDisclosures = {
   years: DisclosureYear[];
   itemsTotal: SectionCounts;
   itemsRedacted: SectionCounts;
-  itemsWithheld: { gifts: number; reimbursements: number; agreements: number };
+  itemsWithheld: Withheld;
+  /** Why items are not listed: the report's file name carries another surname, or the person's reports carry two circuits.
+   * Null for a record built before the 2026-10-27 release (no split stored). */
+  itemsWithheldByReason: { otherSurname: Withheld; attributionConflict: Withheld } | null;
   gifts: Gift[];
   reimbursements: Reimbursement[];
   reimbursementsListed: number;
@@ -147,6 +163,8 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
         pages: count(o?.["pages"]),
         fileCheck: fc,
         filerCode: str(o?.["filer_code"], 24),
+        conflictHold:
+          typeof o?.["conflict_hold"] === "boolean" ? (o["conflict_hold"] as boolean) : null,
         pdf:
           pdf && pdf.startsWith(pdfPrefix) && pdf.endsWith(".pdf") && !pdf.includes("..")
             ? pdf
@@ -159,23 +177,36 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
   const status = att?.["status"];
   if (status !== "consistent" && status !== "conflict" && status !== "unchecked") return null;
   const conflict = status === "conflict";
-  // items are shown only from reports that passed the surname check, and never for a conflict
-  const shown = new Set(
-    conflict ? [] : reportList.filter((r) => r.fileCheck === "match").map((r) => r.id),
+  // Items are shown from reports whose file name carries the surname ('checked') and from reports whose file name could not be
+  // read ('not_checked', labelled); never from a report whose file name carries another surname. For a conflict, only from
+  // reports the build explicitly marks as not held (conflict_hold === false); a record without that mark shows nothing.
+  // The label comes from the report list, not from the stored item.
+  const shownCheck = new Map<number, ItemAttribution>(
+    reportList.flatMap((r): [number, ItemAttribution][] =>
+      conflict && r.conflictHold !== false
+        ? []
+        : r.fileCheck === "match"
+          ? [[r.id, "checked"]]
+          : r.fileCheck === "unchecked" && !conflict
+            ? [[r.id, "not_checked"]]
+            : [],
+    ),
   );
+  const shown = new Set(shownCheck.keys());
+  // A redacted line keeps the text CourtListener published around the filer's redaction (marked by `redacted`).
   const gifts: Gift[] = arr(p["gifts"]).flatMap((x) => {
     const o = obj(x);
     const rid = reportId(o?.["report_id"], shown);
     if (rid == null) return [];
-    const redacted = o?.["redacted"] === true;
     return [
       {
         year: year(o?.["year"]),
         reportId: rid,
-        redacted,
-        source: redacted ? null : str(o?.["source"]),
-        description: redacted ? null : str(o?.["description"]),
-        valueAsFiled: redacted ? null : str(o?.["value_as_filed"]),
+        redacted: o?.["redacted"] === true,
+        attribution: shownCheck.get(rid)!,
+        source: str(o?.["source"]),
+        description: str(o?.["description"]),
+        valueAsFiled: str(o?.["value_as_filed"]),
       },
     ];
   });
@@ -183,17 +214,17 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
     const o = obj(x);
     const rid = reportId(o?.["report_id"], shown);
     if (rid == null) return [];
-    const redacted = o?.["redacted"] === true;
     return [
       {
         year: year(o?.["year"]),
         reportId: rid,
-        redacted,
-        source: redacted ? null : str(o?.["source"]),
-        datesAsFiled: redacted ? null : str(o?.["dates_as_filed"]),
-        location: redacted ? null : str(o?.["location"]),
-        purpose: redacted ? null : str(o?.["purpose"]),
-        itemsPaid: redacted ? null : str(o?.["items_paid_or_provided"]),
+        redacted: o?.["redacted"] === true,
+        attribution: shownCheck.get(rid)!,
+        source: str(o?.["source"]),
+        datesAsFiled: str(o?.["dates_as_filed"]),
+        location: str(o?.["location"]),
+        purpose: str(o?.["purpose"]),
+        itemsPaid: str(o?.["items_paid_or_provided"]),
       },
     ];
   });
@@ -201,14 +232,14 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
     const o = obj(x);
     const rid = reportId(o?.["report_id"], shown);
     if (rid == null) return [];
-    const redacted = o?.["redacted"] === true;
     return [
       {
         year: year(o?.["year"]),
         reportId: rid,
-        redacted,
-        dateAsFiled: redacted ? null : str(o?.["date_as_filed"]),
-        partiesAndTerms: redacted ? null : str(o?.["parties_and_terms"]),
+        redacted: o?.["redacted"] === true,
+        attribution: shownCheck.get(rid)!,
+        dateAsFiled: str(o?.["date_as_filed"]),
+        partiesAndTerms: str(o?.["parties_and_terms"]),
       },
     ];
   });
@@ -229,7 +260,15 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
         ]
       : [];
   });
-  const w = obj(p["items_withheld"]);
+  const withheldOf = (v: unknown): Withheld => {
+    const o = obj(v);
+    return {
+      gifts: count(o?.["gifts"]) ?? 0,
+      reimbursements: count(o?.["reimbursements"]) ?? 0,
+      agreements: count(o?.["agreements"]) ?? 0,
+    };
+  };
+  const byReason = obj(p["items_withheld_by_reason"]);
   const statsRecord = str(p["stats_record"]);
   return {
     personId,
@@ -241,11 +280,14 @@ export function parseJudgeDisclosures(raw: unknown, personId: number): JudgeDisc
     years: years.sort((a, b) => a.year - b.year),
     itemsTotal,
     itemsRedacted,
-    itemsWithheld: {
-      gifts: count(w?.["gifts"]) ?? 0,
-      reimbursements: count(w?.["reimbursements"]) ?? 0,
-      agreements: count(w?.["agreements"]) ?? 0,
-    },
+    itemsWithheld: withheldOf(p["items_withheld"]),
+    itemsWithheldByReason:
+      byReason && obj(byReason["other_surname"]) && obj(byReason["attribution_conflict"])
+        ? {
+            otherSurname: withheldOf(byReason["other_surname"]),
+            attributionConflict: withheldOf(byReason["attribution_conflict"]),
+          }
+        : null,
     gifts,
     reimbursements,
     reimbursementsListed: reimbursements.length,

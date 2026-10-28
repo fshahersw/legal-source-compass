@@ -176,7 +176,7 @@ function inSiteChrome(node) {
   return false;
 }
 
-// ---- MND (Drupal 7 MDL node): orders in horizontal-tab field groups; PDF anchors sit in <p> blocks outside field--name-body ----
+// Drupal MDL content pages (MND node tabs, NYSM hubs, LAED quicktabs, PAWD): PDF anchors outside field--name-body.
 export function parseMndMdl({ html, pageUrl }) {
   const root = parseHtml(html);
   const scope = findFirst(root, n => hasClass(n, 'node--mdl'))
@@ -193,13 +193,13 @@ export function parseMndMdl({ html, pageUrl }) {
     const cls = classifyUrl(a.attrs.href, pageUrl);
     if (!DOCUMENT_KINDS.has(cls.kind)) continue;
     const label = textOf(a);
-    const paragraph = ancestorOf(a, n => n.tag === 'p') ?? a;
+    const paragraph = ancestorOf(a, n => n.tag === 'p') ?? ancestorOf(a, n => n.tag === 'span' && hasClass(n, 'file')) ?? a;
     const paraText = textOf(paragraph);
     const dateText = /^(\d{1,2}\/\d{1,2}\/\d{4})\b/.exec(paraText)?.[1] ?? null;
-    const title = paraText && paraText !== label ? paraText : label;
+    const title = (a.attrs.title?.trim() || (paraText && paraText !== label ? paraText : label));
     ordinal++;
     rows.push(rowBase({ ctx, node: paragraph, section: page.title, ordinal, href: a.attrs.href, label, title, dateText, docNumber: null,
-      extra: { title_source: paraText !== label ? 'paragraph_text' : 'link_text', date_source: dateText ? 'paragraph_leading_date' : null } }));
+      extra: { title_source: a.attrs.title ? 'link_title_attribute' : paraText !== label ? 'paragraph_text' : 'link_text', date_source: dateText ? 'paragraph_leading_date' : null } }));
   }
   return { page, rows };
 }
@@ -371,6 +371,28 @@ export function parseJpmlPanelOrders({ html, pageUrl }) {
   return { page, rows };
 }
 
+// ---- SCD (classic ASP MDL subsite): <ul><li><a href=".../orders/*.pdf"> on orders.asp ----
+export function parseScdMdlOrders({ html, pageUrl }) {
+  const root = parseHtml(html);
+  const page = { title: pageTitle(root) };
+  const ctx = ctxOf(html, pageUrl, []);
+  const rows = []; let ordinal = 0;
+  const seen = new Set();
+  for (const a of findAll(root, n => n.tag === 'a' && n.attrs.href)) {
+    const cls = classifyUrl(a.attrs.href, pageUrl);
+    if (cls.kind !== 'pdf_direct') continue;
+    if (!/\/mdl-\d+\/orders\//i.test(cls.url) || seen.has(cls.url)) continue;
+    seen.add(cls.url);
+    const holder = ancestorOf(a, n => n.tag === 'li') ?? a;
+    ordinal++;
+    const label = textOf(a);
+    rows.push(rowBase({ ctx, node: holder, section: 'Case Management Orders', ordinal, href: a.attrs.href, label,
+      title: a.attrs.title?.trim() ? a.attrs.title.trim() : label, dateText: null, docNumber: null,
+      extra: { title_source: a.attrs.title ? 'link_title_attribute' : 'link_text' } }));
+  }
+  return { page, rows };
+}
+
 // Index pages (lists of MDLs): anchors whose text names an MDL. Used only to prove which MDL pages a court currently lists.
 export function parseIndexLinks({ html, pageUrl }) {
   const root = parseHtml(html);
@@ -384,4 +406,4 @@ export function parseIndexLinks({ html, pageUrl }) {
   return { page: { title: textOf(findFirst(root, n => n.tag === 'title') ?? NODE_NONE) || null }, rows: [], index_links: [...seen.values()] };
 }
 
-export const FAMILIES = { 'njd-body': parseNjdBody, 'mnd-mdl-page': parseMndMdl, 'paed-orders-table': parsePaedOrders, 'ilnd-mdl-details': parseIlndMdlDetails, 'moed-mdl-page': parseMoedMdl, 'txnd-docket-table': parseTxndDocket, 'jpml-panel-orders': parseJpmlPanelOrders, 'index-links': parseIndexLinks };
+export const FAMILIES = { 'njd-body': parseNjdBody, 'mnd-mdl-page': parseMndMdl, 'paed-orders-table': parsePaedOrders, 'ilnd-mdl-details': parseIlndMdlDetails, 'moed-mdl-page': parseMoedMdl, 'txnd-docket-table': parseTxndDocket, 'scd-mdl-orders': parseScdMdlOrders, 'jpml-panel-orders': parseJpmlPanelOrders, 'index-links': parseIndexLinks };

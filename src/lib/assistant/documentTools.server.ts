@@ -23,7 +23,7 @@ export const DOCUMENT_TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "search_documents",
     description:
-      'Search the text of the stored court filings of the dockets this workspace tracks (orders, opinions, motions, briefs, transcripts from the docket sheets, the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number (or "none" for filings with no MDL linked), document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL (null when no explicit listing links the filing to an MDL; never guess one), docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings the docket source marks as held or sealed are listed but never searched or quoted; scanned filings without text are not searched.',
+      'Search the text of the stored court filings of the dockets this workspace tracks (orders, opinions, motions, briefs, transcripts from the docket sheets, the matter pages and court MDL pages). English word forms; "quoted phrase", or, -word. Optional filters: court id (e.g. njd, cand), MDL number (or "none" for filings with no MDL linked), document type, filed_from / filed_to (YYYY-MM-DD) and sort (relevance, newest, oldest). Leave query empty to list filings by date. Returns each filing\'s title, type, court, MDL (null when no explicit listing links the filing to an MDL; never guess one), docket number, filing date and the best matching passages with their page numbers, plus the link that opens the PDF at that page. Filings the docket source marks as held or sealed, and filings whose docket text carries contact or hearing-access details, are listed but never searched or quoted; scanned filings without text are not searched.',
     input_schema: {
       type: "object",
       properties: {
@@ -129,7 +129,7 @@ async function searchDocumentsTool(input: Record<string, unknown>): Promise<Tool
         total_is_lower_bound: res.capped,
         page: res.page,
         has_more: res.hasMore,
-        note: "Passages are the stored text of the page named; matched words are marked «». Quote a passage only with its page, and open the link to check it. Filings with sealed or redacted material are not searched, so absence here is not proof a filing does not exist.",
+        note: "Passages are the stored text of the page named; matched words are marked «». Quote a passage only with its page, and open the link to check it. Filings on entries the docket source flags as sealed, filings whose docket text carries contact or hearing-access details, and scanned filings without text are not searched, so absence here is not proof a filing does not exist.",
         results: rows,
       }),
     ),

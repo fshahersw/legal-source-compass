@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import {
   datasetLabel,
+  datasetSuccessor,
   duplicateLookingIds,
   normalizeItem,
   pageRoutePatterns,
@@ -69,6 +70,20 @@ describe("permanent record destinations", () => {
   });
 });
 
+describe("datasetSuccessor", () => {
+  it("sends the retired staged regulatory-links id to the published collection", () => {
+    expect(datasetSuccessor("sw_matter_regulatory_links_v1_staged")).toBe(
+      "sw_matter_regulatory_links_v1",
+    );
+  });
+  it("leaves live and unknown ids alone, including inherited object keys", () => {
+    expect(datasetSuccessor("sw_matter_regulatory_links_v1")).toBeNull();
+    expect(datasetSuccessor("sw_matter_dockets_v1_superseded")).toBeNull();
+    expect(datasetSuccessor("constructor")).toBeNull();
+    expect(datasetSuccessor("")).toBeNull();
+  });
+});
+
 describe("sectionOf", () => {
   it("groups datasets by explicit id and prefix", () => {
     expect(sectionOf("court_spine")).toBe("courts");
@@ -77,6 +92,7 @@ describe("sectionOf", () => {
     expect(sectionOf("agency_safety_openfda_crl")).toBe("safety");
     expect(sectionOf("indiana_code")).toBe("law");
     expect(sectionOf("mass_tort_authority_evidence")).toBe("law");
+    expect(sectionOf("large_text_official")).toBe("sources");
     expect(sectionOf("something_new")).toBe("other");
   });
 });

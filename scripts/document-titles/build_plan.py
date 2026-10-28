@@ -97,8 +97,6 @@ def main():
                       "not_extracted": "not_extracted"}.get(status, status)
             if art and art["mime"] != "application/pdf" and status in ("unreadable", "object_missing"):
                 reason = "not_a_pdf" if status == "unreadable" else reason
-        if title and fp and D.policy_withheld(fp["lines"], title):
-            title, method, reason = None, None, "policy_withheld"
         if title:
             new_title, m, why = title, method, None
         else:
@@ -125,8 +123,6 @@ def main():
                 continue
             text = page_text(r)
             title, method, reason = D.title_from_markdown(text)
-            if title and D.POLICY_WITHHELD_RE.search(title + " " + text[:3000]):
-                title, method, reason = None, None, "policy_withheld"
             if title:
                 new_title, m, why, th = title, method, None, sha256(text)
             else:

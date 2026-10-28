@@ -808,7 +808,11 @@ def ssl_context() -> ssl.SSLContext:
     with contextlib.suppress(Exception):
         ctx.load_default_certs()
     ccr = pathlib.Path("/root/.ccr/ca-bundle.crt")
-    if ccr.exists():
+    try:
+        have_ccr = ccr.exists()
+    except OSError:  # /root is unreadable for non-root users (CI runners)
+        have_ccr = False
+    if have_ccr:
         ctx.load_verify_locations(cafile=str(ccr))
     for pem in sorted(CERT_DIR.glob("*.pem")):
         ctx.load_verify_locations(cafile=str(pem))
@@ -1347,7 +1351,10 @@ class RunContext:
         if self.meta.hosts and host not in self.meta.hosts:
             raise ModelError(f"{url} is not on a declared publisher host {self.meta.hosts}")
         fetched = self.fetcher.get(url, data=data, headers=headers, method=method, accept_status=accept_status)
-        self._record_source(fetched, keep_raw=keep_raw)
+        # A page the caller accepted as missing (e.g. 404 for an unused chapter number in a range) is no source of any
+        # section; recording it would only fail verify.py's source_status check (review run 2026-10-27, OR).
+        if fetched.status in (200, 206):
+            self._record_source(fetched, keep_raw=keep_raw)
         return fetched
 
     def prefetch(self, urls: Iterable[str]) -> None:

@@ -95,7 +95,7 @@ export const MATTERS = {
   '2437': { name: 'In re Domestic Drywall Antitrust Litigation', court_id: 'paed', host: 'www.paed.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2437', pages: [{ id: 'paed-2437-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.paed.uscourts.gov/mdl/mdl2437/orders' }, { id: 'paed-2437-landing', role: 'mdl_page', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl/mdl-2437-re-domestic-drywall-antitrust-litigation' }], index_pages: [] },
   '2724': { name: 'In re Generic Pharmaceuticals Pricing Antitrust Litigation', court_id: 'paed', host: 'www.paed.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2724', pages: [{ id: 'paed-2724-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.paed.uscourts.gov/mdl/mdl2724/orders' }, { id: 'paed-2724-landing', role: 'mdl_page', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl/mdl-2724-re-generic-pharmaceuticals-pricing-antitrust-litigation' }], index_pages: [] },
   '3094': { name: 'In re Glucagon-like Peptide-1 Receptor Agonists (GLP-1 RAs) Products Liability Litigation (GI Injuries)', court_id: 'paed', host: 'www.paed.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3094', pages: [{ id: 'paed-3094-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.paed.uscourts.gov/mdl/mdl3094/orders' }, { id: 'paed-3094-landing', role: 'mdl_page', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl/mdl-3094-re-glucagon-peptide-1-receptor-agonists-glp-1-ras-products-liability-litigation-gi' }], index_pages: [] },
-  // N.D. Tex. MDL docket tables (Firecrawl map of txnd.uscourts.gov; 3114 already tier-1).
+  // N.D. Tex. MDL docket tables (Firecrawl map of txnd.uscourts.gov; 3114 tier-1; 2244 captured in b029-doc — do not recapture).
   '2244': {
     name: 'In re DePuy Orthopaedics, Inc., Pinnacle Hip Implant Products Liability Litigation', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2,
     case_number: { literal: '3:11-md-02244', page_id: 'txnd-2244-mdl', note: 'printed in the MDL page heading' },
@@ -162,6 +162,13 @@ export const MATTERS = {
   '3110': { name: 'In re Granulated Sugar Antitrust Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3110', pages: [{ id: 'mnd-3110-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/granulated-sugar-antitrust-litigation' }], index_pages: [] },
   '3155': { name: 'In re Air Crash at Toronto Pearson International Airport on January 5, 2025', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3155', pages: [{ id: 'mnd-3155-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/air-crash-toronto-pearson-international-airport' }], index_pages: [] },
   '3128': { name: 'In re Dividend Solar Finance LLC and Fifth Third Bank Sales and Lending Practices Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3128', pages: [{ id: 'mnd-3128-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/dividend-solar-finance-llc-and-fifth-third-bank-sales-and-lending-practices-litigation' }], index_pages: [] },
+  // D. Kan. MDL 2887 (Hill's pet food; Drupal content node with direct PDFs under /sites/ksd/files/).
+  '2887': {
+    name: "In re Hill's Pet Nutrition, Inc., Dog Food Products Liability Litigation", court_id: 'ksd', host: 'www.ksd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2887',
+    pages: [{ id: 'ksd-2887-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.ksd.uscourts.gov/content/hills-pet-nutrition-inc-dog-food-products-liability-litigation-19-md-2887' }],
+    index_pages: [],
+  },
   // S.D. Ill. MDL 3004 (Paraquat; orders table with direct PDFs on litigation landing page).
   '3004': {
     name: 'In re Paraquat Products Liability Litigation', court_id: 'ilsd', host: 'www.ilsd.uscourts.gov', tier: 2,
@@ -183,6 +190,232 @@ export const MATTERS = {
     pages: [{ id: 'kyed-2809-orders', role: 'orders_table', family: 'njd-body', url: 'https://www.kyed.uscourts.gov/518-md-02809-kkc-orders' }],
     index_pages: [],
   },
+  // N.D. Ill. MDL detail pages (Firecrawl map of ilnd.uscourts.gov, 2026-10-06; 3060 already tier-1).
+  '3026': {
+    name: 'MDL 3026 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 3026',
+    pages: [{ id: 'ilnd-3026-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?Lbz1nwUsE4JWF/IQJN6GpA==' }],
+    index_pages: ['ilnd-mdl-index'],
+  },
+  '2545': { name: 'MDL No. 2545 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2545', pages: [{ id: 'ilnd-2545-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?UGlDS1bLxpRHyfdf3l5DJQ==' }], index_pages: [] },
+  '3079': { name: 'MDL No. 3079 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3079', pages: [{ id: 'ilnd-3079-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?fnu/YDnD0O7Y8SjpUhHmZA==' }], index_pages: [] },
+  '2817': { name: 'MDL No. 2817 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2817', pages: [{ id: 'ilnd-2817-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?ezwhUXOtzntNkzYvqtYcbw==' }], index_pages: [] },
+  '2590': { name: 'MDL No. 2590 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2590', pages: [{ id: 'ilnd-2590-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?q/P7IHfEgHbGqjDhhyfVMQ==' }], index_pages: [] },
+  '1715': { name: 'MDL No. 1715 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 1715', pages: [{ id: 'ilnd-1715-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?fw+ahVTiqBOHSZVwUazwkw==' }], index_pages: [] },
+  '2948': { name: 'MDL No. 2948 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2948', pages: [{ id: 'ilnd-2948-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?i3mxb9gEBxL2sL90OMEQ2A==' }], index_pages: [] },
+  '2492': {
+    name: 'MDL No. 2492 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2492',
+    pages: [
+      { id: 'ilnd-2492-nationwide', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?yiHo4wGm56zocvFjUmv2sQ==' },
+      { id: 'ilnd-2492-single', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?yiHo4wGm56ytS3xx5DcbTw==' },
+    ],
+    index_pages: [],
+  },
+  '2416': { name: 'MDL No. 2416 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2416', pages: [{ id: 'ilnd-2416-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?NJtobMcq3xFbXsKWm4wHXQ==' }], index_pages: [] },
+  '3030': { name: 'MDL No. 3030 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3030', pages: [{ id: 'ilnd-3030-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?uTU+z1lws6Mhwc03FEqvrg==' }], index_pages: [] },
+  '2967': { name: 'MDL No. 2967 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2967', pages: [{ id: 'ilnd-2967-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?oPAvB95Dk3B80hctYPQzdQ==' }], index_pages: [] },
+  '3037': { name: 'MDL No. 3037 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3037', pages: [{ id: 'ilnd-3037-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?Y/EMwl0+f9LcVNqgbUFRDw==' }], index_pages: [] },
+  // S.D. Ohio MDL 2846 (Firecrawl map; direct public PDFs on select-orders page).
+  '2846': {
+    name: 'In re E.I. du Pont de Nemours and Company C-8 Personal Injury Litigation', court_id: 'ohsd', host: 'www.ohsd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 2846',
+    pages: [{ id: 'ohsd-2846-orders-by-date', role: 'orders_table', family: 'njd-body', url: 'https://www.ohsd.uscourts.gov/select-orders-date-mdl-2846' }],
+    index_pages: [],
+  },
+  // D.S.C. MDL 2873 (Firecrawl map; direct PDFs on orders.asp).
+  '2873': {
+    name: 'In re Aqueous Film-Forming Foam Products Liability Litigation', court_id: 'scd', host: 'www.scd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 2873',
+    pages: [{ id: 'scd-2873-orders', role: 'orders_table', family: 'scd-mdl-orders', url: 'https://www.scd.uscourts.gov/mdl-2873/orders.asp' }],
+    index_pages: [],
+  },
+  // E.D. La. MDL case-of-interest pages (mnd-mdl-page; direct PDFs under /sites/default/files/).
+  '2454': {
+    name: "In re Franck's Lab, Inc. Products Liability Litigation", court_id: 'laed', host: 'www.laed.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2454',
+    pages: [{ id: 'laed-2454-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.laed.uscourts.gov/case-information/mdl-mass-class-action/francks' }],
+    index_pages: [],
+  },
+  '3023': {
+    name: 'In re Taxotere (Docetaxel) Eye Injury Products Liability Litigation', court_id: 'laed', host: 'www.laed.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3023',
+    pages: [{ id: 'laed-3023-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.laed.uscourts.gov/case-information/mdl-mass-class-action/taxotere-eye' }],
+    index_pages: [],
+  },
+  // W.D. Pa. MDL pages (direct PDFs under /sites/pawd/files/).
+  '3014': {
+    name: 'In re Philips Recalled CPAP, Bi-Level PAP, and Mechanical Ventilator Products Litigation', court_id: 'pawd', host: 'www.pawd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3014',
+    pages: [{ id: 'pawd-3014-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.pawd.uscourts.gov/mdl-3014-re-philips-recalled-cpap-bi-level-pap-and-mechanical-ventilator-products-litigation' }],
+    index_pages: ['pawd-mdl-index'],
+  },
+  '3021': {
+    name: 'In re SoClean Inc. Marketing, Sales Practices and Products Liability Litigation', court_id: 'pawd', host: 'www.pawd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3021',
+    pages: [{ id: 'pawd-3021-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.pawd.uscourts.gov/mdl-3021-re-soclean-inc-marketing-sales-practices-products-liability-litigation' }],
+    index_pages: ['pawd-mdl-index'],
+  },
+  '2862': {
+    name: 'In re Diisocyanates Antitrust Litigation', court_id: 'pawd', host: 'www.pawd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2862',
+    pages: [{ id: 'pawd-2862-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.pawd.uscourts.gov/mdl-2862-re-diisocyanates-antitrust-litigation' }],
+    index_pages: ['pawd-mdl-index'],
+  },
+  // N.D. Ala. MDL 2406 (Drupal body field; direct PDFs under /sites/alnd/files/).
+  '2406': {
+    name: 'In re Blue Cross Blue Shield Antitrust Litigation', court_id: 'alnd', host: 'www.alnd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2406',
+    pages: [{ id: 'alnd-2406-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.alnd.uscourts.gov/blue-crossblue-shield-mdl-2406' }],
+    index_pages: ['alnd-mdl-cases'],
+  },
+  // W.D. Tenn. MDL hub (one page; rows scoped per matter via listing_href_substring).
+  '3127': {
+    name: 'In re Evolve Bank & Trust Customer Data Security Breach Litigation', court_id: 'tnwd', host: 'www.tnwd.uscourts.gov', tier: 2,
+    case_number: { literal: '2:24-md-3127', page_id: 'tnwd-mdl-hub', note: 'printed as the lead docket number in the court MDL hub section for this matter' },
+    printed_mdl_literal: 'MDL 3127', listing_href_substring: '24-3127',
+    pages: [{ id: 'tnwd-mdl-hub', role: 'mdl_page', family: 'njd-body', url: 'https://www.tnwd.uscourts.gov/mdl-cases' }],
+    index_pages: [],
+  },
+  '3035': {
+    name: 'In re AME Church Employee Retirement Fund Litigation', court_id: 'tnwd', host: 'www.tnwd.uscourts.gov', tier: 2,
+    case_number: { literal: '1:22-md-3035', page_id: 'tnwd-mdl-hub', note: 'printed as the lead docket number in the court MDL hub section for this matter' },
+    printed_mdl_literal: 'MDL 3035', listing_href_substring: '22-3035',
+    pages: [{ id: 'tnwd-mdl-hub', role: 'mdl_page', family: 'njd-body', url: 'https://www.tnwd.uscourts.gov/mdl-cases' }],
+    index_pages: [],
+  },
+  // S.D. Ind. MDL 2570 (Cook Medical IVC; direct PDFs on one orders page).
+  '2570': {
+    name: 'In re Cook Medical, Inc., IVC Filters Marketing, Sales Practices and Products Liability Litigation', court_id: 'insd', host: 'www.insd.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL 2570', page_id: 'insd-2570-info', note: 'printed on the court MDL case information page' },
+    pages: [
+      { id: 'insd-2570-info', role: 'mdl_page', family: 'njd-body', url: 'https://www.insd.uscourts.gov/mdl-case-information' },
+      { id: 'insd-2570-orders', role: 'orders_table', family: 'njd-body', url: 'https://www.insd.uscourts.gov/cook-mdl-case-management' },
+    ],
+    index_pages: [],
+  },
+  // E.D. Wis. MDL pages (one dedicated page per matter; direct PDFs under /sites/wied/files/).
+  '2439': {
+    name: 'In re Subway Footlong Sandwich Marketing and Sales Practices Litigation', court_id: 'wied', host: 'www.wied.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL No. 2439', page_id: 'wied-2439-mdl', note: 'printed in the page heading on the court MDL page' },
+    pages: [{ id: 'wied-2439-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.wied.uscourts.gov/mdl-no-2439-re-subway-footlong-sandwich-marketing-and-sales-practices-litigation' }],
+    index_pages: ['wied-mdl-index'],
+  },
+  '2688': {
+    name: 'In re Windsor Wood Clad Window Products Liability Litigation', court_id: 'wied', host: 'www.wied.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL No. 2688', page_id: 'wied-2688-mdl', note: 'printed in the page heading on the court MDL page' },
+    pages: [{ id: 'wied-2688-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.wied.uscourts.gov/mdl-no-2688-re-windsor-wood-clad-window-products-liability-litigation' }],
+    index_pages: ['wied-mdl-index'],
+  },
+  // W.D. Ky. MDL 2016 (Rhino ATV; per-MDL orders page — parsed PDF URLs are 2016-specific).
+  '2016': {
+    name: 'In re Yamaha Motor Corp. Rhino ATV Products Liability Litigation', court_id: 'kywd', host: 'www.kywd.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL 2016', page_id: 'kywd-2016-orders', note: 'printed in the page title on the court MDL orders page' },
+    pages: [{ id: 'kywd-2016-orders', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.kywd.uscourts.gov/multidistrict-litigation/mdl-2016/orders' }],
+    index_pages: [],
+  },
+  // M.D. Pa. MDL 2816 (Sorin 3T; dedicated content page, direct PDFs under /sites/pamd/files/).
+  '2816': {
+    name: 'In re Sorin 3T Heater-Cooler System Products Liability Litigation', court_id: 'pamd', host: 'www.pamd.uscourts.gov', tier: 2,
+    case_number: { literal: 'MDL 2816', page_id: 'pamd-2816-mdl', note: 'printed on the court MDL content page' },
+    pages: [{ id: 'pamd-2816-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.pamd.uscourts.gov/content/118-md-02816-sorin' }],
+    index_pages: [],
+  },
+  // E.D. Va. MDL pages (Drupal field--name-body; direct PDFs under /sites/vaed/files/).
+  '3111': {
+    name: 'In re Capital One 360 Savings Account Interest Rate Litigation', court_id: 'vaed', host: 'www.vaed.uscourts.gov', tier: 2,
+    case_number: { literal: '1:24-md-3111', page_id: 'vaed-3111-mdl', note: 'printed in the page title and body' },
+    pages: [{ id: 'vaed-3111-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.vaed.uscourts.gov/capital-one-360-savings-account-interest-rate-litigation-124-md-3111' }],
+    index_pages: [],
+  },
+  '2915': {
+    name: 'In re Capital One Data Security Breach Litigation', court_id: 'vaed', host: 'www.vaed.uscourts.gov', tier: 2,
+    case_number: { literal: '1:19MD2915', page_id: 'vaed-2915-mdl', note: 'printed in the page title (site nav may mention other MDLs; PDFs on this page are 2915-specific)' },
+    pages: [{ id: 'vaed-2915-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.vaed.uscourts.gov/119md2915-capital-one' }],
+    index_pages: [],
+  },
+  '2836': {
+    name: 'In re Zetia (Ezetimibe) Antitrust Litigation', court_id: 'vaed', host: 'www.vaed.uscourts.gov', tier: 2,
+    case_number: { literal: '2:18md2836', page_id: 'vaed-2836-mdl', note: 'printed in the page title and body' },
+    pages: [{ id: 'vaed-2836-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.vaed.uscourts.gov/zetia-ezetimibe-antitrust-litigation-218md2836' }],
+    index_pages: [],
+  },
+  // N.D. Ga. MDL 2782 (Ethicon Physiomesh; per-MDL listing pages with direct PDFs under /sites/gand/files/rws2782_*).
+  '2782': {
+    name: 'In re Ethicon Physiomesh Flexible Composite Hernia Mesh Products Liability Litigation', court_id: 'gand', host: 'www.gand.uscourts.gov', tier: 2,
+    case_number: { literal: '1:17-md-2782', page_id: 'gand-2782-ppo', note: 'printed in the practice-and-procedure orders page title' },
+    pages: [
+      { id: 'gand-2782-ppo', role: 'practice_procedure_orders', family: 'njd-body', url: 'https://www.gand.uscourts.gov/17md2782/practice-procedure-orders' },
+      { id: 'gand-2782-orders', role: 'orders_and_opinions', family: 'njd-body', url: 'https://www.gand.uscourts.gov/17md2782/orders-and-opinions' },
+    ],
+    index_pages: [],
+  },
+  // D. Mont. MDL 3126 (Snowflake data breach; Drupal MDL node with direct PDFs on litigation page).
+  '3126': {
+    name: 'In re Snowflake Inc. Data Security Breach Litigation', court_id: 'mtd', host: 'www.mtd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3126',
+    pages: [{ id: 'mtd-3126-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mtd.uscourts.gov/snowflake-data-security-breach-litigation' }],
+    index_pages: [],
+  },
+  // M.D. Fla. MDL 3006 (Tasigna; cases-of-interest page with direct order PDFs under /sites/flmd/files/documents/orders/).
+  '3006': {
+    name: 'In re Tasigna (Nilotinib) Products Liability Litigation', court_id: 'flmd', host: 'www.flmd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3006',
+    pages: [{ id: 'flmd-3006-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.flmd.uscourts.gov/cases-of-interest/tasigna-nilotinib-products-liability-litigation-mdl-no-3006' }],
+    index_pages: [],
+  },
+  // S.D. Fla. MDL 3015 (J&J aerosol sunscreen; dedicated case page with direct PDFs under /sites/flsd/files/).
+  '3015': {
+    name: 'In re Johnson & Johnson Aerosol Sunscreen Marketing, Sales Practices and Products Liability Litigation', court_id: 'flsd', host: 'www.flsd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3015',
+    pages: [{ id: 'flsd-3015-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.flsd.uscourts.gov/21-md-3015-singhal-%E2%80%93-re-johnson-johnson-aerosol-sunscreen-marketing-sales-practices-and-products' }],
+    index_pages: [],
+  },
+  // D. Mass. MDL hub (shared HTML; each matter’s order PDFs live under /caseinfo/pdf/mdl/<mdl>/ only).
+  '3083': {
+    name: 'In re MOVEit Customer Data Security Breach Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:23-md-3083', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 3083 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 3083', listing_href_substring: 'pdf/mdl/3083',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '3029': {
+    name: 'In re Covidien Hernia Mesh Products Liability Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:22-md-03029', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 3029 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 3029', listing_href_substring: 'pdf/mdl/3029',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '2938': {
+    name: 'In re Evenflo Company, Inc., Products Liability Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:20-md-02938', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 2938 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 2938', listing_href_substring: 'pdf/mdl/2938',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '2768': {
+    name: 'In re Stryker LFIT V40 Femoral Head Products Liability Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:17-md-02768', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 2768 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 2768', listing_href_substring: 'pdf/mdl/2768',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '2566': {
+    name: 'In re Telexfree Securities Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '4:14-md-2566', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 2566 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 2566', listing_href_substring: 'pdf/mdl/2566',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  // D. Md. MDL 2775 (only pending MDL; orders listed on /mdl_documents).
+  '2775': {
+    name: 'In re Smith & Nephew Birmingham Hip Resurfacing (BHR) Hip Implant Products Liability Litigation', court_id: 'mdd', host: 'www.mdd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2775',
+    pages: [
+      { id: 'mdd-2775-landing', role: 'mdl_page', family: 'index-links', url: 'https://www.mdd.uscourts.gov/re-smith-nephew-birmingham-hip-resurfacing-bhr-hip-implant-products-liability-litigation-mdl-no2775' },
+      { id: 'mdd-2775-documents', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mdd.uscourts.gov/mdl_documents' },
+    ],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
@@ -195,6 +428,9 @@ export const INDEX_PAGES = {
   'mnd-mdl-cases': { id: 'mnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.mnd.uscourts.gov/mdl-cases' },
   // JPML lists only the CURRENT hearing session's orders here (older PDFs stay on the site under predictable file names, see build-jpml-queue.mjs).
   'jpml-panel-orders': { id: 'jpml-panel-orders', role: 'jpml_panel_orders', family: 'jpml-panel-orders', url: 'https://www.jpml.uscourts.gov/panel-orders' },
+  'pawd-mdl-index': { id: 'pawd-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.pawd.uscourts.gov/mdl' },
+  'alnd-mdl-cases': { id: 'alnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.alnd.uscourts.gov/mdl-cases' },
+  'wied-mdl-index': { id: 'wied-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.wied.uscourts.gov/multi-district-litigation-mdl' },
 };
 
 export function pagesFor(mdls, { includeIndex = true } = {}) {

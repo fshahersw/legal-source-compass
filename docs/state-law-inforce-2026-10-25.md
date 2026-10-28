@@ -228,3 +228,18 @@ norm_vectors.json, test_lib.py, test_states.py, state-law-contract.test.mjs, cer
 dc, de, fl, ga, hi, ia, id, il, in, ks, ky, la, ma, md, me}.py`. App: `src/lib/law/stateLaw{Contract,.server,
 .functions}.ts`, `src/components/law/{InForceCodeBrowser, CodeCurrencyTable}.tsx`, `src/routes/law_.codes.{$state,
 index}.tsx`.
+
+## Release 2026-10-27 (state-codes-official-unprojected)
+
+Owner decision 2026-10-27: IL, KS, MA and MD were planned as fresh crawls and never run (no policy hold); they are
+released (IL/KS/MA from the retained captures with fresh reads for pages the capture lacks, MD fresh). IL prints two
+or more texts of a section in one table: the 60 P.A. 89-7 "held unconstitutional" WITH/WITHOUT pairs (735 ILCS
+5/13-213 and 59 more) and about 1,067 "(Text of Section before/after amendment by P.A. …)" pairs, about 1,127 extra
+printed versions in all. `il.py` (the parser of release state-codes-staged-not-projected, adopted here with retained
+reads) emits each as `@1`/`@2` with its verbatim label (the WITH text is `not_recorded`), keeps sections that follow a
+publisher notice ("This Section may contain text from a Public Act with a delayed effective date"), keeps printed
+spaces in form layouts and keeps source notes out of the text, so the IL edition is about 73,940 rows, not 72,813.
+CO stays **held** on the publisher's own terms: the General Assembly's OLLS page ("2026 CRS Titles for Download")
+links olls.info, so the host is official, but it offers the titles for personal use and section 2-5-118 C.R.S. asks
+anyone republishing from the official statutory database to file a statement with the Committee on Legal Services.
+Packet: `private/acq/release-state-codes-official-unprojected/`.

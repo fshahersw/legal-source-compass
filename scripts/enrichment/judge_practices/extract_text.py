@@ -1,4 +1,4 @@
-"""Plain text of acquired practice documents, with the redactions this stream applies and the method stated for every document.
+"""Plain text of acquired practice documents, with the method stated for every document.
 
 Methods (recorded on each document record as `text_method`):
   pdf   - poppler `pdftotext -layout -enc UTF-8` (a PDF with no text layer, i.e. a scanned image, yields no text; OCR is not available here and
@@ -8,9 +8,13 @@ Methods (recorded on each document record as `text_method`):
   html  - the visible text of the page's main content (scripts, styles and site navigation removed).
 Whitespace is collapsed; no word is rewritten. The original bytes are stored unchanged in the bucket, so these renderings are search aids.
 
-Redactions (the stored text only, never the original file): e-mail addresses, telephone numbers, and lines that name courtroom staff
-(courtroom deputy, deputy clerk, courtroom clerk, case manager, judicial assistant, law clerk) together with a person's name or contact.
-Counts are recorded on the record as `redactions`.
+Contact details: the text is kept as the court published it, including chambers e-mail addresses, telephone numbers and the names of
+courtroom staff (owner decision 2026-10-27, "dont withhold any data"; owner rule 2026-10-22 (3): named individuals the official publisher makes
+public are shown as published). Only the length cap (TEXT_CAP, recorded on the record) shortens a text.
+
+redact(), redact_page() and drop_staff_blocks() are kept only to reproduce the text stored before 2026-10-27 (they replaced e-mails, telephone
+numbers and staff lines with "[... omitted]" markers): release_contact_text.py uses them to prove that a fresh extraction is the same text the
+published record was made from before it replaces that record's text. No build path applies them.
 """
 from __future__ import annotations
 
@@ -23,6 +27,10 @@ import zipfile
 from dataclasses import dataclass
 
 TEXT_CAP = 100_000  # characters kept per document
+
+# the dataset summary's privacy line (owner decision 2026-10-27, "dont withhold any data", with owner rule 2026-10-22 (3))
+PRIVACY = ("Document text is shown as the court published it, including chambers e-mail addresses, telephone numbers and the names of courtroom staff "
+           "the court prints; nothing is inferred about a person. Judge page records do not parse contact details into fields. Originals are stored unchanged.")
 
 MAGIC = [
     (b"%PDF", "pdf"),
@@ -174,7 +182,9 @@ def extract(path: str, kind: str) -> Extracted:
 
 
 # --------------------------------------------------------------------------------------------------------------------------
-# redaction
+# legacy redaction: reproduces the text stored before 2026-10-27 (release check only; never applied by a build)
+
+LEGACY_MARKERS = ("[email omitted]", "[phone omitted]", "[line naming courtroom staff omitted]", "[staff contact block omitted]")
 
 EMAIL = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+")
 PHONE = re.compile(r"(?<![\d\-])(?:\+?1[\s.\-]?)?\(?\b\d{3}\)?[\s.\-]\s?\d{3}[\s.\-]\d{4}\b(?:\s*(?:x|ext\.?|extension)\s*\d{1,6})?")
@@ -232,7 +242,7 @@ def inline_practices(body: bytes) -> Extracted | None:
 
 
 def redact_page(text: str) -> tuple[str, dict]:
-    """redact() for the text of a web page: staff blocks of the header first, then the line rules."""
+    """Legacy: redact() for the text of a web page: staff blocks of the header first, then the line rules."""
     text, blocks = drop_staff_blocks(text)
     out, counts = redact(text)
     counts["staff_blocks"] = blocks
@@ -240,6 +250,7 @@ def redact_page(text: str) -> tuple[str, dict]:
 
 
 def redact(text: str) -> tuple[str, dict]:
+    """Legacy: the line rules applied to document text before 2026-10-27."""
     counts = {"emails": 0, "phones": 0, "staff_lines": 0}
     out: list[str] = []
     for line in text.split("\n"):
@@ -256,6 +267,10 @@ def redact(text: str) -> tuple[str, dict]:
         counts["phones"] += n
         out.append(line)
     return "\n".join(out), counts
+
+
+def has_legacy_marker(text: str) -> bool:
+    return any(m in text for m in LEGACY_MARKERS)
 
 
 def cap(text: str, limit: int = TEXT_CAP) -> tuple[str, bool, int]:

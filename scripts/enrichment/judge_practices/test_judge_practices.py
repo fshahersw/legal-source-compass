@@ -565,5 +565,187 @@ class ManualRoster(unittest.TestCase):
         self.assertEqual(len(res["problems"]), 3)
 
 
+class ReleaseContactText(unittest.TestCase):
+    """release_contact_text.py: a published record whose text was redacted before 2026-10-27 gets the court's text back, only when a fresh
+    extraction reproduces the published text exactly."""
+
+    FRESH = "\n".join([
+        "Individual Practices of Judge Jane Roe",
+        "Send proposed orders to roe_chambers@example.gov or call (212) 805-0000.",
+        "Courtroom Deputy: Mary Smith, (212) 805-0001",
+        "The law clerk will review the submission.",
+    ])
+
+    @staticmethod
+    def row(doc_text: str, kind: str = "individual_practices", method: str = "pdftotext -layout (poppler), whitespace collapsed",
+            counts: dict | None = None, truncated: bool = False, total: int | None = None) -> dict:
+        import hashlib
+
+        sys.path.insert(0, os.path.join(HERE, ".."))
+        import corpus_writer as writer
+
+        rid, title = "jpd-0123456789abcdef", "Individual Practices"
+        sub = "Individual rules / practices · PDF · nysd"
+        pd = {"id": rid, "kind": kind, "url": "https://www.nysd.uscourts.gov/x.pdf", "sha256": "ab" * 32, "stored": True, "detected_type": "pdf",
+              "text_chars": len(doc_text), "text_chars_total": total or len(doc_text), "text_truncated": truncated, "text_method": method,
+              "redactions": counts if counts is not None else {"emails": 1, "phones": 2, "staff_lines": 1},
+              "text_sha256": hashlib.sha256(doc_text.encode()).hexdigest()}
+        facts = [["Title as published", title], ["Text", f"{len(doc_text):,} characters; {method}"], ["Redacted from the text", "emails: 1; phones: 2; staff lines: 1"]]
+        r = writer.record("judge_practice_documents", rid, title, source_url=pd["url"], cells={"text": "Yes"}, facts=facts, text=doc_text,
+                          filters={"court": ["nysd"]}, subtitle=sub, extra={"practice_document": pd})
+        r["ordinal"] = 7
+        return r
+
+    def test_released_text_is_the_courts_text_and_the_record_says_so(self):
+        import hashlib
+
+        import release_contact_text as rc
+
+        published = rc.legacy_text(self.FRESH, False)
+        self.assertIn("[email omitted]", published)
+        row = self.row(published)
+        self.assertTrue(rc.is_target(row))
+        new, status = rc.release_row(row, self.FRESH)
+        self.assertEqual(status, "released")
+        self.assertEqual(rc.body_of(new), self.FRESH)
+        for shown in ("roe_chambers@example.gov", "(212) 805-0000", "Mary Smith"):
+            self.assertIn(shown, new["text"])
+        self.assertFalse(xt.has_legacy_marker(new["text"]))
+        pd = new["item"]["practice_document"]
+        self.assertIsNone(pd["redactions"])
+        self.assertEqual(pd["text_sha256"], hashlib.sha256(self.FRESH.encode()).hexdigest())
+        self.assertEqual(pd["text_chars"], len(self.FRESH))
+        self.assertNotIn("Redacted from the text", [f[0] for f in new["detail"]["facts"]])
+        self.assertIn(["Text", f"{len(self.FRESH):,} characters; pdftotext -layout (poppler), whitespace collapsed"], new["detail"]["facts"])
+        self.assertNotIn("ordinal", new)
+        self.assertFalse(rc.is_target(new))
+        self.assertIn("[email omitted]", row["text"])  # the input row is not modified
+
+    def test_a_fresh_text_that_does_not_reproduce_the_published_one_is_not_released(self):
+        import release_contact_text as rc
+
+        row = self.row(rc.legacy_text(self.FRESH, False))
+        new, status = rc.release_row(row, self.FRESH.replace("Judge Jane Roe", "Judge J. Roe"))
+        self.assertIsNone(new)
+        self.assertIn("does not reproduce", status)
+        tampered = dict(row, text=row["text"] + " x")
+        self.assertIsNone(rc.release_row(tampered, self.FRESH)[0])
+
+    def test_judge_page_text_gets_its_staff_blocks_back(self):
+        import release_contact_text as rc
+
+        fresh = xt.html_text(JudgePageText.PAGE).text
+        method = "visible text of the main content (bs4), whitespace collapsed"
+        row = self.row(rc.legacy_text(fresh, True), kind="page_text", method=method + rc.PAGE_SUFFIX, counts={"emails": 0, "phones": 0, "staff_lines": 0, "staff_blocks": 1})
+        self.assertIn("[staff contact block omitted]", row["text"])
+        new, status = rc.release_row(row, fresh)
+        self.assertEqual(status, "released")
+        for shown in ("Mary Smith", "mary_smith@example.gov", "(555) 123-4567", "John Doe"):
+            self.assertIn(shown, new["text"])
+        self.assertEqual(new["item"]["practice_document"]["text_method"], method)
+
+    def test_a_capped_text_whose_redaction_fell_past_the_cap_is_still_a_target_and_keeps_the_cap(self):
+        import release_contact_text as rc
+
+        fresh = "\n".join(f"line {i} " + "x" * 60 for i in range(2000)) + "\nWrite to late@example.gov"
+        published = rc.legacy_text(fresh, False)
+        self.assertFalse(xt.has_legacy_marker(published))
+        row = self.row(published, counts={"emails": 1, "phones": 0, "staff_lines": 0}, truncated=True, total=len(fresh))
+        self.assertTrue(rc.is_target(row))
+        new, status = rc.release_row(row, fresh)
+        self.assertEqual(status, "released")
+        pd = new["item"]["practice_document"]
+        self.assertTrue(pd["text_truncated"])
+        self.assertEqual(pd["text_chars_total"], len(fresh))
+        self.assertLessEqual(pd["text_chars"], xt.TEXT_CAP)
+        self.assertIn(f"of {len(fresh):,} (capped)", dict((f[0], f[1]) for f in new["detail"]["facts"])["Text"])
+
+    def test_untouched_rows_are_not_targets_and_keep_the_writer_shape(self):
+        import release_contact_text as rc
+
+        row = self.row("Plain practices text.", counts={"emails": 0, "phones": 0, "staff_lines": 0})
+        self.assertFalse(rc.is_target(row))
+        released_shape = self.row("Plain practices text.")
+        released_shape["item"]["practice_document"]["redactions"] = None
+        self.assertFalse(rc.is_target(released_shape))
+        n = rc.norm(dict(row, county_geoids=[]))
+        self.assertNotIn("ordinal", n)
+        self.assertNotIn("county_geoids", n)
+        self.assertEqual(rc.digest([n]), rc.digest([rc.norm(row)]))
+
+    def test_rows_nothing_was_redacted_from_lose_only_the_none_fact(self):
+        import release_contact_text as rc
+
+        row = self.row("Plain practices text.", counts={"emails": 0, "phones": 0, "staff_lines": 0})
+        row["detail"]["facts"][-1] = ["Redacted from the text", "None"]
+        out = rc.tidy_untouched(row)
+        self.assertEqual(out["text"], row["text"])
+        self.assertIsNone(out["item"]["practice_document"]["redactions"])
+        self.assertNotIn("Redacted from the text", [f[0] for f in out["detail"]["facts"]])
+        held = self.row(rc.legacy_text(self.FRESH, False))  # a target that was not released stays exactly as published
+        self.assertEqual(rc.tidy_untouched(held), rc.norm(held))
+
+    def test_summary_privacy_line_and_redaction_totals(self):
+        import release_contact_text as rc
+
+        s = rc.updated_summary({"privacy": "old", "totals": {"documents": 3, "redacted_emails": 9}, "source": "x"})
+        self.assertEqual(s["privacy"], xt.PRIVACY)
+        self.assertEqual(s["totals"], {"documents": 3})
+        self.assertEqual(s["source"], "x")
+        # a partial release: the targets left redacted are counted and named in the privacy line
+        held = {"id": "a", "title": "t", "text": "a t x [email omitted]",
+                "item": {"practice_document": {"redactions": {"emails": 2, "phones": 0}}}}
+        clean = {"id": "b", "title": "t", "text": "b t x", "item": {"practice_document": {"redactions": None}}}
+        p = rc.updated_summary({"privacy": "old", "totals": {"documents": 3, "redacted_emails": 9}}, [held, clean])
+        self.assertTrue(p["privacy"].startswith(xt.PRIVACY) and "1 documents still carries" in p["privacy"])
+        self.assertEqual(p["totals"], {"documents": 3, "redacted_emails": 2, "documents_still_redacted": 1})
+
+    def test_a_second_dry_run_never_replaces_the_snapshot(self):
+        import tempfile
+
+        import release_contact_text as rc
+
+        with tempfile.TemporaryDirectory() as out:
+            open(os.path.join(out, "prior_rows.jsonl"), "w").close()
+            with self.assertRaises(SystemExit) as e:
+                rc.dry_run(out, 1, 0)
+            self.assertIn("rollback snapshot", str(e.exception))
+
+    def test_rollback_needs_the_published_snapshot(self):
+        import json
+        import tempfile
+
+        import release_contact_text as rc
+
+        with tempfile.TemporaryDirectory() as out:
+            with open(os.path.join(out, "report.json"), "w") as h:
+                json.dump({"prior_rows_digest": "a", "prior_manifest_sha256": "b", "files": {}}, h)
+            with self.assertRaises(SystemExit) as e:
+                rc.rollback(out)
+            self.assertIn("--force-rollback", str(e.exception))
+
+    def test_doc_records_take_the_released_text(self):
+        import json
+        import tempfile
+
+        import release_contact_text as rc
+
+        row = self.row(rc.legacy_text(self.FRESH, False))
+        new, _ = rc.release_row(row, self.FRESH)
+        with tempfile.TemporaryDirectory() as out, tempfile.TemporaryDirectory() as docs:
+            rc.write_jsonl(os.path.join(out, "release_rows.jsonl"), [new])
+            rec = {"url": row["item"]["practice_document"]["url"], "sha256": "ab" * 32, "text": rc.body_of(row), "redactions": {"emails": 1}}
+            other = {"url": "https://other", "sha256": "cd" * 32, "text": "[email omitted]", "redactions": {"emails": 1}}
+            for name, r in (("a.json", rec), ("b.json", other)):
+                with open(os.path.join(docs, name), "w", encoding="utf-8") as h:
+                    json.dump(r, h)
+            rc.update_doc_records(out, docs)
+            a = rc.load_json(os.path.join(docs, "a.json"))
+            b = rc.load_json(os.path.join(docs, "b.json"))
+        self.assertEqual(a["text"], self.FRESH)
+        self.assertIsNone(a["redactions"])
+        self.assertEqual(b["text"], "[email omitted]")  # no released row for it: untouched, and the build refuses it
+
+
 if __name__ == "__main__":
     unittest.main()

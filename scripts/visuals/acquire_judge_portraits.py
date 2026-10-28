@@ -6,6 +6,7 @@ CourtListener crosswalk (private/build/judge_xwalk/judge_cl_crosswalk.json). A p
 - its licence is "Work of Federal Government" or "Work of State Government" (entries with no recorded licence are left out), and
 - its CourtListener person id is the person a judge record is linked to by an exact-evidence crosswalk tier (FJC id, the FJC-backed
   parent profile, or a unique exact name at the court or in the state). Possible, ambiguous and unlinked records get no portrait.
+- its own slug does not name somebody else (index_name_consistent): the index carries a wrong person id on a few entries.
 - the judge record has no photo of its own in the corpus (1,155 of the 1,183 linked records already carry this collection's
   portrait as a stored file; those keep it, and only the records without one are filled here).
 
@@ -34,7 +35,10 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "scripts", "enrichment"))
+
+from judge_portrait_release import index_name_consistent  # noqa: E402
 REVISION = "a5cf4252"
 INDEX = os.path.join(ROOT, "private", "acq", "judge_pics", "people.json")
 RAW = os.path.join(ROOT, "private", "acq", "judge_pics", "orig")
@@ -88,12 +92,19 @@ def main():
     people = json.load(open(INDEX))
     eligible = {p["person"]: p for p in people if p.get("license") in LICENSES and isinstance(p.get("person"), int) and p.get("path")}
     judges: dict[str, int] = {}
+    contradicted: dict[int, str] = {}
     for row in json.load(open(CROSSWALK))["rows"]:
         cells = row["item"]["cells"]
         if row["id"] in recorded:
             continue
         if cells.get("tier") in LINKED and cells.get("cl_person_id") is not None and int(cells["cl_person_id"]) in eligible:
-            judges[row["id"]] = int(cells["cl_person_id"])
+            person = int(cells["cl_person_id"])
+            # The index carries a wrong person id on a few entries (e.g. "baker-josh", a Tennessee judiciary portrait, on
+            # person 153, John Harris Baker, 1832-1915): an entry whose own slug names somebody else is not used.
+            if not index_name_consistent(eligible[person]["path"], cells.get("cl_name") or ""):
+                contradicted[person] = eligible[person]["path"]
+                continue
+            judges[row["id"]] = person
     wanted = sorted(set(judges.values()))
     os.makedirs(RAW, exist_ok=True)
     os.makedirs(PUBLIC, exist_ok=True)
@@ -154,7 +165,9 @@ def main():
         }, h, indent=1, ensure_ascii=False)
         h.write("\n")
     print(json.dumps({"recorded_photos": len(recorded), "eligible_people": len(eligible), "linked_judges_without_photo": len(judges), "people": len(portraits),
-                      "judges": len(kept), "failed": len(failed)}))
+                      "judges": len(kept), "failed": len(failed), "index_name_contradicted": len(contradicted)}))
+    for person, path in sorted(contradicted.items()):
+        print("  not used (index slug names somebody else)", person, path)
     for person, reason in sorted(failed.items()):
         print("  failed", person, reason)
 

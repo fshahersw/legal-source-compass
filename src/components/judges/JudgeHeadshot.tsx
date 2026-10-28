@@ -26,14 +26,36 @@ function Skeleton() {
  * open-licence portrait bound to this profile by its exact FJC biography id (dataset judge_portraits_open), with its
  * author, licence and file page. Nothing is drawn when none exists.
  */
+export type RecordedPhotoCredit = {
+  credit: string | null;
+  source: string | null;
+  sourceLabel: string | null;
+};
+
+/** Credit, licence and source a judges record stores next to photo_url, as recorded (never inferred). */
+export function recordedPhotoCredit(raw: Record<string, unknown> | null | undefined): RecordedPhotoCredit {
+  const text = (k: string) => {
+    const v = raw?.[k];
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  };
+  const source = text("photo_source");
+  return {
+    credit: text("photo_credit"),
+    source: source && /^https?:\/\//i.test(source) ? source : null,
+    sourceLabel: text("photo_source_label") ?? (source && !/^https?:\/\//i.test(source) ? source : null),
+  };
+}
+
 export function JudgeHeadshot({
   judgeId,
   name,
   recorded,
+  recordedCredit,
 }: {
   judgeId: string;
   name: string;
   recorded: string | null;
+  recordedCredit?: RecordedPhotoCredit | null;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
   const q = useQuery({
@@ -50,13 +72,36 @@ export function JudgeHeadshot({
   if (recorded) {
     const src = recorded.startsWith("/") ? fileUrl(recorded) : recorded;
     if (failed === src) return null;
+    const credit = recordedCredit ?? null;
+    const sourceText = credit?.sourceLabel ?? (credit?.source ? "Source" : null);
     return (
-      <img
-        src={src}
-        alt={`${name}, portrait from the recorded profile`}
-        className={FRAME}
-        onError={() => setFailed(src)}
-      />
+      <figure className="m-0 w-28 shrink-0">
+        <img
+          src={src}
+          alt={`${name}, portrait from the recorded profile`}
+          className={FRAME}
+          onError={() => setFailed(src)}
+        />
+        {credit && (credit.credit || sourceText) ? (
+          <figcaption className="mt-1 text-[10px] leading-snug text-muted-foreground">
+            {credit.credit ? <span className="block">{credit.credit}</span> : null}
+            {sourceText ? (
+              credit.source ? (
+                <a
+                  href={credit.source}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block underline decoration-dotted underline-offset-2"
+                >
+                  {sourceText}
+                </a>
+              ) : (
+                <span className="block">{sourceText}</span>
+              )
+            ) : null}
+          </figcaption>
+        ) : null}
+      </figure>
     );
   }
   if (q.isLoading) return <Skeleton />;
