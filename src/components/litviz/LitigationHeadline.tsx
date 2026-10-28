@@ -6,7 +6,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChartCard } from "@/components/charts/ChartCard";
-import { DivergingDots, IndexChart } from "@/components/charts/d3/charts";
+import { IndexChart } from "@/components/charts/d3/charts";
 import type { Series } from "@/components/charts/d3/maths";
 import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { mdlName } from "@/lib/insights/generators/mdl";
@@ -20,7 +20,6 @@ const SOURCES = [
   },
 ];
 const int = (v: number) => v.toLocaleString("en-US");
-const signed = (v: number) => (v > 0 ? `+${int(v)}` : int(v));
 const monthLabel = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
