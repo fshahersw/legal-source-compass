@@ -60,7 +60,15 @@ describe("section tabs", () => {
     [
       "/courts",
       undefined,
-      ["Courts", "Judges", "Caseload", "Vacancies", "Compare courts", "Compare judges"],
+      [
+        "Courts",
+        "Judges",
+        "Docket health",
+        "Caseload",
+        "Vacancies",
+        "Compare courts",
+        "Compare judges",
+      ],
     ],
     [
       "/litigation",
@@ -438,7 +446,7 @@ describe("header menu (sectionMenu)", () => {
     expect(shape("/courts")).toEqual([
       "Courts",
       "Judges",
-      ["Caseload", ["Caseload", "Vacancies"]],
+      ["Caseload", ["Docket health", "Caseload", "Vacancies"]],
       ["Compare", ["Compare courts", "Compare judges"]],
     ]);
     expect(shape("/law")).toEqual([

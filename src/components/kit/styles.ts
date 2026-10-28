@@ -3,8 +3,8 @@
  * pill tones and the underline tab. Use them when a native element needs the kit look without the component.
  */
 
-/** White card, hairline border, 12 px radius, soft shadow-xs. */
-export const cardClass = "rounded-xl border border-border bg-card text-card-foreground shadow-xs";
+/** White panel, hairline border, 10 px radius, flat. */
+export const cardClass = "rounded-xl border border-border bg-card text-card-foreground";
 
 export type StatusTone = "good" | "warning" | "serious" | "critical" | "info" | "neutral";
 

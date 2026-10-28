@@ -2,16 +2,15 @@
  * Chart tokens: the one place chart colours are defined. Marks reference them as `var(--chart-…)`; the variables are set
  * on every chart root by `chartTokens` (see ChartFrame), so a chart never carries a raw colour.
  *
- * Categorical slots (identity of a series) were checked with the dataviz palette validator on the white chart surface
- * (2026-10-23): lightness band 0.43–0.77 PASS, chroma >= 0.10 PASS, worst adjacent CVD ΔE 11.0 (protan) PASS, worst
- * adjacent normal-vision ΔE 22.9 PASS; slot 5 (ochre) is 2.9:1 against the surface, so every chart ships its data table
- * and direct labels (the relief rule). Scatter, maps and small multiples (any two marks can touch) use at most the
- * first three slots, which pass the all-pairs test (CVD ΔE 11.0, normal-vision 19.6).
+ * Categorical slots (identity of a series), analyst-console palette of 2026-10-28, checked with the dataviz palette
+ * validator on the white chart surface: lightness band 0.43–0.77 PASS, chroma >= 0.10 PASS, worst adjacent CVD ΔE 9.2
+ * (deutan) PASS, worst adjacent normal-vision ΔE 19.6 PASS; slots 3, 5 and 6 (green, amber, pink) are under 3:1 against
+ * the surface, so every chart ships its data table and direct labels (the relief rule). Scatter, maps and small
+ * multiples (any two marks can touch) use at most the first three slots.
  *
- * Dark theme: selected dark steps of the same six hues (not an automatic flip), validated 2026-10-24 on the dark card
- * surface #141618: lightness band 0.48–0.67 PASS, chroma >= 0.10 PASS, worst adjacent CVD ΔE 11.4 (protan) PASS,
- * worst adjacent normal-vision ΔE 21.6 PASS, every slot >= 3:1 against the surface (and against the page background
- * #0b0c0e); first three slots all-pairs PASS (CVD ΔE 11.4, normal-vision 15.5). Each `--chart-N` is
+ * Dark theme: selected dark steps of the same six hues (not an automatic flip), validated 2026-10-28 on the dark panel
+ * surface #141a23: lightness band 0.48–0.67 PASS, chroma >= 0.10 PASS, worst adjacent CVD ΔE 9.4 (deutan) PASS,
+ * worst adjacent normal-vision ΔE 19.3 PASS, every slot >= 3:1 against the surface. Each `--chart-N` is
  * `light-dark(light, dark)`, so a chart follows the page's `color-scheme` (styles.css sets it per theme) with no
  * theme check in component code.
  *
@@ -21,26 +20,24 @@
  */
 import type { CSSProperties } from "react";
 
-/** OKLCH source of each slot, for the record: blue 0.50/0.13/255, orange 0.68/0.15/60, teal 0.62/0.11/175,
- * violet 0.52/0.14/295, ochre 0.68/0.14/85, magenta 0.58/0.16/350. */
+/** Slots in fixed order: blue, orange, green, violet, amber, pink. */
 export const CATEGORICAL_HEX = [
-  "#2863ab",
-  "#da7e1e",
-  "#1f9b82",
-  "#7055b0",
-  "#c09000",
-  "#bc4b87",
+  "#2a78d6",
+  "#eb6834",
+  "#1baf7a",
+  "#7d5fd3",
+  "#eda100",
+  "#e87ba4",
 ] as const;
 
-/** Dark-theme steps of the same slots, in the same order: OKLCH blue 0.62/0.13/255, orange 0.66/0.15/60, teal
- * 0.62/0.11/175, violet 0.62/0.14/295, ochre 0.66/0.13/85, magenta 0.62/0.16/350. */
+/** Dark-theme steps of the same slots, in the same order. */
 export const CATEGORICAL_HEX_DARK = [
-  "#4c88d3",
-  "#d37812",
-  "#1f9b82",
-  "#8d73d1",
-  "#b68b16",
-  "#ca5794",
+  "#3987e5",
+  "#d95926",
+  "#199e70",
+  "#9a7fe6",
+  "#c98500",
+  "#d55181",
 ] as const;
 
 /** The CSS value of slot `index` (0-based) for both themes: `light-dark(light, dark)`. */
@@ -50,25 +47,24 @@ export function slotColor(index: number): string {
 
 /**
  * Label ink for text set inside a slot's fill (a stacked area, a bar segment): white or near-black, whichever gives
- * the higher WCAG ratio on that fill (checked 2026-10-24 with the dataviz validator's contrast()). Light theme:
- * slot 1 white 6.1, slot 2 ink 6.1, slot 3 ink 5.3, slot 4 white 5.8, slot 5 ink 6.4, slot 6 white 4.7. Dark theme:
- * every fill is lighter, so all six take ink (4.7 to 5.9). Text outside a fill never wears a series colour.
+ * the higher WCAG ratio on that fill (checked 2026-10-28). Light theme: slot 1 white 4.4, slot 2 ink 5.6, slot 3 ink
+ * 6.4, slot 4 white 4.7, slot 5 ink 8.3, slot 6 ink 6.7. Dark theme: all six take ink (4.6 to 5.9). Text outside a fill never wears a series colour.
  */
 export const SLOT_INK_LIGHT = [
   "#ffffff",
-  "#111418",
-  "#111418",
+  "#101624",
+  "#101624",
   "#ffffff",
-  "#111418",
-  "#ffffff",
+  "#101624",
+  "#101624",
 ] as const;
 export const SLOT_INK_DARK = [
-  "#111418",
-  "#111418",
-  "#111418",
-  "#111418",
-  "#111418",
-  "#111418",
+  "#101624",
+  "#101624",
+  "#101624",
+  "#101624",
+  "#101624",
+  "#101624",
 ] as const;
 
 export const MAX_SERIES = CATEGORICAL_HEX.length;

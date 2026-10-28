@@ -318,6 +318,7 @@ export function HeaderStrip({
   trailing,
   defaultOpenMenu,
   backdrop,
+  eyebrow,
   className,
 }: {
   title: ReactNode;
@@ -347,15 +348,17 @@ export function HeaderStrip({
   defaultOpenMenu?: string | undefined;
   /** Decorative section photo behind the title band (no alt text; it carries no information). */
   backdrop?: string | undefined;
+  /** Small-caps line above the title: the section the page belongs to. */
+  eyebrow?: ReactNode | undefined;
   className?: string | undefined;
 }) {
   const hasMenu = Boolean(menu?.length);
   return (
     <header
       data-slot="header-strip"
-      className={cn("relative z-30 border-b border-border bg-surface", className)}
+      className={cn("relative z-30 border-b border-border bg-background", className)}
     >
-      <div className="border-b border-border/70">
+      <div className="border-b border-border/70 bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-12 w-full max-w-[1440px] items-center gap-2 px-[var(--workspace-gutter)]">
           {leading}
           <Breadcrumbs items={breadcrumbs} className="min-w-0 flex-1" />
@@ -365,39 +368,46 @@ export function HeaderStrip({
         </div>
       </div>
       <div className="relative">
-      {backdrop ? (
-        <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-          <img src={backdrop} alt="" width={1920} height={640} className="absolute inset-y-0 right-0 h-full w-full object-cover object-right opacity-90" />
-          <div className="header-backdrop-fade absolute inset-0" />
+        {backdrop ? (
+          <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+            <img
+              src={backdrop}
+              alt=""
+              width={1920}
+              height={640}
+              className="absolute inset-y-0 right-0 h-full w-full object-cover object-right opacity-90"
+            />
+            <div className="header-backdrop-fade absolute inset-0" />
+          </div>
+        ) : null}
+        <div
+          className={cn(
+            "relative mx-auto w-full max-w-[1440px] px-[var(--workspace-gutter)]",
+            backdrop ? "pt-7 md:pt-9" : "pt-4",
+            hasMenu ? "pb-0" : backdrop ? "pb-7 md:pb-9" : "pb-3.5",
+          )}
+        >
+          <PageHeader
+            title={title}
+            titleAs={titleAs}
+            eyebrow={eyebrow}
+            description={description}
+            actions={actions}
+            emblem={emblem}
+            tabs={
+              hasMenu ? (
+                <HeaderMenu
+                  items={menu!}
+                  label={menuLabel}
+                  title={menuTitle}
+                  defaultOpen={defaultOpenMenu}
+                  compact={compact}
+                />
+              ) : undefined
+            }
+            tabsClassName={backdrop ? "mt-5" : "mt-2"}
+          />
         </div>
-      ) : null}
-      <div
-        className={cn(
-          "relative mx-auto w-full max-w-[1440px] px-[var(--workspace-gutter)]",
-          backdrop ? "pt-7 md:pt-9" : "pt-4",
-          hasMenu ? "pb-0" : backdrop ? "pb-7 md:pb-9" : "pb-4",
-        )}
-      >
-        <PageHeader
-          title={title}
-          titleAs={titleAs}
-          description={description}
-          actions={actions}
-          emblem={emblem}
-          tabs={
-            hasMenu ? (
-              <HeaderMenu
-                items={menu!}
-                label={menuLabel}
-                title={menuTitle}
-                defaultOpen={defaultOpenMenu}
-                compact={compact}
-              />
-            ) : undefined
-          }
-          tabsClassName={backdrop ? "mt-5" : "mt-3"}
-        />
-      </div>
       </div>
     </header>
   );

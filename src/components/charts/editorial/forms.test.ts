@@ -404,7 +404,7 @@ describe("bench matrix", () => {
 });
 
 describe("editorial ChartCard", () => {
-  it("sets a bold headline under an accent rule and keeps the footer source and View data", () => {
+  it("sets a semibold headline (no accent rule) and keeps the footer source and View data", () => {
     const out = html(
       createElement(
         ChartCard,
@@ -422,8 +422,8 @@ describe("editorial ChartCard", () => {
         createElement("div", null, "chart"),
       ),
     );
-    expect(out).toContain("font-bold");
-    expect(out).toContain("bg-brand");
+    expect(out).toContain("font-semibold");
+    expect(out).not.toContain("bg-brand");
     expect(out).toContain("Filings fell 81% from their peak");
     expect(out).toContain("View data");
     expect(out).toContain("Source and notes");

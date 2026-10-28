@@ -6,15 +6,16 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Seeger Weiss research workspace design system (2026-10-24 refresh).
- * Neutral canvas, white cards with hairline borders and 12 px corners, a soft shadow only on raised surfaces, one
- * accent (the chart slot-1 blue), near-black primary, a light sidebar, and status colours as soft pill pairs.
- * All colours are oklch tokens defined here for light (:root) and dark (.dark). Never hardcode colours in components.
+ * Seeger Weiss research workspace design system (2026-10-28 analyst-console refresh).
+ * Cool grey canvas, white panels with hairline borders and 10 px corners (no shadow on panels), a navy sidebar rail,
+ * one accent (#2a78d6, chart slot 1) for primary actions and active segments, and status colours as soft pill pairs.
+ * Faces: Instrument Sans for the interface, Newsreader for the page title only, IBM Plex Mono for ids and citations.
+ * All colours are tokens defined here for light (:root) and dark (.dark). Never hardcode colours in components.
  *
- * Type scale (utilities, 4 px rhythm): text-title 22/28 semibold, tight tracking (page title, one H1 per page) ·
- * text-heading 17/24 semibold (section heading) · text-label 14/20 medium (card title) · text-body 13/20 (reading
- * text) · text-meta 11/16 (muted meta, footers) · text-kpi 26/32 and text-kpi-sm 22/28 semibold for KPI values (sans;
- * pair with tabular-nums). Monospace only for ids and citations. Utilities `measure` (prose at most 68ch),
+ * Type scale (utilities): text-title 26/31 serif semibold (page title, one H1 per page) · text-heading 16/22
+ * semibold (section heading) · text-label 13.5/20 semibold (panel title) · text-body 13/20 (reading text) ·
+ * text-meta 11/16 (muted meta, footers) · text-kpi 22/26 and text-kpi-sm 17/22 semibold for KPI values (sans,
+ * tabular figures). Monospace only for ids and citations. Utilities `measure` (prose at most 68ch),
  * `stack-section` (24 px between sections) and `stack-block` (36 px between page blocks) set the vertical rhythm.
  *
  * Chart surfaces: src/components/charts/palette.ts maps chart chrome onto --surface (plot surface), --border (grid),
@@ -23,43 +24,43 @@
  */
 
 @theme {
-  --text-title: 1.375rem;
-  --text-title--line-height: 1.75rem;
-  --text-title--letter-spacing: 0;
+  --text-title: 1.625rem;
+  --text-title--line-height: 1.95rem;
+  --text-title--letter-spacing: -0.005em;
   --text-title--font-weight: 600;
-  --text-heading: 1.0625rem;
-  --text-heading--line-height: 1.5rem;
+  --text-heading: 1rem;
+  --text-heading--line-height: 1.375rem;
   --text-heading--letter-spacing: 0;
   --text-heading--font-weight: 600;
-  --text-label: 0.875rem;
+  --text-label: 0.84375rem;
   --text-label--line-height: 1.25rem;
   --text-label--letter-spacing: 0;
-  --text-label--font-weight: 500;
+  --text-label--font-weight: 600;
   --text-body: 0.8125rem;
   --text-body--line-height: 1.25rem;
   --text-meta: 0.6875rem;
   --text-meta--line-height: 1rem;
-  --text-kpi: 1.625rem;
-  --text-kpi--line-height: 2rem;
-  --text-kpi--letter-spacing: 0;
+  --text-kpi: 1.375rem;
+  --text-kpi--line-height: 1.65rem;
+  --text-kpi--letter-spacing: -0.02em;
   --text-kpi--font-weight: 600;
-  --text-kpi-sm: 1.375rem;
-  --text-kpi-sm--line-height: 1.75rem;
-  --text-kpi-sm--letter-spacing: 0;
+  --text-kpi-sm: 1.0625rem;
+  --text-kpi-sm--line-height: 1.4rem;
+  --text-kpi-sm--letter-spacing: -0.01em;
   --text-kpi-sm--font-weight: 600;
 }
 
 @theme inline {
-  --font-display: "Public Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  /* Radius scale: controls 6-8 px, cards 10-12 px. */
+  /* Radius scale: controls 6-7 px, panels 10 px. */
   --radius-xs: 0.125rem;
   --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.625rem;
-  --radius-xl: 0.75rem;
+  --radius-md: 0.4375rem;
+  --radius-lg: 0.5625rem;
+  --radius-xl: 0.625rem;
   --radius-2xl: 1rem;
   --radius-3xl: 1.25rem;
   --radius-4xl: 1.5rem;
@@ -143,210 +144,212 @@
   --shadow-md: 0 6px 16px -4px var(--shadow-tint-strong), 0 2px 4px -2px var(--shadow-tint);
   --shadow-lg: 0 16px 36px -10px var(--shadow-tint-strong), 0 4px 8px -4px var(--shadow-tint);
   --shadow-drawer: -18px 0 48px -24px var(--shadow-tint-strong);
-  --shadow-card: var(--shadow-xs);
+  --shadow-card: none;
 }
 
-/* Light tokens; `.light` re-applies them inside a dark page (used by the kit gallery's light panel). */
+/* Light tokens; `.light` re-applies them inside a dark page (used by the kit gallery's light panel).
+   Palette 2026-10-28 (analyst console): cool grey canvas, white panels with hairline borders, navy rail, one blue
+   accent (#2a78d6), ink #101624. */
 :root,
 .light {
-  --radius: 0.5rem;
+  --radius: 0.4375rem;
   color-scheme: light;
 
-  --background: oklch(0.984 0.0015 265);
-  --foreground: oklch(0.21 0.008 265);
+  --background: #f1f3f6;
+  --foreground: #101624;
 
-  --surface: oklch(1 0 0);
-  --surface-foreground: oklch(0.21 0.008 265);
+  --surface: #ffffff;
+  --surface-foreground: #101624;
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.008 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.008 265);
+  --card: #ffffff;
+  --card-foreground: #101624;
+  --popover: #ffffff;
+  --popover-foreground: #101624;
 
-  /* near-black primary (buttons, active segments); the accent is --brand */
-  --primary: oklch(0.225 0.01 265);
-  --primary-foreground: oklch(0.985 0.002 265);
+  /* primary actions and active segments carry the accent */
+  --primary: #2a78d6;
+  --primary-foreground: #ffffff;
 
-  --secondary: oklch(0.965 0.002 265);
-  --secondary-foreground: oklch(0.225 0.01 265);
+  --secondary: #f6f7f9;
+  --secondary-foreground: #101624;
 
-  --muted: oklch(0.965 0.002 265);
-  --muted-foreground: oklch(0.5 0.012 265);
+  --muted: #f6f7f9;
+  --muted-foreground: #5c6577;
 
   /* hover / selected wash */
-  --accent: oklch(0.958 0.003 265);
-  --accent-foreground: oklch(0.21 0.008 265);
+  --accent: #eef1f5;
+  --accent-foreground: #101624;
 
-  /* the one accent colour: chart slot-1 blue (#2863ab family) */
-  --brand: oklch(0.5 0.13 255);
-  --brand-foreground: oklch(0.99 0 0);
-  --brand-soft: oklch(0.962 0.018 255);
+  --brand: #2a78d6;
+  --brand-foreground: #ffffff;
+  --brand-soft: #e5eefa;
 
-  --destructive: oklch(0.53 0.19 25);
-  --destructive-foreground: oklch(0.99 0 0);
+  --destructive: #d03b3b;
+  --destructive-foreground: #ffffff;
 
-  --warning: oklch(0.76 0.14 75);
-  --warning-foreground: oklch(0.34 0.07 60);
+  --warning: #eda100;
+  --warning-foreground: #5c3d00;
 
-  --success: oklch(0.53 0.12 155);
-  --success-foreground: oklch(0.99 0 0);
+  --success: #0f9a24;
+  --success-foreground: #ffffff;
 
-  --border: oklch(0.925 0.004 265);
-  --border-strong: oklch(0.86 0.006 265);
-  --input: oklch(0.9 0.005 265);
-  --ring: oklch(0.62 0.12 255);
+  --border: #e0e4ea;
+  --border-strong: #c9d0da;
+  --input: #dde2e9;
+  --ring: #2a78d6;
 
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.3 0.01 265);
-  --sidebar-muted: oklch(0.55 0.012 265);
-  --sidebar-primary: oklch(0.21 0.008 265);
-  --sidebar-primary-foreground: oklch(0.985 0.002 265);
-  --sidebar-accent: oklch(0.955 0.003 265);
-  --sidebar-accent-foreground: oklch(0.18 0.008 265);
-  --sidebar-border: oklch(0.925 0.004 265);
-  --sidebar-ring: oklch(0.62 0.12 255);
+  /* navy rail */
+  --sidebar: #0e1a30;
+  --sidebar-foreground: #b6c2d8;
+  --sidebar-muted: #7d8aa3;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #0e1a30;
+  --sidebar-accent: #17264a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #1c2b4b;
+  --sidebar-ring: #5aa2f5;
 
-  --status-good: oklch(0.6 0.14 152);
-  --status-good-soft: oklch(0.965 0.03 155);
-  --status-good-ink: oklch(0.42 0.1 155);
-  --status-good-ring: oklch(0.88 0.06 155);
-  --status-warning: oklch(0.78 0.15 78);
-  --status-warning-soft: oklch(0.972 0.04 88);
-  --status-warning-ink: oklch(0.45 0.09 65);
-  --status-warning-ring: oklch(0.88 0.08 85);
-  --status-serious: oklch(0.68 0.16 45);
-  --status-serious-soft: oklch(0.968 0.025 50);
-  --status-serious-ink: oklch(0.48 0.14 42);
-  --status-serious-ring: oklch(0.88 0.06 50);
-  --status-critical: oklch(0.58 0.2 25);
-  --status-critical-soft: oklch(0.965 0.022 20);
-  --status-critical-ink: oklch(0.49 0.18 25);
-  --status-critical-ring: oklch(0.88 0.06 20);
-  --status-info: oklch(0.5 0.13 255);
-  --status-info-soft: oklch(0.962 0.018 255);
-  --status-info-ink: oklch(0.45 0.13 255);
-  --status-info-ring: oklch(0.88 0.045 255);
-  --status-neutral: oklch(0.55 0.012 265);
-  --status-neutral-soft: oklch(0.962 0.003 265);
-  --status-neutral-ink: oklch(0.4 0.012 265);
-  --status-neutral-ring: oklch(0.9 0.005 265);
+  --status-good: #0f9a24;
+  --status-good-soft: #e6f5e8;
+  --status-good-ink: #0b7a1c;
+  --status-good-ring: #bfe5c5;
+  --status-warning: #eda100;
+  --status-warning-soft: #fdf3dc;
+  --status-warning-ink: #8a5c00;
+  --status-warning-ring: #f2dca6;
+  --status-serious: #eb6834;
+  --status-serious-soft: #fdece4;
+  --status-serious-ink: #a8431a;
+  --status-serious-ring: #f6cdb9;
+  --status-critical: #d03b3b;
+  --status-critical-soft: #fbe9e9;
+  --status-critical-ink: #b02a2a;
+  --status-critical-ring: #f1c4c4;
+  --status-info: #2a78d6;
+  --status-info-soft: #e5eefa;
+  --status-info-ink: #1c5cab;
+  --status-info-ring: #c3d8f3;
+  --status-neutral: #788092;
+  --status-neutral-soft: #f1f3f6;
+  --status-neutral-ink: #454e60;
+  --status-neutral-ring: #dfe3ea;
 
   --viz-surface: var(--surface);
-  --viz-grid: var(--border);
-  --viz-axis: var(--muted-foreground);
+  --viz-grid: #edf0f4;
+  --viz-axis: #788092;
   --viz-ink: var(--foreground);
 
   /* sequential map ramp (light → strong) and map chrome */
-  --map-low: oklch(0.925 0.025 250);
-  --map-high: oklch(0.56 0.095 250);
-  --map-active: oklch(0.4 0.11 252);
-  --map-focus: oklch(0.74 0.11 250);
-  --map-canvas: oklch(0.982 0.004 250);
-  /* tile-map label ink on a low and a high fill (dark ink reads on the whole light ramp) */
-  --map-ink-low: oklch(0.22 0.02 255);
-  --map-ink-high: oklch(0.2 0.025 255);
+  --map-low: #e9f1fc;
+  --map-high: #1c5cab;
+  --map-active: #0e3f7d;
+  --map-focus: #5598e7;
+  --map-canvas: #f6f7f9;
+  /* tile-map label ink on a low and a high fill */
+  --map-ink-low: #101624;
+  --map-ink-high: #ffffff;
 
-  --shadow-tint: oklch(0.2 0.01 265 / 0.06);
-  --shadow-tint-strong: oklch(0.2 0.01 265 / 0.12);
-  --overlay: oklch(0.2 0.01 265 / 0.36);
+  --shadow-tint: rgb(16 22 36 / 0.06);
+  --shadow-tint-strong: rgb(16 22 36 / 0.14);
+  --overlay: rgb(10 16 28 / 0.42);
 }
 
 .dark {
   color-scheme: dark;
 
-  --background: oklch(0.155 0.004 265);
-  --foreground: oklch(0.955 0.003 265);
+  --background: #0d1117;
+  --foreground: #e7eaf0;
 
-  --surface: oklch(0.198 0.005 265);
-  --surface-foreground: oklch(0.955 0.003 265);
+  --surface: #141a23;
+  --surface-foreground: #e7eaf0;
 
-  --card: oklch(0.198 0.005 265);
-  --card-foreground: oklch(0.955 0.003 265);
-  --popover: oklch(0.215 0.005 265);
-  --popover-foreground: oklch(0.955 0.003 265);
+  --card: #141a23;
+  --card-foreground: #e7eaf0;
+  --popover: #19202c;
+  --popover-foreground: #e7eaf0;
 
-  --primary: oklch(0.955 0.003 265);
-  --primary-foreground: oklch(0.2 0.006 265);
+  --primary: #3987e5;
+  --primary-foreground: #ffffff;
 
-  --secondary: oklch(0.255 0.006 265);
-  --secondary-foreground: oklch(0.955 0.003 265);
+  --secondary: #19202c;
+  --secondary-foreground: #e7eaf0;
 
-  --muted: oklch(0.25 0.006 265);
-  --muted-foreground: oklch(0.72 0.01 265);
+  --muted: #19202c;
+  --muted-foreground: #a0a9ba;
 
-  --accent: oklch(0.265 0.007 265);
-  --accent-foreground: oklch(0.955 0.003 265);
+  --accent: #1d2533;
+  --accent-foreground: #e7eaf0;
 
-  --brand: oklch(0.74 0.11 255);
-  --brand-foreground: oklch(0.18 0.02 255);
-  --brand-soft: oklch(0.29 0.04 255);
+  --brand: #5598e7;
+  --brand-foreground: #0d1117;
+  --brand-soft: #1a2944;
 
-  --destructive: oklch(0.66 0.18 25);
-  --destructive-foreground: oklch(0.99 0 0);
+  --destructive: #e66767;
+  --destructive-foreground: #ffffff;
 
-  --warning: oklch(0.78 0.14 75);
-  --warning-foreground: oklch(0.88 0.08 80);
+  --warning: #e3a51f;
+  --warning-foreground: #f6dba0;
 
-  --success: oklch(0.68 0.13 155);
-  --success-foreground: oklch(0.18 0.02 155);
+  --success: #34c254;
+  --success-foreground: #0d1117;
 
-  --border: oklch(0.29 0.006 265);
-  --border-strong: oklch(0.38 0.008 265);
-  --input: oklch(0.33 0.007 265);
-  --ring: oklch(0.7 0.11 255);
+  --border: #262f40;
+  --border-strong: #354055;
+  --input: #2b3547;
+  --ring: #5598e7;
 
-  --sidebar: oklch(0.175 0.005 265);
-  --sidebar-foreground: oklch(0.86 0.006 265);
-  --sidebar-muted: oklch(0.66 0.01 265);
-  --sidebar-primary: oklch(0.955 0.003 265);
-  --sidebar-primary-foreground: oklch(0.2 0.006 265);
-  --sidebar-accent: oklch(0.255 0.006 265);
-  --sidebar-accent-foreground: oklch(0.97 0.003 265);
-  --sidebar-border: oklch(0.27 0.006 265);
-  --sidebar-ring: oklch(0.7 0.11 255);
+  --sidebar: #090e18;
+  --sidebar-foreground: #9eaac0;
+  --sidebar-muted: #6b7891;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #090e18;
+  --sidebar-accent: #142039;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #17233a;
+  --sidebar-ring: #5aa2f5;
 
-  --status-good: oklch(0.7 0.15 152);
-  --status-good-soft: oklch(0.27 0.045 155);
-  --status-good-ink: oklch(0.84 0.11 155);
-  --status-good-ring: oklch(0.38 0.07 155);
-  --status-warning: oklch(0.8 0.15 80);
-  --status-warning-soft: oklch(0.29 0.05 80);
-  --status-warning-ink: oklch(0.88 0.11 85);
-  --status-warning-ring: oklch(0.42 0.08 80);
-  --status-serious: oklch(0.72 0.15 45);
-  --status-serious-soft: oklch(0.28 0.05 45);
-  --status-serious-ink: oklch(0.84 0.1 50);
-  --status-serious-ring: oklch(0.41 0.08 45);
-  --status-critical: oklch(0.66 0.19 25);
-  --status-critical-soft: oklch(0.27 0.06 22);
-  --status-critical-ink: oklch(0.83 0.1 22);
-  --status-critical-ring: oklch(0.41 0.1 22);
-  --status-info: oklch(0.74 0.11 255);
-  --status-info-soft: oklch(0.27 0.04 255);
-  --status-info-ink: oklch(0.84 0.08 255);
-  --status-info-ring: oklch(0.4 0.07 255);
-  --status-neutral: oklch(0.66 0.01 265);
-  --status-neutral-soft: oklch(0.255 0.006 265);
-  --status-neutral-ink: oklch(0.82 0.008 265);
-  --status-neutral-ring: oklch(0.34 0.007 265);
+  --status-good: #34c254;
+  --status-good-soft: #12271a;
+  --status-good-ink: #7ddc90;
+  --status-good-ring: #1f4a2b;
+  --status-warning: #e3a51f;
+  --status-warning-soft: #2a2110;
+  --status-warning-ink: #f1c869;
+  --status-warning-ring: #4d3b14;
+  --status-serious: #e8794a;
+  --status-serious-soft: #2b1a12;
+  --status-serious-ink: #f3a785;
+  --status-serious-ring: #52301f;
+  --status-critical: #e66767;
+  --status-critical-soft: #2c1517;
+  --status-critical-ink: #f29b9b;
+  --status-critical-ring: #552428;
+  --status-info: #5598e7;
+  --status-info-soft: #1a2944;
+  --status-info-ink: #9cc3f2;
+  --status-info-ring: #27406a;
+  --status-neutral: #7b8496;
+  --status-neutral-soft: #19202c;
+  --status-neutral-ink: #c3c9d4;
+  --status-neutral-ring: #2c3546;
 
   --viz-surface: var(--surface);
-  --viz-grid: var(--border);
-  --viz-axis: var(--muted-foreground);
+  --viz-grid: #1d2433;
+  --viz-axis: #7b8496;
   --viz-ink: var(--foreground);
 
   /* on a dark surface the ramp runs dim → bright: a stronger shade is a higher value */
-  --map-low: oklch(0.3 0.03 252);
-  --map-high: oklch(0.72 0.1 250);
-  --map-active: oklch(0.86 0.09 250);
-  --map-focus: oklch(0.8 0.1 250);
-  --map-canvas: oklch(0.18 0.006 255);
-  --map-ink-low: oklch(0.95 0.01 250);
-  --map-ink-high: oklch(0.17 0.02 255);
+  --map-low: #172234;
+  --map-high: #6fa9ee;
+  --map-active: #b9d6f8;
+  --map-focus: #8bbcf2;
+  --map-canvas: #111720;
+  --map-ink-low: #e7eaf0;
+  --map-ink-high: #0d1117;
 
-  --shadow-tint: oklch(0 0 0 / 0.35);
-  --shadow-tint-strong: oklch(0 0 0 / 0.5);
-  --overlay: oklch(0 0 0 / 0.6);
+  --shadow-tint: rgb(0 0 0 / 0.35);
+  --shadow-tint-strong: rgb(0 0 0 / 0.5);
+  --overlay: rgb(0 0 0 / 0.6);
 }
 
 @layer base {
@@ -365,18 +368,24 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
-    font-size: 0.875rem;
-    line-height: 1.375rem;
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
     -webkit-font-smoothing: antialiased;
-    font-feature-settings: "cv11", "ss01";
+    font-variant-numeric: tabular-nums;
     text-rendering: optimizeLegibility;
   }
 
-  h1,
+  /* The page title is the one serif line; section and panel titles stay in the UI face. */
+  h1 {
+    font-family: var(--font-display);
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+
   h2,
   h3 {
-    font-family: var(--font-display);
-    letter-spacing: -0.012em;
+    font-family: var(--font-sans);
+    letter-spacing: 0;
   }
 
   table {
@@ -435,7 +444,7 @@
   align-items: center;
   gap: 0.625rem;
   border-radius: var(--radius-md);
-  padding: 0.375rem 0.625rem;
+  padding: 0.3125rem 0.625rem;
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.25rem;
@@ -462,6 +471,7 @@
     background-color: var(--color-sidebar-accent);
     color: var(--color-sidebar-accent-foreground);
     font-weight: 600;
+    box-shadow: inset 2px 0 0 var(--color-sidebar-ring);
   }
 
   &[data-status="active"] > svg {
@@ -471,5 +481,11 @@
 
 /* Header photo backdrop: the photo sits right; a surface gradient keeps the title readable in both modes. */
 @utility header-backdrop-fade {
-  background: linear-gradient(90deg, var(--surface) 0%, color-mix(in oklab, var(--surface) 92%, transparent) 38%, color-mix(in oklab, var(--surface) 35%, transparent) 75%, color-mix(in oklab, var(--surface) 10%, transparent) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--surface) 0%,
+    color-mix(in oklab, var(--surface) 92%, transparent) 38%,
+    color-mix(in oklab, var(--surface) 35%, transparent) 75%,
+    color-mix(in oklab, var(--surface) 10%, transparent) 100%
+  );
 }

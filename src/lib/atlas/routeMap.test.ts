@@ -87,6 +87,7 @@ const EXPECTED: Record<string, NavigationSection | null> = {
   "/courts/$id": "courts",
   "/courts/analytics": "courts",
   "/courts/caseload": "courts",
+  "/courts/docket-health": "courts",
   "/courts/vacancies": "courts",
   "/judges": "courts",
   "/judges/$id": "courts",

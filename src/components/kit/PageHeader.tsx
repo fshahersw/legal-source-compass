@@ -67,6 +67,7 @@ export function PageHeader({
   emblem,
   tabs,
   meta,
+  eyebrow,
   titleAs: Title = "h1",
   tabsClassName,
   className,
@@ -80,6 +81,8 @@ export function PageHeader({
   tabs?: ReactNode | undefined;
   /** A short line under the description (e.g. "Updated Oct 24, 2026"). */
   meta?: ReactNode | undefined;
+  /** Small-caps line above the title (the section name). */
+  eyebrow?: ReactNode | undefined;
   titleAs?: "h1" | "h2" | undefined;
   /** Replaces the default gap above `tabs`. */
   tabsClassName?: string | undefined;
@@ -92,9 +95,12 @@ export function PageHeader({
         <div className="flex min-w-0 flex-1 items-start gap-3">
           {emblem ? <div className="shrink-0">{emblem}</div> : null}
           <div className="min-w-0">
+            {eyebrow ? <p className="eyebrow m-0">{eyebrow}</p> : null}
             <Title className="text-title text-foreground">{title}</Title>
             {description ? (
-              <p className="measure mt-1 text-body text-muted-foreground">{description}</p>
+              <p className="mt-1 max-w-[90ch] text-[12.5px] leading-5 text-muted-foreground">
+                {description}
+              </p>
             ) : null}
             {meta ? <div className="mt-1 text-meta text-muted-foreground">{meta}</div> : null}
           </div>

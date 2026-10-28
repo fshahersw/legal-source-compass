@@ -22,8 +22,8 @@ export function OverviewBriefing() {
   return (
     <Section
       id="headlines"
-      title="Headlines"
-      description="The latest complete period of one headline series per area, with the change on the period before."
+      title="Across the platform"
+      description="One headline series per area: the latest complete period and the change on the one before."
       actions={
         <InfoPopover label="About these figures">
           <p>

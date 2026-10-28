@@ -6,7 +6,10 @@
  * Nothing in the repository changes. Deploy from the output directory, e.g.
  *   supabase functions deploy ingest-openfda-events --project-ref xosqzzsnhxcyehcnirpa --no-verify-jwt
  *
- *   node scripts/safety_v2/bundle_functions.mjs <out-dir>
+ *   node scripts/safety_v2/bundle_functions.mjs <out-dir> [function ...]
+ *
+ * With no function names it bundles the two safety/1 functions; any supabase/functions/<name> whose imports stay inside
+ * src/lib can be named (e.g. ingest-state-registers).
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -17,9 +20,9 @@ const FUNCTIONS = ["ingest-openfda-events", "ingest-cfpb-complaints"];
 const LIB = path.join(ROOT, "src", "lib");
 const IMPORT = /(from\s+|import\s*\(\s*)"([^"]+)"/g;
 
-export function bundle(out) {
+export function bundle(out, functions = FUNCTIONS) {
   const written = [];
-  for (const fn of FUNCTIONS) {
+  for (const fn of functions) {
     const entry = path.join(ROOT, "supabase", "functions", fn, "index.ts");
     const dest = path.join(out, fn);
     const queue = [];
@@ -60,8 +63,9 @@ export function bundle(out) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const out = process.argv[2];
   if (!out) {
-    console.error("usage: node scripts/safety_v2/bundle_functions.mjs <out-dir>");
+    console.error("usage: node scripts/safety_v2/bundle_functions.mjs <out-dir> [function ...]");
     process.exit(2);
   }
-  console.log(bundle(path.resolve(out)).join("\n"));
+  const names = process.argv.slice(3);
+  console.log(bundle(path.resolve(out), names.length ? names : FUNCTIONS).join("\n"));
 }
