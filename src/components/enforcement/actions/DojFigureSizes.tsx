@@ -17,7 +17,7 @@ import {
 import { fmtInt } from "./format";
 
 const FILLS = Object.fromEntries(
-  DOJ_BANDS.map((b, i) => [b, sequentialFill(0.12 + (0.88 * i) / (DOJ_BANDS.length - 1))]),
+  DOJ_BANDS.map((b, i) => [b, sequentialFill(0.28 + (0.72 * i) / (DOJ_BANDS.length - 1))]),
 );
 
 export function DojFigureSizes({ overview }: { overview: DojOverview }) {
@@ -93,12 +93,12 @@ export function DojFigureSizes({ overview }: { overview: DojOverview }) {
           labels={DOJ_BAND_LABEL}
           fills={FILLS}
           height={240}
-          format={(v) => `${v.toFixed(1)}%`}
+          format={(v) => `${Math.round(v * 10) / 10}%`}
         />
         {callout ? (
           <p className="mt-1 text-meta text-muted-foreground">
-            {callout.year}: {fmtInt(callout.tenMillionPlus)} of {fmtInt(callout.withFigure)}{" "}
-            releases with a figure.
+            In {callout.year}, {fmtInt(callout.tenMillionPlus)} of the{" "}
+            {fmtInt(callout.withFigure)} releases that stated a figure put it at $10M or more.
           </p>
         ) : null}
       </div>
