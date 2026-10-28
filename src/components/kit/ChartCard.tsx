@@ -21,10 +21,9 @@ import { AskAiButton } from "./ai/AskAiButton";
 import { chartContext } from "./ai/chartContext";
 
 function sourceLabel(src: SourceFooterProps["source"]): string | undefined {
-  const one = Array.isArray(src) ? src[0] : src;
-  return one && typeof one === "object" && "label" in one && typeof one.label === "string"
-    ? one.label
-    : undefined;
+  const list = Array.isArray(src) ? src : [src];
+  const labels = list.flatMap((one) => one && typeof one === "object" && "label" in one && typeof one.label === "string" ? [one.label] : []);
+  return labels.length ? labels.join("; ") : undefined;
 }
 
 /** The page's topic (its title without the site name), read after hydration. */
@@ -46,6 +45,7 @@ export function ChartCard<T>({
   title,
   subtitle,
   actions,
+  aiScope,
   legend,
   data,
   source,
@@ -63,6 +63,7 @@ export function ChartCard<T>({
   /** Measure, unit, geography, period. */
   subtitle?: ReactNode | undefined;
   actions?: ReactNode | undefined;
+  aiScope?: string | undefined;
   legend?: ReactNode | undefined;
   /** The values behind the chart, for the "View data" drawer. */
   data?: Omit<DataDrawerProps<T>, "mode" | "trigger"> | undefined;
@@ -84,6 +85,8 @@ export function ChartCard<T>({
       ? chartContext({
           title: typeof title === "string" ? title : data.title,
           topic,
+          filters: aiScope,
+          measure: typeof subtitle === "string" ? subtitle : undefined,
           period: typeof source?.period === "string" ? source.period : undefined,
           source: sourceLabel(source?.source ?? data.source?.source),
           columns: data.columns,

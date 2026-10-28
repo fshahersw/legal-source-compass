@@ -7,13 +7,15 @@ import type { CsvValue } from "../csv";
 import { buildSectionContext, type FigureInput } from "./buildSectionContext";
 import type { SectionContext } from "@/lib/assistant/sectionContext";
 
-type Column<T> = { key: string; label: string; value: (row: T) => CsvValue };
+type Column<T> = { key: string; label: string; value: (row: T) => CsvValue; unit?: string | undefined };
 
 export function chartContext<T>(input: {
   title: string;
   topic?: string | undefined;
   period?: string | undefined;
   source?: string | undefined;
+  measure?: string | undefined;
+  filters?: string | undefined;
   columns: readonly Column<T>[];
   rows: readonly T[];
   maxFigures?: number | undefined;
@@ -30,13 +32,15 @@ export function chartContext<T>(input: {
         figures.push({
           label: `${name} · ${col.label}`,
           value: typeof v === "number" || typeof v === "string" ? v : null,
+          unit: col.unit,
+          note: input.measure,
         });
       }
     }
   }
   return buildSectionContext({
     title: input.title,
-    scope: input.topic ?? null,
+    scope: [input.topic, input.filters].filter(Boolean).join(" · ") || null,
     period: input.period ?? null,
     source: input.source ?? null,
     figures,

@@ -7,6 +7,13 @@ const columns = [
 ];
 
 describe("chartContext", () => {
+  it("retains measure, selected scope and explicit column units", () => {
+    const ctx = chartContext({ title: "District clearance", topic: "Courts", filters: "Texas · complete fiscal years", measure: "Terminations / filings × 100", period: "FY2025", source: "Publisher A; Publisher B", columns: [{key:"district",label:"District",value:()=>"Northern"},{key:"rate",label:"Clearance",unit:"%",value:()=>120}], rows:[{}] });
+    expect(ctx.scope).toBe("Courts · Texas · complete fiscal years");
+    expect(ctx.period).toBe("FY2025");
+    expect(ctx.source).toBe("Publisher A; Publisher B");
+    expect(ctx.figures[0]).toMatchObject({value:"120",unit:"%",note:"Terminations / filings × 100"});
+  });
   it("sends exactly the shown figures, with gaps as Not recorded", () => {
     const ctx = chartContext({
       title: "Cases by state",

@@ -28,7 +28,7 @@ export function ClearanceRateChart() {
       <div className="border-t border-border pt-2"><p className="text-meta text-muted-foreground">Clearance ratio · 100% = equal flows</p>
         <LineTrend axis={axis} formatter={percent} height={150} ariaLabel="Civil clearance ratio with a 100 percent equal-flows reference" colorSlot={(_id,i)=>i===0?2:3} series={[
           {id:"clearance",label:"Clearance",points:rows.map((r)=>({key:String(r.fy),value:r.rate}))},
-          {id:"reference",label:"Equal flows",points:rows.map((r)=>({key:String(r.fy),value:100,partial:true}))}]} /></div>
+          {id:"reference",label:"Equal flows",points:rows.map((r)=>({key:String(r.fy),value:100}))}]} /></div>
     </div>
   </ChartCard>;
 }
