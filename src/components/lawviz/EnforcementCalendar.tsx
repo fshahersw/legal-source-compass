@@ -84,6 +84,7 @@ function DayGrid({
     [grid],
   );
   const lastRecorded = recorded.at(-1)?.date ?? `${year}-12-31`;
+  const firstRecorded = recorded[0]?.date ?? `${year}-01-01`;
   const uncovered = grid.length - recorded.length;
   const switcher = (
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -119,7 +120,7 @@ function DayGrid({
         <ActivityHeatmap
           key={view}
           data={recorded}
-          days={Math.round((Date.parse(lastRecorded) - Date.UTC(year, 0, 1)) / 86_400_000) + 1}
+          days={Math.round((Date.parse(lastRecorded) - Date.parse(firstRecorded)) / 86_400_000) + 1}
           endDate={lastRecorded}
           view={view}
           color="var(--chart-1)"
@@ -135,6 +136,7 @@ function DayGrid({
         <ContributionSkyline
           data={recorded.map((d) => ({ date: d.date, count: d.value }))}
           endDate={lastRecorded}
+          startDate={firstRecorded}
           defaultView="3d"
           showStats={false}
           palette={SKYLINE_PALETTE}

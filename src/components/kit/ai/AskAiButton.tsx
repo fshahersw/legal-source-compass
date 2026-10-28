@@ -9,7 +9,7 @@
  * Where AI is not configured the button stays focusable, says so in its tooltip and, on click, in a toast: it never
  * fails silently. While `context` is null (the figures are loading) it waits, disabled, with its reason in the tooltip.
  */
-import { MessageCircleQuestionMark } from "lucide-react";
+import { MessageCircleQuestionMark, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -76,7 +76,7 @@ export function AskAiButtonView({
             }}
             className={cn(
               buttonVariants({
-                variant: "outline",
+                variant: size === "icon" ? "ghost" : "outline",
                 size: size === "md" ? "default" : size === "icon" ? "icon" : "sm",
               }),
               // same height as the card header's other controls ("View data" is h-9 / md:h-7)
@@ -85,7 +85,11 @@ export function AskAiButtonView({
               className,
             )}
           >
-            <MessageCircleQuestionMark aria-hidden />
+            {size === "icon" ? (
+              <Sparkles aria-hidden className="text-primary" />
+            ) : (
+              <MessageCircleQuestionMark aria-hidden />
+            )}
             {size === "icon" ? null : <span>Ask AI</span>}
           </button>
         </TooltipTrigger>

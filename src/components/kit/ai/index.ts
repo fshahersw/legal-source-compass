@@ -36,3 +36,4 @@ export {
   type SectionContext,
   type SectionFigure,
 } from "@/lib/assistant/sectionContext";
+export { chartContext } from "./chartContext";

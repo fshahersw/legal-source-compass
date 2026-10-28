@@ -86,3 +86,14 @@
 - [ ] Places: confirm the median reference line on the state comparison chart is visible in both themes (looked faint in one screenshot)
 - [ ] Sunburst: keyboard focus for ring segments (the case-type list already works with the keyboard)
 - [ ] Courts: link each district in the time-to-disposition chart to its court page where the record has one (`hasCourtPage`)
+
+## Cleaner, richer visuals (plan 2026-10-28)
+- [x] Explore button replaced by an Ask AI icon that sends the chart's shown figures, page topic, period and source
+- [x] Enforcement calendar Weekdays/Months/3D start at coverage start (no pre-coverage zeros)
+- [x] Court structure diagram (federal + selectable state tiers, recorded types only) on Courts & judges and every state page
+- [ ] Site-wide "say it once" declutter pass (duplicate KPIs/captions, long source prose into info icons)
+- [ ] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
+- [ ] Shared map with tile-grid mode and rate shading across Overview/Places/Courts/Litigation/Enforcement/Law
+- [ ] Law hierarchy trees (U.S. Code, CFR, state codes/constitutions)
+- [ ] Visual backfill: court/judge/place/company identity blocks
+- [ ] Wire unused accurate datasets into their sections
