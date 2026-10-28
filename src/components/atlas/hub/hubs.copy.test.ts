@@ -11,7 +11,9 @@ describe("hub copy about withheld filings", () => {
 
   it("does not describe the retired keyword rule", () => {
     for (const link of links) {
-      expect(link.description ?? "").not.toMatch(/sealed or redacted material left out|open filings only/i);
+      expect(link.description ?? "").not.toMatch(
+        /sealed or redacted material left out|open filings only/i,
+      );
     }
   });
 
