@@ -1,5 +1,6 @@
 import type { MdlRow } from "@/lib/external/mdlAnalytics.functions";
 import type { MassTortSignal } from "@/lib/external/massTortSignals.functions";
+import { hasPending } from "@/lib/external/mdlSeries";
 
 /** Regulator by product type, as recorded on the product signal (not inferred from the MDL caption). */
 export const REGULATOR: Record<MassTortSignal["kind"], { short: string; name: string }> = {

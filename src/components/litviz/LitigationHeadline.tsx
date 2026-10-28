@@ -10,6 +10,7 @@ import type { Series } from "@/components/charts/d3/maths";
 import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { mdlName } from "@/lib/insights/generators/mdl";
 import type { MdlAnalytics, MdlRow } from "@/lib/external/mdlAnalytics.functions";
+import { hasPending } from "@/lib/external/mdlSeries";
 
 const SOURCES = [
   {
