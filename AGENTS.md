@@ -36,4 +36,4 @@
 - Subdirectories with their own `AGENTS.md` (`src/lib/atlas`, `src/lib/external`, `src/lib/limitations`, `src/components/charts`, `scripts/limitations/backfill`): read it before changing files there.
 - Names link to a profile only on a unique exact match; never fuzzy-merge people.
 - Unknown/uncountable values show as "Not recorded"/"too large to count", never a guessed number.
-- Court artwork uses exact court IDs and recorded court types; generic emblems are labeled court types, never official seals.
+- Section photos reuse exact-ID registry queries; court icons show recorded types, not seals. Why: no invented identity.
