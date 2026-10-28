@@ -9,6 +9,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   Activity,
   CalendarDays,
+  Clapperboard,
   LibrarySquare,
   LineChart,
   Map as MapIcon,
@@ -82,6 +83,12 @@ const TOOLS = [
     label: "Signals",
     icon: Activity,
     text: "Time to MDL termination, growth after centralization, clusters of states, origin courts and co-counsel networks.",
+  },
+  {
+    to: "/insights/stories",
+    label: "Visual stories",
+    icon: Clapperboard,
+    text: "The MDL docket in motion: the largest MDLs report by report as a race, the whole docket as a streamgraph, and the defendant network.",
   },
   {
     to: "/insights/today",

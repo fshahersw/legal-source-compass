@@ -167,6 +167,7 @@ const EXPECTED: Record<string, NavigationSection | null> = {
   "/insights/trends": "insights",
   "/insights/rankings": "insights",
   "/insights/signals": "insights",
+  "/insights/stories": "insights",
   "/insights/today": "insights",
   "/insights/research": "insights",
   "/analytics": "insights",

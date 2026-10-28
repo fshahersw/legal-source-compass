@@ -294,6 +294,7 @@ const PAGES: [string, SearchParams, NavigationSection | null, string | null][] =
   // Insights (W3 owns the pages; the former /analytics pages stay here until redirected)
   ["/insights", undefined, "insights", "Overview"],
   ["/insights/explore", undefined, "insights", "Explore"],
+  ["/insights/stories", undefined, "insights", "Overview"],
   ["/insights/today", undefined, "insights", "Insights of the day"],
   ["/analytics", undefined, "insights", "Overview"],
   ["/analytics/enforcement", undefined, "insights", "Trends"],
