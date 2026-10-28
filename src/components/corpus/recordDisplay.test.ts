@@ -24,11 +24,15 @@ describe("record display rules", () => {
     expect(
       splitProvenanceLabel("Court website (url as recorded by CourtListener, not re-checked)"),
     ).toEqual({ text: "Court website", note: "url as recorded by CourtListener, not re-checked" });
-    expect(splitProvenanceLabel("Court homepage (local registry FD:nysd, not re-checked)")).toEqual({
-      text: "Court homepage",
-      note: "local registry FD:nysd, not re-checked",
-    });
-    expect(splitProvenanceLabel("MDLs in this court (14 pending, JPML report dated 2026-10-01)")).toEqual({
+    expect(splitProvenanceLabel("Court homepage (local registry FD:nysd, not re-checked)")).toEqual(
+      {
+        text: "Court homepage",
+        note: "local registry FD:nysd, not re-checked",
+      },
+    );
+    expect(
+      splitProvenanceLabel("MDLs in this court (14 pending, JPML report dated 2026-10-01)"),
+    ).toEqual({
       text: "MDLs in this court (14 pending, JPML report dated 2026-10-01)",
       note: null,
     });
