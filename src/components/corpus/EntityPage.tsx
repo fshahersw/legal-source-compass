@@ -2,6 +2,7 @@ import { cn } from "@/lib/utils";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import {
   isSourceIdKey,
+  isStorageMetaKey,
   splitProvenanceLabel,
   splitProviderKey,
   splitProviderValue,
@@ -113,7 +114,7 @@ export function EntityPage({
   };
   const isNoise = ([k, val]: (typeof v.facts)[number]) =>
     /\bcount$/i.test(k) && String(val) === "0";
-  const isId = ([k]: (typeof v.facts)[number]) => isSourceIdKey(k);
+  const isId = ([k]: (typeof v.facts)[number]) => isSourceIdKey(k) || isStorageMetaKey(k);
   const moved = v.facts.filter((f) => isNoise(f) || isId(f));
   const facts = v.facts.filter((f) => !isNoise(f) && !isId(f) && !dupe(f));
   const key = facts.slice(0, 8).filter((f) => !repeats(f));

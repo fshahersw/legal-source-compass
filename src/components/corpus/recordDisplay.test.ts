@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isSourceIdKey,
+  isStorageMetaKey,
   splitProvenanceLabel,
   splitProviderKey,
   splitProviderValue,
@@ -60,5 +61,12 @@ describe("record display rules", () => {
       text: "Senior status — took senior status in 2019",
       note: null,
     });
+  });
+
+  it("treats counts of the corpus's own stored files as technical", () => {
+    expect(isStorageMetaKey("Saved raster identity marks")).toBe(true);
+    expect(isStorageMetaKey("Stored PDF files")).toBe(true);
+    expect(isStorageMetaKey("Pending MDLs (JPML report)")).toBe(false);
+    expect(isStorageMetaKey("Images of the product")).toBe(false);
   });
 });

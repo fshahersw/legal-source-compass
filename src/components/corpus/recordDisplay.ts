@@ -13,6 +13,11 @@ export function isSourceIdKey(key: string): boolean {
   return /^record id$/i.test(bare) || /\b(id|key)$/i.test(bare);
 }
 
+/** Keys that describe the corpus's own stored files rather than the subject, e.g. "Saved raster identity marks". */
+export function isStorageMetaKey(key: string): boolean {
+  return /\b(saved|stored)\b[^()]*\b(marks?|files?|images?|rasters?|captures?)\b/i.test(key.trim());
+}
+
 /** Data providers whose names stay out of the page's main text (they remain in tooltips and source popovers). */
 const PROVIDERS =
   /\b(CourtListener|DocketBird|FJC|Federal Judicial Center|Stanford Securities Class Action Clearinghouse|Securities Class Action Clearinghouse|Vaquill?|PACER)\b/i;
