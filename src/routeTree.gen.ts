@@ -65,6 +65,7 @@ import { Route as InsightsExploreRouteImport } from './routes/insights.explore'
 import { Route as InsightsRankingsRouteImport } from './routes/insights.rankings'
 import { Route as InsightsResearchRouteImport } from './routes/insights.research'
 import { Route as InsightsSignalsRouteImport } from './routes/insights.signals'
+import { Route as InsightsStoriesRouteImport } from './routes/insights.stories'
 import { Route as InsightsTodayRouteImport } from './routes/insights.today'
 import { Route as InsightsTrendsRouteImport } from './routes/insights.trends'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
@@ -433,6 +434,11 @@ const InsightsResearchRoute = InsightsResearchRouteImport.update({
 const InsightsSignalsRoute = InsightsSignalsRouteImport.update({
   id: '/insights/signals',
   path: '/insights/signals',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InsightsStoriesRoute = InsightsStoriesRouteImport.update({
+  id: '/insights/stories',
+  path: '/insights/stories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InsightsTodayRoute = InsightsTodayRouteImport.update({
@@ -938,6 +944,7 @@ export interface FileRoutesByFullPath {
   '/insights/rankings': typeof InsightsRankingsRoute
   '/insights/research': typeof InsightsResearchRoute
   '/insights/signals': typeof InsightsSignalsRoute
+  '/insights/stories': typeof InsightsStoriesRoute
   '/insights/today': typeof InsightsTodayRoute
   '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
@@ -1084,6 +1091,7 @@ export interface FileRoutesByTo {
   '/insights/rankings': typeof InsightsRankingsRoute
   '/insights/research': typeof InsightsResearchRoute
   '/insights/signals': typeof InsightsSignalsRoute
+  '/insights/stories': typeof InsightsStoriesRoute
   '/insights/today': typeof InsightsTodayRoute
   '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
@@ -1223,6 +1231,7 @@ export interface FileRoutesById {
   '/insights/rankings': typeof InsightsRankingsRoute
   '/insights/research': typeof InsightsResearchRoute
   '/insights/signals': typeof InsightsSignalsRoute
+  '/insights/stories': typeof InsightsStoriesRoute
   '/insights/today': typeof InsightsTodayRoute
   '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
@@ -1371,6 +1380,7 @@ export interface FileRouteTypes {
     | '/insights/rankings'
     | '/insights/research'
     | '/insights/signals'
+    | '/insights/stories'
     | '/insights/today'
     | '/insights/trends'
     | '/judges/$id'
@@ -1517,6 +1527,7 @@ export interface FileRouteTypes {
     | '/insights/rankings'
     | '/insights/research'
     | '/insights/signals'
+    | '/insights/stories'
     | '/insights/today'
     | '/insights/trends'
     | '/judges/$id'
@@ -1655,6 +1666,7 @@ export interface FileRouteTypes {
     | '/insights/rankings'
     | '/insights/research'
     | '/insights/signals'
+    | '/insights/stories'
     | '/insights/today'
     | '/insights/trends'
     | '/judges/$id'
@@ -1802,6 +1814,7 @@ export interface RootRouteChildren {
   InsightsRankingsRoute: typeof InsightsRankingsRoute
   InsightsResearchRoute: typeof InsightsResearchRoute
   InsightsSignalsRoute: typeof InsightsSignalsRoute
+  InsightsStoriesRoute: typeof InsightsStoriesRoute
   InsightsTodayRoute: typeof InsightsTodayRoute
   InsightsTrendsRoute: typeof InsightsTrendsRoute
   JudgesIdRoute: typeof JudgesIdRoute
@@ -2263,6 +2276,13 @@ declare module '@tanstack/react-router' {
       path: '/insights/signals'
       fullPath: '/insights/signals'
       preLoaderRoute: typeof InsightsSignalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/insights/stories': {
+      id: '/insights/stories'
+      path: '/insights/stories'
+      fullPath: '/insights/stories'
+      preLoaderRoute: typeof InsightsStoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/insights/today': {
@@ -3091,6 +3111,7 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsRankingsRoute: InsightsRankingsRoute,
   InsightsResearchRoute: InsightsResearchRoute,
   InsightsSignalsRoute: InsightsSignalsRoute,
+  InsightsStoriesRoute: InsightsStoriesRoute,
   InsightsTodayRoute: InsightsTodayRoute,
   InsightsTrendsRoute: InsightsTrendsRoute,
   JudgesIdRoute: JudgesIdRoute,

@@ -647,7 +647,7 @@ const SECTIONS: readonly SectionSpec[] = [
         to: "/insights",
         label: "Overview",
         description: "Headline figures across the platform and what moved most.",
-        owns: (p) => p === "/insights" || p === "/analytics",
+        owns: (p) => p === "/insights" || p === "/analytics" || at(p, "/insights/stories"),
       },
       {
         id: "explore",

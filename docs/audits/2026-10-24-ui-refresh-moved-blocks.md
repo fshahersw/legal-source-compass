@@ -49,3 +49,7 @@ Congress split by became law).
 
 - Products & devices (`/safety/products`): the page now opens on the product watch (which drugs and device product codes have FDA reports rising faster than their source, their MDL status, rising death reports), read through `public.safety_watch_v1` (`database/contracts/safety-watch-v1.sql`). The three lists stay one tab away; the "Named in MDL titles" list, formerly the default, is `?view=mdl`, and `?view=drugs` / `?view=devices` are unchanged. Restore: default `view` back to "mdl" in `src/routes/safety_.products.index.tsx`.
 - Product pages (`/safety/products/$id`): a "Product watch" line (signal, expected count, MDL status, 36-month strip, Ask AI) sits under the headline figures. Added; nothing moved.
+
+## Visual stories (2026-10-28)
+
+- New page `/insights/stories` (owned by the Insights Overview tab, no new tab): the MDL docket race over every captured JPML pending report, a streamgraph of the whole docket and the live defendant network from SEC filings, read through `public.corpus_mdl_docket_v1` and `public.corpus_defendant_network_v1` (`database/contracts/visual-stories-v1.sql`). The Insights Overview tools list gains a "Visual stories" entry. Added; nothing moved or removed.
