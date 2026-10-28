@@ -114,5 +114,5 @@
 - [x] Rebuild weakest charts (clearance-rate trend, MDL momentum scatter, court median/range dots)
 - [x] Map/Tiles toggle on every national state map (Overview, Places, Insights rankings, EPA, OSHA, CFPB, agency spending, company payments, case analytics); rate maps hatch states with no figure instead of drawing them as the lowest value (EPA per-million no longer turns a missing rate into 0)
 - [ ] Law hierarchy trees: U.S. Code and CFR done; state codes/constitutions need a per-level totals endpoint
-- [~] Visual backfill: court/judge/place/company identity blocks — record identity boxes now hold facts only (ids, registry keys, provider flags and provider names moved to technical details or tooltips); still to check: profiles with no exact-ID image show a clean recorded-type mark rather than an empty frame
+- [x] Visual backfill: court/judge/place/company identity blocks — record identity boxes hold facts only (ids, registry keys, stored-file counts, provider flags and provider names moved to technical details or tooltips); profiles with no exact-ID photo show their recorded court mark or court-type emblem (checked: Cal. Supreme Court, Tex. App. 1st Dist.)
 - [ ] Wire unused accurate datasets into their sections
