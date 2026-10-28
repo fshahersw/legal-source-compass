@@ -2,7 +2,8 @@
 
 ## Uploaded executive brief (2026-10-28)
 - [x] Prepare evidence-based sprint plan: visual declutter, chart accuracy, maps, hierarchy/registry imagery, and compatible corpus enrichment; preserve Time Limits and existing acquisition checkpoints.
-- [ ] Implement the executive-brief sprint sequence — awaiting approval of the plan; data-dependent visuals require verified source fields and joins.
+- [x] First sprint: four state modes with legacy directory destinations; compact balanced hub figures; richer bounded chart AI context; complete-year civil clearance flow panels and corrected district-median AI label.
+- [ ] Next sprint: MDL missing-value validation/momentum, district profile links, map tile mode, law trees and exact-ID imagery; source compatibility remains required. Time Limits and acquisition checkpoints untouched.
 
 ## Comprehensive platform scan (2026-10-28)
 - [x] Read-only audit: pages and workflows, visual cohesion, accessibility, chart/data integrity, AI/server security, automated tests; evidence and prioritized findings saved without application changes; hosted deployment and exhaustive legal/security certification remain unverified.

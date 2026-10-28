@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useMatch, useNavigate } from "@tanstack/
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BarChart3, BookOpen, Landmark, MapPin, UsersRound } from "lucide-react";
+import { BarChart3, BookOpen, Landmark, MapPin } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { UsMap } from "@/components/corpus/UsMap";
 import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
@@ -11,6 +11,7 @@ import { StateCourtDirectory, StateJudgeDirectory } from "@/components/corpus/St
 import { StateSourcePanelWithRegistry } from "@/components/corpus/StateSourcePanelWithRegistry";
 import { StateAnalysisView } from "@/components/places/StateAnalysisView";
 import { DEFAULT_METRIC } from "@/components/places/placeMetrics";
+import { STATE_MODES, stateMode } from "@/components/places/stateModes";
 import {
   directorySearch,
   parsePlaceHubSearch,
@@ -64,14 +65,7 @@ export const Route = createFileRoute("/places/$state")({
  * resources" because the overview now has its own Law section, and this tab holds the full code browser and the
  * complete, searchable resource directory.
  */
-const tabs: { id: PlaceHubTab; label: string; icon: typeof Landmark }[] = [
-  { id: "overview", label: "Overview", icon: MapPin },
-  { id: "analysis", label: "Analysis", icon: BarChart3 },
-  { id: "courts", label: "Courts", icon: Landmark },
-  { id: "judges", label: "Judges", icon: UsersRound },
-  { id: "sources", label: "Law & resources", icon: BookOpen },
-  { id: "counties", label: "Counties", icon: MapPin },
-];
+const modeIcons = { overview: MapPin, analysis: BarChart3, directory: Landmark, sources: BookOpen };
 /** The 50 states and DC, plus Puerto Rico (which has pages but no place in state rankings). */
 const SWITCHER = [
   ...STATES.map((s) => ({ usps: s.usps, name: s.name })),
@@ -220,19 +214,30 @@ function StatePage() {
       }
     >
       <nav aria-label={`${state.name} research`} className="workspace-tabs">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            type="button"
+        {STATE_MODES.map(({ id, label, destination }) => {
+          const Icon = modeIcons[id];
+          return <Button
+            variant="ghost"
+            size="sm"
             key={id}
-            aria-current={tab === id ? "page" : undefined}
-            onClick={() => void openTab(id)}
-            className={`flex items-center gap-2 rounded-md px-3 text-xs transition-colors ${tab === id ? "bg-primary font-semibold text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+            aria-current={stateMode(tab) === id ? "page" : undefined}
+            onClick={() => void openTab(destination)}
+            className={stateMode(tab) === id ? "bg-primary font-semibold text-primary-foreground hover:bg-primary hover:text-primary-foreground" : "text-muted-foreground"}
           >
             <Icon className="size-3.5" aria-hidden />
             {label}
-          </button>
-        ))}
+          </Button>;
+        })}
       </nav>
+      {stateMode(tab) === "directory" ? <div className="flex flex-wrap items-center gap-3">
+        <label htmlFor="state-directory" className="text-meta text-muted-foreground">Directory</label>
+        <select id="state-directory" value={tab} onChange={(e) => {
+          const next = e.target.value;
+          if (next === "courts" || next === "judges" || next === "counties") void openTab(next);
+        }} className="h-8 rounded-md border border-input bg-surface px-2 text-body">
+          <option value="courts">Courts</option><option value="judges">Judges</option><option value="counties">Counties</option>
+        </select>
+      </div> : null}
       {tab === "overview" ? <StateCapitolHeader usps={usps} stateName={state.name} /> : null}
       {tab === "overview" ? (
         <StateOverviewTab
