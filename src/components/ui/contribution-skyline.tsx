@@ -119,7 +119,13 @@ export const generateContributions = (endMs: number, seed = 7, days = 371): Cont
  * Levels 1–4 split the non-zero days by their share of a busy day — the 95th
  * percentile, so one freak day can't wash every other day out to level 1.
  */
-export const buildGrid = (data: ContributionDay[], endMs: number, weekStart = 0) => {
+export const buildGrid = (
+  data: ContributionDay[],
+  endMs: number,
+  weekStart = 0,
+  /** First covered day: earlier days are left out, never drawn as zero. */
+  startMs?: number,
+) => {
   const counts = new Map<string, number>();
   for (const d of data) {
     if (!d || typeof d.date !== "string") continue;
@@ -134,6 +140,7 @@ export const buildGrid = (data: ContributionDay[], endMs: number, weekStart = 0)
   const cells: Cell[] = [];
   for (let ms = start, i = 0; ms <= endMs; ms += DAY_MS, i++) {
     const date = toKey(ms);
+    if (startMs !== undefined && ms < startMs) continue;
     cells.push({
       date,
       count: counts.get(date) ?? 0,
@@ -318,6 +325,8 @@ export interface ContributionSkylineProps {
   data?: ContributionDay[];
   /** Last day shown. Defaults to the latest date in `data`, or today. */
   endDate?: string | Date;
+  /** First covered day; days before it are not drawn. */
+  startDate?: string;
   /** Controlled view. */
   view?: View;
   /** Uncontrolled starting view. The 3D view rises out of the flat one when it first scrolls into sight. */
@@ -509,6 +518,7 @@ function Stat({
 export default function ContributionSkyline({
   data,
   endDate,
+  startDate,
   view: viewProp,
   defaultView = "3d",
   onViewChange,
@@ -534,7 +544,7 @@ export default function ContributionSkyline({
     const dates = (data ?? []).map((d) => dayMs(d.date)).filter(Number.isFinite);
     const end = endKey ?? (dates.length ? Math.max(...dates) : dayMs(new Date()));
     const days = data ?? []; // never a generated sample: no data draws an empty grid
-    const grid = buildGrid(days, end, weekStart);
+    const grid = buildGrid(days, end, weekStart, startDate ? dayMs(startDate) : undefined);
     return {
       ...grid,
       stats: computeStats(grid.cells),
