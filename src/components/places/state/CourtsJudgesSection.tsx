@@ -1,3 +1,4 @@
+import { InfoPopover } from "@/components/kit/InfoPopover";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -179,14 +180,18 @@ function Districts({ usps, stateName }: { usps: string; stateName: string }) {
               </tbody>
             </table>
           </div>
-          <p className="m-0 border-t border-border/60 px-3 py-2 text-[11px] leading-4 text-muted-foreground">
-            Civil filings: Federal Judicial Center Integrated Database, complete fiscal years only
-            (a year still in progress is not drawn); the trend line shows up to the last 12 complete
-            fiscal years recorded for the district. Judges: FJC biographical directory
-            {asOf ? `, as of ${asOf}` : ""}; pending MDL actions: Judicial Panel on Multidistrict
-            Litigation pending-MDL reports. Courts that do not appear in a source show Not recorded,
-            not zero.
-          </p>
+          <div className="flex items-center justify-between border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
+            <span>Complete fiscal years · missing courts show Not recorded</span>
+            <InfoPopover label="Source and notes">
+              <p>
+                Civil filings: Federal Judicial Center Integrated Database, complete fiscal years only
+                (a year still in progress is not drawn); the trend line shows up to the last 12
+                complete fiscal years recorded for the district. Judges: FJC biographical directory
+                {asOf ? `, as of ${asOf}` : ""}; pending MDL actions: Judicial Panel on Multidistrict
+                Litigation pending-MDL reports.
+              </p>
+            </InfoPopover>
+          </div>
         </>
       )}
     </section>
