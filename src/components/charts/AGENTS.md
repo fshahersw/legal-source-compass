@@ -4,3 +4,4 @@
 - Dot plots of units against a baseline use the median of the compared units (with a stated minimum size) and show any national aggregate beside it, not as the line. Why: a few mass-tort dockets can pull a national figure past most units.
 - Sunbursts and remainder slices come only from exact partitions (children sum to the parent, checked against the corpus); a shortfall becomes "Not broken down", an excess drops the child ring. Why: a ring never claims more than its parent.
 - Chart cards offer an icon-only Ask AI that sends only the rows of the card's "View data" table (`kit/ai/chartContext.ts`). Why: AI answers stay grounded in figures the reader can see.
+- Hierarchy diagrams use recorded court types or exact agency parent/component identities; dated official organization charts remain external references, and Government Manual headings are not reporting relationships. Why: diagram styling must not imply institutional links the evidence does not establish.

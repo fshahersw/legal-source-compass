@@ -39,7 +39,7 @@ function Section({
   note?: ReactNode;
   children: ReactNode;
   state: string;
-  courtId?: string;
+  courtId?: string | undefined;
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-12 space-y-2">

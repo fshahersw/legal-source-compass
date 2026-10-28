@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 /** Exact-bound registry imagery only; a missing photograph leaves a labelled topic icon. */
 export function SectionIdentity({ id, title, note, state, courtId }: {
-  id: string; title: string; note?: ReactNode; state: string; courtId?: string;
+  id: string; title: string; note?: ReactNode; state: string; courtId?: string | undefined;
 }) {
   const court = useQuery({ ...courtBuildingsQuery(courtId ?? ""), enabled: id === "courts" && !!courtId });
   const capitol = useQuery({ ...stateCapitolQuery(state), enabled: id === "law" });
