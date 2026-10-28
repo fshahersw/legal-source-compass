@@ -40,6 +40,7 @@ import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMatterPdfRouteImport } from './routes/api/matter-pdf'
 import { Route as ApiNavigatorRouteImport } from './routes/api/navigator'
+import { Route as ApiNavigatorVoiceRouteImport } from './routes/api/navigator-voice'
 import { Route as ApiSourceBrowserRouteImport } from './routes/api/source-browser'
 import { Route as ApiSourceCheckRouteImport } from './routes/api/source-check'
 import { Route as ApiSourceFileRouteImport } from './routes/api/source-file'
@@ -309,6 +310,11 @@ const ApiMatterPdfRoute = ApiMatterPdfRouteImport.update({
 const ApiNavigatorRoute = ApiNavigatorRouteImport.update({
   id: '/api/navigator',
   path: '/api/navigator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNavigatorVoiceRoute = ApiNavigatorVoiceRouteImport.update({
+  id: '/api/navigator-voice',
+  path: '/api/navigator-voice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSourceBrowserRoute = ApiSourceBrowserRouteImport.update({
@@ -930,6 +936,7 @@ export interface FileRoutesByFullPath {
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/api/navigator': typeof ApiNavigatorRoute
+  '/api/navigator-voice': typeof ApiNavigatorVoiceRoute
   '/api/source-browser': typeof ApiSourceBrowserRoute
   '/api/source-check': typeof ApiSourceCheckRoute
   '/api/source-file': typeof ApiSourceFileRoute
@@ -1078,6 +1085,7 @@ export interface FileRoutesByTo {
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/api/navigator': typeof ApiNavigatorRoute
+  '/api/navigator-voice': typeof ApiNavigatorVoiceRoute
   '/api/source-browser': typeof ApiSourceBrowserRoute
   '/api/source-check': typeof ApiSourceCheckRoute
   '/api/source-file': typeof ApiSourceFileRoute
@@ -1219,6 +1227,7 @@ export interface FileRoutesById {
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/api/navigator': typeof ApiNavigatorRoute
+  '/api/navigator-voice': typeof ApiNavigatorVoiceRoute
   '/api/source-browser': typeof ApiSourceBrowserRoute
   '/api/source-check': typeof ApiSourceCheckRoute
   '/api/source-file': typeof ApiSourceFileRoute
@@ -1369,6 +1378,7 @@ export interface FileRouteTypes {
     | '/api/files'
     | '/api/matter-pdf'
     | '/api/navigator'
+    | '/api/navigator-voice'
     | '/api/source-browser'
     | '/api/source-check'
     | '/api/source-file'
@@ -1517,6 +1527,7 @@ export interface FileRouteTypes {
     | '/api/files'
     | '/api/matter-pdf'
     | '/api/navigator'
+    | '/api/navigator-voice'
     | '/api/source-browser'
     | '/api/source-check'
     | '/api/source-file'
@@ -1657,6 +1668,7 @@ export interface FileRouteTypes {
     | '/api/files'
     | '/api/matter-pdf'
     | '/api/navigator'
+    | '/api/navigator-voice'
     | '/api/source-browser'
     | '/api/source-check'
     | '/api/source-file'
@@ -1806,6 +1818,7 @@ export interface RootRouteChildren {
   ApiFilesRoute: typeof ApiFilesRoute
   ApiMatterPdfRoute: typeof ApiMatterPdfRoute
   ApiNavigatorRoute: typeof ApiNavigatorRoute
+  ApiNavigatorVoiceRoute: typeof ApiNavigatorVoiceRoute
   ApiSourceBrowserRoute: typeof ApiSourceBrowserRoute
   ApiSourceCheckRoute: typeof ApiSourceCheckRoute
   ApiSourceFileRoute: typeof ApiSourceFileRoute
@@ -2114,6 +2127,13 @@ declare module '@tanstack/react-router' {
       path: '/api/navigator'
       fullPath: '/api/navigator'
       preLoaderRoute: typeof ApiNavigatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/navigator-voice': {
+      id: '/api/navigator-voice'
+      path: '/api/navigator-voice'
+      fullPath: '/api/navigator-voice'
+      preLoaderRoute: typeof ApiNavigatorVoiceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/source-browser': {
@@ -3111,6 +3131,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFilesRoute: ApiFilesRoute,
   ApiMatterPdfRoute: ApiMatterPdfRoute,
   ApiNavigatorRoute: ApiNavigatorRoute,
+  ApiNavigatorVoiceRoute: ApiNavigatorVoiceRoute,
   ApiSourceBrowserRoute: ApiSourceBrowserRoute,
   ApiSourceCheckRoute: ApiSourceCheckRoute,
   ApiSourceFileRoute: ApiSourceFileRoute,
