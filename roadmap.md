@@ -116,3 +116,5 @@
 - [ ] Law hierarchy trees: U.S. Code and CFR done; state codes/constitutions need a per-level totals endpoint
 - [x] Visual backfill: court/judge/place/company identity blocks — record identity boxes hold facts only (ids, registry keys, stored-file counts, provider flags and provider names moved to technical details or tooltips); profiles with no exact-ID photo show their recorded court mark or court-type emblem (checked: Cal. Supreme Court, Tex. App. 1st Dist.)
 - [ ] Wire unused accurate datasets into their sections
+
+- [ ] Court delay reports on district court pages: reader and tests are done (`src/lib/external/courtCjra.functions.ts`); the chart panel on the court page is not built yet (paused at the owner's request 2026-10-28)
