@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { icicleLayout, shortContainer, topLevelRows, type OutlineInput } from "./codeStructure";
+import {
+  icicleLayout,
+  shortContainer,
+  topLevelRows,
+  topRowName,
+  type OutlineInput,
+} from "./codeStructure";
 
 const node = (
   index: number,
@@ -29,6 +35,9 @@ describe("icicleLayout", () => {
     expect(c["c3"]!.x1).toBeCloseTo(0.5);
     expect(c["c4"]!.x1).toBeCloseTo(0.75);
     expect(l.rows).toBe(2);
+    expect(c["c1"]!.leaf).toBe(false);
+    expect(c["c2"]!.leaf).toBe(true);
+    expect(c["c3"]!.leaf).toBe(true);
     expect(l.excess).toEqual([]);
     expect(l.unbroken).toBe(0);
   });
@@ -103,5 +112,18 @@ describe("topLevelRows", () => {
       ["container", 6, 75],
       ["direct", 2, 25],
     ]);
+  });
+});
+
+describe("topRowName", () => {
+  it("names the top row by its recorded kind only when every container shares it", () => {
+    const outline = [
+      { ...node(0, null, 0, 4, 0, "TITLE 1—"), kind: "title" },
+      { ...node(1, 0, 1, 3), kind: "chapter" },
+      { ...node(2, 0, 1, 1), kind: "chapter" },
+    ];
+    expect(topRowName(outline, icicleLayout(outline))).toBe("2 chapters");
+    const mixed = [...outline.slice(0, 2), { ...node(2, 0, 1, 1), kind: "subtitle" }];
+    expect(topRowName(mixed, icicleLayout(mixed))).toBe("2 top-level containers");
   });
 });

@@ -118,6 +118,7 @@ function TitlePage() {
                 sourceHref={t.officialUrl}
                 statusLabels={STATUS_LABELS}
                 containerLabel={containerLabel}
+                headline={smartTitle}
                 selected={c}
                 onSelect={(i) => void navigate({ search: { q, c: i } })}
               />

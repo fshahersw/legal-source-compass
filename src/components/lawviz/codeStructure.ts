@@ -13,6 +13,8 @@ export type OutlineInput = {
   status: string | null;
   total: number;
   direct: number;
+  /** "chapter", "subtitle"… (used only to name the top row). */
+  kind?: string | undefined;
 };
 
 export type IcicleCell = {
@@ -29,6 +31,8 @@ export type IcicleCell = {
   status: string | null;
   /** Outline index of the container the cell sits in (null at the title level). */
   parent: number | null;
+  /** Nothing is drawn below this cell (a leaf, a "directly in" or "not broken down" cell, or the last drawn row). */
+  leaf: boolean;
 };
 
 export type IcicleLayout = {
@@ -98,6 +102,7 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
         heading: k.heading,
         status: k.status,
         parent: parent?.index ?? null,
+        leaf: false,
       });
       deepest = Math.max(deepest, row + 1);
       place(k, byParent.get(k.index) ?? [], t, count(k.direct), x, x + w, row + 1);
@@ -116,6 +121,7 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
         heading: parent?.heading ?? null,
         status: null,
         parent: parent?.index ?? null,
+        leaf: true,
       });
       x += direct * scale;
     }
@@ -134,11 +140,14 @@ export function icicleLayout(outline: readonly OutlineInput[], maxRows = 3): Ici
         heading: parent?.heading ?? null,
         status: null,
         parent: parent?.index ?? null,
+        leaf: true,
       });
     }
   };
 
   place(titleNode, top, total, titleNode ? count(titleNode.direct) : 0, 0, 1, 0);
+  const parents = new Set(cells.map((c) => c.parent));
+  for (const c of cells) c.leaf = c.index === null || !parents.has(c.index);
   return { cells, total, rows: deepest, excess, unbroken };
 }
 
@@ -162,6 +171,31 @@ export function shortContainer(num: string | null): string {
   if (!m) return n;
   const abbr = ABBR[m[1]!.toLowerCase()];
   return abbr ? `${abbr} ${m[2]!.replace(/\]$/, "")}` : n;
+}
+
+const PLURAL: Record<string, string> = { subchapter: "subchapters", chapter: "chapters" };
+
+/** "196 chapters": the top row named by its most common recorded kind ("levels" when none is recorded). */
+export function topRowName(outline: readonly OutlineInput[], layout: IcicleLayout): string {
+  const byIndex = new Map(outline.map((n) => [n.index, n]));
+  const kinds = new Map<string, number>();
+  let n = 0;
+  for (const c of layout.cells) {
+    if (c.row !== 0 || c.index === null) continue;
+    n++;
+    const k = byIndex.get(c.index)?.kind?.toLowerCase();
+    if (k) kinds.set(k, (kinds.get(k) ?? 0) + 1);
+  }
+  const common = [...kinds].sort((a, b) => b[1] - a[1])[0];
+  const noun =
+    common && common[1] === n
+      ? n === 1
+        ? common[0]
+        : (PLURAL[common[0]] ?? `${common[0]}s`)
+      : n === 1
+        ? "top-level container"
+        : "top-level containers";
+  return `${n.toLocaleString("en-US")} ${noun}`;
 }
 
 /** Top-level containers by share of the title, for the chart's data table. */

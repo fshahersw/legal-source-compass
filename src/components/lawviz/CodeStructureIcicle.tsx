@@ -13,6 +13,7 @@ import {
   icicleLayout,
   shortContainer,
   topLevelRows,
+  topRowName,
   type IcicleCell,
   type OutlineInput,
 } from "./codeStructure";
@@ -35,6 +36,7 @@ function cellName(c: IcicleCell, label: (num: string | null, heading: string | n
 }
 
 export function CodeStructureIcicle({
+  headline = (s: string) => s,
   id = "title-structure",
   titleLabel,
   outline,
@@ -53,6 +55,8 @@ export function CodeStructureIcicle({
   sourceHref: string | null;
   statusLabels: Record<string, string>;
   containerLabel: (num: string | null, heading: string | null) => string;
+  /** Re-cases an all-capitals label for the card title only (blocks and the table keep the printed text). */
+  headline?: (label: string) => string;
   selected: number | undefined;
   onSelect: (index: number) => void;
 }) {
@@ -73,7 +77,7 @@ export function CodeStructureIcicle({
   const biggest = top
     .filter((r) => r.kind === "container")
     .sort((a, b) => b.total - a.total)[0];
-  const containers = top.filter((r) => r.kind === "container").length;
+  const rowName = topRowName(outline, layout);
   const anyGone = layout.cells.some((c) => c.status !== null && GONE.has(c.status));
   const height = Math.max(1, layout.rows) * (ROW_H + ROW_GAP);
   const source = {
@@ -104,10 +108,10 @@ export function CodeStructureIcicle({
       id={id}
       title={
         biggest && biggest.share !== null
-          ? `${containerLabel(biggest.num, biggest.heading)} holds ${pctText(biggest.share)} of ${titleLabel}'s ${fmt(layout.total)} sections`
+          ? `${headline(containerLabel(biggest.num, biggest.heading))} holds ${pctText(biggest.share)} of ${titleLabel}'s ${fmt(layout.total)} sections`
           : `${titleLabel}: where the sections sit`
       }
-      subtitle={`${fmt(containers)} top-level ${containers === 1 ? "level" : "levels"} · each block as wide as its share of the sections · select one to open it`}
+      subtitle={`${rowName} · each block as wide as its share of the sections · select one to open it`}
       source={source}
       state={layout.cells.length ? "ready" : "empty"}
       emptyText="This title's outline has no levels to draw."
@@ -177,6 +181,10 @@ export function CodeStructureIcicle({
             const cw = (c.x1 - c.x0) * w - 1;
             if (cw < 0.5) return null;
             const y = c.row * (ROW_H + ROW_GAP);
+            // a leaf runs to the bottom row, so a level with nothing below it reads as one block, not a gap
+            const ch = c.leaf
+              ? (Math.max(1, layout.rows) - c.row) * (ROW_H + ROW_GAP) - ROW_GAP
+              : ROW_H;
             const shade = SHADE[c.row] ?? 24;
             const gone = c.kind === "container" && c.status !== null && GONE.has(c.status);
             const fill =
@@ -209,7 +217,7 @@ export function CodeStructureIcicle({
                   x={x}
                   y={y}
                   width={cw}
-                  height={ROW_H}
+                  height={ch}
                   rx={cw > 6 ? 3 : 0}
                   style={{ fill }}
                   stroke={
@@ -225,7 +233,7 @@ export function CodeStructureIcicle({
                 {label && maxChars >= 3 ? (
                   <text
                     x={x + 6}
-                    y={y + ROW_H / 2 + 4}
+                    y={y + Math.min(ch, ROW_H) / 2 + 4}
                     fontSize={11.5}
                     fontWeight={c.row === 0 ? 600 : 500}
                     fill={ink}
