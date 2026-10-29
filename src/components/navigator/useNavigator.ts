@@ -13,11 +13,15 @@ import {
   NAV_MEMORY_MESSAGES,
   type ClientCall,
   type NavigatorEvent,
+  type NavigatorFile,
   type NavigatorSource,
   type NavigatorStep,
 } from "@/lib/navigator/protocol";
 import { clearOverlays } from "./pointer";
 import { execute, runningLabel, settle } from "./executor";
+import { agentHeaders } from "./agentOwner";
+
+export const AGENT_FOLDER_EVENT = "agent:folder-changed";
 
 export type NavMessage = {
   id: string;
@@ -29,7 +33,22 @@ export type NavMessage = {
   sources: NavigatorSource[];
   /** Pages the task visited, in order. */
   trail: string[];
+  /** Files the task saved to the agent folder. */
+  files: NavigatorFile[];
+  /** Memories the task saved. */
+  learned: string[];
 };
+
+function addFiles(m: NavMessage, files: NavigatorFile[]): NavMessage {
+  const fresh = files.filter((f) => !m.files.some((x) => x.id === f.id));
+  if (!fresh.length) return m;
+  try {
+    window.dispatchEvent(new CustomEvent(AGENT_FOLDER_EVENT));
+  } catch {
+    // no window
+  }
+  return { ...m, files: [...m.files, ...fresh] };
+}
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -83,6 +102,8 @@ export function useNavigator(panelRef: React.RefObject<HTMLElement | null>) {
         notes: [],
         sources: [],
         trail: [],
+        files: [],
+        learned: [],
       };
       const reply: NavMessage = {
         ...user,
@@ -114,6 +135,7 @@ export function useNavigator(panelRef: React.RefObject<HTMLElement | null>) {
             signal: controller.signal,
             headers: {
               "content-type": "application/json",
+              ...agentHeaders(),
               ...(token ? { authorization: `Bearer ${token}` } : {}),
             },
             body: JSON.stringify(body),
@@ -154,14 +176,29 @@ export function useNavigator(panelRef: React.RefObject<HTMLElement | null>) {
                 });
               } else if (event.type === "step") upsertStep(reply.id, event.step);
               else if (event.type === "client_tools") pending = event;
-              else if (event.type === "done") {
+              else if (event.type === "file") {
+                const f = event.file;
+                patch(reply.id, (m) => addFiles(m, [f]));
+              } else if (event.type === "memory") {
+                const t = event.title;
+                if (t)
+                  patch(reply.id, (m) =>
+                    m.learned.includes(t) ? m : { ...m, learned: [...m.learned, t] },
+                  );
+              } else if (event.type === "done") {
                 finished = true;
-                patch(reply.id, (m) => ({
-                  ...m,
-                  content: event.text || m.content,
-                  sources: event.sources,
-                  status: "done",
-                }));
+                const files = event.files ?? [];
+                patch(reply.id, (m) =>
+                  addFiles(
+                    {
+                      ...m,
+                      content: event.text || m.content,
+                      sources: event.sources,
+                      status: "done",
+                    },
+                    files,
+                  ),
+                );
               } else if (event.type === "error") {
                 finished = true;
                 patch(reply.id, (m) => ({ ...m, content: event.message, status: "error" }));
@@ -187,9 +224,11 @@ export function useNavigator(panelRef: React.RefObject<HTMLElement | null>) {
               state: out.isError ? "failed" : "done",
               path: out.path,
             });
-            patch(reply.id, (m) =>
-              m.trail.at(-1) === out.path ? m : { ...m, trail: [...m.trail, out.path] },
-            );
+            patch(reply.id, (m) => {
+              const next =
+                m.trail.at(-1) === out.path ? m : { ...m, trail: [...m.trail, out.path] };
+              return out.files?.length ? addFiles(next, out.files) : next;
+            });
             results.push({
               id: call.id,
               content: out.content,

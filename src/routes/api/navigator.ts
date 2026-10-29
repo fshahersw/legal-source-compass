@@ -4,7 +4,8 @@ const MAX_BODY = 3 * 1024 * 1024;
 
 /**
  * The navigator endpoint: starts a task or resumes one with the browser's tool results, and streams the agent's
- * steps, text and either the next browser calls or the final answer as server-sent events.
+ * steps, text, saved files and either the next browser calls or the final answer as server-sent events. The agent's
+ * workspace (memory, folder, schedules) belongs to the signed-in user or, with sign-in off, to the browser's key.
  */
 export const Route = createFileRoute("/api/navigator")({
   server: {
@@ -12,8 +13,9 @@ export const Route = createFileRoute("/api/navigator")({
       POST: async ({ request }) => {
         const { requireCorpusAccess, corpusAccessErrorResponse } =
           await import("@/lib/auth/access.server");
+        let userId: string | null = null;
         try {
-          await requireCorpusAccess(request);
+          userId = (await requireCorpusAccess(request)).userId;
         } catch (error) {
           return corpusAccessErrorResponse(error);
         }
@@ -48,6 +50,9 @@ export const Route = createFileRoute("/api/navigator")({
         if (!parsed.success)
           return Response.json({ error: "The request was not valid." }, { status: 400 });
         const { runNavigator, NavigatorRejected } = await import("@/lib/navigator/agent.server");
+        const { ownerFor, registerSiteUrl } = await import("@/lib/agent/owner.server");
+        const owner = await ownerFor(request, userId);
+        void registerSiteUrl(request);
         const { AssistantUnavailable } = await import("@/lib/assistant/agent.server");
         const abort = new AbortController();
         request.signal?.addEventListener("abort", () => abort.abort());
@@ -60,7 +65,10 @@ export const Route = createFileRoute("/api/navigator")({
                 controller.enqueue(encoder.encode(encodeNavigatorEvent(event)));
             };
             try {
-              await runNavigator(parsed.data, emit, abort.signal, today);
+              await runNavigator(parsed.data, emit, abort.signal, today, {
+                owner,
+                mode: "interactive",
+              });
             } catch (error) {
               const known =
                 error instanceof AssistantUnavailable || error instanceof NavigatorRejected;
