@@ -1,17 +1,27 @@
 /**
  * The navigator panel: give the agent a task and watch it work the site. Docked bottom-left so the page it drives
  * stays visible; it shows each step as it happens (pages opened, controls pressed, charts read, searches run), the
- * trail of pages visited, and the answer with links. Stop at any time; minimise it while it works.
+ * trail of pages visited, the files it saved to its folder, what it learned, and the answer with links. Stop at any
+ * time; minimise it while it works.
  */
 import { useEffect, useRef, useState } from "react";
-import { useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowUp,
   BookOpen,
   Bot,
+  Brain,
+  CalendarClock,
   CircleAlert,
+  Code2,
   Compass,
+  Download,
   Eye,
+  FileText,
+  FolderOpen,
+  Globe,
+  ImageIcon,
   Keyboard,
   Loader2,
   Mic,
@@ -32,7 +42,8 @@ import {
   navigatorSuggestions,
   type NavigatorOpenDetail,
 } from "./navigatorEvents";
-import { useNavigator, type NavMessage } from "./useNavigator";
+import { AGENT_FOLDER_EVENT, useNavigator, type NavMessage } from "./useNavigator";
+import { agentApi } from "@/components/agent/agentApi";
 import { useVoice, type VoiceState } from "./useVoice";
 import { VoiceOrb } from "./VoiceOrb";
 import { VoiceBar } from "./VoiceBar";
@@ -53,7 +64,76 @@ function StepIcon({ step }: { step: NavigatorStep }) {
   if (l.startsWith("typed")) return <Keyboard className={cn(cls, "text-primary")} aria-hidden />;
   if (l.startsWith("read")) return <Eye className={cn(cls, "text-primary")} aria-hidden />;
   if (l.includes("site map")) return <BookOpen className={cn(cls, "text-primary")} aria-hidden />;
+  if (l.includes("python")) return <Code2 className={cn(cls, "text-primary")} aria-hidden />;
+  if (l.includes("image")) return <ImageIcon className={cn(cls, "text-primary")} aria-hidden />;
+  if (l.includes("document") || l.includes("folder") || l.includes("saved file"))
+    return <FileText className={cn(cls, "text-primary")} aria-hidden />;
+  if (l.includes("memory")) return <Brain className={cn(cls, "text-primary")} aria-hidden />;
+  if (l.includes("schedule"))
+    return <CalendarClock className={cn(cls, "text-primary")} aria-hidden />;
+  if (l.includes("web")) return <Globe className={cn(cls, "text-primary")} aria-hidden />;
   return <Search className={cn(cls, "text-primary")} aria-hidden />;
+}
+
+function Files({ m }: { m: NavMessage }) {
+  if (!m.files.length) return null;
+  const images = m.files.filter((f) => f.mime.startsWith("image/") && f.url);
+  const others = m.files.filter((f) => !(f.mime.startsWith("image/") && f.url));
+  return (
+    <div className="space-y-1.5">
+      {images.length ? (
+        <div className={cn("grid gap-1.5", images.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+          {images.slice(0, 6).map((f) => (
+            <InternalLink
+              key={f.id}
+              href={f.href}
+              className="group block overflow-hidden rounded-md border border-border bg-muted/40"
+            >
+              <img
+                src={f.url!}
+                alt={f.title}
+                loading="lazy"
+                className="max-h-48 w-full object-contain"
+              />
+              <span className="block truncate px-2 py-1 text-[11px] text-muted-foreground group-hover:text-foreground">
+                {f.title}
+              </span>
+            </InternalLink>
+          ))}
+        </div>
+      ) : null}
+      {others.map((f) => (
+        <div
+          key={f.id}
+          className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[12px]"
+        >
+          <FileText className="size-3.5 shrink-0 text-primary" aria-hidden />
+          <InternalLink href={f.href} className="min-w-0 flex-1 truncate hover:underline">
+            {f.title}
+          </InternalLink>
+          {f.url ? (
+            <a
+              href={`${f.url}&download=1`}
+              aria-label={`Download ${f.title}`}
+              className="inline-flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <Download className="size-3.5" aria-hidden />
+            </a>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Learned({ m }: { m: NavMessage }) {
+  if (!m.learned.length) return null;
+  return (
+    <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+      <Brain className="mt-px size-3.5 shrink-0 text-primary" aria-hidden />
+      <span>Remembered: {m.learned.join("; ")}</span>
+    </p>
+  );
 }
 
 function Steps({ m }: { m: NavMessage }) {
@@ -130,6 +210,8 @@ function Message({ m }: { m: NavMessage }) {
           )}
         </div>
       ) : null}
+      <Files m={m} />
+      <Learned m={m} />
       {m.status === "done" && m.sources.length ? (
         <ul className="space-y-0.5 text-[11px] text-muted-foreground">
           {m.sources.slice(0, 6).map((s) => (
@@ -180,6 +262,20 @@ export function NavigatorPanel() {
   const voice = useVoice({ runTask: run, stopTask: stop, busy, panel: panelRef });
   const voiceOn = voice.state !== "off" && voice.state !== "error";
   const path = useRouterState({ select: (s) => s.location.pathname });
+  const qc = useQueryClient();
+  const folder = useQuery({
+    queryKey: ["agent-folder", "unread"],
+    queryFn: agentApi.unread,
+    enabled: mode !== "closed",
+    staleTime: 60_000,
+    retry: false,
+  });
+  useEffect(() => {
+    const on = () => void qc.invalidateQueries({ queryKey: ["agent-folder"] });
+    window.addEventListener(AGENT_FOLDER_EVENT, on);
+    return () => window.removeEventListener(AGENT_FOLDER_EVENT, on);
+  }, [qc]);
+  const unread = folder.data?.unread ?? 0;
   const lastStep =
     messages.at(-1)?.role === "assistant" ? messages.at(-1)?.steps.at(-1) : undefined;
 
@@ -279,9 +375,23 @@ export function NavigatorPanel() {
               ? (current?.label ?? "Working…")
               : voiceOn
                 ? voiceLabel(voice.state)
-                : "Works the site for you: opens pages, reads charts, uses controls"}
+                : "Works the site, remembers, writes, computes, browses, schedules"}
           </p>
         </div>
+        <Link
+          to="/sources/library"
+          search={{ view: "agent" }}
+          aria-label={unread ? `Agent folder, ${unread} unread` : "Agent folder"}
+          title="Agent folder"
+          className="relative inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+        >
+          <FolderOpen className="size-3.5" aria-hidden />
+          {unread ? (
+            <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[9.5px] font-semibold leading-4 text-primary-foreground">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          ) : null}
+        </Link>
         <button
           type="button"
           onClick={clear}
@@ -326,8 +436,10 @@ export function NavigatorPanel() {
           <div className="space-y-2">
             <p className="text-[12px] text-muted-foreground">
               Give it a task. It opens the pages it needs, reads their charts and tables, uses tabs,
-              toggles and search boxes, and answers with links to every page it used. It can only
-              read: it never downloads, signs in, deletes or leaves the site.
+              toggles and search boxes, and answers with links to every page it used. It also
+              remembers your preferences, computes with Python, writes Word and PDF documents, makes
+              illustrations, reads official sites on the web and runs tasks on a schedule. What it
+              makes goes into your agent folder. It never signs in, deletes or submits forms.
             </p>
             {navigatorSuggestions(path).map((s) => (
               <button

@@ -15,6 +15,9 @@ import {
   type ClientCall,
 } from "@/lib/navigator/protocol";
 import { showPointer, spotlight } from "./pointer";
+import { runPython, type PyChart } from "./python";
+import { agentHeaders } from "./agentOwner";
+import type { NavigatorFile } from "@/lib/navigator/protocol";
 
 export type ExecContext = {
   router: AnyRouter;
@@ -30,7 +33,36 @@ export type ExecResult = {
   path: string;
   label: string;
   detail: string;
+  /** Files the call saved to the agent folder (figures from Python). */
+  files?: NavigatorFile[];
 };
+
+/** Save one figure to the agent folder; null when the folder is unavailable. */
+async function saveFigure(
+  title: string,
+  png: string,
+  signal: AbortSignal,
+): Promise<NavigatorFile | null> {
+  try {
+    const res = await fetch("/api/agent/files", {
+      method: "POST",
+      signal,
+      headers: { "content-type": "application/json", ...agentHeaders() },
+      body: JSON.stringify({
+        kind: "figure",
+        title,
+        mime: "image/png",
+        base64: png,
+        source: "python",
+      }),
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { file?: NavigatorFile };
+    return body.file ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const clip = (s: string, n = NAV_MAX_RESULT_CHARS) =>
   s.length > n ? `${s.slice(0, n)}\n…[truncated]` : s;
@@ -402,6 +434,59 @@ export async function execute(call: ClientCall, ctx: ExecContext): Promise<ExecR
           target.id || "",
         );
       }
+      case "run_python": {
+        const code = typeof input["code"] === "string" ? input["code"].slice(0, 20000) : "";
+        if (!code.trim()) return fail("No code was given.", "Running Python");
+        const data =
+          typeof input["data"] === "string" ? input["data"].slice(0, 400_000) : undefined;
+        const charts: PyChart[] = chartsOnPage(document)
+          .slice(0, 30)
+          .map((c) => {
+            const s = c.read();
+            return {
+              title: s.title,
+              subtitle: s.subtitle,
+              columns: s.columns,
+              rows: s.rows.slice(0, 5000),
+              sources: s.sources,
+              period: s.period,
+            };
+          });
+        const out = await runPython(code, charts, data, ctx.signal);
+        const base =
+          typeof input["figure_title"] === "string"
+            ? input["figure_title"].slice(0, 200).trim()
+            : "";
+        const files: NavigatorFile[] = [];
+        for (const [k, fig] of out.figures.entries()) {
+          const title =
+            (base
+              ? out.figures.length > 1
+                ? `${base} (${k + 1})`
+                : base
+              : fig.title || `Figure ${k + 1}`) || "Figure";
+          const f = await saveFigure(title, fig.png, ctx.signal);
+          if (f) files.push(f);
+        }
+        const unsaved = out.figures.length - files.length;
+        const body = JSON.stringify({
+          stdout: out.stdout,
+          result: out.result,
+          error: out.error,
+          figures: files.map((f) => ({ id: f.id, title: f.title, folder_link: f.href })),
+          ...(unsaved > 0 ? { figures_not_saved: unsaved } : {}),
+          charts_loaded: charts.map((c, i) => `${i}: ${c.title} (${c.rows.length} rows)`),
+        });
+        const res: ExecResult = {
+          content: clip(body),
+          isError: !!out.error,
+          path: here(),
+          label: out.error ? "Python raised an error" : "Ran Python",
+          detail: files.length ? `${files.length} figure${files.length > 1 ? "s" : ""} saved` : "",
+          ...(files.length ? { files } : {}),
+        };
+        return res;
+      }
     }
   } catch (error) {
     return fail(
@@ -430,5 +515,7 @@ export function runningLabel(call: ClientCall): string {
       return `Typing “${String(i["text"] ?? "")}”`;
     case "scroll_to":
       return "Pointing at the page";
+    case "run_python":
+      return "Running Python";
   }
 }

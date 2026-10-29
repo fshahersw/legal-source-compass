@@ -3,6 +3,7 @@ import { Copy, ExternalLink, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { AgentFolder } from "@/components/agent/AgentFolder";
 import { AppShell } from "@/components/atlas/AppShell";
 import { EmptyBundleState } from "@/components/atlas/EmptyBundleState";
 import { LibraryBrowser } from "@/components/atlas/LibraryBrowser";
@@ -10,16 +11,29 @@ import { Pager } from "@/components/atlas/Pager";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAtlas } from "@/lib/atlas/store";
 import { loadAllCatalog, mergeCatalog } from "@/lib/atlas/catalog";
 import { paginate } from "@/lib/atlas/filters";
 import { useQuery } from "@tanstack/react-query";
 
-type S = { view?: string | undefined };
+type S = { view?: "endpoints" | "agent" | undefined; file?: string | undefined };
 
 export const Route = createFileRoute("/sources/library")({
-  validateSearch: (s: Record<string, unknown>): S => ({ view: s["view"] === "endpoints" ? "endpoints" : undefined }),
+  validateSearch: (s: Record<string, unknown>): S => ({
+    view: s["view"] === "endpoints" ? "endpoints" : s["view"] === "agent" ? "agent" : undefined,
+    file:
+      s["view"] === "agent" && typeof s["file"] === "string" && /^[0-9a-f-]{36}$/i.test(s["file"])
+        ? s["file"]
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Source library — Seeger Weiss Research" },
@@ -43,19 +57,35 @@ export const Route = createFileRoute("/sources/library")({
 
 function LibraryView() {
   const { bundle } = useAtlas();
-  const { view } = Route.useSearch();
+  const { view, file } = Route.useSearch();
   const navigate = useNavigate({ from: "/sources/library" });
   const [withCatalog, setWithCatalog] = useState(true);
-  const cat = useQuery({ queryKey: ["catalog-all"], queryFn: loadAllCatalog, staleTime: Infinity, enabled: withCatalog });
+  const cat = useQuery({
+    queryKey: ["catalog-all"],
+    queryFn: loadAllCatalog,
+    staleTime: Infinity,
+    enabled: withCatalog && view !== "agent",
+  });
   const base = bundle?.sources ?? [];
-  const merged = useMemo(() => (withCatalog && cat.data && base.length ? mergeCatalog(base, cat.data) : null), [withCatalog, cat.data, base]);
+  const merged = useMemo(
+    () => (withCatalog && cat.data && base.length ? mergeCatalog(base, cat.data) : null),
+    [withCatalog, cat.data, base],
+  );
   const sources = merged?.rows ?? base;
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Source library" }]}
+      breadcrumbs={[
+        { label: "Home", to: "/" },
+        { label: "Sources", to: "/sources/library" },
+        { label: view === "agent" ? "Agent folder" : "Source library" },
+      ]}
       title="Sources"
-      description="Every distinct source URL in the bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
+      description={
+        view === "agent"
+          ? "The agent's own folder: its reports, documents, images and notes, its memory and its scheduled tasks."
+          : "Every distinct source URL in the bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
+      }
     >
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="flex rounded-md border border-border p-0.5 text-[12px]">
@@ -73,16 +103,39 @@ function LibraryView() {
           >
             Endpoint candidates
           </button>
+          <button
+            type="button"
+            onClick={() => navigate({ search: { view: "agent" } })}
+            className={`rounded px-2.5 py-1 ${view === "agent" ? "bg-muted font-semibold" : "text-muted-foreground"}`}
+          >
+            Agent folder
+          </button>
         </div>
-        {view !== "endpoints" ? (
+        {view === undefined ? (
           <label className="flex items-center gap-2 text-[12px] text-muted-foreground">
-            <input type="checkbox" checked={withCatalog} onChange={(e) => setWithCatalog(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={withCatalog}
+              onChange={(e) => setWithCatalog(e.target.checked)}
+            />
             Include the source catalog
-            <span>{withCatalog ? (cat.isLoading ? "· loading catalog…" : cat.error ? `· catalog could not be loaded: ${(cat.error as Error).message}` : merged ? `· ${base.length.toLocaleString()} directory + ${merged.added.toLocaleString()} catalog-only sources; ${merged.matched.toLocaleString()} share an exact URL and are shown once` : "") : `· ${base.length.toLocaleString()} directory sources`}</span>
+            <span>
+              {withCatalog
+                ? cat.isLoading
+                  ? "· loading catalog…"
+                  : cat.error
+                    ? `· catalog could not be loaded: ${(cat.error as Error).message}`
+                    : merged
+                      ? `· ${base.length.toLocaleString()} directory + ${merged.added.toLocaleString()} catalog-only sources; ${merged.matched.toLocaleString()} share an exact URL and are shown once`
+                      : ""
+                : `· ${base.length.toLocaleString()} directory sources`}
+            </span>
           </label>
         ) : null}
       </div>
-      {sources.length === 0 ? (
+      {view === "agent" ? (
+        <AgentFolder fileId={file} />
+      ) : sources.length === 0 ? (
         <EmptyBundleState view="The library" />
       ) : view === "endpoints" ? (
         <EndpointsPanel />
@@ -105,7 +158,9 @@ function EndpointsPanel() {
     const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
     if (terms.length === 0) return candidates;
     return candidates.filter((c) => {
-      const hay = [c.url, c.domain, c.source_family, c.jurisdiction, c.candidate_kind, c.notes].join("  ").toLowerCase();
+      const hay = [c.url, c.domain, c.source_family, c.jurisdiction, c.candidate_kind, c.notes]
+        .join("  ")
+        .toLowerCase();
       return terms.every((t) => hay.includes(t));
     });
   }, [candidates, query]);
@@ -132,7 +187,8 @@ function EndpointsPanel() {
   return (
     <>
       <p className="mb-3 text-[12px] text-muted-foreground">
-        Raw endpoint candidates exactly as recorded in the bundle. No live requests, probing or crawling — status values are imported text, not a live check.
+        Raw endpoint candidates exactly as recorded in the bundle. No live requests, probing or
+        crawling — status values are imported text, not a live check.
       </p>
       <div className="relative max-w-xl">
         <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -152,9 +208,15 @@ function EndpointsPanel() {
           <TableHeader>
             <TableRow className="bg-muted/60 hover:bg-muted/60">
               <TableHead className="h-9 text-[11px] uppercase tracking-wider">Endpoint</TableHead>
-              <TableHead className="h-9 w-24 text-[11px] uppercase tracking-wider">Method</TableHead>
-              <TableHead className="h-9 w-40 text-[11px] uppercase tracking-wider">Family</TableHead>
-              <TableHead className="h-9 w-36 text-[11px] uppercase tracking-wider">Imported status</TableHead>
+              <TableHead className="h-9 w-24 text-[11px] uppercase tracking-wider">
+                Method
+              </TableHead>
+              <TableHead className="h-9 w-40 text-[11px] uppercase tracking-wider">
+                Family
+              </TableHead>
+              <TableHead className="h-9 w-36 text-[11px] uppercase tracking-wider">
+                Imported status
+              </TableHead>
               <TableHead className="h-9 w-24" />
             </TableRow>
           </TableHeader>
@@ -163,7 +225,9 @@ function EndpointsPanel() {
               <TableRow key={c.id} className="align-top">
                 <TableCell className="py-2">
                   <div className="mono-cell break-all text-foreground">{c.url}</div>
-                  {c.notes ? <p className="mt-0.5 text-[11px] text-muted-foreground">{c.notes}</p> : null}
+                  {c.notes ? (
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{c.notes}</p>
+                  ) : null}
                 </TableCell>
                 <TableCell className="py-2 font-mono text-[12px]">{c.method ?? "—"}</TableCell>
                 <TableCell className="py-2 text-[12px]">{c.source_family || "—"}</TableCell>
@@ -178,11 +242,22 @@ function EndpointsPanel() {
                 </TableCell>
                 <TableCell className="py-2">
                   <div className="flex justify-end gap-1">
-                    <Button size="icon" variant="ghost" className="size-7" onClick={() => copy(c.url)} aria-label="Copy endpoint URL">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-7"
+                      onClick={() => copy(c.url)}
+                      aria-label="Copy endpoint URL"
+                    >
                       <Copy className="size-3.5" />
                     </Button>
                     <Button size="icon" variant="ghost" className="size-7" asChild>
-                      <a href={c.url} target="_blank" rel="noreferrer noopener" aria-label="Open endpoint">
+                      <a
+                        href={c.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        aria-label="Open endpoint"
+                      >
                         <ExternalLink className="size-3.5" />
                       </a>
                     </Button>

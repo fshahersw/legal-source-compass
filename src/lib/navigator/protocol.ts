@@ -24,6 +24,7 @@ export const CLIENT_TOOL_NAMES = [
   "click",
   "type_into",
   "scroll_to",
+  "run_python",
 ] as const;
 export type ClientToolName = (typeof CLIENT_TOOL_NAMES)[number];
 export const isClientTool = (name: string): name is ClientToolName =>
@@ -137,6 +138,20 @@ export const CLIENT_TOOL_DEFINITIONS: ToolSchema[] = [
       },
     },
   },
+  {
+    name: "run_python",
+    description:
+      "Run Python 3 in a sandbox in the user's browser (numpy, pandas and matplotlib are available; no network, no files outside the sandbox). Use it to compute from figures you collected: growth rates, shares, rankings, correlations, projections, statistics, reshaped tables, and charts. Variables provided: `charts`, a list of the current page's chart tables as pandas DataFrames (each with `.attrs['title']`), and `data`, parsed from the data argument (CSV text becomes a DataFrame, JSON becomes Python objects). print() what you need; the value of the last expression is returned too. Every matplotlib figure left open is saved to the user's agent folder as a PNG; give it a title and axis labels with units. State variables persist between calls in the same task.",
+    input_schema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Python source, at most 20,000 characters." },
+        data: { type: "string", description: "Optional CSV or JSON text to load as `data`." },
+        figure_title: { type: "string", description: "Folder title for saved figures." },
+      },
+      required: ["code"],
+    },
+  },
 ];
 
 const message = z
@@ -189,6 +204,15 @@ export type NavigatorStep = {
   path?: string | undefined;
 };
 export type NavigatorSource = { title: string; url: string; internal: boolean };
+/** A file the agent saved to its folder during the task (download link valid for an hour). */
+export type NavigatorFile = {
+  id: string;
+  title: string;
+  kind: "document" | "image" | "figure" | "note" | "data" | "report";
+  mime: string;
+  url: string | null;
+  href: string;
+};
 
 export type NavigatorEvent =
   | { type: "round"; round: number }
@@ -199,7 +223,15 @@ export type NavigatorEvent =
       calls: ClientCall[];
       resume: { transcript: string; signature: string; round: number; pending: string[] };
     }
-  | { type: "done"; text: string; sources: NavigatorSource[]; rounds: number }
+  | { type: "file"; file: NavigatorFile }
+  | { type: "memory"; title: string; kind: string }
+  | {
+      type: "done";
+      text: string;
+      sources: NavigatorSource[];
+      rounds: number;
+      files?: NavigatorFile[];
+    }
   | { type: "error"; message: string };
 
 export function encodeNavigatorEvent(event: NavigatorEvent): string {

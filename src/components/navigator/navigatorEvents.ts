@@ -28,8 +28,15 @@ export function navigatorSuggestions(path: string): string[] {
       "Group the dots by court and tell me which judge holds the most cases.",
       "Find Pfizer in the defendant network and list the MDLs it is linked to.",
     ];
+  if (path.startsWith("/sources/library"))
+    return [
+      "Every weekday at 8:00, check for drugs with rising FDA reports and no MDL, and save a short report.",
+      "Read my latest report and tell me what needs my attention.",
+      "What do you remember about how I like my briefs?",
+    ];
   return [
     "Which drugs have FDA reports rising fastest with no MDL yet? Open the top one.",
+    "Chart the ten largest pending MDLs by pending cases with Python and write a one-page PDF brief.",
     "Everything on the Depo-Provera MDL: judge, court, pending cases, defendants and the FDA signal.",
     "Which court holds the most MDL cases right now, and which MDLs are there?",
   ];

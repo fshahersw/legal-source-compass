@@ -9,8 +9,8 @@ and can stop it at any time.
 
 - **Loop on the server, hands in the browser.** `/api/navigator` (`src/routes/api/navigator.ts`) runs the model loop
   (`src/lib/navigator/agent.server.ts`). Server tools run there: the assistant's corpus, FDA, SEC, case-law and document
-  tools (web and code tools excluded) plus `site_map`. Browser tools (`go_to`, `read_page`, `read_chart`, `find_links`,
-  `click`, `type_into`, `scroll_to`) are handed to the browser: the stream ends with the calls and a signed transcript,
+  tools (code tools excluded) plus `site_map` and the workspace tools below. Browser tools (`go_to`, `read_page`, `read_chart`, `find_links`,
+  `click`, `type_into`, `scroll_to`, `run_python`) are handed to the browser: the stream ends with the calls and a signed transcript,
   `useNavigator` runs them on the live page (`src/components/navigator/executor.ts`) and posts the results back to resume.
 - **Signed transcript.** The server signs the conversation, round and pending call ids with HMAC-SHA256
   (`sign.server.ts`) using `NAVIGATOR_SIGNING_KEY`, or a key derived from `ANTHROPIC_API_KEY` when that is unset. A page
@@ -54,3 +54,44 @@ voice, semantic turn detection, input transcription) and exchanges the offer wit
   (`navigator:voice-style:v1`). The user can set or reset it by hand.
 - Every figure the voice says must come from a tool result; it hangs up after ten idle minutes; sessions are rate
   limited (12 per client per 10 minutes).
+
+## Workspace: memory, folder, documents, images, Python, web, schedules
+
+Each user has a workspace that persists across tasks: schema `agent` in the corpus project
+(`database/contracts/agent-workspace-v1.sql`), written only through the `agent_*` functions (security definer,
+`search_path ''`, service role only) and the private `agent-files` bucket (25 MB per file). It never mixes with corpus
+data.
+
+- **Owner.** A signed-in user owns the workspace by account; with sign-in off the browser keeps a random 256-bit key
+  (`localStorage agent:owner:v1`, sent as `x-agent-owner`). The server stores only `sha256` of either
+  (`src/lib/agent/owner.server.ts`). A paused task is bound to its owner inside the signed transcript.
+- **Memory** (`remember`, `recall`, `forget`): preferences, facts about the user's work and procedures (the steps and
+  paths that answered a recurring question). At the start of each task `context.server.ts` brings every preference,
+  the relevant facts, matching procedures, the last tasks and the folder's newest files into the prompt and marks the
+  memories it used. Each finished task is saved as an episode with the pages it opened. Limits: 500 memories.
+- **Folder** (`save_note`, `list_files`, `read_file`): shown at `/sources/library?view=agent` (`AgentFolder.tsx`).
+  Downloads use one-hour HMAC-signed links (`/api/agent/file`); HTML files download rather than render and every
+  response except PDFs is sandboxed. Limits: 2,000 files.
+- **Documents** (`create_document`): Markdown rendered to Word (`docx`), PDF (`pdf-lib`), HTML, Markdown or CSV by
+  `documents.server.ts`, all in plain JavaScript.
+- **Images** (`generate_image`): diagrams and illustrations saved as PNG (`images.server.ts`, `OPENAI_API_KEY`,
+  optional `IMAGE_MODEL`). Realistic depictions of real people and imitation seals or documents are refused; generated
+  images are labelled as AI-generated in the folder.
+- **Python** (`run_python`, browser tool): Pyodide 0.28.3 with numpy, pandas and matplotlib in a Web Worker
+  (`src/components/navigator/python.ts`), loaded from jsdelivr on first use. The page's chart tables arrive as pandas
+  DataFrames in `charts`; open matplotlib figures are saved to the folder. 90 s per call (180 s for the first, which
+  downloads the sandbox); state persists within the browser session.
+- **Web** (`web_search`, `read_web_page`, `browse_web`): `browse_web` opens a public page in a remote browser and
+  runs up to 12 bounded actions (click, write, press, wait, scroll; no scripts), with an optional screenshot saved to
+  the folder (`browse.server.ts`, `FIRECRAWL_API_KEY`). Only public http(s) addresses (`publicUrl`).
+- **Schedules** (`create_schedule`, `list_schedules`, `delete_schedule`): once, hourly, daily, weekdays, weekly or
+  monthly at a wall-clock time in an IANA zone (default America/Chicago; `src/lib/agent/schedule.ts` keeps the local
+  time across daylight-saving changes). pg_cron job `agent-tick` runs `agent.tick()` every five minutes; when something
+  is due it posts a one-time token to `<site_url>/api/agent/tick`, the route redeems it with `agent_tick_claim` (no
+  shared secret on the site) and runs up to two due tasks headless (`runner.server.ts`): server tools only, no
+  schedule tools, the previous report as context, the answer saved as an unread report. `site_url` registers itself
+  from the first real https request (preview and local hosts never register). "Run now" in the folder runs a task in
+  the request. Limits: 20 schedules.
+
+Routes: `/api/agent/files` (list, add a figure or note, rename, pin, mark read, delete), `/api/agent/file` (signed
+download), `/api/agent/memory`, `/api/agent/schedules` (list, pause, resume, run now, delete), `/api/agent/tick`.

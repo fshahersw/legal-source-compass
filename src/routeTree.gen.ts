@@ -113,6 +113,11 @@ import { Route as SourcesDocketDocumentsRouteImport } from './routes/sources.doc
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
+import { Route as ApiAgentFileRouteImport } from './routes/api/agent/file'
+import { Route as ApiAgentFilesRouteImport } from './routes/api/agent/files'
+import { Route as ApiAgentMemoryRouteImport } from './routes/api/agent/memory'
+import { Route as ApiAgentSchedulesRouteImport } from './routes/api/agent/schedules'
+import { Route as ApiAgentTickRouteImport } from './routes/api/agent/tick'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as CasesCourtsIndexRouteImport } from './routes/cases.courts.index'
 import { Route as CasesCourtsCourtIdRouteImport } from './routes/cases.courts.$courtId'
@@ -678,6 +683,31 @@ const SourcesRegistryV22Route = SourcesRegistryV22RouteImport.update({
   path: '/sources/registry-v22',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAgentFileRoute = ApiAgentFileRouteImport.update({
+  id: '/api/agent/file',
+  path: '/api/agent/file',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentFilesRoute = ApiAgentFilesRouteImport.update({
+  id: '/api/agent/files',
+  path: '/api/agent/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentMemoryRoute = ApiAgentMemoryRouteImport.update({
+  id: '/api/agent/memory',
+  path: '/api/agent/memory',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentSchedulesRoute = ApiAgentSchedulesRouteImport.update({
+  id: '/api/agent/schedules',
+  path: '/api/agent/schedules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgentTickRoute = ApiAgentTickRouteImport.update({
+  id: '/api/agent/tick',
+  path: '/api/agent/tick',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
   id: '/api/auth/logout',
   path: '/api/auth/logout',
@@ -1010,6 +1040,11 @@ export interface FileRoutesByFullPath {
   '/prototypes/': typeof PrototypesIndexRoute
   '/registry/': typeof RegistryIndexRoute
   '/sources/': typeof SourcesIndexRoute
+  '/api/agent/file': typeof ApiAgentFileRoute
+  '/api/agent/files': typeof ApiAgentFilesRoute
+  '/api/agent/memory': typeof ApiAgentMemoryRoute
+  '/api/agent/schedules': typeof ApiAgentSchedulesRoute
+  '/api/agent/tick': typeof ApiAgentTickRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/cases/courts/$courtId': typeof CasesCourtsCourtIdRoute
   '/data/tables/$table': typeof DataTablesTableRoute
@@ -1153,6 +1188,11 @@ export interface FileRoutesByTo {
   '/prototypes': typeof PrototypesIndexRoute
   '/registry': typeof RegistryIndexRoute
   '/sources': typeof SourcesIndexRoute
+  '/api/agent/file': typeof ApiAgentFileRoute
+  '/api/agent/files': typeof ApiAgentFilesRoute
+  '/api/agent/memory': typeof ApiAgentMemoryRoute
+  '/api/agent/schedules': typeof ApiAgentSchedulesRoute
+  '/api/agent/tick': typeof ApiAgentTickRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/cases/courts/$courtId': typeof CasesCourtsCourtIdRoute
   '/data/tables/$table': typeof DataTablesTableRoute
@@ -1301,6 +1341,11 @@ export interface FileRoutesById {
   '/prototypes/': typeof PrototypesIndexRoute
   '/registry/': typeof RegistryIndexRoute
   '/sources/': typeof SourcesIndexRoute
+  '/api/agent/file': typeof ApiAgentFileRoute
+  '/api/agent/files': typeof ApiAgentFilesRoute
+  '/api/agent/memory': typeof ApiAgentMemoryRoute
+  '/api/agent/schedules': typeof ApiAgentSchedulesRoute
+  '/api/agent/tick': typeof ApiAgentTickRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/cases/courts/$courtId': typeof CasesCourtsCourtIdRoute
   '/data/tables/$table': typeof DataTablesTableRoute
@@ -1452,6 +1497,11 @@ export interface FileRouteTypes {
     | '/prototypes/'
     | '/registry/'
     | '/sources/'
+    | '/api/agent/file'
+    | '/api/agent/files'
+    | '/api/agent/memory'
+    | '/api/agent/schedules'
+    | '/api/agent/tick'
     | '/api/auth/logout'
     | '/cases/courts/$courtId'
     | '/data/tables/$table'
@@ -1595,6 +1645,11 @@ export interface FileRouteTypes {
     | '/prototypes'
     | '/registry'
     | '/sources'
+    | '/api/agent/file'
+    | '/api/agent/files'
+    | '/api/agent/memory'
+    | '/api/agent/schedules'
+    | '/api/agent/tick'
     | '/api/auth/logout'
     | '/cases/courts/$courtId'
     | '/data/tables/$table'
@@ -1742,6 +1797,11 @@ export interface FileRouteTypes {
     | '/prototypes/'
     | '/registry/'
     | '/sources/'
+    | '/api/agent/file'
+    | '/api/agent/files'
+    | '/api/agent/memory'
+    | '/api/agent/schedules'
+    | '/api/agent/tick'
     | '/api/auth/logout'
     | '/cases/courts/$courtId'
     | '/data/tables/$table'
@@ -1892,6 +1952,11 @@ export interface RootRouteChildren {
   PrototypesIndexRoute: typeof PrototypesIndexRoute
   RegistryIndexRoute: typeof RegistryIndexRoute
   SourcesIndexRoute: typeof SourcesIndexRoute
+  ApiAgentFileRoute: typeof ApiAgentFileRoute
+  ApiAgentFilesRoute: typeof ApiAgentFilesRoute
+  ApiAgentMemoryRoute: typeof ApiAgentMemoryRoute
+  ApiAgentSchedulesRoute: typeof ApiAgentSchedulesRoute
+  ApiAgentTickRoute: typeof ApiAgentTickRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   CasesCourtsCourtIdRoute: typeof CasesCourtsCourtIdRoute
   DataTablesTableRoute: typeof DataTablesTableRoute
@@ -2640,6 +2705,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesRegistryV22RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/agent/file': {
+      id: '/api/agent/file'
+      path: '/api/agent/file'
+      fullPath: '/api/agent/file'
+      preLoaderRoute: typeof ApiAgentFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/files': {
+      id: '/api/agent/files'
+      path: '/api/agent/files'
+      fullPath: '/api/agent/files'
+      preLoaderRoute: typeof ApiAgentFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/memory': {
+      id: '/api/agent/memory'
+      path: '/api/agent/memory'
+      fullPath: '/api/agent/memory'
+      preLoaderRoute: typeof ApiAgentMemoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/schedules': {
+      id: '/api/agent/schedules'
+      path: '/api/agent/schedules'
+      fullPath: '/api/agent/schedules'
+      preLoaderRoute: typeof ApiAgentSchedulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agent/tick': {
+      id: '/api/agent/tick'
+      path: '/api/agent/tick'
+      fullPath: '/api/agent/tick'
+      preLoaderRoute: typeof ApiAgentTickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/logout': {
       id: '/api/auth/logout'
       path: '/api/auth/logout'
@@ -3205,6 +3305,11 @@ const rootRouteChildren: RootRouteChildren = {
   PrototypesIndexRoute: PrototypesIndexRoute,
   RegistryIndexRoute: RegistryIndexRoute,
   SourcesIndexRoute: SourcesIndexRoute,
+  ApiAgentFileRoute: ApiAgentFileRoute,
+  ApiAgentFilesRoute: ApiAgentFilesRoute,
+  ApiAgentMemoryRoute: ApiAgentMemoryRoute,
+  ApiAgentSchedulesRoute: ApiAgentSchedulesRoute,
+  ApiAgentTickRoute: ApiAgentTickRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   CasesCourtsCourtIdRoute: CasesCourtsCourtIdRoute,
   DataTablesTableRoute: DataTablesTableRoute,
